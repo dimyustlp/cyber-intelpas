@@ -1412,7 +1412,20 @@ table.tabel tbody td { border-bottom: 1px solid var(--line-3); }
 
 /* ------------------------------------------------------------ Halaman masuk */
 
-.masuk-kiri { background: var(--gradien-tepi); }
+/*
+   Panel kiri sengaja gelap di kedua mode — gradien navy kelembagaan, bukan
+   permukaan yang ikut berbalik terang/gelap seperti bagian lain aplikasi.
+   Warnanya dulu memakai token --accent-in, yang artinya berbalik di mode
+   gelap (dari putih menjadi nyaris hitam, sebab token itu dirancang untuk
+   dipakai di atas --accent yang memang berbalik terang). Panel ini tidak
+   berbalik, jadi mewarisi tulisan nyaris hitam di atas latar yang juga
+   nyaris hitam — persis kasus yang ditemukan pada halaman Masuk.
+   Warna tulisannya sekarang tetap terang, terlepas dari mode yang aktif.
+*/
+.masuk-kiri {
+  background: var(--gradien-tepi);
+  color: #EAF1FB;
+}
 
 /* ------------------------------------------------------------- 6b. Gerak */
 /*

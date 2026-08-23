@@ -487,7 +487,7 @@ function bagianIkhtisar(d) {
       <div class="ikhtisar-ubin">
         ${ubin('Peristiwa negatif', ikhtisar.peristiwa, `dari ${angka(ikhtisar.publikasi)} publikasi`, 'kritis')}
         ${ubin('Perlu respons segera', ikhtisar.mendesak, ikhtisar.kritis ? `${angka(ikhtisar.kritis)} berstatus kritis` : 'berurgensi tinggi', 'tinggi')}
-        ${ubin('Unit terdampak', ikhtisar.unit, `${angka(ikhtisar.tanpaUnit)} peristiwa belum terpetakan`, 'aksen')}
+        ${ubin('UPT terdampak', ikhtisar.unit, `${angka(ikhtisar.tanpaUnit)} peristiwa belum terpetakan`, 'aksen')}
         ${ubin('Media pemberitaan', ikhtisar.media, `eksposur tertinggi ${angka(ikhtisar.eksposurTertinggi)}`, 'netral')}
       </div>
     </div>
@@ -523,7 +523,7 @@ function bagianPrioritas(d) {
       <div class="prioritas-label">Peristiwa dengan eksposur tertinggi</div>
       <h3>${esc(utama.judul)}</h3>
       <div class="prioritas-meta">
-        ${unit ? `<span><b>${esc(unit)}</b></span>` : '<span><b>Unit belum teridentifikasi</b></span>'}
+        ${unit ? `<span><b>${esc(unit)}</b></span>` : '<span><b>UPT belum teridentifikasi</b></span>'}
         <span>${esc(utama.subkategori)}</span>
         <span>${esc(tanggalPendek(utama.tanggal_pertama))} — ${esc(tanggalPendek(utama.tanggal_terakhir))}</span>
       </div>
@@ -559,7 +559,7 @@ function bagianTabelPeristiwa(d) {
     <h2>Daftar Peristiwa Negatif</h2>
     <table class="tabel">
       <thead><tr>
-        <th style="width:26px">No</th><th>Peristiwa</th><th>Unit</th>
+        <th style="width:26px">No</th><th>Peristiwa</th><th>UPT</th>
         <th class="ka">Pub</th><th class="ka">Media</th><th>Urgensi</th>
       </tr></thead>
       <tbody>
@@ -582,16 +582,16 @@ function bagianTabelPeristiwa(d) {
 
 function bagianUnit(d) {
   if (!d.daftarUnit.length) {
-    return `<section class="bagian"><h2>Unit Pelaksana Teknis Paling Disorot</h2>
+    return `<section class="bagian"><h2>UPT Paling Disorot</h2>
       <p class="samar">Tidak ada peristiwa negatif yang terhubung ke unit mana pun pada periode ini.
       Angka per unit tidak dapat disusun.</p></section>`
   }
   return `
   <section class="bagian">
-    <h2>Unit Pelaksana Teknis Paling Disorot</h2>
+    <h2>UPT Paling Disorot</h2>
     <table class="tabel">
       <thead><tr>
-        <th style="width:26px">No</th><th>Unit Pelaksana Teknis</th><th>Provinsi</th>
+        <th style="width:26px">No</th><th>UPT</th><th>Provinsi</th>
         <th>Isu Utama</th><th class="ka">Peristiwa</th><th class="ka">Publikasi</th><th>Risiko</th>
       </tr></thead>
       <tbody>

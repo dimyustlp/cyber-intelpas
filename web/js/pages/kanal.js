@@ -86,7 +86,7 @@ function kartuPeristiwa(p, eksposurMaks) {
     <div class="peristiwa-judul">${amankan(ringkas(p.judul || '', 150))}</div>
 
     <div class="peristiwa-kaki">
-      <span>Unit <b>${amankan(unit || 'belum terpetakan')}</b></span>
+      <span>UPT <b>${amankan(unit || 'belum terpetakan')}</b></span>
       <span>Publikasi <b>${angka(p.jumlah_publikasi)}</b></span>
       <span>Media <b>${angka(p.jumlah_media)}</b></span>
       <span>Rentang <b>${angka(p.rentang_hari)}</b> hari</span>
@@ -155,7 +155,7 @@ function gambarKanal({ keadaan, isi }, sisi) {
   const ubinKanal = [
     { label: 'Peristiwa', nilai: peristiwa.length, kaki: `dari ${angka(daftar.length)} publikasi`, nada: negatif ? 'kritis' : 'positif' },
     { label: negatif ? 'Perlu respons segera' : 'Menonjol', nilai: negatif ? mendesak.length : peristiwa.filter((p) => p.jumlah_media > 1).length, kaki: negatif ? 'berurgensi tinggi atau kritis' : 'diangkat lebih dari satu media', nada: negatif ? 'tinggi' : 'aksen' },
-    { label: 'Unit terdampak', nilai: unitUnik.size, kaki: `${angka(tanpaUnit.length)} peristiwa belum terpetakan`, nada: 'aksen' },
+    { label: 'UPT terdampak', nilai: unitUnik.size, kaki: `${angka(tanpaUnit.length)} peristiwa belum terpetakan`, nada: 'aksen' },
     { label: 'Media', nilai: mediaUnik.size, kaki: `${angka(perluTelaah.length)} publikasi perlu telaah`, nada: 'netral' },
   ]
 

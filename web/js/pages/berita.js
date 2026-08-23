@@ -105,7 +105,7 @@ function tabel(daftar) {
         <tr>
           <th style="width:74px">Urgensi</th>
           <th>Berita</th>
-          <th style="width:186px">Unit pelaksana teknis</th>
+          <th style="width:186px">UPT</th>
           <th style="width:150px">Kategori</th>
           <th style="width:88px">Sentimen</th>
           <th style="width:118px">Status telaah</th>

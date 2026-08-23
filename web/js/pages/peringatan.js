@@ -109,7 +109,7 @@ function kartuPeringatan(b) {
         </p>
 
         <dl style="margin:0;display:grid;grid-template-columns:auto 1fr;gap:3px 10px;font-size:11.5px">
-          <dt class="samar-teks">Unit</dt>
+          <dt class="samar-teks">UPT</dt>
           <dd style="margin:0">${belumTerpetakan(b.nama_upt)
             ? '<span style="color:var(--sedang)">Belum terpetakan</span>'
             : amankan(b.nama_upt)}</dd>

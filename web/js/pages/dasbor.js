@@ -128,7 +128,7 @@ export function halamanDasbor({ keadaan, isi }) {
           label: 'Perlu respons segera',
           nilai: mendesak.length,
           nada: mendesak.length ? 'kritis' : 'netral',
-          kaki: `${uptMendesak.size} unit terdampak`,
+          kaki: `${uptMendesak.size} UPT terdampak`,
         })}
         ${ubin({
           label: 'Menunggu telaah analis',
@@ -181,20 +181,19 @@ export function halamanDasbor({ keadaan, isi }) {
         })}
       </div>
 
-      ${kartu({
-        judul: 'Daftar prioritas',
-        ket: `${mendesak.length} berita berurgensi tinggi atau kritis yang belum ditutup`,
-        aksi: tombol({ label: 'Lihat semua', ikon: 'panahKanan', kecil: true, aksi: 'ke-peringatan' }),
-        rapat: true,
-        isi: mendesak.length
-          ? daftarPrioritas(mendesak.slice(0, 7))
-          : kosong('Tidak ada yang mendesak', 'Semua berita berurgensi tinggi sudah ditelaah atau ditutup. Keadaan terkendali.'),
-      })}
-
+      ${/*
+        UPT paling banyak disorot didahulukan atas Daftar prioritas.
+        Alasan urutannya: "siapa yang paling sering disorot" adalah pertanyaan
+        tentang pola — jawabannya stabil dari hari ke hari, dan itulah yang
+        pantas dibaca lebih dulu untuk membentuk gambaran umum. "Apa yang perlu
+        ditutup sekarang" adalah pertanyaan tentang tindakan segera, dan tempat
+        wajarnya adalah tepat sebelum baris aksi berikutnya di bagian bawah
+        halaman — bukan memutus alur antara dua kartu berbentuk bagan.
+      */''}
       <div class="kisi kisi-2">
         ${kartu({
-          judul: 'Unit paling banyak disorot',
-          ket: `${uptTerdampak.size} unit muncul dalam arsip saat ini`,
+          judul: 'UPT paling banyak disorot',
+          ket: `${uptTerdampak.size} UPT muncul dalam arsip saat ini`,
           rapat: true,
           isi: tabelUpt(berita),
         })}
@@ -204,6 +203,16 @@ export function halamanDasbor({ keadaan, isi }) {
           isi: kartuSumber(berita),
         })}
       </div>
+
+      ${kartu({
+        judul: 'Daftar prioritas',
+        ket: `${mendesak.length} berita berurgensi tinggi atau kritis yang belum ditutup`,
+        aksi: tombol({ label: 'Lihat semua', ikon: 'panahKanan', kecil: true, aksi: 'ke-peringatan' }),
+        rapat: true,
+        isi: mendesak.length
+          ? daftarPrioritas(mendesak.slice(0, 7))
+          : kosong('Tidak ada yang mendesak', 'Semua berita berurgensi tinggi sudah ditelaah atau ditutup. Keadaan terkendali.'),
+      })}
     </div>`
 
   // Bagan digambar setelah rangka HTML terpasang, supaya ukuran wadahnya sudah pasti.
@@ -229,7 +238,7 @@ function garisKeadaan(mendesak, belumTelaah, takTerpetakan) {
     return pesanSistem(
       `<b>${kritis.length} berita berstatus kritis menunggu penanganan.</b>
        Menurut panduan Dirpamintel, tingkat ini berarti kejadian sedang berlangsung dan menyangkut keselamatan.
-       Unit terdampak: ${amankan([...new Set(kritis.map((b) => b.nama_upt))].slice(0, 3).join(', '))}.`,
+       UPT terdampak: ${amankan([...new Set(kritis.map((b) => b.nama_upt))].slice(0, 3).join(', '))}.`,
       'kritis', 'peringatan',
     )
   }
@@ -264,7 +273,7 @@ function daftarPrioritas(daftar) {
         <tr>
           <th style="width:78px">Urgensi</th>
           <th>Berita</th>
-          <th style="width:190px">Unit</th>
+          <th style="width:190px">UPT</th>
           <th style="width:110px">Status</th>
           <th style="width:96px">Masuk</th>
         </tr>
@@ -306,7 +315,7 @@ function tabelUpt(berita) {
   return `
   <div class="tabel-bungkus">
     <table class="tabel">
-      <thead><tr><th>Unit</th><th style="width:62px" class="rata-kanan">Total</th><th style="width:72px" class="rata-kanan">Negatif</th><th style="width:76px" class="rata-kanan">Mendesak</th></tr></thead>
+      <thead><tr><th>UPT</th><th style="width:62px" class="rata-kanan">Total</th><th style="width:72px" class="rata-kanan">Negatif</th><th style="width:76px" class="rata-kanan">Mendesak</th></tr></thead>
       <tbody>
         ${daftar.map((u) => `
           <tr>

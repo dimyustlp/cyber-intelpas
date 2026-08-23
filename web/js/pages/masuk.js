@@ -11,28 +11,49 @@ import { KONFIG } from '../lib/konfig.js'
 import { masuk, pesanRamah } from '../lib/api.js'
 import { amankan } from '../lib/format.js'
 import { ikon } from '../lib/ikon.js'
+import { pasangKoridor } from '../ui/koridor.js'
+
+/**
+ * Kartu koridor mengikuti urutan siklus intelijen sungguhan, dari deteksi
+ * sampai keputusan — bukan susunan acak. Orang yang belum pernah membuka
+ * sistem ini sudah membaca alurnya sebelum sempat login.
+ */
+const KARTU_KORIDOR = [
+  { ikon: 'berita', label: 'Deteksi Media' },
+  { ikon: 'peringatan', label: 'Peringatan Dini' },
+  { ikon: 'centang', label: 'Telaah Analis' },
+  { ikon: 'lapangan', label: 'Verifikasi Lapangan' },
+  { ikon: 'kasus', label: 'Kasus Intelijen' },
+  { ikon: 'tindak', label: 'Evaluasi' },
+  { ikon: 'keputusan', label: 'Keputusan' },
+  { ikon: 'laporan', label: 'Laporan Berkala' },
+  { ikon: 'kirim', label: 'Distribusi Telegram' },
+  { ikon: 'peta', label: 'Peta Sebaran' },
+]
 
 export function halamanMasuk({ onMasuk }) {
   const wadah = document.createElement('div')
   wadah.className = 'masuk-latar'
   wadah.innerHTML = `
     <section class="masuk-kiri">
-      <div>
-        <p class="masuk-eyebrow">${amankan(KONFIG.kementerian)}</p>
-        <p class="masuk-eyebrow" style="margin-top:2px">${amankan(KONFIG.induk)}</p>
-      </div>
+      <div class="masuk-kiri-isi">
+        <div>
+          <p class="masuk-eyebrow">${amankan(KONFIG.kementerian)}</p>
+          <p class="masuk-eyebrow" style="margin-top:2px">${amankan(KONFIG.induk)}</p>
+        </div>
 
-      <div>
-        <h1>Cyber-Intelpas</h1>
-        <p class="sub">Sistem manajemen intelijen pemberitaan pemasyarakatan —
-        dari deteksi media, telaah analis, verifikasi lapangan, sampai keputusan pimpinan.</p>
-      </div>
+        <div class="masuk-judul-plate">
+          <h1>Cyber-Intelpas</h1>
+          <p class="sub">Sistem manajemen intelijen pemberitaan pemasyarakatan —
+          dari deteksi media, telaah analis, verifikasi lapangan, sampai keputusan pimpinan.</p>
+        </div>
 
-      <dl class="masuk-statistik">
-        <div><dt>Unit terpantau</dt><dd>492</dd></div>
-        <div><dt>Kantor wilayah</dt><dd>38</dd></div>
-        <div><dt>Pemeriksaan sumber</dt><dd>5 menit</dd></div>
-      </dl>
+        <dl class="masuk-statistik">
+          <div><dt>UPT terpantau</dt><dd>492</dd></div>
+          <div><dt>Kantor wilayah</dt><dd>38</dd></div>
+          <div><dt>Pemeriksaan sumber</dt><dd>5 menit</dd></div>
+        </dl>
+      </div>
     </section>
 
     <section class="masuk-kanan">
@@ -72,6 +93,8 @@ export function halamanMasuk({ onMasuk }) {
         Versi ${amankan(KONFIG.versi)} · ${amankan(KONFIG.instansi)}
       </p>
     </section>`
+
+  pasangKoridor(wadah.querySelector('.masuk-kiri'), { ikon, kartu: KARTU_KORIDOR })
 
   const borang = wadah.querySelector('#borang-masuk')
   const kotakGalat = wadah.querySelector('#galat-masuk')

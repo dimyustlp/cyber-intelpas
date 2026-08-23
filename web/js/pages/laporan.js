@@ -176,7 +176,7 @@ export function halamanLaporan({ keadaan, isi }) {
 
       ${hasil ? kartu({
         judul: 'Laporan siap',
-        ket: `${angka(hasil.olahan.peristiwa.length)} peristiwa · ${angka(hasil.olahan.publikasi.length)} publikasi · ${angka(hasil.olahan.daftarUnit.length)} unit terdampak`,
+        ket: `${angka(hasil.olahan.peristiwa.length)} peristiwa · ${angka(hasil.olahan.publikasi.length)} publikasi · ${angka(hasil.olahan.daftarUnit.length)} UPT terdampak`,
         aksi: `${tombol({ label: 'Buka', ikon: 'tautan', aksi: 'buka-laporan' })}
                ${tombol({ label: 'Unduh HTML', ikon: 'unduh', gaya: 'utama', aksi: 'unduh-laporan' })}`,
         isi: `

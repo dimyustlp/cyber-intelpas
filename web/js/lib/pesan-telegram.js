@@ -117,7 +117,7 @@ export function pesanLaporan(olahan, opsi = {}) {
   baris.push('<b>Angka pokok</b>')
   baris.push(`• Peristiwa negatif: <b>${angka(ikhtisar.peristiwa)}</b> dari ${angka(ikhtisar.publikasi)} publikasi`)
   baris.push(`• Menuntut respons: <b>${angka(ikhtisar.mendesak)}</b>${ikhtisar.kritis ? ` (${angka(ikhtisar.kritis)} kritis)` : ''}`)
-  baris.push(`• Unit terdampak: <b>${angka(ikhtisar.unit)}</b>`)
+  baris.push(`• UPT terdampak: <b>${angka(ikhtisar.unit)}</b>`)
   if (konteks.total) {
     const porsi = ((ikhtisar.publikasi / konteks.total) * 100).toFixed(1).replace('.', ',')
     baris.push(`• Porsi terhadap seluruh pemberitaan: <b>${porsi}%</b>`)
@@ -143,7 +143,7 @@ export function pesanLaporan(olahan, opsi = {}) {
       const u = daftarUnit.slice(0, 3)
         .map((x) => `${lepas(x.nama)} (${angka(x.publikasi)})`)
         .join(', ')
-      baris.push(`<b>Unit paling disorot:</b> ${u}`)
+      baris.push(`<b>UPT paling disorot:</b> ${u}`)
       baris.push('')
     }
   }
@@ -183,7 +183,7 @@ export function pesanPeringatan(berita, opsi = {}) {
   baris.push('')
 
   const rinci = []
-  if (berita.nama_upt) rinci.push(['Unit', berita.nama_upt])
+  if (berita.nama_upt) rinci.push(['UPT', berita.nama_upt])
   if (berita.subkategori) rinci.push(['Isu', berita.subkategori])
   if (berita.media) rinci.push(['Sumber', berita.media])
   if (berita.tanggal_publikasi || berita.created_at) {

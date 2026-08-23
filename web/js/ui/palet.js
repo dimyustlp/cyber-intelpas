@@ -69,7 +69,7 @@ function kumpulkanSasaran(keadaan) {
   }
   for (const u of unit.values()) {
     sasaran.push({
-      golongan: 'Unit',
+      golongan: 'UPT',
       ikon: 'peta',
       judul: u.nama,
       ket: `${u.total} publikasi${u.mendesak ? ` · ${u.mendesak} mendesak` : ''}`,
@@ -107,7 +107,7 @@ function saring(sasaran, teks) {
   if (!kueri.length) return null
 
   const hasil = []
-  for (const golongan of ['Halaman', 'Unit', 'Berita']) {
+  for (const golongan of ['Halaman', 'UPT', 'Berita']) {
     const sebagian = sasaran.filter((s) => s.golongan === golongan && cocok(s.cari, kueri))
     hasil.push(...sebagian.slice(0, BATAS_PER_GOLONGAN))
   }
@@ -150,7 +150,7 @@ export function bukaPalet(keadaan, keHalaman) {
   function gambarHasil() {
     if (!daftar.length) {
       wadahHasil.innerHTML = `<div class="palet-kosong">
-        Tidak ada yang cocok. Coba nama unit, nama media, atau sebagian judul berita.
+        Tidak ada yang cocok. Coba nama UPT, nama media, atau sebagian judul berita.
       </div>`
       masukan.removeAttribute('aria-activedescendant')
       return

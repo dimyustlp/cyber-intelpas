@@ -165,13 +165,51 @@ export async function keluar() {
   simpanSesi(null)
 }
 
+/**
+ * Sebelum ini kueri di bawah tidak menyaring baris sama sekali — hanya
+ * `limit: 1` — dan bergantung penuh pada RLS untuk membatasi hasilnya ke
+ * baris milik sendiri. Itu benar untuk peran biasa, sebab policy-nya memang
+ * `auth_user_id = auth.uid()`. Tetapi policy yang sama juga berbunyi
+ * `OR is_super_admin()`, dan bagi super admin klausa itu membuat seluruh baris
+ * tabel terlihat. Tanpa WHERE atau ORDER BY, PostgREST bebas mengembalikan
+ * baris siapa pun yang kebetulan ia temui lebih dulu — bagi seorang super
+ * admin, profil yang termuat bisa jadi milik orang lain sepenuhnya, dan tidak
+ * ada apa pun di layar yang akan terlihat salah sampai nama itu terbaca satu
+ * per satu.
+ *
+ * Sekarang kueri menyaring eksplisit ke auth_user_id milik sesi yang sedang
+ * berjalan — didapat dari token yang baru diterbitkan GoTrue, bukan
+ * ditebak dari isi tabelnya.
+ */
 export async function muatProfil() {
+  const uid = sesi?.user?.id
   const baris = await ambil('app_users', {
     select: 'id,username,full_name,role,jabatan,assigned_kanwil,assigned_upt,aktif,email,last_login',
+    ...(uid ? { auth_user_id: `eq.${uid}` } : {}),
     limit: 1,
   })
   profil = Array.isArray(baris) ? baris[0] || null : null
   return profil
+}
+
+/** Menyunting profil milik sendiri. RLS menegakkan batasnya sendiri. */
+export async function perbaruiProfilSendiri(perubahan) {
+  const hasil = await perbarui('app_users', { auth_user_id: `eq.${sesi?.user?.id}` }, perubahan)
+  const baru = Array.isArray(hasil) ? hasil[0] : hasil
+  if (baru) {
+    profil = { ...profil, ...baru }
+    if (sesi) simpanSesi({ ...sesi, profil })
+  }
+  return baru
+}
+
+/**
+ * Mengganti kata sandi akun yang sedang masuk. Tidak menuntut kata sandi lama
+ * — sesi yang sedang aktif sudah membuktikan siapa yang meminta, sama seperti
+ * cara GoTrue sendiri memperlakukan permintaan ini.
+ */
+export async function gantiSandiSendiri(sandiBaru) {
+  return panggil('/auth/v1/user', { method: 'PUT', body: JSON.stringify({ password: sandiBaru }) })
 }
 
 // ---------------------------------------------------------------- ringkasan

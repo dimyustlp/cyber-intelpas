@@ -25,6 +25,7 @@ import { halamanIntegrasi } from './pages/integrasi.js'
 import { halamanDistribusi } from './pages/distribusi.js'
 import { halamanTelaah } from './pages/telaah.js'
 import { halamanPemetaan } from './pages/pemetaan.js'
+import { halamanProfil } from './pages/profil.js'
 import { halamanBelumSiap } from './pages/belum-siap.js'
 
 const akar = document.getElementById('akar')
@@ -51,6 +52,7 @@ const HALAMAN = {
   distribusi: halamanDistribusi,
   telaah: halamanTelaah,
   pemetaan: halamanPemetaan,
+  profil: halamanProfil,
 }
 
 /* ------------------------------------------------------------------- tema */
@@ -121,11 +123,13 @@ function kerangka() {
       <nav class="nav" aria-label="Navigasi utama">${daftarMenu}</nav>
 
       <div class="kaki-samping">
-        <div class="avatar">${amankan(inisial(keadaan.profil.full_name))}</div>
-        <div style="min-width:0;flex:1">
-          <div class="kaki-nama potong">${amankan(keadaan.profil.full_name)}</div>
-          <div class="kaki-peran potong">${amankan(info.ringkas || labelPeran(peran))}</div>
-        </div>
+        <button class="kaki-profil" data-halaman="profil" title="Profil dan kata sandi saya">
+          <span class="avatar">${amankan(inisial(keadaan.profil.full_name))}</span>
+          <span style="min-width:0;flex:1;text-align:left">
+            <span class="kaki-nama potong">${amankan(keadaan.profil.full_name)}</span>
+            <span class="kaki-peran potong">${amankan(info.ringkas || labelPeran(peran))}</span>
+          </span>
+        </button>
         ${tombolIkon({ ikon: 'keluar', aksi: 'keluar', judul: 'Keluar dari sesi', kecil: true })}
       </div>
     </aside>

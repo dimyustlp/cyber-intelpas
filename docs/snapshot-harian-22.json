@@ -1,0 +1,34 @@
+{
+  "periode": { "hari": 1, "mulai": "2026-08-22", "selesai": "2026-08-22", "pembanding_mulai": "2026-08-21", "pembanding_selesai": "2026-08-21" },
+  "ikhtisar": { "total": 17, "kritis": 0, "netral": 2, "rendah": 4, "sedang": 9, "tinggi": 4, "negatif": 11, "positif": 4, "media_unik": 8, "upt_tersorot": 7, "terklasifikasi": 9, "belum_terpetakan": 6 },
+  "pembanding": { "total": 0, "negatif": 0 },
+  "per_hari": [
+    { "tanggal": "2026-08-22", "total": 17, "positif": 4, "netral": 2, "negatif": 11, "tinggi": 4, "isu_utama": "Pelarian WBP", "sorotan": "Dua bulan lagi bebas, narapidana Lapas Warungkiara malah melarikan diri dari tempat pelaksanaan program asimilasi", "upt": ["Lapas Kelas I Bandar Lampung", "Lapas Kelas IIA Banyuwangi", "Lapas Kelas IIB Warung Kiara"] }
+  ],
+  "per_kategori": [
+    { "kategori": "Gangguan Keamanan dan Ketertiban", "jumlah": 4, "negatif": 4 },
+    { "kategori": "Narasi Positif dan Kehumasan", "jumlah": 3, "negatif": 0 },
+    { "kategori": "Pelanggaran Integritas Petugas", "jumlah": 1, "negatif": 1 },
+    { "kategori": "Isu Manajemen, HAM, dan Krisis", "jumlah": 1, "negatif": 1 }
+  ],
+  "per_subkategori": [
+    { "kode": "1.1", "nama": "Pelarian WBP", "kategori": "Gangguan Keamanan dan Ketertiban", "jumlah": 4, "negatif": 4, "urgensi": "Tinggi" },
+    { "kode": "8.5", "nama": "Operasional dan Pengamanan Rutin", "kategori": "Narasi Positif dan Kehumasan", "jumlah": 2, "negatif": 0, "urgensi": "Rendah" },
+    { "kode": "4.2", "nama": "Overkapasitas dan Kelayakan Hidup", "kategori": "Isu Manajemen, HAM, dan Krisis", "jumlah": 1, "negatif": 1, "urgensi": "Rendah" },
+    { "kode": "8.4", "nama": "Kegiatan Seremonial dan Kelembagaan", "kategori": "Narasi Positif dan Kehumasan", "jumlah": 1, "negatif": 0, "urgensi": "Rendah" },
+    { "kode": "3.1", "nama": "Pungli dan Pemerasan oleh Petugas", "kategori": "Pelanggaran Integritas Petugas", "jumlah": 1, "negatif": 1, "urgensi": "Sedang" }
+  ],
+  "per_platform": [ { "platform": "YouTube", "jumlah": 11 }, { "platform": "Google News", "jumlah": 6 } ],
+  "upt_tersorot": [
+    { "nama": "Lapas Kelas IIB Warung Kiara", "provinsi": "Jawa Barat", "kanwil": "Kantor Wilayah Ditjenpas Jawa Barat", "publikasi": 4, "negatif": 4, "media": 2, "urgensi": "Tinggi", "isu": ["Pelarian WBP"], "sorotan": "Narapidana Lapas Warungkiara Sukabumi Kabur Jelang Bebas, Asimilasi Berujung Buron" },
+    { "nama": "Rutan Kelas IIB Tarutung", "provinsi": "Sumatera Utara", "kanwil": "Kantor Wilayah Ditjenpas Sumatera Utara", "publikasi": 1, "negatif": 1, "media": 1, "urgensi": "Rendah", "isu": ["Overkapasitas dan Kelayakan Hidup"], "sorotan": "Petugas Rutan Tarutung Berhasil Gagalkan Penyelundupan Narkoba di Dalam Lauk Nasi Bungkus" }
+  ],
+  "prioritas": [],
+  "positif": [
+    { "subkategori": "Operasional dan Pengamanan Rutin", "jumlah": 2, "contoh": "Deteksi Dini Penyalahgunaan Narkoba, Lapas Bandanaira Tes Urine Acak Petugas dan Warga Binaan", "upt": ["Lapas Kelas III Bandanaira", "Rutan Kelas I Surabaya"] },
+    { "subkategori": "Penyelundupan Modus Baru", "jumlah": 1, "contoh": "Penyelundupan Narkoba ke Lapas Banyuwangi Digagalkan, Pengunjung Wanita Diamankan", "upt": ["Lapas Kelas IIA Banyuwangi"] },
+    { "subkategori": "Kegiatan Seremonial dan Kelembagaan", "jumlah": 1, "contoh": "Semarak Kemerdekaan, Lapas Narkotika Bandar Lampung Bagikan Hadiah Perlombaan", "upt": ["Lapas Narkotika Kelas IIA Bandar Lampung"] }
+  ],
+  "per_provinsi": [],
+  "dibuat_pada": "2026-08-22T13:27:25.269102+00:00"
+}

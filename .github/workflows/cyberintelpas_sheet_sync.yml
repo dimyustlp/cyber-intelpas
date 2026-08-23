@@ -1,0 +1,97 @@
+name: Sinkronisasi Spreadsheet CyberIntelPAS
+
+# Jadwal per jam sengaja dimatikan.
+#
+# Sejak 12 Agustus 2026, penarikan data dijalankan oleh pg_cron di dalam
+# Supabase setiap lima menit, memanggil Edge Function yang sama persis. Alur
+# GitHub ini menjadi salinan kedua dari pekerjaan yang sudah berjalan: tidak
+# menambah satu baris berita pun, tetapi menambah satu tempat lagi yang tokennya
+# harus dijaga tetap sama — dan satu surel kegagalan setiap jam ketika token itu
+# tidak lagi cocok.
+#
+# Alur ini dipertahankan sebagai tombol darurat manual. Untuk menjalankannya:
+# buka tab Actions di repositori, pilih alur ini, lalu tekan "Run workflow".
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Periksa kelengkapan GitHub Secrets
+        shell: bash
+        env:
+          FUNCTION_URL: ${{ secrets.SHEET_SYNC_FUNCTION_URL }}
+          SYNC_TOKEN: ${{ secrets.SHEET_SYNC_TOKEN }}
+        run: |
+          kurang=0
+          if [ -z "$FUNCTION_URL" ]; then
+            echo "::error::SHEET_SYNC_FUNCTION_URL belum diisi di Settings → Secrets and variables → Actions."
+            kurang=1
+          fi
+          if [ -z "$SYNC_TOKEN" ]; then
+            echo "::error::SHEET_SYNC_TOKEN belum diisi di Settings → Secrets and variables → Actions."
+            kurang=1
+          fi
+          [ "$kurang" -eq 0 ] || exit 1
+          echo "Kedua secret tersedia."
+
+      - name: Jalankan sinkronisasi
+        shell: bash
+        env:
+          FUNCTION_URL: ${{ secrets.SHEET_SYNC_FUNCTION_URL }}
+          SYNC_TOKEN: ${{ secrets.SHEET_SYNC_TOKEN }}
+        run: |
+          set +e
+
+          RESPONSE=$(curl --silent --show-error \
+            --connect-timeout 30 \
+            --max-time 300 \
+            --write-out $'\n%{http_code}' \
+            --request POST \
+            "$FUNCTION_URL" \
+            --header "x-sync-token: $SYNC_TOKEN" \
+            --header "Content-Type: application/json" \
+            --data '{"trigger_type":"github_actions"}')
+
+          CURL_EXIT=$?
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n 1)
+          BODY=$(echo "$RESPONSE" | sed '$d')
+
+          echo "======================================"
+          echo "HTTP status: $HTTP_CODE"
+          echo "Respons Edge Function:"
+          echo "$BODY"
+          echo "======================================"
+
+          if [ "$CURL_EXIT" -ne 0 ]; then
+            echo "::error::Curl gagal dengan exit code $CURL_EXIT. Edge Function tidak dapat dihubungi."
+            exit 1
+          fi
+
+          # 401 hampir selalu berarti nilai SHEET_SYNC_TOKEN di GitHub berbeda
+          # dengan nilai yang dipasang sebagai secret Edge Function di Supabase.
+          if [ "$HTTP_CODE" = "401" ]; then
+            echo "::error::Token sinkronisasi ditolak. Samakan nilai SHEET_SYNC_TOKEN di GitHub dengan secret Edge Function di Supabase."
+            exit 1
+          fi
+
+          # 207 berarti sebagian baris dilewati — biasanya karena tautan berita
+          # sudah pernah tersimpan. Itu perilaku normal, bukan kegagalan.
+          if [ "$HTTP_CODE" = "207" ]; then
+            echo "::warning::Sebagian baris dilewati. Periksa tabel sheet_sync_log untuk rinciannya."
+            exit 0
+          fi
+
+          if [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 300 ]; then
+            echo "Sinkronisasi selesai."
+            exit 0
+          fi
+
+          echo "::error::Edge Function mengembalikan HTTP $HTTP_CODE."
+          exit 1

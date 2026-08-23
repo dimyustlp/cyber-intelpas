@@ -1,0 +1,11 @@
+{
+  "name": "cyber-intelpas",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Sistem Manajemen Intelijen Pemberitaan Pemasyarakatan",
+  "scripts": {
+    "uji": "node tools/uji-mesin.mjs",
+    "sajikan": "node tools/server-lokal.mjs"
+  }
+}

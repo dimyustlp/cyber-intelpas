@@ -24,6 +24,7 @@ import { halamanLaporan } from './pages/laporan.js'
 import { halamanIntegrasi } from './pages/integrasi.js'
 import { halamanDistribusi } from './pages/distribusi.js'
 import { halamanTelaah } from './pages/telaah.js'
+import { halamanPemetaan } from './pages/pemetaan.js'
 import { halamanBelumSiap } from './pages/belum-siap.js'
 
 const akar = document.getElementById('akar')
@@ -49,6 +50,7 @@ const HALAMAN = {
   integrasi: halamanIntegrasi,
   distribusi: halamanDistribusi,
   telaah: halamanTelaah,
+  pemetaan: halamanPemetaan,
 }
 
 /* ------------------------------------------------------------------- tema */

@@ -2578,3 +2578,64 @@ kbd {
 @supports not (width: 1cqw) {
   .koridor-panggung { display: none; }
 }
+
+/* ------------------------------------------------------ 14. Pemetaan UPT */
+
+.kandidat-daftar { display: flex; flex-direction: column; gap: 7px; }
+
+.kandidat-baris {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-2);
+  background: var(--surface-2);
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  transition: border-color var(--cepat), background var(--cepat);
+}
+@media (hover: hover) {
+  .kandidat-baris:hover { border-color: var(--accent-tepi); background: var(--accent-soft); }
+}
+
+.kandidat-skor {
+  flex: none;
+  min-width: 42px;
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 6px;
+  border-radius: var(--r-1);
+  background: var(--sedang-bg);
+  color: var(--sedang);
+  border: 1px solid var(--sedang-tepi);
+}
+.kandidat-skor[data-kuat="true"] {
+  background: var(--positif-bg);
+  color: var(--positif);
+  border-color: var(--positif-tepi);
+}
+
+.kandidat-teks { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 1px; }
+.kandidat-nama { font-size: 13px; font-weight: 600; }
+.kandidat-ket {
+  font-size: 11.5px;
+  color: var(--ink-4);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.kandidat-panah { flex: none; color: var(--ink-4); opacity: 0; transition: opacity var(--cepat); }
+.kandidat-panah svg { width: 14px; height: 14px; }
+@media (hover: hover) {
+  .kandidat-baris:hover .kandidat-panah { opacity: 1; }
+}
+@media (hover: none) {
+  .kandidat-panah { opacity: 0.6; }
+}

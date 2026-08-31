@@ -12,7 +12,7 @@
  * Halaman ini menjalankan ulang mesin yang sama persis, di peramban, atas
  * berita yang belum terpetakan — lalu menampilkan kandidatnya sebagai tombol.
  * Satu tekan menuliskan keputusannya. Tidak ada kandidat yang cocok pun bukan
- * jalan buntu: ada pencarian bebas ke seluruh 492 unit.
+ * jalan buntu: ada pencarian bebas ke seluruh unit pada data induk.
  */
 
 import { kartu, tombol, keping, kosong, pesanSistem, roti } from '../ui/komponen.js'

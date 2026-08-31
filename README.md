@@ -54,13 +54,19 @@ web/                     aplikasi peramban, disajikan apa adanya
                            sinkronisasi.js  keadaan tiap sumber spreadsheet
     main.js              sesi, kerangka layar, penunjuk halaman
 
+data/
+  master-upt.csv         data induk 531 UPT — dibaca seluruh alat uji
+  sumber/
+    daftar-upt-nasional.csv  daftar 613 baris UPT nasional, sumber master di atas
+
 supabase/
-  migrations/            6 berkas migrasi, sudah diuji di PostgreSQL 16
+  migrations/            berkas migrasi, sudah diuji di PostgreSQL 16
   functions/             Edge Function (klasifikasi, sheet-sync, telegram-kirim,
                            kelola-pengguna — penerbitan akun berjenjang)
 
 tools/
   server-lokal.mjs       peladen statis untuk pengembangan
+  susun-master-upt.mjs   menyusun data/master-upt.csv + migrasi dari daftar nasional
   uji-mesin.mjs          uji perilaku mesin dan pencocokan UPT
   uji-hitung.mjs         uji ember sentimen dan penjumlahan angka dasbor
   uji-peristiwa.mjs      uji pengelompokan publikasi menjadi peristiwa
@@ -68,6 +74,30 @@ tools/
   ringkas-fungsi.mjs     menyalin web/js/lib ke Edge Function dalam bentuk ringkas
   potret.mjs             memotret halaman pada lebar layar yang benar-benar diminta
 ```
+
+## Data induk UPT
+
+Sistem memantau **531 unit**: 337 Lapas, 162 Rutan, 32 LPKA. Bapas dan Rumah
+Sakit Pengayoman sengaja tidak ikut — keduanya di luar lingkup pemberitaan
+hunian yang dihitung dasbor.
+
+Angka itu tidak ditulis tangan di halaman mana pun. Halaman yang punya sesi
+menghitungnya dari tabelnya sendiri; halaman masuk dan kartu fitur yang belum
+siap memakai satu tetapan, `INDUK_UPT` di `lib/konfig.js`.
+
+Bila daftar nasionalnya berubah, perbarui `data/sumber/daftar-upt-nasional.csv`
+lalu jalankan:
+
+```bash
+node tools/susun-master-upt.mjs
+```
+
+Alat itu menerbitkan ulang `data/master-upt.csv` beserta migrasi selisihnya, dan
+berhenti dengan galat bila ada unit tanpa koordinat, nama kembar, provinsi yang
+tidak sejalan dengan kanwilnya, atau unit lama yang kehilangan padanan.
+Keputusan yang tidak bisa disimpulkan mesin — 23 unit yang tertulis dengan nama
+berbeda di kedua daftar — ada di tabel `PADANAN` pada alat itu, satu per satu,
+dengan alasannya.
 
 ## Menjalankan di komputer sendiri
 
@@ -134,11 +164,12 @@ node tools/uji-mesin.mjs        # 14 uji perilaku + 9 uji pencocokan UPT
 node tools/periksa-lainnya.mjs  # 62 kasus nyata dari arsip
 ```
 
-`uji-mesin.mjs` membutuhkan salinan CSV induk UPT. Bila tidak ada di jalur
-bawaannya, sebutkan sendiri:
+Uji pencocokan UPT membaca data induk dari `data/master-upt.csv`. Berkas itu
+dihasilkan `tools/susun-master-upt.mjs`; bila hilang, jalankan alat itu lebih
+dulu. Untuk menguji terhadap data induk lain:
 
 ```bash
-JALUR_UPT=./sumber-lama/cyberintelpas-main/data/master_upt_coordinates.csv node tools/uji-mesin.mjs
+JALUR_UPT=./berkas-lain.csv node tools/uji-mesin.mjs
 ```
 
 Bagian liputan arsip dilewati bila dump beritanya tidak tersedia; uji perilaku

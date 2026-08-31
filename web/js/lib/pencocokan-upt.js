@@ -42,6 +42,13 @@ const KATA_UMUM = new Set([
 /** Penanda jenis UPT di dalam teks berita, dipetakan ke jenis kanonis. */
 const PENANDA_JENIS = [
   ['lembaga pembinaan khusus anak', 'LPKA'],
+  // Nama lama LPKA, dan satu-satunya nama yang masih dipakai sebagian besar
+  // media. "LPKA Kelas I Kutoarjo" hampir selalu ditulis "Lapas Anak Kutoarjo"
+  // — kedua bentuk itu menunjuk gedung yang sama, dan hanya bentuk pertama yang
+  // pernah dikenali. Penanda ini tidak menutup penanda "lapas" pada posisi yang
+  // sama; lihat ambilJendela().
+  ['lembaga pemasyarakatan anak', 'LPKA'],
+  ['lapas anak', 'LPKA'],
   // Data induk menamai lapas perempuan sebagai jenis "Lapas" dengan subjenis
   // "Perempuan", bukan jenis tersendiri. Penanda ini mengikuti data induk.
   ['lembaga pemasyarakatan perempuan', 'Lapas'],
@@ -92,9 +99,26 @@ export const SEBUTAN_POPULER = [
   ['kalisosok', 'Rutan Kelas I Surabaya'],
   ['porong', 'Lapas Kelas I Surabaya'],
   ['cebongan', 'Lapas Kelas IIB Sleman'],
+  // Nama lama yang masih dipakai daftar resmi Ditjenpas sendiri, dan karena itu
+  // ikut dipakai media daerah. Dipasang pada Lapas maupun Rutan: keduanya
+  // dibedakan oleh penanda jenis pada teks, bukan oleh alias ini.
+  ['ujung pandang', 'Lapas Kelas I Makassar'],
+  ['ujung pandang', 'Rutan Kelas I Makassar'],
+  // Tanjung Pati adalah nama tempat gedungnya, di Kabupaten Lima Puluh Kota,
+  // sementara unitnya bernama Payakumbuh. Kedua nama itu dipakai bergantian
+  // dalam berita yang sama.
+  ['tanjung pati', 'Lapas Kelas IIB Payakumbuh'],
   ['nusakambangan', null],
   ['pekanbaru', null],
 ]
+
+/**
+ * Dua jenis yang boleh saling menggantikan ketika nama tempatnya tunggal.
+ * Sengaja hanya berisi Lapas dan Rutan: keduanya sama-sama tempat penahanan
+ * dan dipertukarkan bebas dalam bahasa pemberitaan. Bapas dan LPKA tidak ikut,
+ * karena keduanya lembaga dengan tugas yang sama sekali berbeda.
+ */
+const LINTAS_JENIS = new Set(['Lapas', 'Rutan'])
 
 /** Panjang jendela teks setelah penanda jenis yang ikut diperiksa. */
 const JENDELA = 70
@@ -177,13 +201,38 @@ function tokenPembeda(nama) {
 export function bangunIndeks(daftarUpt) {
   const entri = []
   const hitungNama = new Map()
+  // Hitungan kedua, tanpa memandang jenis. Dipakai untuk memutuskan apakah
+  // sebuah nama tempat menunjuk satu unit saja di seluruh Indonesia.
+  const hitungLintasJenis = new Map()
+  const hitungKabkota = new Map()
+
+  let dariWilayah = 0
 
   for (const upt of daftarUpt) {
     const nama = upt.nama_upt
     if (!nama) continue
 
-    const token = tokenPembeda(nama)
-    if (!token.length) continue
+    let token = tokenPembeda(nama)
+
+    // Unit yang seluruh namanya kata umum.
+    //
+    // Satu unit di Indonesia bernama "Rutan Kelas IIB Negara" — Negara adalah
+    // ibu kota Kabupaten Jembrana. Kata "negara" ada di daftar kata umum karena
+    // ia bagian dari "rumah tahanan negara", sehingga unit ini tidak punya satu
+    // pun token pembeda dan selama ini dibuang diam-diam dari indeks: satu dari
+    // 531 unit yang tidak pernah bisa dikenali, tanpa jejak apa pun.
+    //
+    // Namanya tidak bisa dipakai — token "negara" akan cocok dengan frasa
+    // "rumah tahanan negara" pada hampir setiap berita rutan di Indonesia, dan
+    // memetakan semuanya ke Jembrana. Yang dipakai adalah nama kabupatennya,
+    // yang justru memang ditulis wartawan: "Rutan Jembrana".
+    if (!token.length) {
+      token = normalkanUpt(upt.kabupaten_kota || upt.location_hint || '')
+        .split(' ')
+        .filter((t) => t.length > 1 && !KATA_UMUM.has(t))
+      if (!token.length) continue
+      dariWilayah += 1
+    }
 
     const jenis = upt.jenis_upt || tebakJenis(nama)
     const kunci = token.join(' ')
@@ -194,8 +243,26 @@ export function bangunIndeks(daftarUpt) {
     const kunciJenis = `${jenis}::${kunci}`
     hitungNama.set(kunciJenis, (hitungNama.get(kunciJenis) || 0) + 1)
 
+    // Hitungan lintas jenis hanya mencakup Lapas dan Rutan.
+    //
+    // Angka ini dipakai satu-satunya untuk memutuskan apakah kelonggaran
+    // Lapas↔Rutan boleh dipakai, dan pertanyaannya selalu sama: apakah nama
+    // tempat ini menunjuk lebih dari satu tempat penahanan. LPKA dan Bapas
+    // bukan tempat penahanan dan tidak pernah menjadi calon dalam kelonggaran
+    // itu, sehingga kehadiran mereka tidak boleh menutupnya.
+    //
+    // Bukan soal teori: menambahkan 32 LPKA ke data induk mencabut keunikan
+    // lima unit Lapas/Rutan sekaligus — di antaranya Karangasem dan Tomohon —
+    // hanya karena sebuah LPKA berdiri di kota yang sama. Berita "kabur dari
+    // Lapas Karangasem" tentang Rutan Karangasem akan berhenti terpetakan,
+    // padahal tidak ada satu pun yang berubah pada unit itu.
+    if (LINTAS_JENIS.has(jenis)) {
+      hitungLintasJenis.set(kunci, (hitungLintasJenis.get(kunci) || 0) + 1)
+    }
+
     const petunjuk = normalkanUpt(upt.location_hint || '')
     const kabkota = normalkanUpt(upt.kabupaten_kota || '').replace(/^(kota|kabupaten) /, '')
+    if (kabkota) hitungKabkota.set(kabkota, (hitungKabkota.get(kabkota) || 0) + 1)
 
     entri.push({
       nama,
@@ -218,7 +285,13 @@ export function bangunIndeks(daftarUpt) {
     })
   }
 
-  for (const e of entri) e.bersaing = (hitungNama.get(e.kunciJenis) || 0) > 1
+  for (const e of entri) {
+    e.bersaing = (hitungNama.get(e.kunciJenis) || 0) > 1
+    // Nama tempatnya hanya dipakai satu tempat penahanan di seluruh Indonesia,
+    // sehingga penyebutan jenis yang keliru pun masih menunjuk unit yang sama.
+    e.unikNasional = LINTAS_JENIS.has(e.jenis) && (hitungLintasJenis.get(e.kunci) || 0) === 1
+    e.kabkotaUnik = Boolean(e.kabkota) && (hitungKabkota.get(e.kabkota) || 0) === 1
+  }
 
   // Pasang sebutan populer, dan buang yang namanya tidak ada di data induk
   // supaya tabel alias tidak diam-diam menjadi usang.
@@ -240,6 +313,12 @@ export function bangunIndeks(daftarUpt) {
   return {
     entri,
     jumlah: entri.length,
+    // Berapa unit dari daftar induk yang tidak masuk indeks sama sekali. Angka
+    // ini dilaporkan supaya sebuah unit yang hilang punya tempat untuk terlihat,
+    // bukan menguap tanpa jejak seperti Rutan Negara selama ini.
+    jumlahMasukan: daftarUpt.length,
+    tidakTerindeks: daftarUpt.length - entri.length,
+    dariWilayah,
     sebutanTerpasang,
     sebutanTakDikenal,
     jumlahBersaing: entri.filter((e) => e.bersaing).length,
@@ -260,9 +339,23 @@ function tebakJenis(nama) {
  */
 export function ambilJendela(teksNormal) {
   const hasil = []
-  const terpakai = []
+  // Penanda yang sudah terpakai, dikelompokkan MENURUT JENIS.
+  //
+  // Penutupan ini ada supaya "rumah tahanan negara" tidak sekaligus
+  // menghasilkan jendela "rumah tahanan" dan "rutan" — tiga jendela untuk satu
+  // penyebutan. Seluruh penutupan semacam itu terjadi di dalam satu jenis.
+  //
+  // Antar-jenis justru sebaliknya: "Lapas Anak Kutoarjo" harus menghasilkan
+  // jendela LPKA sekaligus jendela Lapas. Penutupan menyeluruh membuat kalimat
+  // seperti "Di lapas, anak binaan mengikuti kelas" kehilangan jendela Lapas-nya
+  // hanya karena dua kata itu kebetulan bersebelahan, dan berita tentang sebuah
+  // Lapas biasa berakhir tidak terpetakan. Yang menang tetap ditentukan skor
+  // pada tahap berikutnya, bukan oleh urutan tabel penanda.
+  const terpakai = new Map()
 
   for (const [penanda, jenis] of PENANDA_JENIS) {
+    if (!terpakai.has(jenis)) terpakai.set(jenis, [])
+    const rentang = terpakai.get(jenis)
     let dari = 0
     for (;;) {
       const posisi = teksNormal.indexOf(penanda, dari)
@@ -273,9 +366,9 @@ export function ambilJendela(teksNormal) {
       const sebelum = posisi === 0 ? ' ' : teksNormal[posisi - 1]
       if (/[a-z0-9]/.test(sebelum)) continue
 
-      // Lewati bila jendela ini sudah tercakup penanda yang lebih panjang.
-      if (terpakai.some(([a, b]) => posisi >= a && posisi < b)) continue
-      terpakai.push([posisi, posisi + penanda.length])
+      // Lewati bila jendela ini sudah tercakup penanda sejenis yang lebih panjang.
+      if (rentang.some(([a, b]) => posisi >= a && posisi < b)) continue
+      rentang.push([posisi, posisi + penanda.length])
 
       // Jendela sengaja mencakup penanda jenisnya sendiri. Tanpa itu, kata
       // "perempuan" pada "Lembaga Pemasyarakatan Perempuan Kelas IIA Jakarta"
@@ -335,8 +428,33 @@ export function cocokkanUpt(teks, indeks, opsi = {}) {
 
   for (const w of jendela) {
     for (const entri of indeks.entri) {
-      // Jenis pada teks harus sejalan dengan jenis kandidat.
-      if (entri.jenis !== w.jenis) continue
+      // Jenis pada teks harus sejalan dengan jenis kandidat — kecuali pada satu
+      // keadaan yang sudah terbukti mahal bila diabaikan.
+      //
+      // Wartawan memakai kata "Lapas" untuk segala tempat penahanan. Berita
+      // penangkapan buronan Rutan Sukadana ditulis "kabur dari Lapas Sukadana"
+      // oleh hampir seluruh media nasional, dan aturan jenis yang kaku membuang
+      // semuanya — peristiwa paling penting bulan itu tidak pernah sampai ke
+      // unit yang bersangkutan.
+      //
+      // Kelonggaran ini dibatasi tiga syarat sekaligus, supaya tidak berubah
+      // menjadi sumber salah cocok:
+      //   1. hanya antara Lapas dan Rutan, dua jenis yang memang dipertukarkan
+      //      dalam bahasa sehari-hari. Bapas dan LPKA adalah lembaga dengan
+      //      tugas berbeda — "Bapas Balikpapan" tidak boleh menjadi "Lapas
+      //      Balikpapan" hanya karena nama kotanya sama;
+      //   2. nama tempatnya hanya dipakai satu unit di seluruh Indonesia. Untuk
+      //      Kota Agung, yang punya Lapas sekaligus Rutan, syarat ini gagal dan
+      //      penyebutannya tetap diserahkan ke analis;
+      //   3. skornya ditekan di bawah pencocokan sejenis, sehingga kandidat
+      //      yang jenisnya benar selalu menang bila keduanya muncul.
+      const jenisSama = entri.jenis === w.jenis
+      const lintasJenisDiizinkan =
+        !jenisSama &&
+        entri.unikNasional &&
+        LINTAS_JENIS.has(entri.jenis) &&
+        LINTAS_JENIS.has(w.jenis)
+      if (!jenisSama && !lintasJenisDiizinkan) continue
 
       // Sebutan populer diperiksa lebih dulu; bila wartawan menulis "Rutan
       // Salemba", itu penunjukan yang jauh lebih tegas daripada tebakan token.
@@ -366,9 +484,20 @@ export function cocokkanUpt(teks, indeks, opsi = {}) {
         const jarak = posisiTerawal(w.jendela, entri.token)
         const kedekatan = Math.max(0, 1 - jarak / JENDELA)
         const kekhususan = Math.min(1, (entri.token.length - 1) / 2)
-        catat(entri, Math.min(0.99, 0.76 + 0.14 * kedekatan + 0.09 * kekhususan), 'nama-lengkap')
+        const penuh = Math.min(0.99, 0.76 + 0.14 * kedekatan + 0.09 * kekhususan)
+        if (jenisSama) {
+          catat(entri, penuh, 'nama-lengkap')
+        } else {
+          // Cukup untuk diterima otomatis, tetapi selalu kalah oleh kandidat
+          // yang jenisnya memang cocok.
+          catat(entri, Math.min(0.82, penuh - 0.1), 'nama-lintas-jenis')
+        }
         continue
       }
+
+      // Pencocokan sebagian sudah lemah dengan sendirinya; menambah ketidak-
+      // cocokan jenis di atasnya menghasilkan tebakan, bukan penunjukan.
+      if (!jenisSama) continue
 
       // Sebagian token cocok — misalnya teks menulis "Lapas Banceuy" untuk
       // "Lapas Kelas IIA Banceuy Bandung".
@@ -382,6 +511,34 @@ export function cocokkanUpt(teks, indeks, opsi = {}) {
       if (entri.subjenis !== 'Umum' && cocokKata(w.jendela, normalkanUpt(entri.subjenis))) skor += 0.1
 
       catat(entri, Math.min(0.9, skor), 'nama-sebagian')
+    }
+  }
+
+  // Penyebutan lewat nama kabupaten/kota, bukan nama unitnya.
+  //
+  // "Napi kabur dari Rutan Lampung Timur" tidak memuat kata "Sukadana" sama
+  // sekali, padahal Rutan Kelas IIB Sukadana adalah satu-satunya rutan di
+  // kabupaten itu. Lapisan ini hanya dijalankan ketika tidak ada satu pun
+  // kandidat dari nama unit, dan hanya menerima kabupaten/kota yang menaungi
+  // tepat satu UPT — nama provinsi sengaja tidak dipakai, sebab "Lapas Lampung"
+  // bisa berarti belasan unit dan menebak salah satunya lebih buruk daripada
+  // mengaku tidak tahu.
+  //
+  // Syaratnya bukan "belum ada kandidat sama sekali", melainkan "belum ada
+  // kandidat yang cukup kuat". Judul yang menyebut Rutan Lampung Timur selalu
+  // lebih dulu menghasilkan kandidat lemah dari kata "Lampung" pada nama unit
+  // lain; bila kehadiran kandidat lemah itu menutup lapisan ini, wilayahnya
+  // tidak pernah sempat diperiksa dan beritanya tetap tidak terpetakan.
+  const adaYangKuat = [...nilai.values()].some((v) => v.skor >= AMBANG_OTOMATIS)
+  if (!adaYangKuat) {
+    for (const w of jendela) {
+      for (const entri of indeks.entri) {
+        if (entri.jenis !== w.jenis) continue
+        if (!entri.kabkotaUnik) continue
+        if (entri.token.some((t) => cocokKata(w.jendela, t))) continue
+        if (!cocokKata(w.jendela, entri.kabkota)) continue
+        catat(entri, 0.78, 'wilayah-kabkota')
+      }
     }
   }
 
@@ -543,6 +700,14 @@ function kosong(alasan) {
 }
 
 function susunAlasan(juara, bersaing, otomatis) {
+  if (otomatis && juara.metode === 'nama-lintas-jenis') {
+    return `${juara.entri.nama} dikenali dari nama tempatnya. Teks menyebut jenis unit yang `
+      + `berbeda, tetapi nama itu hanya dipakai satu unit di seluruh Indonesia.`
+  }
+  if (otomatis && juara.metode === 'wilayah-kabkota') {
+    return `${juara.entri.nama} dikenali dari nama kabupaten/kota yang disebut; `
+      + `unit ini satu-satunya di wilayah tersebut.`
+  }
   if (otomatis) {
     return `${juara.entri.nama} dikenali dari teks dengan keyakinan ${Math.round(juara.skor * 100)} persen.`
   }
@@ -561,4 +726,4 @@ export function belumTerpetakan(nama) {
   return NILAI_TAK_TERPETAKAN.has(String(nama ?? '').trim().toLowerCase())
 }
 
-export const META_PENCOCOK = { versi: 'kedekatan-v2.0', ambangOtomatis: AMBANG_OTOMATIS, ambangSaran: AMBANG_SARAN }
+export const META_PENCOCOK = { versi: 'kedekatan-v2.1', ambangOtomatis: AMBANG_OTOMATIS, ambangSaran: AMBANG_SARAN }

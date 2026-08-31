@@ -36,4 +36,26 @@ export const KONFIG = {
   ambangKeyakinan: 0.75,
 }
 
+/**
+ * Ukuran data induk UPT, untuk halaman yang harus menyebut angkanya sebelum ada
+ * sesi — halaman masuk dan kartu fitur yang belum siap.
+ *
+ * Angka ini pernah ditulis lima kali di lima berkas berbeda, dan kelimanya
+ * menyebut 492 karena memang itulah isi tabelnya. Ketika daftar Ditjenpas
+ * dibandingkan ulang pada 1 September 2026, tabelnya ternyata kehilangan 39
+ * unit — seluruh LPKA di Indonesia di antaranya — dan lima kalimat di layar
+ * ikut salah tanpa ada satu pun yang berubah warna. Sekarang angkanya satu,
+ * dan berasal dari satu tempat.
+ *
+ * Sumber kebenarannya adalah data/master-upt.csv, yang disusun
+ * tools/susun-master-upt.mjs dari daftar UPT nasional. Halaman yang sudah punya
+ * sesi TIDAK memakai angka ini — mereka menghitung dari tabelnya sendiri.
+ */
+export const INDUK_UPT = {
+  jumlah: 531,
+  kanwil: 38,
+  /** Unit yang koordinatnya masih titik wilayah, bukan alamat gedung. */
+  belumTerverifikasi: 530,
+}
+
 export const ADA_DEMO = KONFIG.mode === 'demo'

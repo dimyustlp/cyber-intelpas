@@ -10,12 +10,13 @@
 import { kartu, tombol } from '../ui/komponen.js'
 import { amankan } from '../lib/format.js'
 import { ikon } from '../lib/ikon.js'
+import { INDUK_UPT } from '../lib/konfig.js'
 
 const RENCANA = {
   peta: {
     judul: 'Peta Sebaran',
-    isi: 'Peta 492 unit dengan penanda berwarna menurut tingkat kerawanan, dapat disaring per kantor wilayah.',
-    tunggu: 'Menunggu verifikasi koordinat: 491 dari 492 unit masih memakai titik pusat kota atau provinsi, sehingga penanda akan meleset dari lokasi gedung yang sebenarnya.',
+    isi: `Peta ${INDUK_UPT.jumlah} unit dengan penanda berwarna menurut tingkat kerawanan, dapat disaring per kantor wilayah.`,
+    tunggu: `Menunggu verifikasi koordinat: ${INDUK_UPT.belumTerverifikasi} dari ${INDUK_UPT.jumlah} unit masih memakai titik pusat kota atau provinsi, sehingga penanda akan meleset dari lokasi gedung yang sebenarnya.`,
   },
   tren: {
     judul: 'Tren Pemberitaan',
@@ -59,7 +60,7 @@ const RENCANA = {
   },
   koordinat: {
     judul: 'Koordinat UPT',
-    isi: 'Alat verifikasi titik koordinat 492 unit, satu per satu, dengan pratinjau peta.',
+    isi: `Alat verifikasi titik koordinat ${INDUK_UPT.jumlah} unit, satu per satu, dengan pratinjau peta.`,
     tunggu: 'Siap dibangun kapan saja.',
   },
   audit: {

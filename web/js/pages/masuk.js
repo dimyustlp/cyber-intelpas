@@ -7,7 +7,7 @@
  * oleh administrator.
  */
 
-import { KONFIG } from '../lib/konfig.js'
+import { KONFIG, INDUK_UPT } from '../lib/konfig.js'
 import { masuk, pesanRamah } from '../lib/api.js'
 import { amankan } from '../lib/format.js'
 import { ikon } from '../lib/ikon.js'
@@ -49,8 +49,8 @@ export function halamanMasuk({ onMasuk }) {
         </div>
 
         <dl class="masuk-statistik">
-          <div><dt>UPT terpantau</dt><dd>492</dd></div>
-          <div><dt>Kantor wilayah</dt><dd>38</dd></div>
+          <div><dt>UPT terpantau</dt><dd>${INDUK_UPT.jumlah}</dd></div>
+          <div><dt>Kantor wilayah</dt><dd>${INDUK_UPT.kanwil}</dd></div>
           <div><dt>Pemeriksaan sumber</dt><dd>5 menit</dd></div>
         </dl>
       </div>

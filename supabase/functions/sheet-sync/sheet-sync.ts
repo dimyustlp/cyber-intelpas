@@ -723,7 +723,7 @@ async function kerjakanSumber(
           sync_status: "synced",
           sync_error: "",
           content_hash: contentHash,
-          // Nama unit yang tidak dikenali master 492 UPT tidak pernah ditulis apa
+          // Nama unit yang tidak dikenali data induk UPT tidak pernah ditulis apa
           // adanya ke kolom ini. Nama yang salah ketik akan tampak "sudah
           // terpetakan" di layar dan tidak pernah masuk antrean Pemetaan UPT.
           nama_upt: matchedUpt || DEFAULT_UNMAPPED_UPT,
@@ -751,7 +751,7 @@ async function kerjakanSumber(
           catatan: matchedUpt
             ? ""
             : (uptTertulis
-              ? `Pengirim menuliskan unit "${uptTertulis}", dan nama itu tidak ada pada master 492 UPT. Perlu dipetakan analis.`
+              ? `Pengirim menuliskan unit "${uptTertulis}", dan nama itu tidak ada pada data induk ${konteks.uptNames.length} UPT. Perlu dipetakan analis.`
               : "Nama UPT belum dikenali otomatis dan perlu dipetakan oleh analis."),
           status_verifikasi: "Belum Ditelaah",
           ai_provider: "spreadsheet_public_csv",

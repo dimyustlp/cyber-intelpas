@@ -4,7 +4,7 @@
  * Dijalankan dengan: node tools/uji-mesin.mjs
  *
  * Sumber data uji:
- *   - Master UPT  : salinan CSV 492 unit dari repositori lama
+ *   - Master UPT  : data/master-upt.csv — 531 unit hasil tools/susun-master-upt.mjs
  *   - Berita      : dump Spreadsheet crawler yang menjadi sumber tabel `berita`
  *
  * Keluaran: liputan sebelum dan sesudah, plus contoh hasil untuk diperiksa mata.
@@ -14,9 +14,13 @@ import { readFileSync, existsSync } from 'node:fs'
 import { klasifikasikan, META_MESIN } from '../web/js/lib/klasifikasi.js'
 import { bangunIndeks, cocokkanUpt, META_PENCOCOK } from '../web/js/lib/pencocokan-upt.js'
 
+// Bawaannya menunjuk salinan yang ikut disimpan di dalam repositori, sama
+// seperti tools/uji-lintas-jenis.mjs dan tools/uji-peristiwa.mjs. Berkas ini
+// sempat tertinggal memakai jalur mutlak mesin lama, dan akibatnya perintah
+// `node tools/uji-mesin.mjs` gagal di komputer siapa pun selain mesin itu.
 const JALUR_UPT = process.env.JALUR_UPT
-  || '/home/claude/sumber-lama/cyberintelpas-main/data/master_upt_coordinates.csv'
-const JALUR_BERITA = process.env.JALUR_BERITA || '/home/claude/data-uji/berita.json'
+  || './data/master-upt.csv'
+const JALUR_BERITA = process.env.JALUR_BERITA || './data-uji/berita.json'
 
 // ---------------------------------------------------------------- pembaca CSV
 

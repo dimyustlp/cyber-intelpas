@@ -6,6 +6,8 @@ const KATA_UMUM = new Set([
 ])
 const PENANDA_JENIS = [
 ['lembaga pembinaan khusus anak', 'LPKA'],
+['lembaga pemasyarakatan anak', 'LPKA'],
+['lapas anak', 'LPKA'],
 ['lembaga pemasyarakatan perempuan', 'Lapas'],
 ['lapas perempuan', 'Lapas'],
 ['lembaga pemasyarakatan', 'Lapas'],
@@ -38,9 +40,13 @@ export const SEBUTAN_POPULER = [
 ['kalisosok', 'Rutan Kelas I Surabaya'],
 ['porong', 'Lapas Kelas I Surabaya'],
 ['cebongan', 'Lapas Kelas IIB Sleman'],
+['ujung pandang', 'Lapas Kelas I Makassar'],
+['ujung pandang', 'Rutan Kelas I Makassar'],
+['tanjung pati', 'Lapas Kelas IIB Payakumbuh'],
 ['nusakambangan', null],
 ['pekanbaru', null],
 ]
+const LINTAS_JENIS = new Set(['Lapas', 'Rutan'])
 const JENDELA = 70
 const AMBANG_OTOMATIS = 0.72
 const AMBANG_SARAN = 0.45
@@ -94,17 +100,30 @@ return normalkanUpt(nama)
 export function bangunIndeks(daftarUpt) {
 const entri = []
 const hitungNama = new Map()
+const hitungLintasJenis = new Map()
+const hitungKabkota = new Map()
+let dariWilayah = 0
 for (const upt of daftarUpt) {
 const nama = upt.nama_upt
 if (!nama) continue
-const token = tokenPembeda(nama)
+let token = tokenPembeda(nama)
+if (!token.length) {
+token = normalkanUpt(upt.kabupaten_kota || upt.location_hint || '')
+.split(' ')
+.filter((t) => t.length > 1 && !KATA_UMUM.has(t))
 if (!token.length) continue
+dariWilayah += 1
+}
 const jenis = upt.jenis_upt || tebakJenis(nama)
 const kunci = token.join(' ')
 const kunciJenis = `${jenis}::${kunci}`
 hitungNama.set(kunciJenis, (hitungNama.get(kunciJenis) || 0) + 1)
+if (LINTAS_JENIS.has(jenis)) {
+hitungLintasJenis.set(kunci, (hitungLintasJenis.get(kunci) || 0) + 1)
+}
 const petunjuk = normalkanUpt(upt.location_hint || '')
 const kabkota = normalkanUpt(upt.kabupaten_kota || '').replace(/^(kota|kabupaten) /, '')
+if (kabkota) hitungKabkota.set(kabkota, (hitungKabkota.get(kabkota) || 0) + 1)
 entri.push({
 nama,
 jenis,
@@ -123,7 +142,11 @@ petunjuk: petunjuk && petunjuk !== kunci ? petunjuk : '',
 sebutan: [],
 })
 }
-for (const e of entri) e.bersaing = (hitungNama.get(e.kunciJenis) || 0) > 1
+for (const e of entri) {
+e.bersaing = (hitungNama.get(e.kunciJenis) || 0) > 1
+e.unikNasional = LINTAS_JENIS.has(e.jenis) && (hitungLintasJenis.get(e.kunci) || 0) === 1
+e.kabkotaUnik = Boolean(e.kabkota) && (hitungKabkota.get(e.kabkota) || 0) === 1
+}
 const perNama = new Map(entri.map((e) => [e.nama, e]))
 let sebutanTerpasang = 0
 const sebutanTakDikenal = []
@@ -138,6 +161,9 @@ entri.sort((a, b) => b.kunci.length - a.kunci.length)
 return {
 entri,
 jumlah: entri.length,
+jumlahMasukan: daftarUpt.length,
+tidakTerindeks: daftarUpt.length - entri.length,
+dariWilayah,
 sebutanTerpasang,
 sebutanTakDikenal,
 jumlahBersaing: entri.filter((e) => e.bersaing).length,
@@ -152,8 +178,10 @@ return 'Lapas'
 }
 export function ambilJendela(teksNormal) {
 const hasil = []
-const terpakai = []
+const terpakai = new Map()
 for (const [penanda, jenis] of PENANDA_JENIS) {
+if (!terpakai.has(jenis)) terpakai.set(jenis, [])
+const rentang = terpakai.get(jenis)
 let dari = 0
 for (;;) {
 const posisi = teksNormal.indexOf(penanda, dari)
@@ -161,8 +189,8 @@ if (posisi === -1) break
 dari = posisi + penanda.length
 const sebelum = posisi === 0 ? ' ' : teksNormal[posisi - 1]
 if (/[a-z0-9]/.test(sebelum)) continue
-if (terpakai.some(([a, b]) => posisi >= a && posisi < b)) continue
-terpakai.push([posisi, posisi + penanda.length])
+if (rentang.some(([a, b]) => posisi >= a && posisi < b)) continue
+rentang.push([posisi, posisi + penanda.length])
 const dekat = teksNormal.slice(posisi + penanda.length, posisi + penanda.length + JENDELA_LEMBAGA)
 if (PENANDA_BUKAN_PAS.some((l) => cocokKata(dekat, l))) continue
 hasil.push({
@@ -189,7 +217,13 @@ if (!lama || skor > lama.skor) nilai.set(entri.nama, { entri, skor, metode })
 }
 for (const w of jendela) {
 for (const entri of indeks.entri) {
-if (entri.jenis !== w.jenis) continue
+const jenisSama = entri.jenis === w.jenis
+const lintasJenisDiizinkan =
+!jenisSama &&
+entri.unikNasional &&
+LINTAS_JENIS.has(entri.jenis) &&
+LINTAS_JENIS.has(w.jenis)
+if (!jenisSama && !lintasJenisDiizinkan) continue
 const sebutanCocok = entri.sebutan.find((s) => cocokKata(w.jendela, s))
 if (sebutanCocok) {
 catat(entri, 0.94, 'sebutan-populer')
@@ -203,9 +237,15 @@ if (rasio === 1) {
 const jarak = posisiTerawal(w.jendela, entri.token)
 const kedekatan = Math.max(0, 1 - jarak / JENDELA)
 const kekhususan = Math.min(1, (entri.token.length - 1) / 2)
-catat(entri, Math.min(0.99, 0.76 + 0.14 * kedekatan + 0.09 * kekhususan), 'nama-lengkap')
+const penuh = Math.min(0.99, 0.76 + 0.14 * kedekatan + 0.09 * kekhususan)
+if (jenisSama) {
+catat(entri, penuh, 'nama-lengkap')
+} else {
+catat(entri, Math.min(0.82, penuh - 0.1), 'nama-lintas-jenis')
+}
 continue
 }
+if (!jenisSama) continue
 const tokenPanjangCocok = cocok.some((t) => t.length >= 5)
 if (rasio < 0.5 || !tokenPanjangCocok) continue
 let skor = 0.4 + 0.32 * rasio
@@ -214,6 +254,18 @@ if (entri.kabkota && cocokKata(teksNormal, entri.kabkota)) skor += 0.08
 if (entri.kelas && w.jendela.includes(`kelas ${entri.kelas}`)) skor += 0.1
 if (entri.subjenis !== 'Umum' && cocokKata(w.jendela, normalkanUpt(entri.subjenis))) skor += 0.1
 catat(entri, Math.min(0.9, skor), 'nama-sebagian')
+}
+}
+const adaYangKuat = [...nilai.values()].some((v) => v.skor >= AMBANG_OTOMATIS)
+if (!adaYangKuat) {
+for (const w of jendela) {
+for (const entri of indeks.entri) {
+if (entri.jenis !== w.jenis) continue
+if (!entri.kabkotaUnik) continue
+if (entri.token.some((t) => cocokKata(w.jendela, t))) continue
+if (!cocokKata(w.jendela, entri.kabkota)) continue
+catat(entri, 0.78, 'wilayah-kabkota')
+}
 }
 }
 if (!nilai.size) {
@@ -325,6 +377,14 @@ function kosong(alasan) {
 return { nama: null, skor: 0, metode: 'tidak-ada', otomatis: false, bersaing: false, alasan, saran: [] }
 }
 function susunAlasan(juara, bersaing, otomatis) {
+if (otomatis && juara.metode === 'nama-lintas-jenis') {
+return `${juara.entri.nama} dikenali dari nama tempatnya. Teks menyebut jenis unit yang `
++ `berbeda, tetapi nama itu hanya dipakai satu unit di seluruh Indonesia.`
+}
+if (otomatis && juara.metode === 'wilayah-kabkota') {
+return `${juara.entri.nama} dikenali dari nama kabupaten/kota yang disebut; `
++ `unit ini satu-satunya di wilayah tersebut.`
+}
 if (otomatis) {
 return `${juara.entri.nama} dikenali dari teks dengan keyakinan ${Math.round(juara.skor * 100)} persen.`
 }
@@ -339,4 +399,4 @@ export const NILAI_TAK_TERPETAKAN = new Set([
 export function belumTerpetakan(nama) {
 return NILAI_TAK_TERPETAKAN.has(String(nama ?? '').trim().toLowerCase())
 }
-export const META_PENCOCOK = { versi: 'kedekatan-v2.0', ambangOtomatis: AMBANG_OTOMATIS, ambangSaran: AMBANG_SARAN }
+export const META_PENCOCOK = { versi: 'kedekatan-v2.1', ambangOtomatis: AMBANG_OTOMATIS, ambangSaran: AMBANG_SARAN }

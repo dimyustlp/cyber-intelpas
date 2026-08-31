@@ -12,10 +12,12 @@ import { sumberAsli, kelompokkanPeristiwa, validasiBanyak, rekapMutu } from '../
 import { deretHarian, sebaran } from '../lib/demo.js'
 import {
   angka, persen, delta, tanggalPanjang, jarakWaktu, ringkas,
-  nadaUrgensi, amankan, tanggalIso,
+  nadaUrgensi, amankan,
 } from '../lib/format.js'
 import { ikon } from '../lib/ikon.js'
 import { belumTerpetakan } from '../lib/pencocokan-upt.js'
+import { ringkasan } from '../lib/hitung.js'
+import { EMBER, BELUM } from '../lib/sentimen.js'
 
 /**
  * Bilah kesehatan aliran data.
@@ -69,21 +71,25 @@ function bilahKesehatan(k) {
 }
 
 export function halamanDasbor({ keadaan, isi }) {
-  // Angka dasbor dihitung dari berita yang memang urusan Pemasyarakatan saja.
-  const berita = keadaan.dalamLingkup || keadaan.berita
-  const hariIni = tanggalIso(new Date())
-  const kemarin = tanggalIso(new Date(Date.now() - 86_400_000))
+  /*
+     Seluruh angka halaman ini berasal dari satu himpunan dasar yang sama,
+     dihitung sekali di lib/hitung.js. Sebelumnya tiap ubin menyaring sendiri
+     dari `keadaan.dalamLingkup`, dengan aturan yang diam-diam berbeda: ubin
+     memasukkan berita yang sudah dinyatakan tidak valid, lencana menu
+     membuangnya, dan kanal memakai definisi negatif yang lain lagi. Tidak ada
+     satu pun yang salah hitung — yang berbeda pertanyaannya, dan pembacanya
+     yang menanggung akibatnya.
+  */
+  const r = ringkasan(keadaan.berita || [])
+  const berita = r.inti
 
-  const jumlahHariIni = berita.filter((b) => tanggalIso(b.created_at) === hariIni).length
-  const jumlahKemarin = berita.filter((b) => tanggalIso(b.created_at) === kemarin).length
+  const jumlahHariIni = r.hariIni.length
+  const jumlahKemarin = r.kemarin.length
 
-  const mendesak = berita.filter(
-    (b) => ['Tinggi', 'Kritis'].includes(b.urgensi)
-      && !['Tidak Valid', 'Diarsipkan'].includes(b.status_verifikasi),
-  )
-  const negatif = berita.filter((b) => b.sentimen === 'Negatif')
-  const belumTelaah = berita.filter((b) => b.status_verifikasi === 'Belum Ditelaah')
-  const takTerpetakan = berita.filter((b) => belumTerpetakan(b.nama_upt))
+  const mendesak = r.mendesak
+  const negatif = r.negatif
+  const belumTelaah = r.antrean
+  const takTerpetakan = r.takTerpetakan
 
   if (!berita.length) {
     isi.innerHTML = kartu({
@@ -103,11 +109,12 @@ export function halamanDasbor({ keadaan, isi }) {
   // Peristiwa, bukan publikasi. Delapan berita tentang satu napi yang kabur
   // adalah satu kejadian; menghitungnya delapan kali membuat pimpinan membaca
   // tekanan opini sebagai jumlah insiden.
-  const positif = berita.filter((b) => b.sentimen === 'Positif')
+  const positif = r.positif
   const peristiwaNegatif = kelompokkanPeristiwa(negatif)
   const peristiwaPositif = kelompokkanPeristiwa(positif)
   const mutu = rekapMutu(validasiBanyak(berita))
-  const netral = berita.length - negatif.length - positif.length
+  const netral = r.netral.length
+  const belumDinilai = r.belumDinilai.length
 
   isi.innerHTML = `
     <div class="tumpuk">
@@ -144,7 +151,9 @@ export function halamanDasbor({ keadaan, isi }) {
         })}
       </div>
 
-      ${blokKanal(peristiwaNegatif, peristiwaPositif, negatif, positif, netral, berita.length)}
+      ${barisRekonsiliasi(r, keadaan)}
+
+      ${blokKanal(peristiwaNegatif, peristiwaPositif, negatif, positif, netral, belumDinilai, berita.length)}
 
       <div class="kisi kisi-utama-samping">
         ${kartu({
@@ -222,7 +231,12 @@ export function halamanDasbor({ keadaan, isi }) {
     <span class="baris gap-6"><i style="width:14px;height:2px;background:${warna.warnaTotal};display:block"></i> Seluruh berita</span>
     <span class="baris gap-6"><i style="width:14px;height:0;border-top:2px dashed ${warna.warnaNegatif};display:block"></i> Bersentimen negatif</span>`
 
-  baganSentimen(document.getElementById('bagan-sentimen'), sebaran(berita, 'sentimen'))
+  // Donat sentimen memakai ember, bukan nilai mentah — tiga golongan yang sama
+  // dengan yang diputuskan analis, bukan empat yang hanya dikenal basis data.
+  baganSentimen(document.getElementById('bagan-sentimen'), [
+    ...EMBER.map((e) => ({ kode: e.kode, label: e.label, jumlah: r.perEmber[e.kode] })),
+    { kode: BELUM.kode, label: BELUM.label, jumlah: r.perEmber.belum },
+  ])
   baganUrgensi(document.getElementById('bagan-urgensi'), sebaran(berita, 'urgensi'))
   baganBatang(document.getElementById('bagan-kategori'), sebaran(berita, 'kategori'))
 
@@ -230,6 +244,50 @@ export function halamanDasbor({ keadaan, isi }) {
 }
 
 /* ------------------------------------------------------------- potongan */
+
+/**
+ * Baris rekonsiliasi.
+ *
+ * Keluhan yang melahirkan baris ini: jumlah berita di kepala dasbor tidak cocok
+ * dengan jumlah di kanal negatif dan positif di bawahnya, dan tidak ada satu
+ * pun keterangan yang menjelaskan mengapa. Sekarang penjumlahannya ditulis apa
+ * adanya, lengkap dengan yang sengaja tidak dihitung. Selisih berikutnya —
+ * kalau suatu hari muncul lagi — akan terbaca oleh pembacanya sendiri, bukan
+ * ditemukan berbulan-bulan kemudian.
+ */
+function barisRekonsiliasi(r, keadaan) {
+  const potongan = [
+    `<b class="angka">${angka(r.negatif.length)}</b> negatif`,
+    `<b class="angka">${angka(r.netral.length)}</b> netral/campuran`,
+    `<b class="angka">${angka(r.positif.length)}</b> positif`,
+  ]
+  if (r.belumDinilai.length) {
+    potongan.push(`<b class="angka">${angka(r.belumDinilai.length)}</b> belum dinilai`)
+  }
+
+  const dikecualikan = []
+  if (r.luarLingkup) dikecualikan.push(`${angka(r.luarLingkup)} di luar lingkup Pemasyarakatan`)
+  if (r.dikecualikan) dikecualikan.push(`${angka(r.dikecualikan)} tidak valid atau diarsipkan`)
+
+  return `
+    <div class="rekonsiliasi">
+      <div class="rekon-baris">
+        <span class="label-mono">Cakupan angka</span>
+        <span class="rekon-hitung">
+          <b class="angka">${angka(r.total)}</b> berita dihitung
+          <span class="rekon-sama">=</span>
+          ${potongan.join(' <span class="rekon-tambah">+</span> ')}
+        </span>
+      </div>
+      <div class="rekon-kaki">
+        Seluruh arsip yang tersedia bagi Anda: ${angka(r.seluruhBaris)} baris.
+        ${dikecualikan.length ? `Tidak ikut dihitung: ${amankan(dikecualikan.join(', '))}.` : ''}
+        ${keadaan?.terpotong
+          ? '<b class="kritis-teks">Arsip melewati batas penarikan, sebagian baris lama belum termuat.</b>'
+          : ''}
+      </div>
+    </div>`
+}
 
 function garisKeadaan(mendesak, belumTelaah, takTerpetakan) {
   const kritis = mendesak.filter((b) => b.urgensi === 'Kritis')
@@ -330,7 +388,9 @@ function tabelUpt(berita) {
 }
 
 function kartuSumber(berita) {
-  const otomatis = berita.filter((b) => b.source_type === 'google_sheet').length
+  // Sejak kanwil daerah punya spreadsheet sendiri, "otomatis" tidak lagi berarti
+  // satu sumber. Yang dibedakan di sini tetap caranya masuk, bukan asalnya.
+  const otomatis = berita.filter((b) => String(b.source_type || '').startsWith('google_sheet')).length
   const manual = berita.length - otomatis
   const rata = berita.filter((b) => b.ai_confidence).reduce((a, b) => a + Number(b.ai_confidence), 0)
     / Math.max(berita.filter((b) => b.ai_confidence).length, 1)
@@ -374,7 +434,7 @@ function kartuSumber(berita) {
  * lain lalu menyaring sendiri. Sekarang keduanya berdiri sendiri, lengkap
  * dengan tiga peristiwa teratas masing-masing dan pintu ke daftar penuhnya.
  */
-function blokKanal(peristiwaNegatif, peristiwaPositif, negatif, positif, netral, total) {
+function blokKanal(peristiwaNegatif, peristiwaPositif, negatif, positif, netral, belumDinilai, total) {
   const sisi = (nama, sisiKode, peristiwa, publikasi, ikonNama, halaman, ket) => {
     const teratas = peristiwa.slice(0, 3).map((p) => `
       <div class="kanal-baris">
@@ -416,9 +476,9 @@ function blokKanal(peristiwaNegatif, peristiwaPositif, negatif, positif, netral,
     ket: 'Negatif dan positif dihitung terpisah, karena keduanya menuntut tindakan yang berbeda',
     isi: `
       <div class="imbang" role="img"
-        aria-label="Negatif ${angka(negatif.length)}, netral ${angka(netral)}, positif ${angka(positif.length)}">
+        aria-label="Negatif ${angka(negatif.length)}, netral atau campuran ${angka(netral)}, positif ${angka(positif.length)}">
         <span class="neg" style="flex:${negatif.length}"></span>
-        <span class="net" style="flex:${Math.max(netral, 0)}"></span>
+        <span class="net" style="flex:${Math.max(netral + belumDinilai, 0)}"></span>
         <span class="pos" style="flex:${positif.length}"></span>
       </div>
       <div class="baris gap-12" style="margin-top:9px;font-size:12px;flex-wrap:wrap">
@@ -426,10 +486,12 @@ function blokKanal(peristiwaNegatif, peristiwaPositif, negatif, positif, netral,
           Negatif <b class="angka">${angka(negatif.length)}</b>
           <span class="samar-teks">${p(negatif.length).toFixed(1).replace('.', ',')}%</span></span>
         <span><i style="display:inline-block;width:9px;height:9px;border-radius:2px;background:var(--netral)"></i>
-          Netral <b class="angka">${angka(Math.max(netral, 0))}</b></span>
+          Netral/Campuran <b class="angka">${angka(Math.max(netral, 0))}</b></span>
         <span><i style="display:inline-block;width:9px;height:9px;border-radius:2px;background:var(--positif)"></i>
           Positif <b class="angka">${angka(positif.length)}</b>
           <span class="samar-teks">${p(positif.length).toFixed(1).replace('.', ',')}%</span></span>
+        ${belumDinilai ? `<span><i style="display:inline-block;width:9px;height:9px;border-radius:2px;background:var(--ink-4)"></i>
+          Belum dinilai <b class="angka">${angka(belumDinilai)}</b></span>` : ''}
       </div>`,
   })}
 

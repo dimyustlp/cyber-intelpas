@@ -15,6 +15,7 @@ import { kartu, keping, kosong, pilihan, tombol, pesanSistem } from '../ui/kompo
 import { amankan, angka, jarakWaktu, tanggalJam, ringkas, nadaUrgensi } from '../lib/format.js'
 import { belumTerpetakan } from '../lib/pencocokan-upt.js'
 import { ikon } from '../lib/ikon.js'
+import { punyaIzin } from '../lib/peran.js'
 
 const saring = { tingkat: 'Semua tingkat', keadaan: 'Semua keadaan' }
 
@@ -37,6 +38,11 @@ export function halamanPeringatan({ keadaan, isi }) {
 
   const kritis = semua.filter((b) => b.urgensi === 'Kritis').length
   const awal = semua.filter((b) => b.status_verifikasi !== 'Terverifikasi').length
+
+  // Pimpinan membaca halaman ini tetapi tidak menelaah. Menawarkan tombol yang
+  // pasti ditolak basis data hanya memindahkan penolakan ke tempat yang lebih
+  // membingungkan.
+  const bolehTelaah = punyaIzin(keadaan.profil?.role, 'telaah_berita')
 
   isi.innerHTML = `
     <div class="tumpuk">
@@ -66,7 +72,7 @@ export function halamanPeringatan({ keadaan, isi }) {
           <div style="padding:14px">
             ${daftar.length
               ? `<div class="kisi kisi-kartu">
-                   ${daftar.slice(0, 24).map(kartuPeringatan).join('')}
+                   ${daftar.slice(0, 24).map((b) => kartuPeringatan(b, bolehTelaah)).join('')}
                  </div>`
               : kosong('Tidak ada peringatan pada saringan ini',
                   'Ubah saringan tingkat atau keadaan verifikasi untuk melihat kejadian lain.')}
@@ -81,10 +87,28 @@ export function halamanPeringatan({ keadaan, isi }) {
     })
   }
 
+  /*
+     Tombol "Telaah" pada tiap kartu.
+
+     Sebelumnya tombol ini digambar lengkap dengan penanda berita yang dituju,
+     lalu tidak ada satu pun penyimak yang mendengarnya — ditekan, dan tidak
+     terjadi apa-apa. Sekarang ia membawa penandanya ke Antrean Telaah lewat
+     acara yang sama yang dipakai menu, sehingga berita yang barusan dibaca
+     pimpinan langsung berada di kepala antrean, bukan tenggelam di nomor
+     entah berapa.
+  */
+  isi.addEventListener('click', (ev) => {
+    const tombolTelaah = ev.target.closest('[data-aksi="telaah"]')
+    if (!tombolTelaah) return
+    document.dispatchEvent(new CustomEvent('buka-halaman', {
+      detail: { halaman: 'telaah', fokus: tombolTelaah.dataset.id },
+    }))
+  })
+
   return { judul: 'Peringatan Dini', sub: `${angka(semua.length)} kejadian dipantau · ${angka(awal)} masih berstatus awal` }
 }
 
-function kartuPeringatan(b) {
+function kartuPeringatan(b, bolehTelaah) {
   const resmi = b.status_verifikasi === 'Terverifikasi'
   const nada = nadaUrgensi(b.urgensi)
 
@@ -122,7 +146,7 @@ function kartuPeringatan(b) {
         <div class="baris gap-6" style="margin-top:2px">
           ${b.link ? `<a class="tbl kecil" href="${amankan(b.link)}" target="_blank" rel="noopener noreferrer">
             ${ikon('tautan')} Sumber asli</a>` : ''}
-          ${!resmi ? `<button class="tbl kecil utama" data-aksi="telaah" data-id="${amankan(b.id)}">
+          ${!resmi && bolehTelaah ? `<button class="tbl kecil utama" data-aksi="telaah" data-id="${amankan(b.id)}">
             ${ikon('centang')} Telaah</button>` : ''}
         </div>
       </div>

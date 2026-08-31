@@ -22,6 +22,8 @@ import { kartu, keping, kosong, tombol, pesanSistem } from '../ui/komponen.js'
 import { amankan, angka, jarakWaktu, tanggalPanjang, ringkas, nadaUrgensi } from '../lib/format.js'
 import { belumTerpetakan } from '../lib/pencocokan-upt.js'
 import { kelompokkanPeristiwa, validasi, sumberAsli, rapikanJudul } from '../lib/peristiwa.js'
+import { ember } from '../lib/sentimen.js'
+import { dasar } from '../lib/hitung.js'
 import { ikon } from '../lib/ikon.js'
 
 /** Keadaan tapis per kanal, disimpan supaya pilihan tidak hilang saat digambar ulang. */
@@ -32,12 +34,20 @@ const keadaanTapis = {
 
 /* --------------------------------------------------------------- pembantu */
 
+/*
+   Isi kanal ditentukan ember di lib/sentimen.js, bukan daftar nilai yang
+   ditulis di berkas ini.
+
+   Sebelumnya kanal negatif memuat "Negatif" beserta "Campuran", sementara
+   dasbor menghitung "Negatif" saja. Dua angka untuk satu kanal, dan yang
+   menekan tombol "Buka kanal" dari dasbor mendapati jumlahnya berubah di
+   halaman berikutnya. Sekarang keduanya membaca aturan yang sama: Campuran
+   satu ember dengan Netral, sebab berita yang memuat kedua sisi sekaligus
+   bukan berita yang merugikan institusi.
+*/
 function beritaKanal(keadaan, sisi) {
-  const semua = keadaan.dalamLingkup || keadaan.berita || []
-  if (sisi === 'negatif') {
-    return semua.filter((b) => b.sentimen === 'Negatif' || b.sentimen === 'Campuran')
-  }
-  return semua.filter((b) => b.sentimen === 'Positif')
+  const semua = dasar(keadaan.dalamLingkup || keadaan.berita || [])
+  return semua.filter((b) => ember(b) === sisi)
 }
 
 function urlSumber(b) {

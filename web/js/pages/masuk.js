@@ -60,15 +60,25 @@ export function halamanMasuk({ onMasuk }) {
       <div>
         <h2 style="font-size:1.3rem">Masuk ke sistem</h2>
         <p class="samar-teks kecil-teks" style="margin-top:5px">
-          Gunakan surel dinas yang telah didaftarkan administrator.
+          Gunakan username yang diterbitkan administrator.
         </p>
       </div>
 
       <form id="borang-masuk" class="tumpuk" style="gap:13px" novalidate>
+        ${/*
+          Kolom ini menerima username maupun surel.
+
+          Akun sistem diterbitkan berdasarkan username — itulah yang tertulis di
+          seluruh policy basis data — sedangkan dua akun lama tertaut ke alamat
+          surel dinas. Menolak salah satunya berarti mengunci sebagian petugas
+          demi keseragaman yang tidak menolong siapa pun.
+        */''}
         <div class="isian">
-          <label for="surel">Alamat surel</label>
-          <input class="masukan" id="surel" name="surel" type="email" autocomplete="username"
-                 required placeholder="nama@kemenimipas.go.id" autofocus>
+          <label for="surel">Username</label>
+          <input class="masukan" id="surel" name="surel" type="text" autocomplete="username"
+                 autocapitalize="none" spellcheck="false"
+                 required placeholder="nama.petugas" autofocus>
+          <div class="ket">Alamat surel dinas juga diterima bagi akun lama.</div>
         </div>
 
         <div class="isian">
@@ -108,7 +118,7 @@ export function halamanMasuk({ onMasuk }) {
     const sandi = borang.sandi.value
 
     if (!surel || !sandi) {
-      kotakGalat.innerHTML = galat('Surel dan kata sandi wajib diisi.')
+      kotakGalat.innerHTML = galat('Username dan kata sandi wajib diisi.')
       return
     }
 

@@ -46,20 +46,40 @@ export const PERAN = {
     lingkup: 'internal',
     tugas: 'Memantau dasbor eksekutif, mengkaji rekomendasi, dan menerbitkan keputusan.',
   },
-  kanwil_contributor: {
-    nama: 'Kontributor Kantor Wilayah',
-    ringkas: 'Kanwil',
+  /*
+     Dua peran wilayah, bukan satu.
+
+     Pekerjaannya memang dua: yang memasukkan berita, dan yang memeriksa
+     kiriman itu sebelum naik ke pusat. Menggabungkannya berarti pemeriksa
+     memeriksa pekerjaannya sendiri. Nama kuncinya sama persis dengan yang
+     diterima basis data pada migrasi 06 — kalau keduanya berbeda, pengguna
+     wilayah akan mendapat menu internal karena perannya tidak dikenali di sini.
+  */
+  kanwil_admin: {
+    nama: 'Administrator Kantor Wilayah',
+    ringkas: 'Admin Kanwil',
     lingkup: 'eksternal',
-    tugas: 'Menyampaikan laporan intelijen dari wilayah. Tidak memiliki akses ke ruang kerja internal.',
+    tugas: 'Memeriksa kiriman berita dari wilayahnya sendiri sebelum naik ke pusat, '
+      + 'dan memantau keadaan pemberitaan wilayahnya. Tidak melihat data pusat.',
+  },
+  kanwil_penginput: {
+    nama: 'Penginput Berita Kantor Wilayah',
+    ringkas: 'Penginput Kanwil',
+    lingkup: 'eksternal',
+    tugas: 'Memasukkan berita dari wilayahnya dan melihat riwayat kirimannya sendiri.',
   },
 }
 
 /**
- * Peran kanwil sengaja dipisahkan sebagai pihak eksternal. Ia tidak melihat
- * dasbor, tidak melihat berita unit lain, dan tidak melihat satu pun modul
- * internal — hanya formulir penyampaian laporan dan riwayat kirimannya sendiri.
+ * Peran wilayah dipisahkan sebagai pihak eksternal. Mereka tidak melihat dasbor
+ * nasional, tidak melihat kanal pusat, dan tidak melihat satu pun modul
+ * internal — hanya ruang wilayahnya sendiri.
+ *
+ * Daftar ini hanya menentukan menu. Yang benar-benar menahan data adalah policy
+ * RLS: `can_access_berita` menolak baris yang bukan wilayahnya, dan penolakan
+ * itu berlaku sekalipun seseorang mengetik alamat halaman internal langsung.
  */
-export const PERAN_EKSTERNAL = new Set(['kanwil_contributor'])
+export const PERAN_EKSTERNAL = new Set(['kanwil_admin', 'kanwil_penginput'])
 
 export const IZIN = {
   super_admin: ['*'],
@@ -101,8 +121,13 @@ export const IZIN = {
     'lihat_tindak_lanjut', 'kelola_tindak_lanjut', 'perbarui_tindak_lanjut',
   ],
 
-  kanwil_contributor: [
-    'kirim_laporan_kanwil', 'lihat_kiriman_sendiri',
+  kanwil_admin: [
+    'lihat_dasbor_wilayah', 'buat_berita', 'lihat_kiriman_wilayah',
+    'periksa_kiriman_wilayah',
+  ],
+
+  kanwil_penginput: [
+    'buat_berita', 'lihat_kiriman_sendiri',
   ],
 }
 
@@ -155,6 +180,11 @@ export const MENU = [
     grup: 'Pengelolaan Berita',
     butir: [
       { id: 'berita', label: 'Pusat Data Berita', ikon: 'berita', izin: 'lihat_berita' },
+      // Input manual berdiri sendiri di menu, bukan tombol di dalam Pusat Data
+      // Berita. Isu viral yang belum tertangkap perayap adalah pekerjaan harian
+      // Operator Puldata, dan pekerjaan harian tidak pantas disembunyikan di
+      // dalam halaman lain.
+      { id: 'input', label: 'Input Berita', ikon: 'tambah', izin: 'buat_berita' },
       { id: 'telaah', label: 'Antrean Telaah', ikon: 'centang', izin: 'telaah_berita', lencana: 'telaah' },
       { id: 'pemetaan', label: 'Pemetaan UPT', ikon: 'peta', izin: 'petakan_upt', lencana: 'pemetaan' },
       { id: 'sinkronisasi', label: 'Sinkronisasi Sumber', ikon: 'sinkron', izin: 'lihat_sinkronisasi' },
@@ -189,13 +219,24 @@ export const MENU = [
   },
 ]
 
-/** Menu khusus kontributor kanwil — sengaja berdiri sendiri, bukan hasil saringan. */
+/**
+ * Menu ruang wilayah — berdiri sendiri, bukan hasil saringan atas menu internal.
+ *
+ * Disusun sebagai daftar terpisah, bukan sebagai menu internal yang dipangkas,
+ * supaya butir internal baru tidak pernah bisa bocor ke ruang wilayah hanya
+ * karena seseorang lupa memberinya syarat izin.
+ *
+ * Formulir masukannya sengaja memakai halaman `input` yang sama dengan yang
+ * dipakai Operator Puldata. Satu borang, satu mesin klasifikasi, satu perilaku
+ * — dua salinan borang yang sama pasti berpisah cepat atau lambat.
+ */
 export const MENU_KANWIL = [
   {
-    grup: 'Pelaporan Wilayah',
+    grup: 'Ruang Wilayah',
     butir: [
-      { id: 'kanwil-kirim', label: 'Sampaikan Laporan', ikon: 'kirim', izin: 'kirim_laporan_kanwil' },
-      { id: 'kanwil-riwayat', label: 'Riwayat Kiriman', ikon: 'arsip', izin: 'lihat_kiriman_sendiri' },
+      { id: 'kanwil-dasbor', label: 'Ringkasan Wilayah', ikon: 'dasbor', izin: 'lihat_dasbor_wilayah' },
+      { id: 'input', label: 'Kirim Berita', ikon: 'tambah', izin: 'buat_berita' },
+      { id: 'kanwil-riwayat', label: 'Riwayat Kiriman', ikon: 'arsip', izin: 'buat_berita' },
     ],
   },
 ]
@@ -207,9 +248,15 @@ export function menuUntuk(peran) {
     .filter((g) => g.butir.length)
 }
 
-/** Halaman pertama yang dibuka tiap peran setelah masuk. */
+/**
+ * Halaman pertama yang dibuka tiap peran setelah masuk.
+ *
+ * Diambil dari butir menu pertama yang benar-benar berhak dibuka, bukan dari
+ * nama halaman yang ditulis tangan. Nama yang ditulis tangan pernah ada di
+ * sini, dan ketika halamannya berganti nama, peran itu mendarat di layar
+ * "halaman tidak dikenali" tepat setelah berhasil masuk.
+ */
 export function halamanAwal(peran) {
-  if (adalahEksternal(peran)) return 'kanwil-kirim'
   const menu = menuUntuk(peran)
-  return menu[0]?.butir[0]?.id || 'dasbor'
+  return menu[0]?.butir[0]?.id || (adalahEksternal(peran) ? 'input' : 'dasbor')
 }

@@ -80,14 +80,71 @@ export function buatBerita(jumlah = 96, acuan = new Date('2026-08-22T09:40:00+07
   return daftar.sort((a, b) => b.created_at.localeCompare(a.created_at))
 }
 
+/**
+ * Contoh daftar pengguna untuk mode peragaan.
+ *
+ * Ada supaya layar Manajemen Pengguna bisa diperiksa bentuknya tanpa peladen —
+ * termasuk dua keadaan yang paling sering ditanyakan dan paling sulit dibuat
+ * sengaja pada data sungguhan: profil yang belum punya akun masuk, dan akun
+ * wilayah yang wilayahnya belum ditetapkan.
+ */
+export function penggunaDemo() {
+  return [
+    {
+      id: 'demo-1', username: 'dimas.pratama', full_name: 'Dimas Pratama',
+      role: 'super_admin', jabatan: 'Administrator Sistem',
+      assigned_kanwil: null, assigned_upt: null, aktif: true,
+      auth_user_id: 'auth-1', last_login: new Date(Date.now() - 3 * 3600e3).toISOString(),
+    },
+    {
+      id: 'demo-2', username: 'rina.analis', full_name: 'Rina Kusumaningrum',
+      role: 'media_intelligence_analyst', jabatan: 'Analis Intelijen Media',
+      assigned_kanwil: null, assigned_upt: null, aktif: true,
+      auth_user_id: 'auth-2', last_login: new Date(Date.now() - 26 * 3600e3).toISOString(),
+    },
+    {
+      id: 'demo-3', username: 'budi.puldata', full_name: 'Budi Santoso',
+      role: 'news_data_operator', jabatan: 'Operator Pengumpulan Data',
+      assigned_kanwil: null, assigned_upt: null, aktif: true,
+      auth_user_id: null, last_login: null,
+    },
+    {
+      id: 'demo-4', username: 'kanwil.jabar', full_name: 'Petugas Kanwil Jawa Barat',
+      role: 'kanwil_admin', jabatan: 'Administrator Kantor Wilayah',
+      assigned_kanwil: KANWIL_DEMO, assigned_upt: null, aktif: true,
+      auth_user_id: 'auth-4', last_login: new Date(Date.now() - 50 * 3600e3).toISOString(),
+    },
+    {
+      id: 'demo-5', username: 'kanwil.baru', full_name: 'Penginput Kanwil Baru',
+      role: 'kanwil_penginput', jabatan: 'Penginput Berita',
+      assigned_kanwil: null, assigned_upt: null, aktif: true,
+      auth_user_id: 'auth-5', last_login: null,
+    },
+    {
+      id: 'demo-6', username: 'agus.lama', full_name: 'Agus Wijaya',
+      role: 'field_verification_officer', jabatan: 'Petugas Verifikasi Lapangan',
+      assigned_kanwil: null, assigned_upt: null, aktif: false,
+      auth_user_id: 'auth-6', last_login: new Date(Date.now() - 40 * 86400e3).toISOString(),
+    },
+  ]
+}
+
+/** Wilayah peragaan, dipakai peran kanwil supaya layarnya ada isinya. */
+export const KANWIL_DEMO = 'Kanwil Jawa Barat'
+
 export function profilDemo(peran = 'media_intelligence_analyst') {
+  const wilayah = peran.startsWith('kanwil_')
+
   return {
     id: 'demo-pengguna',
-    username: 'demo',
-    full_name: 'Pengguna Peragaan',
+    username: wilayah ? 'demo.kanwil' : 'demo',
+    full_name: wilayah ? 'Petugas Kanwil Peragaan' : 'Pengguna Peragaan',
     role: peran,
     jabatan: 'Mode Peragaan',
-    assigned_kanwil: null,
+    // Peran wilayah tanpa wilayah akan melihat layar yang seluruhnya berisi
+    // peringatan. Untuk peragaan, wilayahnya diisi supaya bentuk halamannya
+    // yang terlihat — bukan pesan galatnya.
+    assigned_kanwil: wilayah ? KANWIL_DEMO : null,
     assigned_upt: null,
     aktif: true,
   }

@@ -247,7 +247,17 @@ export function hidupkan(akar, opsi = {}) {
 export function denganPeralihan(kerjakan) {
   if (kurangiGerak() || !document.startViewTransition) { kerjakan(); return }
   try {
-    document.startViewTransition(() => kerjakan())
+    const peralihan = document.startViewTransition(() => kerjakan())
+    /*
+       Peralihan yang dipotong peralihan berikutnya menolak janjinya dengan
+       InvalidStateError. Itu keadaan yang wajar — orang menekan dua butir menu
+       beruntun — tetapi janji yang ditolak tanpa penampung berakhir sebagai
+       galat merah di konsol, dan galat yang selalu muncul membuat galat yang
+       sungguhan tidak lagi terbaca. Halamannya sendiri sudah tergambar.
+    */
+    peralihan?.finished?.catch(() => {})
+    peralihan?.updateCallbackDone?.catch(() => {})
+    peralihan?.ready?.catch(() => {})
   } catch {
     kerjakan()
   }

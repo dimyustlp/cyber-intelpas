@@ -606,6 +606,7 @@ code, .mono, .angka {
 .keping[data-nada="rendah"]  { background: var(--rendah-bg);  color: var(--rendah); }
 .keping[data-nada="positif"] { background: var(--positif-bg); color: var(--positif); }
 .keping[data-nada="aksen"]   { background: var(--accent-soft); color: var(--accent); }
+.keping[data-nada="netral"]  { background: var(--netral-bg);  color: var(--netral); }
 
 /* Tombol */
 .tbl {
@@ -2661,3 +2662,237 @@ kbd {
 @media (hover: none) {
   .kandidat-panah { opacity: 0.6; }
 }
+
+/* ==========================================================================
+   Pilihan sentimen berketerangan
+   --------------------------------------------------------------------------
+   Sebelum ini sentimen berupa daftar berisi empat kata tanpa penjelasan apa
+   pun, dan dua analis yang membaca berita yang sama boleh memilih berbeda —
+   sementara pilihan itulah yang menjadi angka di dasbor pimpinan. Definisinya
+   sekarang berada di tempat keputusan diambil, bukan di dokumen terpisah yang
+   tidak pernah dibuka saat sedang menelaah.
+   ========================================================================== */
+
+.pilih-sentimen {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.pilih-sentimen > legend {
+  padding: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+
+.pilih-deret { display: flex; flex-direction: column; gap: 7px; }
+
+.pilih-kartu {
+  --nada-pilih: var(--ink-4);
+  display: flex;
+  gap: 9px;
+  align-items: flex-start;
+  padding: 10px 12px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-2);
+  background: var(--surface-2);
+  cursor: pointer;
+  transition: border-color var(--cepat), background var(--cepat);
+}
+
+.pilih-kartu[data-nada="kritis"]  { --nada-pilih: var(--kritis); }
+.pilih-kartu[data-nada="netral"]  { --nada-pilih: var(--netral); }
+.pilih-kartu[data-nada="positif"] { --nada-pilih: var(--positif); }
+
+@media (hover: hover) {
+  .pilih-kartu:hover { border-color: var(--nada-pilih); }
+}
+
+.pilih-kartu input[type="radio"] {
+  margin: 2px 0 0;
+  accent-color: var(--nada-pilih);
+  flex: none;
+}
+
+/* Terpilih ditandai tepi berwarna sekaligus latar, bukan warna saja: satu
+   penanda yang hanya berupa rona akan hilang bagi sebagian pembaca. */
+.pilih-kartu:has(input:checked) {
+  border-color: var(--nada-pilih);
+  box-shadow: inset 3px 0 0 var(--nada-pilih);
+  background: var(--surface-3);
+}
+
+.pilih-kartu:has(input:focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.pilih-isi { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+
+.pilih-judul {
+  font-size: 13px;
+  font-weight: 650;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 7px;
+}
+
+.pilih-ringkas {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--nada-pilih);
+  font-weight: 600;
+}
+
+.pilih-ket { font-size: 11.5px; line-height: 1.5; color: var(--ink-3); }
+
+.pilih-petunjuk {
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--ink-4);
+  border-left: 2px solid var(--line-2);
+  padding-left: 8px;
+  margin-top: 2px;
+}
+
+/* ==========================================================================
+   Baris rekonsiliasi dasbor
+   --------------------------------------------------------------------------
+   Penjumlahan ditulis apa adanya di layar supaya selisih berikutnya terbaca
+   oleh pembacanya sendiri, bukan ditemukan berbulan-bulan kemudian ketika
+   seseorang kebetulan membandingkan dua halaman.
+   ========================================================================== */
+
+.rekonsiliasi {
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-3);
+  background: var(--surface-2);
+  padding: 11px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.rekon-baris {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 12px;
+}
+
+.rekon-hitung {
+  font-size: 12.5px;
+  color: var(--ink-2);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 5px;
+}
+
+.rekon-hitung b { color: var(--ink); font-variant-numeric: tabular-nums; }
+.rekon-sama, .rekon-tambah { color: var(--ink-4); font-family: var(--mono); }
+.rekon-kaki { font-size: 11.5px; color: var(--ink-4); line-height: 1.5; }
+
+/* Penanda kolom wajib pada borang input. */
+.wajib {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--kritis);
+  background: var(--kritis-bg);
+  border-radius: var(--r-1);
+  padding: 1px 5px;
+  margin-left: 5px;
+  vertical-align: 1px;
+}
+
+/* Borang input memakai area teks yang lebih tinggi daripada bawaan kolom. */
+#borang-input textarea.masukan {
+  height: auto;
+  min-height: 96px;
+  padding: 8px 10px;
+  line-height: 1.55;
+  resize: vertical;
+}
+
+#borang-input .pilihan.penuh { width: 100%; min-width: 0; }
+
+/* ==========================================================================
+   Ruang kantor wilayah
+   --------------------------------------------------------------------------
+   Aplikasinya satu, ruangnya dua. Petugas wilayah tidak boleh mengira sedang
+   membaca angka nasional, dan petugas pusat yang tidak sengaja masuk dengan
+   akun wilayah harus menyadarinya sebelum sempat menyimpulkan apa pun.
+
+   Pembedanya warna aksen — biru laut kelembagaan berganti menjadi hijau
+   pemasyarakatan — bukan tata letak yang berbeda. Tata letak yang berbeda
+   menuntut orang mempelajari dua aplikasi; warna yang berbeda cukup untuk
+   menyatakan "ini ruang lain" tanpa menuntut apa pun.
+
+   Yang menahan data tetap policy di basis data. Warna hanya memberi tahu.
+   ========================================================================== */
+
+.cangkang[data-ruang="wilayah"] {
+  --accent:      #14584A;
+  --accent-2:    #1C7A66;
+  --accent-soft: #DCEDE7;
+  --accent-tepi: #B4D6CB;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-tema="terang"]) .cangkang[data-ruang="wilayah"] {
+    --accent:      #63C4AC;
+    --accent-2:    #85D6C1;
+    --accent-soft: #10302A;
+    --accent-tepi: #1F4A40;
+  }
+}
+
+:root[data-tema="gelap"] .cangkang[data-ruang="wilayah"] {
+  --accent:      #63C4AC;
+  --accent-2:    #85D6C1;
+  --accent-soft: #10302A;
+  --accent-tepi: #1F4A40;
+}
+
+/* Lambang kelembagaan tidak diganggu — ia penanda instansi, bukan penanda
+   ruang. Yang berbicara adalah keterangan di bawahnya dan sebilah pita tipis
+   di kepala kolom utama, keduanya memakai aksen ruang ini. */
+.cangkang[data-ruang="wilayah"] .merek-sub {
+  color: var(--accent-2);
+  font-weight: 600;
+}
+
+.cangkang[data-ruang="wilayah"] .kolom-utama { position: relative; }
+
+.cangkang[data-ruang="wilayah"] .kolom-utama::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  z-index: 5;
+}
+
+/* Satu baris tabel yang sedang disunting berubah menjadi panel, bukan kolom
+   yang bisa diketik langsung. Menyunting peran dan wilayah adalah tindakan yang
+   pantas diberi jeda — bukan sesuatu yang terjadi karena kursor tidak sengaja
+   mendarat di sel yang salah. */
+.baris-sunting > td { background: var(--surface-3); }
+
+.sunting-pengguna {
+  padding: 14px 4px 6px;
+  display: flex;
+  flex-direction: column;
+}
+
+.sunting-pengguna .pilihan.penuh,
+.sunting-pengguna .masukan { width: 100%; min-width: 0; }

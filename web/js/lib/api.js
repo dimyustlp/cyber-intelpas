@@ -34,6 +34,12 @@ export class GalatApi extends Error {
 export function pesanRamah(galat) {
   if (!(galat instanceof GalatApi)) return galat?.message || 'Terjadi kesalahan yang tidak dikenali.'
   if (galat.status === 401) return 'Sesi Anda sudah berakhir. Silakan masuk kembali.'
+  // GoTrue menjawab penolakan kredensial dengan 400 dan kalimat berbahasa
+  // Inggris. Petugas yang salah ketik username berhak membaca sebabnya dalam
+  // bahasa yang ia pakai bekerja.
+  if (galat.status === 400 && /invalid login credentials/i.test(galat.rinci?.error_description || galat.rinci?.message || '')) {
+    return 'Username atau kata sandi tidak cocok. Periksa kembali, atau hubungi administrator bila lupa sandi.'
+  }
   if (galat.status === 403 || galat.rinci?.code === '42501') {
     return 'Peran Anda tidak memiliki hak untuk tindakan ini.'
   }
@@ -148,15 +154,66 @@ export async function panggilEdge(nama, isi = {}) {
 
 // ------------------------------------------------------------- otentikasi
 
-export async function masuk(email, kataSandi) {
-  const hasil = await panggil('/auth/v1/token?grant_type=password', {
-    method: 'POST',
-    body: JSON.stringify({ email, password: kataSandi }),
-  })
-  simpanSesi(hasil)
-  await muatProfil()
-  simpanSesi({ ...hasil, profil })
-  return profil
+/**
+ * Ranah surel bayangan.
+ *
+ * Supabase Auth menuntut sebuah alamat surel sebagai identitas, sedangkan
+ * sistem ini menerbitkan akun berdasarkan username — dan empat dari enam profil
+ * yang ada bahkan tidak punya alamat surel sama sekali, sehingga tidak seorang
+ * pun di antaranya bisa masuk. Ranah di bawah tidak pernah menerima surat: ia
+ * hanya bentuk alamat yang sah untuk menampung username.
+ *
+ * Akibat yang harus disepakati, bukan disembunyikan: pemulihan sandi lewat
+ * surel tidak berlaku bagi akun semacam ini. Yang lupa sandi menghubungi
+ * administrator.
+ */
+export const RANAH_USERNAME = 'pengguna.cyber-intelpas.id'
+
+/** Benar bila yang diketik memang berbentuk alamat surel, bukan username. */
+export function tampakSurel(nilai) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(nilai || '').trim())
+}
+
+export function surelUntukUsername(username) {
+  return `${String(username || '').trim().toLowerCase()}@${RANAH_USERNAME}`
+}
+
+/**
+ * Masuk dengan username, dan tetap menerima surel.
+ *
+ * Dua akun lama tertaut ke alamat surel dinas sungguhan. Menolak surel berarti
+ * mengunci keduanya demi keseragaman yang tidak menolong siapa pun; karena itu
+ * yang berbentuk surel dicoba apa adanya, dan yang bukan diterjemahkan menjadi
+ * surel bayangan. Bila keduanya mungkin, keduanya dicoba — sebab menebak salah
+ * satu lalu menyalahkan penggunanya adalah cara paling murah membuat orang
+ * berhenti memakai sistem.
+ */
+export async function masuk(pengenal, kataSandi) {
+  const teks = String(pengenal || '').trim()
+  const percobaan = tampakSurel(teks)
+    ? [teks]
+    : [surelUntukUsername(teks), `${teks}@${RANAH_USERNAME}`.toLowerCase()]
+
+  let galatTerakhir = null
+  for (const surel of [...new Set(percobaan)]) {
+    try {
+      const hasil = await panggil('/auth/v1/token?grant_type=password', {
+        method: 'POST',
+        body: JSON.stringify({ email: surel, password: kataSandi }),
+      })
+      simpanSesi(hasil)
+      await muatProfil()
+      simpanSesi({ ...hasil, profil })
+      return profil
+    } catch (galat) {
+      galatTerakhir = galat
+      // Hanya penolakan kredensial yang layak dicoba dengan bentuk lain.
+      // Gangguan jaringan atau peladen tidak akan berubah hasilnya.
+      if (!(galat instanceof GalatApi) || galat.status !== 400) throw galat
+    }
+  }
+
+  throw galatTerakhir || new GalatApi('Username atau kata sandi tidak dikenali.', 400)
 }
 
 export async function keluar() {

@@ -17,6 +17,8 @@ import { panggilFungsi, pesanRamah } from '../lib/api.js'
 import { roti } from '../ui/komponen.js'
 import { susunLaporan, nomorLaporan, olahLaporan } from '../lib/laporan.js'
 import { kelompokkanPeristiwa } from '../lib/peristiwa.js'
+import { ember } from '../lib/sentimen.js'
+import { dasar } from '../lib/hitung.js'
 import { ikon } from '../lib/ikon.js'
 
 /** Pilihan periode yang bertahan selama sesi. */
@@ -118,11 +120,15 @@ export function halamanLaporan({ keadaan, isi }) {
 
   // Pratinjau angka dari data yang sudah ada di layar, supaya analis tahu
   // kira-kira apa yang akan keluar sebelum menekan tombolnya.
-  const dalam = (keadaan.dalamLingkup || keadaan.berita || []).filter((b) => {
+  const dalam = dasar(keadaan.dalamLingkup || keadaan.berita || []).filter((b) => {
     const t = String(b.tanggal_publikasi || b.created_at || '').slice(0, 10)
     return t >= pilihan.mulai && t <= pilihan.selesai
   })
-  const negatifLokal = dalam.filter((b) => ['Negatif', 'Campuran'].includes(b.sentimen))
+  // Sama persis dengan aturan dasbor dan kanal: yang bersentimen campuran
+  // memuat kedua sisi sekaligus dan bukan berita yang merugikan institusi.
+  // Sebelum ini laporan memakai daftarnya sendiri, dan pratinjau di layar
+  // karena itu menyebut angka yang tidak pernah cocok dengan dasbornya.
+  const negatifLokal = dalam.filter((b) => ember(b) === 'negatif')
   const kiraPeristiwa = kelompokkanPeristiwa(negatifLokal).length
 
   const hasil = pilihan.hasil

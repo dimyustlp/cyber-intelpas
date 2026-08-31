@@ -35,7 +35,9 @@ web/                     aplikasi peramban, disajikan apa adanya
       penerbit.js        mengenali siapa yang menerbitkan sebuah publikasi
       pencocokan-upt.js  pencocokan nama UPT dari teks berita
       pesan-telegram.js  penyusun pesan ringkas untuk grup pimpinan
-      peran.js           7 peran, izin, dan susunan menu
+      peran.js           peran, izin, dan susunan menu
+      sentimen.js        tiga ember sentimen beserta keterangannya
+      hitung.js          satu himpunan dasar untuk seluruh angka di layar
       api.js             pemanggil PostgREST dan GoTrue tanpa SDK
       format.js          tanggal, angka, dan warna semantik
       konfig.js          alamat peladen dan kunci publik
@@ -46,15 +48,21 @@ web/                     aplikasi peramban, disajikan apa adanya
       bagan.js           bagan SVG
       palet.js           palet perintah Ctrl+K — cari halaman, unit, dan berita
     pages/               satu berkas per halaman
+                           input.js       masukan berita manual, terklasifikasi saat mengetik
+                           kanwil.js      ruang kantor wilayah — ringkasan dan riwayat kiriman
+                           pengguna.js    peran, wilayah penugasan, dan keaktifan akun
+                           sinkronisasi.js  keadaan tiap sumber spreadsheet
     main.js              sesi, kerangka layar, penunjuk halaman
 
 supabase/
-  migrations/            4 berkas migrasi, sudah diuji di PostgreSQL 16
-  functions/             Edge Function
+  migrations/            6 berkas migrasi, sudah diuji di PostgreSQL 16
+  functions/             Edge Function (klasifikasi, sheet-sync, telegram-kirim)
 
 tools/
   server-lokal.mjs       peladen statis untuk pengembangan
   uji-mesin.mjs          uji perilaku mesin dan pencocokan UPT
+  uji-hitung.mjs         uji ember sentimen dan penjumlahan angka dasbor
+  uji-peristiwa.mjs      uji pengelompokan publikasi menjadi peristiwa
   periksa-lainnya.mjs    uji 62 kasus nyata yang dulu gagal dikelompokkan
   ringkas-fungsi.mjs     menyalin web/js/lib ke Edge Function dalam bentuk ringkas
   potret.mjs             memotret halaman pada lebar layar yang benar-benar diminta
@@ -79,7 +87,12 @@ http://localhost:4173/?mode=demo&tema=gelap
 Parameter `peran` menerima salah satu dari: `super_admin`, `news_data_operator`,
 `media_intelligence_analyst`, `field_verification_officer`,
 `evaluation_recommendation_analyst`, `executive_decision_maker`,
-`kanwil_contributor`.
+`kanwil_admin`, `kanwil_penginput`.
+
+Dua peran terakhir membuka **ruang kantor wilayah**: menu, warna aksen, dan
+halaman yang berbeda di dalam aplikasi yang sama. Dalam mode peragaan, arsipnya
+ikut dipotong supaya layarnya menunjukkan apa yang benar-benar dilihat petugas
+wilayah — bukan angka nasional.
 
 ## Menguji mesin
 

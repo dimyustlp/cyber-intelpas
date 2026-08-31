@@ -1,7 +1,8 @@
 # Migrasi Basis Data Cyber-Intelpas
 
-Empat berkas migrasi yang membenahi temuan audit 22 Agustus 2026 dan menyiapkan
-basis data untuk versi Next.js. Semuanya idempoten — aman dijalankan berulang.
+Tujuh berkas migrasi. Empat yang pertama membenahi temuan audit 22 Agustus 2026;
+tiga terakhir menyiapkan sumber data kantor wilayah dan menutup lubang cakupan
+yang lahir dari perubahan itu. Semuanya idempoten — aman dijalankan berulang.
 
 | Berkas | Isi |
 |---|---|
@@ -9,6 +10,19 @@ basis data untuk versi Next.js. Semuanya idempoten — aman dijalankan berulang.
 | `20260822020000_rls_policies.sql` | 61 policy RLS untuk 20 tabel, sesuai 6 peran |
 | `20260822030000_reports_telegram_ai.sql` | Laporan harian, pengaturan Telegram, jejak klasifikasi AI |
 | `20260822040000_hardening_storage.sql` | Pengerasan fungsi, policy storage, indeks, pencarian teks |
+| `20260831010000_sumber_ganda_dan_angka.sql` | Daftar sumber spreadsheet, kolom `kanwil_asal`, satu definisi "negatif", penguncian tabel cadangan |
+| `20260831020000_cakupan_wilayah.sql` | Dua peran kanwil, `can_access_upt` yang menolak lebih dulu, policy berita per wilayah |
+| `20260831030000_tutup_fungsi_terbuka.sql` | Mencabut hak eksekusi anon atas fungsi SECURITY DEFINER, termasuk `snapshot_laporan` |
+
+## Mengapa migrasi 06 harus ada sebelum akun kanwil pertama
+
+`can_access_upt()` pada migrasi 01 berbunyi: bila `assigned_upt` kosong, izinkan
+semuanya. Aturan itu benar selama satu-satunya pengguna tanpa penugasan adalah
+petugas pusat. Akun kantor wilayah ditugaskan per *wilayah*, bukan per unit —
+dan klausa yang sama akan memberi mereka seluruh arsip nasional. Migrasi 06
+membalik urutannya: tolak lebih dulu, lalu izinkan menurut kelas peran. Peran
+pusat tanpa penugasan tetap melihat seluruhnya, sehingga tidak ada pengguna yang
+sedang bekerja kehilangan aksesnya.
 
 ## Yang berubah secara mendasar
 

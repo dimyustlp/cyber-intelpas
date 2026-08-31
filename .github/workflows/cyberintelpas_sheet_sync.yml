@@ -81,10 +81,13 @@ jobs:
             exit 1
           fi
 
-          # 207 berarti sebagian baris dilewati — biasanya karena tautan berita
-          # sudah pernah tersimpan. Itu perilaku normal, bukan kegagalan.
+          # 207 berarti sebagian pekerjaan tidak selesai: satu sumber gagal
+          # ditarik sementara sumber lain berhasil, atau sebagian baris dilewati.
+          # Sejak penyalin melayani lebih dari satu spreadsheet, kegagalan satu
+          # sumber memang sengaja tidak menjatuhkan sumber lain — jadi ini
+          # peringatan yang perlu dibaca, bukan kegagalan alur.
           if [ "$HTTP_CODE" = "207" ]; then
-            echo "::warning::Sebagian baris dilewati. Periksa tabel sheet_sync_log untuk rinciannya."
+            echo "::warning::Sebagian sumber tidak selesai. Buka halaman Sinkronisasi Sumber atau tabel sheet_sync_log untuk melihat sumber mana."
             exit 0
           fi
 

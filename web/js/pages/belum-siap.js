@@ -27,11 +27,6 @@ const RENCANA = {
     isi: 'Antrean berita yang belum terhubung ke unit mana pun, lengkap dengan saran dari mesin pencocokan dan alasannya.',
     tunggu: 'Mesin pencocokan sudah selesai dan teruji — 431 dari 652 publikasi terpetakan otomatis, 15 menunggu putusan analis. Tinggal antarmuka pemutusnya.',
   },
-  sinkronisasi: {
-    judul: 'Sinkronisasi Sumber',
-    isi: 'Riwayat penarikan data dari Spreadsheet, jumlah baris yang masuk dan yang dilewati, serta tombol tarik manual.',
-    tunggu: 'Token sinkronisasi sudah ada di Supabase Vault dan pg_cron sudah menariknya setiap lima menit. Tinggal layar riwayatnya.',
-  },
   kasus: {
     judul: 'Kasus Intelijen',
     isi: 'Penggabungan beberapa berita menjadi satu kasus, lengkap dengan riwayat perkembangan dan penghitung otomatis.',
@@ -62,11 +57,6 @@ const RENCANA = {
     isi: 'Penyusun laporan harian dan mingguan, ekspor PDF dan DOCX, serta alur pengesahan berjenjang.',
     tunggu: 'Menunggu contoh kop surat resmi dan logo resolusi tinggi.',
   },
-  pengguna: {
-    judul: 'Manajemen Pengguna',
-    isi: 'Penerbitan akun, penetapan peran, dan pembatasan wilayah penugasan.',
-    tunggu: 'Menunggu daftar pengguna sungguhan beserta alamat surel dinas masing-masing.',
-  },
   koordinat: {
     judul: 'Koordinat UPT',
     isi: 'Alat verifikasi titik koordinat 492 unit, satu per satu, dengan pratinjau peta.',
@@ -81,16 +71,6 @@ const RENCANA = {
     judul: 'Kesehatan Sistem',
     isi: 'Keadaan penjadwal, sinkronisasi, dan Edge Function, beserta riwayat gangguan.',
     tunggu: 'Siap dibangun kapan saja.',
-  },
-  'kanwil-kirim': {
-    judul: 'Sampaikan Laporan',
-    isi: 'Formulir ringkas bagi petugas kantor wilayah untuk menyampaikan laporan intelijen, tanpa akses ke ruang kerja internal.',
-    tunggu: 'Migrasi RLS sudah diterapkan di basis data. Tinggal formulirnya.',
-  },
-  'kanwil-riwayat': {
-    judul: 'Riwayat Kiriman',
-    isi: 'Daftar laporan yang pernah dikirim petugas kantor wilayah beserta status tindak lanjutnya.',
-    tunggu: 'Menunggu formulir penyampaian laporan.',
   },
 }
 

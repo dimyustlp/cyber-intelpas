@@ -8,6 +8,7 @@
 import { KONFIG } from './lib/konfig.js'
 import { muatSesi, profilSekarang, keluar, muatProfil, pesanRamah } from './lib/api.js'
 import { menuUntuk, halamanAwal, labelPeran, adalahEksternal, PERAN } from './lib/peran.js'
+import { lencana } from './lib/hitung.js'
 import { ikon } from './lib/ikon.js'
 import { amankan, tanggalPanjang, inisial } from './lib/format.js'
 import { roti, tombolIkon } from './ui/komponen.js'
@@ -26,6 +27,10 @@ import { halamanDistribusi } from './pages/distribusi.js'
 import { halamanTelaah } from './pages/telaah.js'
 import { halamanPemetaan } from './pages/pemetaan.js'
 import { halamanProfil } from './pages/profil.js'
+import { halamanInput } from './pages/input.js'
+import { halamanSinkronisasi } from './pages/sinkronisasi.js'
+import { halamanKanwilDasbor, halamanKanwilRiwayat } from './pages/kanwil.js'
+import { halamanPengguna } from './pages/pengguna.js'
 import { halamanBelumSiap } from './pages/belum-siap.js'
 
 const akar = document.getElementById('akar')
@@ -34,10 +39,14 @@ const akar = document.getElementById('akar')
 export const keadaan = {
   profil: null,
   halaman: null,
+  /** Berita yang dituju dari halaman lain, mis. tombol Telaah di Peringatan Dini. */
+  fokus: null,
   demo: KONFIG.mode === 'demo',
   berita: [],
   dalamLingkup: [],
   luarLingkup: 0,
+  /** Benar bila arsip melewati batas pengaman penarikan dan tidak seluruhnya termuat. */
+  terpotong: false,
   hitungan: { peringatan: 0, telaah: 0, pemetaan: 0, negatif: 0 },
 }
 
@@ -53,6 +62,11 @@ const HALAMAN = {
   telaah: halamanTelaah,
   pemetaan: halamanPemetaan,
   profil: halamanProfil,
+  input: halamanInput,
+  sinkronisasi: halamanSinkronisasi,
+  pengguna: halamanPengguna,
+  'kanwil-dasbor': halamanKanwilDasbor,
+  'kanwil-riwayat': halamanKanwilRiwayat,
 }
 
 /* ------------------------------------------------------------------- tema */
@@ -87,12 +101,16 @@ function putarTema() {
 
 /* --------------------------------------------------------------- kerangka */
 
-function kerangka() {
-  const peran = keadaan.profil.role
-  const menu = menuUntuk(peran)
-  const eksternal = adalahEksternal(peran)
-
-  const daftarMenu = menu.map((g) => `
+/**
+ * Isi menu samping.
+ *
+ * Dipisahkan dari kerangka supaya lencana bisa digambar ulang sendirian.
+ * Sesudah analis memutuskan satu berita di Antrean Telaah, angka pada lencana
+ * sudah tidak benar lagi; menggambar ulang seluruh layar untuk memperbaiki satu
+ * angka akan membuang formulir yang sedang diisi.
+ */
+function daftarMenu(peran) {
+  return menuUntuk(peran).map((g) => `
     <div class="nav-grup">
       <div class="nav-judul">${amankan(g.grup)}</div>
       ${g.butir.map((b) => {
@@ -104,12 +122,22 @@ function kerangka() {
         </button>`
       }).join('')}
     </div>`).join('')
+}
 
+function kerangka() {
+  const peran = keadaan.profil.role
+  const eksternal = adalahEksternal(peran)
   const info = PERAN[peran] || {}
 
   return `
   <a class="lompat" href="#isi">Lompat ke isi halaman</a>
-  <div class="cangkang">
+  <!--
+     Ruang wilayah diberi penanda pada kerangkanya, bukan hanya menu yang
+     berbeda. Warna aksen dan kop yang berlainan membuat siapa pun tahu sedang
+     berada di ruang yang mana tanpa perlu membaca satu kata pun — dan petugas
+     pusat yang tidak sengaja masuk dengan akun wilayah langsung menyadarinya.
+  -->
+  <div class="cangkang"${eksternal ? ' data-ruang="wilayah"' : ''}>
     <div class="tirai-menu" data-aksi="tutup-menu" aria-hidden="true"></div>
     <aside class="samping" id="samping">
       <div class="merek">
@@ -120,7 +148,7 @@ function kerangka() {
         </div>
       </div>
 
-      <nav class="nav" aria-label="Navigasi utama">${daftarMenu}</nav>
+      <nav class="nav" aria-label="Navigasi utama">${daftarMenu(peran)}</nav>
 
       <div class="kaki-samping">
         <button class="kaki-profil" data-halaman="profil" title="Profil dan kata sandi saya">
@@ -187,8 +215,17 @@ export function gambar() {
 
 /* -------------------------------------------------------------- navigasi */
 
-export function keHalaman(id) {
+/**
+ * Berpindah halaman, dengan atau tanpa berita yang dituju.
+ *
+ * Penanda `fokus` dipakai tombol "Telaah" di Peringatan Dini. Tanpa itu,
+ * antrean telaah selalu menyusun urutannya sendiri dan berita yang barusan
+ * dibaca pimpinan akan tenggelam entah di nomor berapa — tombolnya secara
+ * teknis bekerja, tetapi tidak membawa siapa pun ke tempat yang dimaksud.
+ */
+export function keHalaman(id, opsi = {}) {
   keadaan.halaman = id
+  keadaan.fokus = opsi.fokus || null
   history.replaceState(null, '', `#${id}`)
   // Peralihan membuat perpindahan halaman terbaca sebagai satu gerakan, bukan
   // sebagai layar yang berkedip. Pada peramban yang belum mendukungnya,
@@ -282,24 +319,108 @@ window.addEventListener('hashchange', () => {
 // supaya tidak perlu mengimpor balik main.js dan membuat lingkaran impor.
 document.addEventListener('gambar-ulang', () => gambar())
 
+// Perpindahan halaman yang membawa berita tertentu. Lewat acara, dengan alasan
+// yang sama seperti di atas: halaman tidak boleh mengimpor balik berkas ini.
+document.addEventListener('buka-halaman', (ev) => {
+  const { halaman, fokus } = ev.detail || {}
+  if (halaman) keHalaman(halaman, { fokus })
+})
+
+/*
+   Sesudah sebuah berita berubah di peramban — disetujui, dikoreksi, ditandai
+   tidak valid, atau baru dimasukkan — angka pada lencana menu dan dasbor sudah
+   tidak benar lagi. Sebelumnya angka itu baru diperbaiki pada pemuatan ulang
+   berikutnya, sehingga analis yang mengosongkan antrean tetap melihat lencana
+   berisi puluhan. Yang digambar ulang hanya menunya, bukan seluruh layar.
+*/
+document.addEventListener('hitung-ulang', () => {
+  hitungUlang()
+  const nav = document.querySelector('.nav')
+  if (nav && keadaan.profil) nav.innerHTML = daftarMenu(keadaan.profil.role)
+})
+
 /* ------------------------------------------------------------------ data */
+
+/** Kolom yang ditarik. Sengaja disebut satu per satu, bukan `*`. */
+const KOLOM_BERITA = 'id,judul,nama_upt,kanwil_asal,media,platform,link,created_at,'
+  + 'tanggal_publikasi,kategori,subkategori,sentimen,urgensi,tingkat_perhatian,'
+  + 'status_verifikasi,source_type,ringkasan,rekomendasi,ai_confidence'
+
+/** Sekali tarik. Nilai ini di bawah batas baris bawaan PostgREST. */
+const UKURAN_TARIK = 500
+
+/** Batas pengaman. Arsip yang lebih panjang dari ini menuntut penyaringan di peladen. */
+const BATAS_TARIK = 4000
+
+/**
+ * Menarik arsip berita, berhalaman sampai habis.
+ *
+ * Sebelumnya berkas ini menarik 400 baris terbaru dan berhenti, sementara basis
+ * data menyimpan lebih dari tujuh ratus. Seluruh angka di layar sebenarnya
+ * berbunyi "dari 400 terbaru", dan tidak ada satu kalimat pun yang mengatakannya
+ * — pembacanya menyimpulkan sistem salah hitung, dan ia tidak keliru menduga
+ * begitu.
+ */
+async function muatBerita() {
+  const { ambil } = await import('./lib/api.js')
+  const kumpulan = []
+  keadaan.terpotong = false
+
+  for (let dari = 0; dari < BATAS_TARIK; dari += UKURAN_TARIK) {
+    const halaman = await ambil('berita', {
+      select: KOLOM_BERITA,
+      deleted_at: 'is.null',
+      order: 'created_at.desc',
+    }, { jangkauan: `${dari}-${dari + UKURAN_TARIK - 1}` }) || []
+
+    kumpulan.push(...halaman)
+    if (halaman.length < UKURAN_TARIK) return kumpulan
+  }
+
+  // Sampai di sini berarti arsip melewati batas pengaman. Ditandai supaya
+  // dasbor menyebutkannya, bukan diam-diam menampilkan sebagian.
+  keadaan.terpotong = true
+  return kumpulan
+}
+
+/**
+ * Menghitung ulang turunan dari `keadaan.berita`.
+ *
+ * Seluruh aturannya dipinjam dari lib/hitung.js. Tidak ada satu pun penyaring
+ * yang ditulis ulang di berkas ini — di situlah dulu angka lencana dan angka
+ * dasbor mulai berbeda.
+ */
+export function hitungUlang() {
+  keadaan.dalamLingkup = keadaan.berita.filter((b) => b.kategori !== 'Di Luar Lingkup')
+  keadaan.luarLingkup = keadaan.berita.length - keadaan.dalamLingkup.length
+  keadaan.hitungan = lencana(keadaan.berita)
+}
 
 async function segarkan() {
   if (keadaan.demo) {
     keadaan.berita = buatBerita()
+
+    /*
+       Pada peladen sungguhan, petugas wilayah tidak pernah menerima baris di
+       luar wilayahnya — policy RLS yang memotongnya, jauh sebelum data sampai
+       ke peramban. Mode peragaan tidak punya peladen, jadi pemotongan itu
+       ditiru di sini. Tanpa tiruan ini, layar peragaan ruang wilayah akan
+       menampilkan angka nasional dan menyesatkan siapa pun yang memakainya
+       untuk menilai bentuk halamannya.
+    */
+    if (adalahEksternal(keadaan.profil?.role)) {
+      const wilayah = keadaan.profil?.assigned_kanwil
+      keadaan.berita = keadaan.berita
+        .filter((_, i) => i % 4 === 0)
+        .map((b) => ({ ...b, kanwil_asal: wilayah }))
+    }
     keadaan.kesehatan = {
       status: 'sehat', masuk_sehari: 6, masuk_sepekan: 41, masuk_pekan_lalu: 38,
       perubahan_persen: 8, sinkron_jeda_menit: 3, baris_jeda_jam: 2, sinkron_gagal_sehari: 0,
     }
   } else {
     try {
-      const { ambil } = await import('./lib/api.js')
-      keadaan.berita = await ambil('berita', {
-        select: 'id,judul,nama_upt,media,platform,link,created_at,tanggal_publikasi,kategori,subkategori,sentimen,urgensi,tingkat_perhatian,status_verifikasi,source_type,ringkasan,rekomendasi,ai_confidence',
-        deleted_at: 'is.null',
-        order: 'created_at.desc',
-        limit: 400,
-      }) || []
+      keadaan.berita = await muatBerita()
     } catch (galat) {
       roti(pesanRamah(galat), 'kritis', 6000)
       keadaan.berita = []
@@ -320,18 +441,7 @@ async function segarkan() {
   // Data Berita, tetapi tidak ikut menjadi angka. Perkara Rutan KPK bukan
   // beban unit Pemasyarakatan mana pun, dan unggahan berbahasa asing yang
   // kebetulan memuat kata "lapas" bukan pemberitaan sama sekali.
-  keadaan.dalamLingkup = keadaan.berita.filter((b) => b.kategori !== 'Di Luar Lingkup')
-  keadaan.luarLingkup = keadaan.berita.length - keadaan.dalamLingkup.length
-
-  keadaan.hitungan = {
-    peringatan: keadaan.dalamLingkup.filter((b) => ['Tinggi', 'Kritis'].includes(b.urgensi)
-      && !['Tidak Valid', 'Diarsipkan'].includes(b.status_verifikasi)).length,
-    telaah: keadaan.dalamLingkup.filter((b) => b.status_verifikasi === 'Belum Ditelaah').length,
-    negatif: keadaan.dalamLingkup.filter((b) => b.sentimen === 'Negatif'
-      && !['Tidak Valid', 'Diarsipkan'].includes(b.status_verifikasi)).length,
-    pemetaan: keadaan.dalamLingkup.filter((b) => !b.nama_upt
-      || ['Belum Teridentifikasi', 'Tidak diketahui'].includes(b.nama_upt)).length,
-  }
+  hitungUlang()
   gambar()
 }
 

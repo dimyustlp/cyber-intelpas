@@ -153,11 +153,16 @@ export function nadaUrgensi(urgensi) {
   }[urgensi] || 'rendah'
 }
 
+/**
+ * Warna sentimen mengikuti ember di lib/sentimen.js, bukan daftar tersendiri.
+ * Netral dan Campuran karena itu berwarna sama — keduanya satu ember, dan dua
+ * warna untuk satu ember membuat pembaca menyangka ada dua golongan.
+ */
 export function nadaSentimen(sentimen) {
   return {
     Negatif: 'kritis',
-    Campuran: 'sedang',
-    Netral: 'rendah',
+    Campuran: 'netral',
+    Netral: 'netral',
     Positif: 'positif',
   }[sentimen] || 'rendah'
 }

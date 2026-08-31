@@ -29,15 +29,32 @@ import { ikon } from '../lib/ikon.js'
 import { perbarui, pesanRamah } from '../lib/api.js'
 import { KATEGORI, SEMUA_SUBKATEGORI } from '../lib/taksonomi.js'
 import { KONFIG } from '../lib/konfig.js'
+import { EMBER, ember, nilaiSimpan } from '../lib/sentimen.js'
+import { menungguTelaah } from '../lib/hitung.js'
 
-const SENTIMEN = ['Positif', 'Netral', 'Campuran', 'Negatif']
 const URGENSI = ['Rendah', 'Sedang', 'Tinggi', 'Kritis']
+
+/**
+ * Keterangan tiap tingkat urgensi.
+ *
+ * Alasannya sama dengan keterangan sentimen: tanpa definisi di layar, "Tinggi"
+ * dan "Kritis" dibedakan menurut perasaan masing-masing analis, dan angka
+ * "perlu respons segera" di dasbor pimpinan menjadi jumlah perasaan.
+ */
+const KETERANGAN_URGENSI = {
+  Rendah: 'Tidak menuntut tindakan. Dibaca sebagai bahan pemantauan biasa.',
+  Sedang: 'Perlu diketahui pimpinan UPT, tetapi belum menuntut tindakan hari ini.',
+  Tinggi: 'Berpotensi meluas bila dibiarkan. Menuntut verifikasi lapangan dan sikap resmi.',
+  Kritis: 'Menyangkut nyawa atau stabilitas dan sedang berlangsung. Menuntut respons segera.',
+}
 
 /** Keadaan halaman, bertahan selama sesi supaya posisi antrean tidak hilang. */
 const keadaanTelaah = {
   nomor: 0,
   koreksi: false,
   sibuk: false,
+  /** Berita yang dituju dari Peringatan Dini, disematkan di kepala antrean. */
+  fokus: null,
   /** Berita yang sudah diputuskan pada sesi ini, supaya tidak muncul lagi. */
   selesai: new Set(),
   /** Hitungan untuk bilah kemajuan. */
@@ -56,14 +73,41 @@ const keadaanTelaah = {
  */
 function susunAntrean(berita) {
   const peringkat = { Kritis: 4, Tinggi: 3, Sedang: 2, Rendah: 1 }
-  return berita
+  const urut = berita
     .filter((b) => !keadaanTelaah.selesai.has(b.id))
-    .filter((b) => ['Belum Ditelaah', 'Perlu Koreksi', null, undefined].includes(b.status_verifikasi))
+    // Aturan "apa yang menunggu telaah" dipinjam dari lib/hitung.js, bukan
+    // ditulis ulang di sini. Dulu keduanya berbeda, dan lencana menu karena itu
+    // menyebut angka yang tidak pernah cocok dengan panjang antreannya.
+    .filter(menungguTelaah)
     .sort((a, b) => {
       const u = (peringkat[b.urgensi] || 0) - (peringkat[a.urgensi] || 0)
       if (u) return u
       return (Number(a.ai_confidence) || 0) - (Number(b.ai_confidence) || 0)
     })
+
+  /*
+     Berita yang dituju dari Peringatan Dini disematkan di kepala antrean.
+     Tanpa ini, tombol "Telaah" di sana hanya memindahkan orang ke halaman
+     telaah dan meninggalkannya mencari sendiri berita yang barusan dibaca —
+     yang justru mustahil, sebab antrean disusun menurut urgensi dan keyakinan
+     mesin, bukan menurut apa yang terakhir dibuka.
+  */
+  const id = keadaanTelaah.fokus
+  if (!id) return urut
+
+  const posisi = urut.findIndex((b) => b.id === id)
+  if (posisi > 0) {
+    const [dipilih] = urut.splice(posisi, 1)
+    urut.unshift(dipilih)
+    return urut
+  }
+  if (posisi === 0) return urut
+
+  // Tidak ada di antrean — misalnya statusnya sudah berubah di tempat lain.
+  // Tetap dibuka, supaya penekan tombolnya tidak menghadapi layar yang diam.
+  const luar = berita.find((b) => b.id === id && !keadaanTelaah.selesai.has(b.id))
+  if (luar) urut.unshift(luar)
+  return urut
 }
 
 /* ------------------------------------------------------------------ bagian */
@@ -157,19 +201,41 @@ function panelKoreksi(b) {
         <div class="ket">Kategori induknya ikut menyesuaikan sendiri.</div>
       </div>
 
-      <div class="kisi kisi-2">
-        <div class="isian">
-          <label for="koreksi-sentimen">Sentimen</label>
-          <select class="pilihan penuh" id="koreksi-sentimen">
-            ${SENTIMEN.map((s) => `<option${s === b.sentimen ? ' selected' : ''}>${s}</option>`).join('')}
-          </select>
+      ${/*
+        Sentimen tidak lagi berupa daftar polos berisi empat kata.
+        Empat kata tanpa definisi berarti dua analis yang membaca berita yang
+        sama boleh memilih berbeda, dan tidak ada cara mengetahui siapa yang
+        keliru — sementara pilihan itulah yang menjadi angka di dasbor
+        pimpinan. Sekarang tiap ember membawa definisinya sendiri di layar.
+      */''}
+      <fieldset class="pilih-sentimen">
+        <legend>Sentimen</legend>
+        <div class="pilih-deret">
+          ${EMBER.map((e) => {
+            const terpilih = ember(b) === e.kode
+            return `
+              <label class="pilih-kartu" data-nada="${e.nada}">
+                <input type="radio" name="koreksi-sentimen" value="${e.kode}"${terpilih ? ' checked' : ''}>
+                <span class="pilih-isi">
+                  <span class="pilih-judul">${amankan(e.label)}
+                    <span class="pilih-ringkas">${amankan(e.ringkas)}</span></span>
+                  <span class="pilih-ket">${amankan(e.keterangan)}</span>
+                  ${e.petunjuk ? `<span class="pilih-petunjuk">${amankan(e.petunjuk)}</span>` : ''}
+                </span>
+              </label>`
+          }).join('')}
         </div>
-        <div class="isian">
-          <label for="koreksi-urgensi">Urgensi</label>
-          <select class="pilihan penuh" id="koreksi-urgensi">
-            ${URGENSI.map((s) => `<option${s === b.urgensi ? ' selected' : ''}>${s}</option>`).join('')}
-          </select>
-        </div>
+        ${b.sentimen === 'Campuran' ? `
+          <div class="ket">Mesin menilai berita ini <b>Campuran</b>. Membiarkannya pada ember
+          Netral/Campuran tidak menghapus nilai itu.</div>` : ''}
+      </fieldset>
+
+      <div class="isian">
+        <label for="koreksi-urgensi">Urgensi</label>
+        <select class="pilihan penuh" id="koreksi-urgensi">
+          ${URGENSI.map((s) => `<option${s === b.urgensi ? ' selected' : ''}>${s}</option>`).join('')}
+        </select>
+        <div class="ket" id="ket-urgensi">${amankan(KETERANGAN_URGENSI[b.urgensi] || KETERANGAN_URGENSI.Rendah)}</div>
       </div>
 
       <div class="isian">
@@ -188,6 +254,19 @@ function panelKoreksi(b) {
 
 export function halamanTelaah({ keadaan, isi }) {
   const semua = keadaan.dalamLingkup || []
+
+  /*
+     Berita yang dituju dipindahkan ke keadaan halaman, lalu penandanya di
+     keadaan aplikasi dihapus. Kalau tidak, kembali ke halaman ini seminggu
+     kemudian akan menyematkan lagi berita yang sudah lama selesai.
+  */
+  if (keadaan.fokus) {
+    keadaanTelaah.fokus = keadaan.fokus
+    keadaanTelaah.nomor = 0
+    keadaanTelaah.koreksi = false
+    keadaan.fokus = null
+  }
+
   const awal = susunAntrean(semua).length + keadaanTelaah.selesai.size
 
   function gambar() {
@@ -213,6 +292,12 @@ export function halamanTelaah({ keadaan, isi }) {
     isi.innerHTML = `
       <div class="tumpuk">
         ${kemajuan(antrean.length, Math.max(awal, 1))}
+
+        ${keadaanTelaah.fokus === b.id ? pesanSistem(
+          '<b>Dibuka dari Peringatan Dini.</b> Berita ini disematkan di kepala antrean. '
+          + 'Sesudah diputuskan, antrean kembali berjalan menurut urutan biasa.',
+          'aksen', 'peringatan',
+        ) : ''}
 
         ${kartu({
           judul: 'Publikasi yang ditelaah',
@@ -294,8 +379,14 @@ export function halamanTelaah({ keadaan, isi }) {
     const sebelum = { ...b }
     Object.assign(b, isian)
     keadaanTelaah.selesai.add(b.id)
+    if (keadaanTelaah.fokus === b.id) keadaanTelaah.fokus = null
     keadaanTelaah.nomor = 0
     gambar()
+
+    // Lencana menu dan angka dasbor dihitung ulang seketika. Sebelumnya
+    // keduanya baru berubah pada pemuatan ulang berikutnya, sehingga analis
+    // yang baru saja mengosongkan antrean tetap melihat lencana berisi puluhan.
+    document.dispatchEvent(new CustomEvent('hitung-ulang'))
 
     if (keadaan.demo) {
       roti(`${kabar} (mode peragaan, tidak disimpan)`, 'sedang')
@@ -335,6 +426,7 @@ export function halamanTelaah({ keadaan, isi }) {
     const kode = isi.querySelector('#koreksi-sub')?.value
     const sub = SEMUA_SUBKATEGORI.find((s) => s.kode === kode)
     const catatan = isi.querySelector('#koreksi-catatan')?.value.trim() || ''
+    const emberDipilih = isi.querySelector('input[name="koreksi-sentimen"]:checked')?.value || ember(b)
 
     if (!catatan) {
       roti('Sebutkan apa yang keliru. Koreksi tanpa alasan tidak bisa dipakai memperbaiki mesin.', 'sedang', 5000)
@@ -350,7 +442,10 @@ export function halamanTelaah({ keadaan, isi }) {
       subkategori_kode: kode,
       subkategori: sub ? sub.nama : (kode === '0.1' ? 'Belum Dikelompokkan' : 'Konten Tidak Relevan'),
       kategori: sub ? sub.kategoriNama : (luar ? 'Di Luar Lingkup' : 'Lainnya'),
-      sentimen: isi.querySelector('#koreksi-sentimen')?.value,
+      // Nilai yang ditulis ditentukan lib/sentimen.js, bukan di sini: memilih
+      // "Netral/Campuran" pada berita yang memang dinilai mesin sebagai
+      // Campuran tidak menghapus nilai itu.
+      sentimen: nilaiSimpan(emberDipilih, b.sentimen),
       urgensi: isi.querySelector('#koreksi-urgensi')?.value,
       status_verifikasi: 'Terverifikasi',
       review_note: catatan,
@@ -381,12 +476,26 @@ export function halamanTelaah({ keadaan, isi }) {
 
   function lewati() {
     const antrean = susunAntrean(semua)
+    // Melewati berita yang barusan dibuka dari Peringatan Dini berarti
+    // melepaskannya dari kepala antrean; kalau tidak, ia akan muncul lagi
+    // sebagai nomor satu pada gambar berikutnya dan tidak bisa dilewati.
+    if (keadaanTelaah.fokus && antrean[keadaanTelaah.nomor]?.id === keadaanTelaah.fokus) {
+      keadaanTelaah.fokus = null
+    }
     keadaanTelaah.nomor = (keadaanTelaah.nomor + 1) % Math.max(antrean.length, 1)
     keadaanTelaah.koreksi = false
     gambar()
   }
 
   /* ------------------------------------------------------------ penyimak */
+
+  // Keterangan urgensi mengikuti pilihan, supaya definisinya terbaca pada saat
+  // memutuskan — bukan sesudahnya.
+  isi.addEventListener('change', (ev) => {
+    if (ev.target.id !== 'koreksi-urgensi') return
+    const ket = isi.querySelector('#ket-urgensi')
+    if (ket) ket.textContent = KETERANGAN_URGENSI[ev.target.value] || ''
+  })
 
   isi.addEventListener('click', (ev) => {
     const aksi = ev.target.closest('[data-aksi]')?.dataset.aksi

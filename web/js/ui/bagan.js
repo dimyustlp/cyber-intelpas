@@ -35,10 +35,17 @@ function gelap() {
   return globalThis.matchMedia?.('(prefers-color-scheme: dark)').matches ?? false
 }
 
+/**
+ * Warna per ember sentimen, bukan per nilai basis data.
+ *
+ * Dulu "Campuran" punya warnanya sendiri di donat ini, sehingga pembaca melihat
+ * empat golongan sementara keputusan analis hanya mengenal tiga. Kuncinya
+ * sekarang kode ember dari lib/sentimen.js.
+ */
 export function paletSentimen() {
   return gelap()
-    ? { Positif: '#2FBF97', Netral: '#79859A', Campuran: '#EBD055', Negatif: '#FA7C6A' }
-    : { Positif: '#1F6B50', Netral: '#7C8798', Campuran: '#C9902F', Negatif: '#8E1B14' }
+    ? { positif: '#2FBF97', netral: '#79859A', belum: '#5C6674', negatif: '#FA7C6A' }
+    : { positif: '#1F6B50', netral: '#7C8798', belum: '#A8B0BC', negatif: '#8E1B14' }
 }
 
 export function paletUrgensi() {
@@ -200,10 +207,8 @@ export function baganSentimen(wadah, data) {
   wadah.style.position = 'relative'
 
   const palet = paletSentimen()
-  const urutan = ['Positif', 'Netral', 'Campuran', 'Negatif']
-  const butir = urutan
-    .map((k) => ({ label: k, jumlah: data.find((d) => d.label === k)?.jumlah || 0 }))
-    .filter((b) => b.jumlah > 0)
+  // Data datang sudah berbentuk ember: { kode, label, jumlah }.
+  const butir = (data || []).filter((b) => b.jumlah > 0)
 
   const total = butir.reduce((a, b) => a + b.jumlah, 0)
   if (!total) { wadah.innerHTML = '<p class="samar-teks kecil-teks">Belum ada data sentimen.</p>'; return }
@@ -229,7 +234,7 @@ export function baganSentimen(wadah, data) {
 
     const busur = el('path', {
       class: 'busur',
-      d, fill: 'none', stroke: palet[b.label], 'stroke-width': tebal, 'stroke-linecap': 'butt',
+      d, fill: 'none', stroke: palet[b.kode], 'stroke-width': tebal, 'stroke-linecap': 'butt',
       style: 'transition:stroke-width 120ms',
     })
     busur.addEventListener('mouseenter', () => busur.setAttribute('stroke-width', tebal + 4))
@@ -258,7 +263,7 @@ export function baganSentimen(wadah, data) {
     const baris = document.createElement('div')
     baris.style.cssText = 'display:flex;align-items:center;gap:7px;font-size:12.5px'
     baris.innerHTML = `
-      <i style="width:9px;height:9px;border-radius:2px;background:${palet[b.label]};flex:none"></i>
+      <i style="width:9px;height:9px;border-radius:2px;background:${palet[b.kode]};flex:none"></i>
       <span>${b.label}</span>
       <b class="angka" style="margin-left:auto">${b.jumlah}</b>
       <span class="mini-teks samar-teks" style="width:44px;text-align:right">${((b.jumlah / total) * 100).toFixed(1).replace('.', ',')}%</span>`
@@ -332,7 +337,7 @@ export function baganUrgensi(wadah, data) {
   for (const b of butir) {
     const potong = document.createElement('div')
     potong.className = 'pita-potong'
-    potong.style.cssText = `flex:${b.jumlah};background:${palet[b.label]}`
+    potong.style.cssText = `flex:${b.jumlah};background:${palet[b.kode]}`
     potong.title = `${b.label}: ${b.jumlah} berita (${((b.jumlah / total) * 100).toFixed(1)}%)`
     pita.appendChild(potong)
   }
@@ -348,10 +353,10 @@ export function baganUrgensi(wadah, data) {
     sel.className = 'urgensi-baris'
     sel.innerHTML = `
       <span class="urgensi-nama">
-        <i style="background:${palet[b.label]}"></i>${b.label}
+        <i style="background:${palet[b.kode]}"></i>${b.label}
       </span>
       <span class="urgensi-batang">
-        <i style="width:${((b.jumlah / tertinggi) * 100).toFixed(1)}%;background:${palet[b.label]}"></i>
+        <i style="width:${((b.jumlah / tertinggi) * 100).toFixed(1)}%;background:${palet[b.kode]}"></i>
       </span>
       <span class="urgensi-angka angka">${b.jumlah}<small>${persen}%</small></span>`
     daftar.appendChild(sel)

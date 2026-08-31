@@ -259,6 +259,36 @@ const JENIS_DB: Record<string, string> = {
   kasus: 'case_update',
 }
 
+/**
+ * Mencari baris integrasi Telegram, membuatnya bila belum ada.
+ *
+ * `telegram_targets.integration_id` berstatus NOT NULL dan menunjuk ke
+ * `integration_settings`. Sebelum ini aksi daftarkan tidak pernah mengisinya,
+ * sehingga setiap pendaftaran grup ditolak basis data — dan karena penolakan
+ * itu muncul sebagai galat umum "Basis data menolak", yang terbaca petugas
+ * hanyalah bahwa penyimpanan gagal, bukan bahwa ada kolom wajib yang tidak
+ * pernah diisi. Itu sebabnya tabel tujuannya tetap kosong meskipun kunci bot
+ * sudah benar dan grupnya sudah terdeteksi.
+ *
+ * Nilai kunci bot tidak ikut disimpan di sini. Yang disimpan hanya NAMA
+ * secret-nya, sebagai penunjuk ke tempat kunci itu sebenarnya hidup.
+ */
+async function integrasiTelegram(): Promise<string> {
+  const ada = await keDb('integration_settings?provider=eq.telegram&select=id&limit=1')
+  if (ada?.length) return String(ada[0].id)
+
+  const baru = await keDb('integration_settings', {
+    method: 'POST',
+    body: JSON.stringify({
+      provider: 'telegram',
+      label: 'Bot Telegram Cyber-Intelpas',
+      is_active: true,
+      secret_vault_name: 'TELEGRAM_BOT_TOKEN',
+    }),
+  })
+  return String(baru?.[0]?.id ?? '')
+}
+
 async function catat(baris: Record<string, unknown>) {
   try {
     await keDb('telegram_deliveries', { method: 'POST', body: JSON.stringify(baris) })
@@ -434,7 +464,7 @@ Deno.serve(async (permintaan) => {
       if (!chatId) return jawab({ galat: 'chat_id wajib diisi.' }, 400)
 
       const sudah = await keDb(`telegram_targets?chat_id=eq.${encodeURIComponent(chatId)}&select=id`)
-      const isi = {
+      const isi: Record<string, unknown> = {
         label: String(badan.label ?? 'Grup Telegram'),
         chat_id: chatId,
         message_thread_id: badan.message_thread_id ?? null,
@@ -445,9 +475,14 @@ Deno.serve(async (permintaan) => {
         updated_at: new Date().toISOString(),
       }
 
+      // Kolom wajib ini hanya diperlukan saat baris baru dibuat. Pada
+      // pembaruan, baris lamanya sudah menunjuk ke integrasi yang benar.
       const hasil = sudah?.length
         ? await keDb(`telegram_targets?id=eq.${sudah[0].id}`, { method: 'PATCH', body: JSON.stringify(isi) })
-        : await keDb('telegram_targets', { method: 'POST', body: JSON.stringify(isi) })
+        : await keDb('telegram_targets', {
+            method: 'POST',
+            body: JSON.stringify({ ...isi, integration_id: await integrasiTelegram() }),
+          })
 
       return jawab({ tersimpan: hasil?.[0] ?? isi, diperbarui: Boolean(sudah?.length), oleh })
     }

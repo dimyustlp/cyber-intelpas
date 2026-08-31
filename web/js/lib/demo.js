@@ -118,7 +118,7 @@ export function penggunaDemo() {
       id: 'demo-5', username: 'kanwil.baru', full_name: 'Penginput Kanwil Baru',
       role: 'kanwil_penginput', jabatan: 'Penginput Berita',
       assigned_kanwil: null, assigned_upt: null, aktif: true,
-      auth_user_id: 'auth-5', last_login: null,
+      auth_user_id: 'auth-5', last_login: null, must_change_password: true,
     },
     {
       id: 'demo-6', username: 'agus.lama', full_name: 'Agus Wijaya',

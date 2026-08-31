@@ -159,6 +159,21 @@ export function halamanProfil({ keadaan, isi }) {
 
     try {
       await gantiSandiSendiri(baru)
+
+      /*
+         Akun yang baru diterbitkan ditandai masih memakai sandi awal, dan
+         penandanya muncul di layar Manajemen Pengguna. Menggantinya di sini
+         adalah satu-satunya saat penanda itu benar-benar tidak berlaku lagi —
+         kalau tidak dihapus di sini, ia akan menempel selamanya dan berhenti
+         berarti apa-apa.
+      */
+      if (p.must_change_password) {
+        try {
+          await perbaruiProfilSendiri({ must_change_password: false })
+          p.must_change_password = false
+        } catch { /* sandinya sudah berganti; penanda menyusul pada suntingan berikutnya */ }
+      }
+
       roti('Kata sandi baru sudah berlaku.', 'positif')
       borangSandi.reset()
     } catch (galat) {

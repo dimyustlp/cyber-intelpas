@@ -56,7 +56,8 @@ web/                     aplikasi peramban, disajikan apa adanya
 
 supabase/
   migrations/            6 berkas migrasi, sudah diuji di PostgreSQL 16
-  functions/             Edge Function (klasifikasi, sheet-sync, telegram-kirim)
+  functions/             Edge Function (klasifikasi, sheet-sync, telegram-kirim,
+                           kelola-pengguna — penerbitan akun berjenjang)
 
 tools/
   server-lokal.mjs       peladen statis untuk pengembangan

@@ -1,8 +1,9 @@
 # Migrasi Basis Data Cyber-Intelpas
 
-Tujuh berkas migrasi. Empat yang pertama membenahi temuan audit 22 Agustus 2026;
-tiga terakhir menyiapkan sumber data kantor wilayah dan menutup lubang cakupan
-yang lahir dari perubahan itu. Semuanya idempoten — aman dijalankan berulang.
+Delapan berkas migrasi. Empat yang pertama membenahi temuan audit 22 Agustus 2026;
+empat terakhir menyiapkan sumber data kantor wilayah, menutup lubang cakupan
+yang lahir dari perubahan itu, dan mendelegasikan penerbitan akun penginput
+kepada admin kanwil. Semuanya idempoten — aman dijalankan berulang.
 
 | Berkas | Isi |
 |---|---|
@@ -13,6 +14,7 @@ yang lahir dari perubahan itu. Semuanya idempoten — aman dijalankan berulang.
 | `20260831010000_sumber_ganda_dan_angka.sql` | Daftar sumber spreadsheet, kolom `kanwil_asal`, satu definisi "negatif", penguncian tabel cadangan |
 | `20260831020000_cakupan_wilayah.sql` | Dua peran kanwil, `can_access_upt` yang menolak lebih dulu, policy berita per wilayah |
 | `20260831030000_tutup_fungsi_terbuka.sql` | Mencabut hak eksekusi anon atas fungsi SECURITY DEFINER, termasuk `snapshot_laporan` |
+| `20260831040000_admin_kanwil_kelola_penginput.sql` | Admin kanwil membaca profil di wilayahnya dan menyunting penginputnya sendiri |
 
 ## Mengapa migrasi 06 harus ada sebelum akun kanwil pertama
 

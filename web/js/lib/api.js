@@ -241,7 +241,11 @@ export async function keluar() {
 export async function muatProfil() {
   const uid = sesi?.user?.id
   const baris = await ambil('app_users', {
-    select: 'id,username,full_name,role,jabatan,assigned_kanwil,assigned_upt,aktif,email,last_login',
+    // `auth_user_id` dipakai halaman pengguna untuk mengenali baris milik
+    // sendiri, dan `must_change_password` untuk mengetahui kapan penanda sandi
+    // awal boleh dihapus. Keduanya milik profil sendiri, bukan milik orang lain.
+    select: 'id,username,full_name,role,jabatan,assigned_kanwil,assigned_upt,aktif,email,'
+      + 'last_login,auth_user_id,must_change_password',
     ...(uid ? { auth_user_id: `eq.${uid}` } : {}),
     limit: 1,
   })

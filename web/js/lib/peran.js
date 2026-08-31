@@ -124,6 +124,9 @@ export const IZIN = {
   kanwil_admin: [
     'lihat_dasbor_wilayah', 'buat_berita', 'lihat_kiriman_wilayah',
     'periksa_kiriman_wilayah',
+    // Menerbitkan akun penginput di wilayahnya sendiri. Batasnya ditegakkan
+    // Edge Function, bukan izin ini — izin ini hanya menentukan menunya muncul.
+    'kelola_pengguna_wilayah',
   ],
 
   kanwil_penginput: [
@@ -237,6 +240,7 @@ export const MENU_KANWIL = [
       { id: 'kanwil-dasbor', label: 'Ringkasan Wilayah', ikon: 'dasbor', izin: 'lihat_dasbor_wilayah' },
       { id: 'input', label: 'Kirim Berita', ikon: 'tambah', izin: 'buat_berita' },
       { id: 'kanwil-riwayat', label: 'Riwayat Kiriman', ikon: 'arsip', izin: 'buat_berita' },
+      { id: 'pengguna', label: 'Pengguna Wilayah', ikon: 'pengguna', izin: 'kelola_pengguna_wilayah' },
     ],
   },
 ]

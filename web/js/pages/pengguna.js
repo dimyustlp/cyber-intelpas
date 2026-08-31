@@ -1,29 +1,40 @@
 /**
  * Manajemen Pengguna.
  *
- * Batas yang harus jelas sejak awal, sebab ia menentukan seluruh bentuk halaman
- * ini: **menerbitkan akun baru tidak dilakukan dari sini.** Membuat akun berarti
- * menulis ke `auth.users`, dan itu hanya bisa dilakukan pemegang service role
- * key — kunci yang tidak pernah boleh berada di peramban. Menaruhnya di sini
- * demi kenyamanan berarti menyerahkan seluruh basis data kepada siapa pun yang
- * membuka tab jaringan di peramban.
+ * Halaman ini menerbitkan akun, dan pekerjaan itu tidak dikerjakan di peramban.
+ * Membuat akun berarti menulis ke tabel identitas, dan itu menuntut kunci
+ * layanan — kunci yang tidak pernah boleh dikirim ke peramban, sebab siapa pun
+ * yang membuka tab jaringan akan memegang seluruh basis data. Yang dikirim dari
+ * sini hanyalah permintaan; yang memutuskan boleh atau tidaknya adalah Edge
+ * Function `kelola-pengguna`.
  *
- * Yang bisa dikerjakan dari sini adalah yang memang milik lapisan aplikasi:
- * menetapkan peran, wilayah, unit, dan keaktifan sebuah profil. Justru inilah
- * yang paling sering dibutuhkan — akun kantor wilayah yang belum ditetapkan
- * wilayahnya tidak bisa mengirim apa pun, dan sebelum halaman ini ada, satu-
- * satunya cara memperbaikinya adalah membuka panel Supabase.
+ * Wewenangnya bertingkat, sesuai cara kerja organisasinya:
  *
- * Penerbitan akun tetap dijelaskan di layar, lengkap dengan pola alamatnya,
- * supaya tidak menjadi pengetahuan lisan yang hilang bersama orangnya.
+ *   Administrator Sistem Intelijen  →  menerbitkan peran apa pun.
+ *   Administrator Kantor Wilayah    →  hanya Penginput Berita, hanya di
+ *                                      wilayahnya sendiri.
+ *
+ * Formulir di bawah menyembunyikan pilihan yang tidak berhak dipakai, tetapi
+ * itu bukan pengamanannya. Pengamanannya ada di peladen, dan tetap menolak
+ * sekalipun seseorang menyusun permintaannya sendiri di luar halaman ini.
+ *
+ * Satu aturan yang mudah terlihat sewenang-wenang dan sebenarnya tidak:
+ * **akun kantor wilayah wajib memakai alamat surel sebagai username.** Petugas
+ * wilayah berganti-ganti orang, dan alamat surat dinas adalah satu-satunya
+ * penanda yang masih bisa ditelusuri ketika sebuah akun perlu
+ * dipertanggungjawabkan setahun kemudian. Akun internal diterbitkan untuk
+ * jabatan, bukan untuk kotak surat, jadi ia tetap memakai username polos.
  */
 
 import { kartu, keping, kosong, pesanSistem, tombol, roti, konfirmasi } from '../ui/komponen.js'
 import { amankan, angka, jarakWaktu, tanggalJam } from '../lib/format.js'
 import { ikon } from '../lib/ikon.js'
-import { ambil, perbarui, pesanRamah, RANAH_USERNAME } from '../lib/api.js'
-import { PERAN, labelPeran, adalahEksternal } from '../lib/peran.js'
+import { ambil, perbarui, panggilEdge, pesanRamah, RANAH_USERNAME, tampakSurel } from '../lib/api.js'
+import { PERAN, labelPeran, adalahEksternal, punyaIzin } from '../lib/peran.js'
 import { penggunaDemo, KANWIL_DEMO } from '../lib/demo.js'
+
+/** Sama persis dengan pola di Edge Function. Yang menolak tetap peladen. */
+const POLA_USERNAME = /^[a-z0-9][a-z0-9._-]{2,31}$/
 
 const keadaanPengguna = {
   dimuat: false,
@@ -33,16 +44,24 @@ const keadaanPengguna = {
   /** Baris yang sedang disunting, satu per satu — bukan tabel yang bisa diedit serentak. */
   sunting: null,
   sibuk: false,
+  /** Formulir penerbitan akun sedang terbuka. */
+  tambah: false,
+  /** Peran yang sedang dipilih pada formulir, supaya keterangannya ikut berubah. */
+  peranBaru: '',
+  /** Hasil penerbitan terakhir — ditampilkan sekali, lalu hilang. */
+  terbit: null,
 }
 
-/** Peran yang boleh ditetapkan, berurut dari pusat ke wilayah. */
-function pilihanPeran() {
-  return Object.entries(PERAN).map(([kode, p]) => ({ kode, nama: p.nama, eksternal: adalahEksternal(kode) }))
+function pilihanPeran(hanyaPenginput) {
+  const daftar = Object.entries(PERAN).map(([kode, p]) => ({
+    kode, nama: p.nama, eksternal: adalahEksternal(kode),
+  }))
+  return hanyaPenginput ? daftar.filter((p) => p.kode === 'kanwil_penginput') : daftar
 }
 
 /* ------------------------------------------------------------------ baris */
 
-function barisPengguna(u, sedangDisunting, kanwil) {
+function barisPengguna(u, sedangDisunting, kanwil, bolehSunting) {
   const tertaut = Boolean(u.auth_user_id)
   const eksternal = adalahEksternal(u.role)
   const perluWilayah = eksternal && !u.assigned_kanwil
@@ -62,13 +81,16 @@ function barisPengguna(u, sedangDisunting, kanwil) {
         ${u.aktif === false ? keping('Nonaktif', 'rendah', true) : keping('Aktif', 'positif', true)}
         ${tertaut ? '' : keping('Belum bisa masuk', 'kritis', true)}
         ${perluWilayah ? keping('Wilayah kosong', 'sedang', true) : ''}
+        ${u.must_change_password ? keping('Sandi awal', 'sedang', true) : ''}
       </td>
       <td class="kecil" title="${amankan(u.last_login ? tanggalJam(u.last_login) : '')}">
         ${u.last_login ? amankan(jarakWaktu(u.last_login)) : '—'}
       </td>
       <td class="rata-kanan">
-        ${tombol({ label: 'Sunting', ikon: 'saring', kecil: true, aksi: 'sunting', judul: `Sunting ${u.username}` })
-          .replace('<button', `<button data-id="${amankan(u.id)}"`)}
+        ${bolehSunting
+          ? tombol({ label: 'Sunting', ikon: 'saring', kecil: true, aksi: 'sunting', judul: `Sunting ${u.username}` })
+            .replace('<button', `<button data-id="${amankan(u.id)}"`)
+          : ''}
       </td>
     </tr>`
   }
@@ -87,7 +109,7 @@ function barisPengguna(u, sedangDisunting, kanwil) {
             <div class="isian">
               <label for="p-peran">Peran</label>
               <select class="pilihan penuh" id="p-peran">
-                ${pilihanPeran().map((p) => `
+                ${pilihanPeran(false).map((p) => `
                   <option value="${amankan(p.kode)}"${p.kode === u.role ? ' selected' : ''}>
                     ${amankan(p.nama)}${p.eksternal ? ' — wilayah' : ''}
                   </option>`).join('')}
@@ -138,9 +160,119 @@ function barisPengguna(u, sedangDisunting, kanwil) {
     </tr>`
 }
 
+/* -------------------------------------------------------- formulir terbit */
+
+function formulirTerbit({ hanyaPenginput, wilayahTetap, daftarKanwil }) {
+  const peran = keadaanPengguna.peranBaru || (hanyaPenginput ? 'kanwil_penginput' : 'news_data_operator')
+  const wilayah = adalahEksternal(peran)
+
+  return `
+    <form class="terbit-akun" id="borang-terbit" novalidate>
+      <div class="kisi kisi-2" style="gap:12px">
+        <div class="isian">
+          <label for="t-nama">Nama lengkap <span class="wajib">wajib</span></label>
+          <input class="masukan" id="t-nama" type="text" autocomplete="off"
+                 placeholder="Nama sebagaimana tertulis pada SK">
+        </div>
+
+        <div class="isian">
+          <label for="t-peran">Peran <span class="wajib">wajib</span></label>
+          ${hanyaPenginput
+            ? `<input class="masukan" id="t-peran-tampil" value="Penginput Berita Kantor Wilayah" readonly>
+               <input type="hidden" id="t-peran" value="kanwil_penginput">`
+            : `<select class="pilihan penuh" id="t-peran">
+                ${pilihanPeran(false).map((p) => `
+                  <option value="${amankan(p.kode)}"${p.kode === peran ? ' selected' : ''}>
+                    ${amankan(p.nama)}${p.eksternal ? ' — wilayah' : ''}
+                  </option>`).join('')}
+               </select>`}
+          <div class="ket" id="t-ket-peran">${amankan(PERAN[peran]?.tugas || '')}</div>
+        </div>
+      </div>
+
+      ${/*
+        Satu kolom yang berganti arti menurut peran, bukan dua kolom berbeda.
+        Dua kolom akan menuntut penerbit memahami lebih dulu mana yang berlaku
+        bagi peran yang ia pilih — padahal itu justru yang perlu dijelaskan
+        sistem kepadanya.
+      */''}
+      <div class="isian" style="margin-top:12px">
+        <label for="t-username">
+          ${wilayah ? 'Alamat surel dinas' : 'Username'} <span class="wajib">wajib</span>
+        </label>
+        <input class="masukan" id="t-username" type="${wilayah ? 'email' : 'text'}"
+               autocapitalize="none" spellcheck="false" autocomplete="off"
+               placeholder="${wilayah ? 'nama.petugas@kemenimipas.go.id' : 'budi.santoso'}">
+        <div class="ket" id="t-ket-username">
+          ${wilayah
+            ? 'Akun kantor wilayah <b>wajib</b> memakai alamat surel. Alamat inilah yang '
+              + 'diketik petugas saat masuk, dan yang menjadi penanggung jawab akun ini.'
+            : `Huruf kecil, angka, titik, garis bawah, atau tanda hubung. Sistem menambahkan
+               <code>@${amankan(RANAH_USERNAME)}</code> sendiri sebagai identitas —
+               petugas cukup mengetik username-nya.`}
+        </div>
+      </div>
+
+      <div class="kisi kisi-2" style="gap:12px;margin-top:12px">
+        <div class="isian">
+          <label for="t-kanwil">Kantor wilayah${wilayah ? ' <span class="wajib">wajib</span>' : ''}</label>
+          ${wilayahTetap
+            ? `<input class="masukan" id="t-kanwil-tampil" value="${amankan(wilayahTetap)}" readonly>
+               <input type="hidden" id="t-kanwil" value="${amankan(wilayahTetap)}">
+               <div class="ket">Akun yang Anda terbitkan selalu terikat pada wilayah Anda sendiri.</div>`
+            : `<input class="masukan" id="t-kanwil" list="daftar-kanwil-terbit"
+                      placeholder="${wilayah ? 'Wajib untuk peran wilayah' : 'Kosongkan untuk cakupan nasional'}"
+                      ${wilayah ? '' : 'disabled'}>
+               <datalist id="daftar-kanwil-terbit">
+                 ${daftarKanwil.map((k) => `<option value="${amankan(k)}"></option>`).join('')}
+               </datalist>
+               <div class="ket" id="t-ket-kanwil">
+                 ${wilayah ? 'Menentukan berita mana yang boleh ia lihat dan atas nama siapa ia mengirim.'
+                   : 'Peran pusat tidak dibatasi wilayah.'}
+               </div>`}
+        </div>
+
+        <div class="isian">
+          <label for="t-jabatan">Jabatan</label>
+          <input class="masukan" id="t-jabatan" type="text" autocomplete="off"
+                 placeholder="mis. Kasubsi Intelijen">
+          <div class="ket">Hanya keterangan pada profil. Tidak memengaruhi hak akses.</div>
+        </div>
+      </div>
+
+      <div class="kisi kisi-2" style="gap:12px;margin-top:12px">
+        <div class="isian">
+          <label for="t-sandi">Kata sandi awal <span class="wajib">wajib</span></label>
+          <input class="masukan" id="t-sandi" type="password" autocomplete="new-password"
+                 placeholder="Minimal 8 karakter">
+        </div>
+        <div class="isian">
+          <label for="t-sandi2">Ulangi kata sandi <span class="wajib">wajib</span></label>
+          <input class="masukan" id="t-sandi2" type="password" autocomplete="new-password"
+                 placeholder="Ketik ulang">
+          <div class="ket">
+            Sandi ini Anda sampaikan sendiri kepada yang bersangkutan. Sistem tidak mengirim surel.
+          </div>
+        </div>
+      </div>
+
+      <div class="baris gap-6" style="margin-top:16px">
+        ${tombol({ label: 'Terbitkan akun', ikon: 'centang', gaya: 'utama', aksi: 'terbitkan',
+          nonaktif: keadaanPengguna.sibuk })}
+        ${tombol({ label: 'Batal', aksi: 'batal-terbit' })}
+      </div>
+    </form>`
+}
+
 /* ---------------------------------------------------------------- halaman */
 
 export function halamanPengguna({ keadaan, isi }) {
+  const peranSaya = keadaan.profil?.role
+  const bolehSemua = punyaIzin(peranSaya, 'kelola_pengguna')
+  const bolehWilayah = !bolehSemua && punyaIzin(peranSaya, 'kelola_pengguna_wilayah')
+  const bolehTerbit = bolehSemua || bolehWilayah
+  const wilayahSaya = keadaan.profil?.assigned_kanwil || null
+
   function gambar() {
     if (!keadaanPengguna.dimuat) {
       isi.innerHTML = kartu({ judul: 'Pengguna', isi: '<p class="samar-teks">Memuat daftar pengguna…</p>' })
@@ -150,16 +282,28 @@ export function halamanPengguna({ keadaan, isi }) {
     const daftar = keadaanPengguna.daftar
     const tanpaAkun = daftar.filter((u) => !u.auth_user_id)
     const wilayahKosong = daftar.filter((u) => adalahEksternal(u.role) && !u.assigned_kanwil)
+    const t = keadaanPengguna.terbit
 
     isi.innerHTML = `
       <div class="tumpuk">
         ${keadaanPengguna.galat ? pesanSistem(
           `<b>Daftar pengguna tidak dapat dibaca.</b> ${amankan(keadaanPengguna.galat)}`, 'kritis', 'peringatan') : ''}
 
+        ${t ? pesanSistem(
+          `<b>Akun ${amankan(t.nama)} diterbitkan.</b> Ia masuk dengan
+           <code>${amankan(t.masuk)}</code> dan kata sandi awal yang Anda tetapkan.
+           Sampaikan keduanya langsung kepada yang bersangkutan — sistem tidak mengirim surel.`,
+          'positif', 'centang') : ''}
+
+        ${bolehWilayah && !wilayahSaya ? pesanSistem(
+          '<b>Wilayah pada akun Anda sendiri belum ditetapkan.</b> Selama itu kosong, '
+          + 'Anda belum bisa menerbitkan akun penginput. Hubungi Administrator Sistem Intelijen.',
+          'kritis', 'peringatan') : ''}
+
         ${tanpaAkun.length ? pesanSistem(
           `<b>${angka(tanpaAkun.length)} profil belum punya akun masuk.</b> Profilnya ada dan
            perannya sudah ditetapkan, tetapi belum tertaut ke satu pun identitas — sehingga
-           belum bisa masuk sama sekali. Cara menerbitkannya ada di bagian bawah halaman ini.`,
+           belum bisa masuk sama sekali. Terbitkan ulang akunnya, atau hubungi administrator sistem.`,
           'sedang', 'info') : ''}
 
         ${wilayahKosong.length ? pesanSistem(
@@ -167,9 +311,24 @@ export function halamanPengguna({ keadaan, isi }) {
            Selama kosong, kiriman berita mereka akan ditolak basis data dan layarnya tampak kosong
            tanpa penjelasan.`, 'kritis', 'peringatan') : ''}
 
+        ${keadaanPengguna.tambah && bolehTerbit ? kartu({
+          judul: 'Terbitkan akun baru',
+          ket: bolehWilayah
+            ? `Penginput Berita untuk ${amankan(wilayahSaya || 'wilayah Anda')}`
+            : 'Peran pusat maupun peran kantor wilayah',
+          isi: formulirTerbit({
+            hanyaPenginput: bolehWilayah,
+            wilayahTetap: bolehWilayah ? wilayahSaya : null,
+            daftarKanwil: keadaanPengguna.kanwil,
+          }),
+        }) : ''}
+
         ${kartu({
-          judul: 'Daftar pengguna',
+          judul: bolehWilayah ? 'Pengguna di wilayah Anda' : 'Daftar pengguna',
           ket: `${angka(daftar.length)} profil terdaftar`,
+          aksi: bolehTerbit && !keadaanPengguna.tambah
+            ? tombol({ label: 'Tambah pengguna', ikon: 'tambah', gaya: 'utama', kecil: true, aksi: 'buka-terbit' })
+            : '',
           rapat: true,
           isi: daftar.length ? `
             <div class="tabel-bungkus">
@@ -178,51 +337,141 @@ export function halamanPengguna({ keadaan, isi }) {
                   <th>Nama</th>
                   <th style="width:210px">Peran</th>
                   <th style="width:170px">Wilayah</th>
-                  <th style="width:190px">Keadaan</th>
+                  <th style="width:220px">Keadaan</th>
                   <th style="width:96px">Masuk terakhir</th>
                   <th style="width:90px"></th>
                 </tr></thead>
                 <tbody>
-                  ${daftar.map((u) => barisPengguna(u, keadaanPengguna.sunting === u.id, keadaanPengguna.kanwil)).join('')}
+                  ${daftar.map((u) => barisPengguna(
+                    u,
+                    keadaanPengguna.sunting === u.id,
+                    keadaanPengguna.kanwil,
+                    bolehSemua || (bolehWilayah && u.role === 'kanwil_penginput'),
+                  )).join('')}
                 </tbody>
               </table>
-            </div>` : kosong('Belum ada profil', 'Tidak ada satu pun profil yang dapat Anda baca.'),
+            </div>` : kosong(
+              'Belum ada profil',
+              bolehWilayah
+                ? 'Belum ada pengguna di wilayah Anda. Mulailah dengan menerbitkan akun penginput.'
+                : 'Tidak ada satu pun profil yang dapat Anda baca.',
+              bolehTerbit ? tombol({ label: 'Tambah pengguna', ikon: 'tambah', gaya: 'utama', aksi: 'buka-terbit' }) : '',
+            ),
         })}
 
         ${kartu({
-          judul: 'Menerbitkan akun baru',
-          ket: 'Dikerjakan dari panel Supabase — dan memang tidak dari sini',
+          judul: 'Yang tetap dikerjakan dari panel Supabase',
+          ket: 'Dua hal yang sengaja tidak ada tombolnya di sini',
           isi: `
-            <div class="tumpuk" style="gap:12px">
-              <p class="kecil-teks" style="margin:0;color:var(--ink-2)">
-                Membuat akun berarti menulis ke tabel identitas, dan itu hanya bisa dilakukan
-                dengan kunci layanan. Kunci itu tidak pernah boleh berada di peramban — karena itu
-                langkahnya dijelaskan di sini, bukan disediakan sebagai tombol.
-              </p>
-
-              <ol class="kecil-teks" style="margin:0;padding-left:20px;line-height:1.7;color:var(--ink-2)">
-                <li>Buka Supabase → <b>Authentication</b> → <b>Add user</b> → <i>Create new user</i>.</li>
-                <li>Isi <b>Email</b> dengan pola
-                  <code>&lt;username&gt;@${amankan(RANAH_USERNAME)}</code> —
-                  ranah ini tidak pernah menerima surat; ia hanya wadah bagi username.</li>
-                <li>Isi <b>Password</b> dengan sandi awal, lalu centang <i>Auto Confirm User</i>.</li>
-                <li>Pada <b>User metadata</b>, isi <code>username</code>, <code>full_name</code>,
-                  dan <code>role</code>.</li>
-                <li>Profil aplikasinya terbentuk sendiri. Kembali ke halaman ini untuk menetapkan
-                  wilayah bila perannya peran wilayah.</li>
-              </ol>
-
-              ${pesanSistem(
-                'Petugas cukup mengetik <b>username</b>-nya di halaman masuk — bukan alamat surel '
-                + 'panjang di atas. Pemulihan sandi lewat surel tidak berlaku bagi akun semacam ini; '
-                + 'yang lupa sandi meminta administrator mengatur ulang dari panel yang sama.',
-                'netral', 'info')}
-            </div>`,
+            <ul class="kecil-teks" style="margin:0;padding-left:20px;line-height:1.7;color:var(--ink-2)">
+              <li><b>Mengatur ulang kata sandi orang lain.</b> Supabase → Authentication →
+                pilih penggunanya → <i>Reset password</i>. Pengguna yang masih ingat sandinya
+                dapat menggantinya sendiri di halaman Profil Saya.</li>
+              <li><b>Menghapus akun secara permanen.</b> Di sini akun cukup dinonaktifkan —
+                jejak siapa memasukkan berita apa tidak boleh ikut hilang bersama akunnya.</li>
+            </ul>`,
         })}
       </div>`
   }
 
-  /* ----------------------------------------------------------- simpanan */
+  /* ----------------------------------------------------------- penerbitan */
+
+  async function terbitkan() {
+    if (keadaanPengguna.sibuk) return
+
+    const nilai = (id) => isi.querySelector(id)?.value ?? ''
+    const nama = nilai('#t-nama').trim()
+    const peran = nilai('#t-peran')
+    const username = nilai('#t-username').trim().toLowerCase()
+    const kanwil = nilai('#t-kanwil').trim()
+    const jabatan = nilai('#t-jabatan').trim()
+    const sandi = nilai('#t-sandi')
+    const sandi2 = nilai('#t-sandi2')
+
+    const wilayah = adalahEksternal(peran)
+    const fokus = (id) => isi.querySelector(id)?.focus()
+
+    /*
+       Pemeriksaan di bawah hanya untuk menghemat perjalanan ke peladen dan
+       memberi kalimat yang lebih dekat ke kolomnya. Peladen memeriksa semuanya
+       lagi dari nol, dan jawabannya yang menentukan.
+    */
+    if (!nama || nama.length < 2) { roti('Nama lengkap wajib diisi.', 'sedang'); fokus('#t-nama'); return }
+
+    if (!username) { roti('Username wajib diisi.', 'sedang'); fokus('#t-username'); return }
+
+    if (wilayah && !tampakSurel(username)) {
+      roti('Akun kantor wilayah wajib memakai alamat surel sebagai username.', 'sedang', 6000)
+      fokus('#t-username'); return
+    }
+
+    if (!wilayah && tampakSurel(username)) {
+      roti('Akun internal memakai username polos, bukan alamat surel.', 'sedang', 6000)
+      fokus('#t-username'); return
+    }
+
+    if (!wilayah && !POLA_USERNAME.test(username)) {
+      roti('Username hanya boleh huruf kecil, angka, titik, garis bawah, atau tanda hubung (3–32 karakter).',
+        'sedang', 7000)
+      fokus('#t-username'); return
+    }
+
+    if (wilayah && !kanwil) {
+      roti('Akun kantor wilayah wajib menyebutkan kantor wilayahnya.', 'sedang')
+      fokus('#t-kanwil'); return
+    }
+
+    if (sandi.length < 8) { roti('Kata sandi awal minimal 8 karakter.', 'sedang'); fokus('#t-sandi'); return }
+    if (sandi !== sandi2) { roti('Kedua kata sandi belum sama.', 'sedang'); fokus('#t-sandi2'); return }
+
+    const ya = await konfirmasi({
+      judul: 'Terbitkan akun ini?',
+      pesan: `${nama} akan dapat masuk sebagai ${PERAN[peran]?.nama || peran}`
+        + `${wilayah && kanwil ? ` di ${kanwil}` : ''}, memakai `
+        + `${wilayah ? username : `username ${username}`} dan sandi yang Anda tetapkan.`,
+      tegas: 'Terbitkan',
+    })
+    if (!ya) return
+
+    keadaanPengguna.sibuk = true
+    gambar()
+
+    if (keadaan.demo) {
+      roti('Mode peragaan: akun tidak benar-benar diterbitkan.', 'sedang', 5000)
+      keadaanPengguna.sibuk = false
+      gambar()
+      return
+    }
+
+    try {
+      const hasil = await panggilEdge('kelola-pengguna', {
+        aksi: 'buat',
+        full_name: nama,
+        username,
+        role: peran,
+        jabatan,
+        assigned_kanwil: wilayah ? kanwil : null,
+        password: sandi,
+      })
+
+      if (!hasil?.ok) throw new Error(hasil?.pesan || 'Akun gagal diterbitkan.')
+
+      if (hasil.pengguna) keadaanPengguna.daftar.unshift(hasil.pengguna)
+      keadaanPengguna.terbit = { nama, masuk: hasil.masuk_dengan || username }
+      keadaanPengguna.tambah = false
+      keadaanPengguna.peranBaru = ''
+      roti(hasil.pesan || 'Akun diterbitkan.', 'positif', 6000)
+    } catch (galat) {
+      // Pesan dari Edge Function sudah berbahasa Indonesia dan menyebut sebabnya;
+      // yang perlu diterjemahkan hanya galat jaringan dan penolakan sesi.
+      roti(galat?.rinci?.pesan || galat?.message || pesanRamah(galat), 'kritis', 8000)
+    } finally {
+      keadaanPengguna.sibuk = false
+      gambar()
+    }
+  }
+
+  /* ----------------------------------------------------------- suntingan */
 
   async function simpan(id) {
     if (keadaanPengguna.sibuk) return
@@ -288,17 +537,54 @@ export function halamanPengguna({ keadaan, isi }) {
   /* ---------------------------------------------------------- penyimak */
 
   isi.addEventListener('change', (ev) => {
-    if (ev.target.id !== 'p-peran') return
-    const ket = isi.querySelector('#p-ket-peran')
-    if (ket) ket.textContent = PERAN[ev.target.value]?.tugas || ''
+    if (ev.target.id === 'p-peran') {
+      const ket = isi.querySelector('#p-ket-peran')
+      if (ket) ket.textContent = PERAN[ev.target.value]?.tugas || ''
+      return
+    }
+
+    // Mengganti peran pada formulir penerbitan mengubah arti kolom username,
+    // jadi formulirnya digambar ulang — dengan isian yang sudah diketik tetap
+    // dipertahankan, sebab kehilangan ketikan karena mengganti satu pilihan
+    // adalah cara tercepat membuat orang berhenti memakai sebuah borang.
+    if (ev.target.id === 't-peran') {
+      const simpanan = {
+        nama: isi.querySelector('#t-nama')?.value || '',
+        username: isi.querySelector('#t-username')?.value || '',
+        jabatan: isi.querySelector('#t-jabatan')?.value || '',
+        kanwil: isi.querySelector('#t-kanwil')?.value || '',
+      }
+      keadaanPengguna.peranBaru = ev.target.value
+      gambar()
+      const pasang = (id, nilai) => { const el = isi.querySelector(id); if (el && nilai) el.value = nilai }
+      pasang('#t-nama', simpanan.nama)
+      pasang('#t-username', simpanan.username)
+      pasang('#t-jabatan', simpanan.jabatan)
+      pasang('#t-kanwil', simpanan.kanwil)
+    }
   })
+
+  isi.addEventListener('submit', (ev) => { ev.preventDefault(); terbitkan() })
 
   isi.addEventListener('click', (ev) => {
     const tombolAksi = ev.target.closest('[data-aksi]')
     if (!tombolAksi) return
     const aksi = tombolAksi.dataset.aksi
 
-    if (aksi === 'sunting') {
+    if (aksi === 'buka-terbit') {
+      keadaanPengguna.tambah = true
+      keadaanPengguna.terbit = null
+      keadaanPengguna.peranBaru = bolehWilayah ? 'kanwil_penginput' : ''
+      gambar()
+      isi.querySelector('#t-nama')?.focus()
+    } else if (aksi === 'batal-terbit') {
+      keadaanPengguna.tambah = false
+      keadaanPengguna.peranBaru = ''
+      gambar()
+    } else if (aksi === 'terbitkan') {
+      ev.preventDefault()
+      terbitkan()
+    } else if (aksi === 'sunting') {
       keadaanPengguna.sunting = tombolAksi.dataset.id
       gambar()
       isi.querySelector('#p-peran')?.focus()
@@ -315,7 +601,9 @@ export function halamanPengguna({ keadaan, isi }) {
 
   async function muat() {
     if (keadaan.demo) {
-      keadaanPengguna.daftar = penggunaDemo()
+      keadaanPengguna.daftar = bolehWilayah
+        ? penggunaDemo().filter((u) => u.assigned_kanwil === (wilayahSaya || KANWIL_DEMO))
+        : penggunaDemo()
       keadaanPengguna.kanwil = [KANWIL_DEMO, 'Kanwil Jawa Tengah', 'Kanwil Jawa Timur']
       keadaanPengguna.dimuat = true
       gambar()
@@ -325,7 +613,7 @@ export function halamanPengguna({ keadaan, isi }) {
     try {
       keadaanPengguna.daftar = await ambil('app_users', {
         select: 'id,username,full_name,role,jabatan,assigned_kanwil,assigned_upt,aktif,'
-          + 'auth_user_id,last_login,email',
+          + 'auth_user_id,last_login,email,must_change_password',
         deleted_at: 'is.null',
         order: 'role.asc,username.asc',
       }) || []
@@ -351,7 +639,9 @@ export function halamanPengguna({ keadaan, isi }) {
   muat()
 
   return {
-    judul: 'Manajemen Pengguna',
-    sub: 'Peran, wilayah penugasan, dan keaktifan akun',
+    judul: bolehWilayah ? 'Pengguna Wilayah' : 'Manajemen Pengguna',
+    sub: bolehWilayah
+      ? `Menerbitkan dan mengatur penginput berita${wilayahSaya ? ` di ${wilayahSaya}` : ''}`
+      : 'Penerbitan akun, peran, wilayah penugasan, dan keaktifan',
   }
 }

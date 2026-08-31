@@ -273,31 +273,29 @@ export async function gantiSandiSendiri(sandiBaru) {
   return panggil('/auth/v1/user', { method: 'PUT', body: JSON.stringify({ password: sandiBaru }) })
 }
 
-// ---------------------------------------------------------------- ringkasan
+// ----------------------------------------------------------------- hitungan
 
 /**
- * Angka-angka dasbor. Dihitung dengan beberapa kueri hitung yang murah,
- * bukan dengan menarik seluruh tabel ke peramban.
+ * Angka dasbor tidak dihitung di sini.
+ *
+ * Pernah ada `ringkasanDasbor()` di berkas ini yang memanggil RPC
+ * `ringkasan_dasbor` — fungsi basis data yang tidak pernah dibuat, dan tidak
+ * pernah dipanggil oleh satu halaman pun. Ia tidak dihidupkan kembali karena
+ * seluruh angka di layar berasal dari satu himpunan dasar yang dibentuk
+ * `ringkasan()` di lib/hitung.js, di atas arsip yang memang sudah ditarik utuh
+ * oleh main.js untuk keperluan halaman lain. Menambahkan penghitung kedua di
+ * sisi basis data berarti menambahkan tafsir kedua tentang berita mana yang
+ * dihitung — persis keadaan yang dulu membuat angka dasbor dan angka lencana
+ * berbeda.
+ *
+ * Alasan yang sama menghapus `hitungBaris()` yang dulu berdiri tepat di bawah
+ * paragraf ini. Ia menghitung baris mentah lewat header `content-range`, tanpa
+ * saringan `deleted_at` maupun kategori yang dipakai `ringkasan()`, sehingga
+ * angka apa pun yang ia hasilkan pasti berbeda dari angka di layar — tafsir
+ * kedua yang sama persis dengan yang dijelaskan di atas. Tidak ada satu
+ * halaman pun yang pernah memanggilnya. Bila kelak ada halaman yang benar-benar
+ * butuh jumlah baris tanpa menarik datanya, ia ditulis ulang bersama saringan
+ * yang sama dengan yang dipakai layar, bukan dihidupkan kembali apa adanya.
  */
-export async function ringkasanDasbor({ dariIso = null, sampaiIso = null } = {}) {
-  // Satu panggilan RPC yang menghitung di sisi basis data. Alternatifnya —
-  // menarik ribuan baris ke peramban lalu menjumlahkannya di sana — akan makin
-  // lambat setiap minggu seiring arsip bertambah.
-  return panggilFungsi('ringkasan_dasbor', { p_dari: dariIso, p_sampai: sampaiIso })
-}
-
-/** Menghitung jumlah baris tanpa menariknya. */
-export async function hitungBaris(tabel, params = {}) {
-  const jalur = `/rest/v1/${tabel}${kueri({ ...params, select: 'id', limit: 1 })}`
-  const kepala = { apikey: KONFIG.kunciPublik, Prefer: 'count=exact', Range: '0-0' }
-  if (sesi?.access_token) kepala.Authorization = `Bearer ${sesi.access_token}`
-
-  const jawab = await fetch(`${KONFIG.url}${jalur}`, { headers: kepala })
-  if (!jawab.ok) throw new GalatApi(jawab.statusText, jawab.status)
-
-  const rentangIsi = jawab.headers.get('content-range') || ''
-  const total = Number(rentangIsi.split('/')[1])
-  return Number.isFinite(total) ? total : 0
-}
 
 export const KONFIG_AKTIF = KONFIG

@@ -121,22 +121,26 @@ export function penggunaDemo() {
       auth_user_id: null, last_login: null,
     },
     {
-      id: 'demo-4', username: 'kanwil.jabar', full_name: 'Petugas Kanwil Jawa Barat',
+      id: 'demo-4', username: 'kanwil.jatim', full_name: 'Petugas Kanwil Jawa Timur',
       role: 'kanwil_admin', jabatan: 'Administrator Kantor Wilayah',
       assigned_kanwil: KANWIL_DEMO, assigned_upt: null, aktif: true,
       auth_user_id: 'auth-4', last_login: new Date(Date.now() - 50 * 3600e3).toISOString(),
     },
     {
-      id: 'demo-5', username: 'kanwil.baru', full_name: 'Penelaah Kanwil Baru',
-      role: 'kanwil_penelaah', jabatan: 'Penelaah Berita',
-      assigned_kanwil: null, assigned_upt: null, aktif: true,
-      auth_user_id: 'auth-5', last_login: null, must_change_password: true,
+      id: 'demo-5', username: 'lapas.kediri', full_name: 'Penelaah Lapas Kediri',
+      role: 'upt_penelaah', jabatan: 'Kasubsi Pengamanan',
+      assigned_kanwil: KANWIL_DEMO, assigned_upt: UPT_DEMO, aktif: true,
+      auth_user_id: 'auth-5', last_login: new Date(Date.now() - 5 * 3600e3).toISOString(),
     },
     {
-      id: 'demo-7', username: 'lapas.kediri', full_name: 'Petugas Lapas Kediri',
-      role: 'upt_petugas', jabatan: 'Kasubsi Pengamanan',
-      assigned_kanwil: KANWIL_DEMO, assigned_upt: UPT_DEMO, aktif: true,
-      auth_user_id: 'auth-7', last_login: new Date(Date.now() - 5 * 3600e3).toISOString(),
+      /* Akun penelaah yang unitnya belum ditetapkan. Keadaan ini sengaja ada di
+         data peragaan: ia yang paling sering ditanyakan dan paling sulit dibuat
+         dengan sengaja pada data sungguhan — layarnya kosong, dan yang membuka
+         Manajemen Pengguna harus bisa melihat sebabnya dari daftarnya. */
+      id: 'demo-7', username: 'upt.baru', full_name: 'Penelaah Unit Baru',
+      role: 'upt_penelaah', jabatan: 'Penelaah Berita',
+      assigned_kanwil: KANWIL_DEMO, assigned_upt: null, aktif: true,
+      auth_user_id: 'auth-7', last_login: null, must_change_password: true,
     },
     {
       id: 'demo-6', username: 'agus.lama', full_name: 'Agus Wijaya',
@@ -147,20 +151,30 @@ export function penggunaDemo() {
   ]
 }
 
-/** Wilayah peragaan, dipakai peran kanwil supaya layarnya ada isinya. */
-export const KANWIL_DEMO = 'Kanwil Jawa Barat'
+/*
+   Wilayah dan unit peragaan.
 
-/** Unit peragaan, dengan alasan yang sama bagi peran petugas unit. */
+   Keduanya ditulis PERSIS seperti pada data induk UPT, bukan disingkat menjadi
+   "Kanwil Jawa Barat" seperti sebelumnya. Penyaringan wilayah di seluruh sistem
+   ini mencocokkan huruf demi huruf; nama singkat membuat halaman yang menyaring
+   unit menurut kanwil-nya menemukan nol unit, dan layar kosong itu terbaca
+   sebagai halaman yang rusak, bukan sebagai konstanta peragaan yang keliru.
+
+   Unitnya sengaja Lapas Kediri: itu contoh yang dipakai pengguna sistem ini
+   sendiri ketika menjelaskan apa yang boleh dilihat sebuah unit.
+*/
+export const KANWIL_DEMO = 'Kantor Wilayah Ditjenpas Jawa Timur'
+
 export const UPT_DEMO = 'Lapas Kelas IIA Kediri'
 
 export function profilDemo(peran = 'media_intelligence_analyst') {
-  const unit = peran === 'upt_petugas'
-  const daerah = unit || peran.startsWith('kanwil_')
+  const unit = peran === 'upt_penelaah'
+  const daerah = unit || peran === 'kanwil_admin'
 
   return {
     id: 'demo-pengguna',
     username: unit ? 'demo.upt' : daerah ? 'demo.kanwil' : 'demo',
-    full_name: unit ? 'Petugas Unit Peragaan'
+    full_name: unit ? 'Penelaah Unit Peragaan'
       : daerah ? 'Petugas Kanwil Peragaan' : 'Pengguna Peragaan',
     role: peran,
     jabatan: 'Mode Peragaan',

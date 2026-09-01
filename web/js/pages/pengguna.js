@@ -11,9 +11,8 @@
  * Wewenangnya bertingkat, sesuai cara kerja organisasinya:
  *
  *   Administrator Sistem Intelijen  →  menerbitkan peran apa pun.
- *   Administrator Kantor Wilayah    →  hanya Penelaah Berita Kantor Wilayah dan
- *                                      Petugas Unit Pelaksana Teknis, dan hanya
- *                                      di wilayahnya sendiri.
+ *   Administrator Kantor Wilayah    →  hanya Penelaah Berita UPT, dan hanya
+ *                                      untuk unit di wilayahnya sendiri.
  *
  * Formulir di bawah menyembunyikan pilihan yang tidak berhak dipakai, tetapi
  * itu bukan pengamanannya. Pengamanannya ada di peladen, dan tetap menolak
@@ -60,12 +59,11 @@ const keadaanPengguna = {
 /**
  * Peran yang boleh diterbitkan Administrator Kantor Wilayah.
  *
- * Dua, bukan satu. Sejak 1 September 2026 kantor wilayah menerbitkan penelaah
- * wilayahnya sendiri dan petugas untuk tiap unit di bawahnya; keduanya sama
- * sekali tidak bisa menerbitkan akun lain, dan batas itu ditegakkan Edge
+ * Tinggal satu: Penelaah Berita UPT, untuk unit-unit di wilayahnya. Peran itu
+ * sendiri tidak bisa menerbitkan akun apa pun. Batasnya ditegakkan Edge
  * Function — daftar ini hanya menentukan isi kotak pilihan.
  */
-export const PERAN_TERBIT_KANWIL = ['kanwil_penelaah', 'upt_petugas']
+export const PERAN_TERBIT_KANWIL = ['upt_penelaah']
 
 function pilihanPeran(hanyaDaerah) {
   const daftar = Object.entries(PERAN).map(([kode, p]) => ({
@@ -178,7 +176,7 @@ function barisPengguna(u, sedangDisunting, kanwil, bolehSunting) {
 /* -------------------------------------------------------- formulir terbit */
 
 function formulirTerbit({ hanyaDaerah, wilayahTetap, daftarKanwil }) {
-  const peran = keadaanPengguna.peranBaru || (hanyaDaerah ? 'kanwil_penelaah' : 'news_data_operator')
+  const peran = keadaanPengguna.peranBaru || (hanyaDaerah ? 'upt_penelaah' : 'news_data_operator')
   const wilayah = adalahEksternal(peran)
   const unit = adalahUnit(peran)
 
@@ -362,7 +360,7 @@ export function halamanPengguna({ keadaan, isi }) {
         ${keadaanPengguna.tambah && bolehTerbit ? kartu({
           judul: 'Terbitkan akun baru',
           ket: bolehWilayah
-            ? `Penelaah wilayah atau petugas unit di ${amankan(wilayahSaya || 'wilayah Anda')}`
+            ? `Penelaah Berita UPT untuk salah satu unit di ${amankan(wilayahSaya || 'wilayah Anda')}`
             : 'Peran pusat, peran kantor wilayah, maupun peran unit',
           isi: formulirTerbit({
             hanyaDaerah: bolehWilayah,
@@ -648,7 +646,7 @@ export function halamanPengguna({ keadaan, isi }) {
     if (aksi === 'buka-terbit') {
       keadaanPengguna.tambah = true
       keadaanPengguna.terbit = null
-      keadaanPengguna.peranBaru = bolehWilayah ? 'kanwil_penelaah' : ''
+      keadaanPengguna.peranBaru = bolehWilayah ? 'upt_penelaah' : ''
       gambar()
       isi.querySelector('#t-nama')?.focus()
     } else if (aksi === 'batal-terbit') {
@@ -679,7 +677,7 @@ export function halamanPengguna({ keadaan, isi }) {
         ? penggunaDemo().filter((u) => u.assigned_kanwil === (wilayahSaya || KANWIL_DEMO))
         : penggunaDemo()
       keadaanPengguna.kanwil = [KANWIL_DEMO, 'Kanwil Jawa Tengah', 'Kanwil Jawa Timur']
-      keadaanPengguna.upt = ['Lapas Kelas IIA Kediri', 'Rutan Kelas IIB Kediri', 'LPKA Kelas I Blitar']
+      keadaanPengguna.upt = ['Lapas Kelas IIA Kediri', 'Lapas Kelas IIB Blitar', 'LPKA Kelas I Blitar']
       keadaanPengguna.dimuat = true
       gambar()
       return
@@ -726,7 +724,7 @@ export function halamanPengguna({ keadaan, isi }) {
   return {
     judul: bolehWilayah ? 'Pengguna Wilayah' : 'Manajemen Pengguna',
     sub: bolehWilayah
-      ? `Menerbitkan penelaah wilayah dan petugas unit${wilayahSaya ? ` di ${wilayahSaya}` : ''}`
+      ? `Menerbitkan penelaah berita unit${wilayahSaya ? ` di ${wilayahSaya}` : ''}`
       : 'Penerbitan akun, peran, wilayah penugasan, dan keaktifan',
   }
 }

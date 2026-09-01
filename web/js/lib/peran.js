@@ -47,15 +47,14 @@ export const PERAN = {
     tugas: 'Memantau dasbor eksekutif, mengkaji rekomendasi, dan menerbitkan keputusan.',
   },
   /*
-     Tiga peran daerah, bertingkat menurut cakupannya.
+     Dua peran daerah, dibagi menurut CAKUPAN — bukan menurut jenis pekerjaan.
 
-     Sampai 1 September 2026 hanya ada dua, dan keduanya dibagi menurut siapa
-     yang menginput dan siapa yang memeriksa. Pembagian itu diganti: memasukkan
-     berita kini wewenang Administrator Kantor Wilayah seorang diri, sedangkan
-     dua peran lainnya menelaah — satu untuk seluruh wilayah, satu untuk satu
-     unit saja.
+     Pembagiannya sempat tiga dan sempat menurut pekerjaan (siapa menginput,
+     siapa memeriksa). Yang berlaku sekarang lebih sederhana dan lebih mudah
+     dijelaskan kepada petugas baru: kantor wilayah memegang seluruh unit di
+     bawahnya, penelaah memegang satu unit.
 
-     Nama kuncinya sama persis dengan yang diterima basis data pada migrasi 13.
+     Nama kuncinya sama persis dengan yang diterima basis data pada migrasi 14.
      Kalau keduanya berbeda, pengguna daerah akan mendapat menu internal karena
      perannya tidak dikenali di sini.
   */
@@ -63,22 +62,17 @@ export const PERAN = {
     nama: 'Administrator Kantor Wilayah',
     ringkas: 'Admin Kanwil',
     lingkup: 'eksternal',
-    tugas: 'Memasukkan berita wilayahnya, menelaah kiriman sebelum naik ke pusat, '
-      + 'dan menerbitkan akun penelaah wilayah serta petugas unit. Tidak melihat data pusat.',
+    tugas: 'Memasukkan berita untuk tiap unit di wilayahnya, menerbitkan akun '
+      + 'penelaah unit, menelaah, dan memantau seluruh unit yang dibawahinya. '
+      + 'Tidak melihat data pusat.',
   },
-  kanwil_penelaah: {
-    nama: 'Penelaah Berita Kantor Wilayah',
-    ringkas: 'Penelaah Kanwil',
+  upt_penelaah: {
+    nama: 'Penelaah Berita UPT',
+    ringkas: 'Penelaah UPT',
     lingkup: 'eksternal',
-    tugas: 'Membaca seluruh berita wilayahnya dan menelaahnya — memvalidasi atau '
-      + 'merevisi penilaian mesin. Tidak memasukkan berita.',
-  },
-  upt_petugas: {
-    nama: 'Petugas Unit Pelaksana Teknis',
-    ringkas: 'Petugas UPT',
-    lingkup: 'eksternal',
-    tugas: 'Membaca berita yang menyangkut unitnya sendiri, menelaahnya, dan '
-      + 'menuliskan tanggapan resmi unit atas berita itu.',
+    tugas: 'Menelaah berita unitnya sendiri — memvalidasi atau merevisi penilaian '
+      + 'mesin — menuliskan tanggapan resmi unit, dan memantau dasbor unitnya. '
+      + 'Tidak melihat unit lain, dan tidak memasukkan berita.',
   },
 }
 
@@ -87,11 +81,18 @@ export const PERAN = {
 
    Penggelaran tidak pernah serentak: basis data, Edge Function, dan berkas web
    berpindah pada menit yang berbeda. Selama beberapa menit itu masih mungkin
-   sebuah profil terbaca dengan peran `kanwil_penginput`. Tanpa pemetaan ini,
+   sebuah profil terbaca dengan peran yang sudah dihapus. Tanpa pemetaan ini,
    pemiliknya masuk dan menemukan menu kosong — dan tidak ada satu kalimat pun
    di layar yang menjelaskan mengapa.
+
+   Ketiganya menunjuk ke peran yang sama, dan itu memang yang terjadi: peran
+   penelaah kantor wilayah dan petugas unit lebur menjadi satu penelaah unit.
 */
-const PERAN_LAMA = { kanwil_penginput: 'kanwil_penelaah' }
+const PERAN_LAMA = {
+  kanwil_penginput: 'upt_penelaah',
+  kanwil_penelaah: 'upt_penelaah',
+  upt_petugas: 'upt_penelaah',
+}
 
 /** Nama peran yang berlaku hari ini untuk sebuah nilai apa pun dari basis data. */
 export function peranBaku(peran) {
@@ -107,10 +108,10 @@ export function peranBaku(peran) {
  * RLS: `can_access_berita` menolak baris yang bukan wilayahnya, dan penolakan
  * itu berlaku sekalipun seseorang mengetik alamat halaman internal langsung.
  */
-export const PERAN_EKSTERNAL = new Set(['kanwil_admin', 'kanwil_penelaah', 'upt_petugas'])
+export const PERAN_EKSTERNAL = new Set(['kanwil_admin', 'upt_penelaah'])
 
 /** Peran yang cakupannya satu unit, bukan satu kantor wilayah. */
-export const PERAN_UNIT = new Set(['upt_petugas'])
+export const PERAN_UNIT = new Set(['upt_penelaah'])
 
 export const IZIN = {
   super_admin: ['*'],
@@ -155,26 +156,24 @@ export const IZIN = {
   /*
      Memasukkan berita tinggal pada satu peran daerah.
 
-     Sebelumnya `buat_berita` dipegang admin kanwil dan penginput sekaligus.
-     Sejak 1 September 2026 hanya admin kanwil — bukan karena penginput tidak
+     Sejak 1 September 2026 hanya admin kanwil — bukan karena penelaah tidak
      dipercaya, melainkan karena satu pintu masuk berarti satu orang yang bisa
      ditanya ketika sebuah kiriman keliru.
+
+     Ia juga tetap boleh menelaah, sekalipun ia sendiri yang memasukkan berita.
+     Itu diketahui dan diterima: penelaah unit memeriksa lebih dulu, dan putusan
+     keduanya tercatat lengkap dengan nama penelaahnya masing-masing.
   */
   kanwil_admin: [
     'lihat_dasbor_wilayah', 'buat_berita', 'lihat_berita_wilayah',
-    'lihat_kiriman_wilayah', 'telaah_wilayah',
-    // Menerbitkan akun penelaah dan petugas unit di wilayahnya sendiri.
-    // Batasnya ditegakkan Edge Function, bukan izin ini — izin ini hanya
-    // menentukan menunya muncul.
+    'lihat_kiriman_wilayah', 'lihat_unit_wilayah', 'telaah_wilayah',
+    // Menerbitkan akun penelaah unit di wilayahnya sendiri. Batasnya ditegakkan
+    // Edge Function, bukan izin ini — izin ini hanya menentukan menunya muncul.
     'kelola_pengguna_wilayah',
   ],
 
-  kanwil_penelaah: [
-    'lihat_dasbor_wilayah', 'lihat_berita_wilayah', 'telaah_wilayah',
-  ],
-
   /*
-     Petugas unit tidak mewarisi satu pun izin wilayah.
+     Penelaah unit tidak mewarisi satu pun izin wilayah.
 
      Kalau ia diberi `lihat_berita_wilayah`, halaman berita wilayah akan
      terbuka baginya dan menampilkan — persis — apa yang dikirim peladen, yaitu
@@ -182,7 +181,7 @@ export const IZIN = {
      membaca "Berita Wilayah" sambil melihat satu unit, dan menyimpulkan
      wilayahnya hanya punya satu unit yang pernah diberitakan.
   */
-  upt_petugas: [
+  upt_penelaah: [
     'lihat_dasbor_unit', 'lihat_berita_unit', 'telaah_wilayah', 'tanggapi_berita_unit',
   ],
 }
@@ -305,6 +304,10 @@ export const MENU_KANWIL = [
       { id: 'input', label: 'Kirim Berita', ikon: 'tambah', izin: 'buat_berita' },
       { id: 'wilayah-telaah', label: 'Telaah Wilayah', ikon: 'centang', izin: 'telaah_wilayah', lencana: 'telaahWilayah' },
       { id: 'wilayah-berita', label: 'Berita Wilayah', ikon: 'berita', izin: 'lihat_berita_wilayah' },
+      // Seluruh unit yang dibawahi wilayah ini, bukan sepuluh teratas seperti
+      // di dasbor. Kantor wilayah bertanggung jawab atas setiap unitnya —
+      // termasuk yang tidak pernah muncul di daftar mana pun.
+      { id: 'wilayah-unit', label: 'Unit di Wilayah', ikon: 'peta', izin: 'lihat_unit_wilayah' },
       { id: 'pengguna', label: 'Pengguna Wilayah', ikon: 'pengguna', izin: 'kelola_pengguna_wilayah' },
     ],
   },

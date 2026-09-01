@@ -10,9 +10,8 @@
  * siapa boleh menerbitkan siapa:
  *
  *   Administrator Sistem Intelijen  →  boleh menerbitkan peran apa pun.
- *   Administrator Kantor Wilayah    →  hanya Penelaah Berita Kantor Wilayah dan
- *                                      Petugas Unit Pelaksana Teknis, dan hanya
- *                                      di wilayahnya sendiri.
+ *   Administrator Kantor Wilayah    →  hanya Penelaah Berita UPT, dan hanya
+ *                                      untuk unit di wilayahnya sendiri.
  *   Peran lain                      →  tidak boleh sama sekali.
  *
  * Aturan itu ditegakkan di berkas ini, bukan di menu. Menu yang menyembunyikan
@@ -47,23 +46,32 @@ const PERAN_INTERNAL = [
 ]
 
 /*
-   Peran daerah. `kanwil_penginput` masih diterima meskipun sudah tidak
-   diterbitkan lagi: selama beberapa menit di sekitar penggelaran, halaman web
-   yang lama masih mungkin mengirimkannya, dan menolaknya hanya menghasilkan
-   galat yang tidak dipahami siapa pun. Yang menerjemahkannya ke nama baru
-   adalah `bakukanPeran` di bawah.
+   Dua peran daerah, dibagi menurut cakupan: kantor wilayah memegang seluruh
+   unit di bawahnya, penelaah memegang satu unit.
+
+   Nama peran yang sudah dihapus tidak ada di daftar ini, tetapi tetap diterima
+   sebagai masukan — `bakukanPeran` menerjemahkannya lebih dulu. Penggelaran
+   tidak pernah serentak, dan selama beberapa menit di sekitarnya sebuah tab
+   yang belum dimuat ulang masih akan mengirimkan nama lama. Menolaknya hanya
+   menghasilkan galat yang tidak dipahami siapa pun.
 */
-const PERAN_WILAYAH = ['kanwil_admin', 'kanwil_penelaah', 'kanwil_penginput', 'upt_petugas']
+const PERAN_WILAYAH = ['kanwil_admin', 'upt_penelaah']
 
 /** Peran yang cakupannya satu unit, dan karena itu wajib menyebut unitnya. */
-const PERAN_UNIT = ['upt_petugas']
+const PERAN_UNIT = ['upt_penelaah']
 
 /** Peran yang boleh diterbitkan Administrator Kantor Wilayah. */
-const PERAN_TERBIT_KANWIL = ['kanwil_penelaah', 'upt_petugas']
+const PERAN_TERBIT_KANWIL = ['upt_penelaah']
 
 /** Nama peran yang sudah tidak dipakai, dipetakan ke penggantinya. */
+const PERAN_LAMA: Record<string, string> = {
+  kanwil_penginput: 'upt_penelaah',
+  kanwil_penelaah: 'upt_penelaah',
+  upt_petugas: 'upt_penelaah',
+}
+
 function bakukanPeran(peran: string): string {
-  return peran === 'kanwil_penginput' ? 'kanwil_penelaah' : peran
+  return PERAN_LAMA[peran] ?? peran
 }
 
 const POLA_SUREL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
@@ -161,7 +169,7 @@ Deno.serve(async (permintaan: Request) => {
       return jawab({
         ok: false,
         pesan: 'Administrator Kantor Wilayah hanya boleh menerbitkan akun '
-          + 'Penelaah Berita Kantor Wilayah atau Petugas Unit Pelaksana Teknis.',
+          + 'Penelaah Berita UPT untuk unit di wilayahnya.',
       }, 403)
     }
 

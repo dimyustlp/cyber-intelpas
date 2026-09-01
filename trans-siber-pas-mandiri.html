@@ -3360,6 +3360,52 @@ kbd {
   margin-bottom: 4px;
 }
 
+/* ==========================================================================
+   Tabel yang barisnya bisa dipilih
+   --------------------------------------------------------------------------
+   Dipakai halaman Unit di Wilayah: menekan satu baris membuka rinciannya di
+   panel sebelah. Barisnya diberi kursor dan sorotan supaya terbaca sebagai
+   sesuatu yang bisa ditekan — tabel yang diam-diam bisa diklik hanya ditemukan
+   orang yang kebetulan mencoba.
+   ========================================================================== */
+
+/* Kolom pertama menampung nama unit yang panjang — "Lapas Perempuan Kelas IIA
+   Martapura" dan sejenisnya. Tanpa lebar minimum, tujuh kolom angka di
+   sebelahnya memerasnya sampai nama unitnya patah menjadi tiga baris, dan
+   tabel yang seharusnya bisa dipindai cepat berubah menjadi paragraf. Lebih
+   baik tabelnya menggulir mendatar. */
+.tabel-pilih { min-width: 720px; }
+.tabel-pilih tbody td:first-child { min-width: 230px; }
+
+.tabel-pilih tbody tr {
+  cursor: pointer;
+}
+
+.tabel-pilih tbody tr:hover {
+  background: var(--surface-3);
+}
+
+.tabel-pilih tbody tr[aria-selected="true"] {
+  background: var(--accent-soft);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+/* Legenda keadaan unit di dalam panel samping. Berdiri di alirannya sendiri,
+   bukan melayang seperti legenda peta. */
+.unit-legenda {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line-2);
+}
+
+.unit-legenda .peta-legenda-butir i[data-nada="kritis"]  { background: var(--kritis); }
+.unit-legenda .peta-legenda-butir i[data-nada="sedang"]  { background: var(--tinggi); }
+.unit-legenda .peta-legenda-butir i[data-nada="rendah"]  { background: var(--ink-4); }
+.unit-legenda .peta-legenda-butir i[data-nada="positif"] { background: var(--positif); }
+.unit-legenda .peta-legenda-butir i[data-nada="netral"]  { background: var(--line); }
+
 </style>
 
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230F2C55'/%3E%3Ctext x='16' y='22' font-family='Plus Jakarta Sans,sans-serif' font-size='15' font-weight='700' fill='white' text-anchor='middle'%3ETS%3C/text%3E%3C/svg%3E">
@@ -3446,10 +3492,10 @@ const KONFIG = {
   kementerian: 'Kementerian Imigrasi dan Pemasyarakatan',
   versi: '2.0.0',
 
-  url: '',
-  kunciPublik: '',
+  url: 'https://ffcebfslmnhivravwhvm.supabase.co',
+  kunciPublik: 'sb_publishable_zPFtwp1EbYbIHaKT80FwWA_tZs4vNdn',
 
-  mode: 'demo', // dipaksa oleh tools/bundel.mjs --demo
+  mode: parameter.get('mode') === 'demo' ? 'demo' : 'langsung',
 
   /** Berapa baris ditarik sekali jalan pada tabel panjang. */
   ukuranHalaman: 50,
@@ -3888,15 +3934,14 @@ const PERAN = {
     tugas: 'Memantau dasbor eksekutif, mengkaji rekomendasi, dan menerbitkan keputusan.',
   },
   /*
-     Tiga peran daerah, bertingkat menurut cakupannya.
+     Dua peran daerah, dibagi menurut CAKUPAN — bukan menurut jenis pekerjaan.
 
-     Sampai 1 September 2026 hanya ada dua, dan keduanya dibagi menurut siapa
-     yang menginput dan siapa yang memeriksa. Pembagian itu diganti: memasukkan
-     berita kini wewenang Administrator Kantor Wilayah seorang diri, sedangkan
-     dua peran lainnya menelaah — satu untuk seluruh wilayah, satu untuk satu
-     unit saja.
+     Pembagiannya sempat tiga dan sempat menurut pekerjaan (siapa menginput,
+     siapa memeriksa). Yang berlaku sekarang lebih sederhana dan lebih mudah
+     dijelaskan kepada petugas baru: kantor wilayah memegang seluruh unit di
+     bawahnya, penelaah memegang satu unit.
 
-     Nama kuncinya sama persis dengan yang diterima basis data pada migrasi 13.
+     Nama kuncinya sama persis dengan yang diterima basis data pada migrasi 14.
      Kalau keduanya berbeda, pengguna daerah akan mendapat menu internal karena
      perannya tidak dikenali di sini.
   */
@@ -3904,22 +3949,17 @@ const PERAN = {
     nama: 'Administrator Kantor Wilayah',
     ringkas: 'Admin Kanwil',
     lingkup: 'eksternal',
-    tugas: 'Memasukkan berita wilayahnya, menelaah kiriman sebelum naik ke pusat, '
-      + 'dan menerbitkan akun penelaah wilayah serta petugas unit. Tidak melihat data pusat.',
+    tugas: 'Memasukkan berita untuk tiap unit di wilayahnya, menerbitkan akun '
+      + 'penelaah unit, menelaah, dan memantau seluruh unit yang dibawahinya. '
+      + 'Tidak melihat data pusat.',
   },
-  kanwil_penelaah: {
-    nama: 'Penelaah Berita Kantor Wilayah',
-    ringkas: 'Penelaah Kanwil',
+  upt_penelaah: {
+    nama: 'Penelaah Berita UPT',
+    ringkas: 'Penelaah UPT',
     lingkup: 'eksternal',
-    tugas: 'Membaca seluruh berita wilayahnya dan menelaahnya — memvalidasi atau '
-      + 'merevisi penilaian mesin. Tidak memasukkan berita.',
-  },
-  upt_petugas: {
-    nama: 'Petugas Unit Pelaksana Teknis',
-    ringkas: 'Petugas UPT',
-    lingkup: 'eksternal',
-    tugas: 'Membaca berita yang menyangkut unitnya sendiri, menelaahnya, dan '
-      + 'menuliskan tanggapan resmi unit atas berita itu.',
+    tugas: 'Menelaah berita unitnya sendiri — memvalidasi atau merevisi penilaian '
+      + 'mesin — menuliskan tanggapan resmi unit, dan memantau dasbor unitnya. '
+      + 'Tidak melihat unit lain, dan tidak memasukkan berita.',
   },
 }
 
@@ -3928,11 +3968,18 @@ const PERAN = {
 
    Penggelaran tidak pernah serentak: basis data, Edge Function, dan berkas web
    berpindah pada menit yang berbeda. Selama beberapa menit itu masih mungkin
-   sebuah profil terbaca dengan peran `kanwil_penginput`. Tanpa pemetaan ini,
+   sebuah profil terbaca dengan peran yang sudah dihapus. Tanpa pemetaan ini,
    pemiliknya masuk dan menemukan menu kosong — dan tidak ada satu kalimat pun
    di layar yang menjelaskan mengapa.
+
+   Ketiganya menunjuk ke peran yang sama, dan itu memang yang terjadi: peran
+   penelaah kantor wilayah dan petugas unit lebur menjadi satu penelaah unit.
 */
-const PERAN_LAMA = { kanwil_penginput: 'kanwil_penelaah' }
+const PERAN_LAMA = {
+  kanwil_penginput: 'upt_penelaah',
+  kanwil_penelaah: 'upt_penelaah',
+  upt_petugas: 'upt_penelaah',
+}
 
 /** Nama peran yang berlaku hari ini untuk sebuah nilai apa pun dari basis data. */
 function peranBaku(peran) {
@@ -3948,10 +3995,10 @@ function peranBaku(peran) {
  * RLS: `can_access_berita` menolak baris yang bukan wilayahnya, dan penolakan
  * itu berlaku sekalipun seseorang mengetik alamat halaman internal langsung.
  */
-const PERAN_EKSTERNAL = new Set(['kanwil_admin', 'kanwil_penelaah', 'upt_petugas'])
+const PERAN_EKSTERNAL = new Set(['kanwil_admin', 'upt_penelaah'])
 
 /** Peran yang cakupannya satu unit, bukan satu kantor wilayah. */
-const PERAN_UNIT = new Set(['upt_petugas'])
+const PERAN_UNIT = new Set(['upt_penelaah'])
 
 const IZIN = {
   super_admin: ['*'],
@@ -3996,26 +4043,24 @@ const IZIN = {
   /*
      Memasukkan berita tinggal pada satu peran daerah.
 
-     Sebelumnya `buat_berita` dipegang admin kanwil dan penginput sekaligus.
-     Sejak 1 September 2026 hanya admin kanwil — bukan karena penginput tidak
+     Sejak 1 September 2026 hanya admin kanwil — bukan karena penelaah tidak
      dipercaya, melainkan karena satu pintu masuk berarti satu orang yang bisa
      ditanya ketika sebuah kiriman keliru.
+
+     Ia juga tetap boleh menelaah, sekalipun ia sendiri yang memasukkan berita.
+     Itu diketahui dan diterima: penelaah unit memeriksa lebih dulu, dan putusan
+     keduanya tercatat lengkap dengan nama penelaahnya masing-masing.
   */
   kanwil_admin: [
     'lihat_dasbor_wilayah', 'buat_berita', 'lihat_berita_wilayah',
-    'lihat_kiriman_wilayah', 'telaah_wilayah',
-    // Menerbitkan akun penelaah dan petugas unit di wilayahnya sendiri.
-    // Batasnya ditegakkan Edge Function, bukan izin ini — izin ini hanya
-    // menentukan menunya muncul.
+    'lihat_kiriman_wilayah', 'lihat_unit_wilayah', 'telaah_wilayah',
+    // Menerbitkan akun penelaah unit di wilayahnya sendiri. Batasnya ditegakkan
+    // Edge Function, bukan izin ini — izin ini hanya menentukan menunya muncul.
     'kelola_pengguna_wilayah',
   ],
 
-  kanwil_penelaah: [
-    'lihat_dasbor_wilayah', 'lihat_berita_wilayah', 'telaah_wilayah',
-  ],
-
   /*
-     Petugas unit tidak mewarisi satu pun izin wilayah.
+     Penelaah unit tidak mewarisi satu pun izin wilayah.
 
      Kalau ia diberi `lihat_berita_wilayah`, halaman berita wilayah akan
      terbuka baginya dan menampilkan — persis — apa yang dikirim peladen, yaitu
@@ -4023,7 +4068,7 @@ const IZIN = {
      membaca "Berita Wilayah" sambil melihat satu unit, dan menyimpulkan
      wilayahnya hanya punya satu unit yang pernah diberitakan.
   */
-  upt_petugas: [
+  upt_penelaah: [
     'lihat_dasbor_unit', 'lihat_berita_unit', 'telaah_wilayah', 'tanggapi_berita_unit',
   ],
 }
@@ -4146,6 +4191,10 @@ const MENU_KANWIL = [
       { id: 'input', label: 'Kirim Berita', ikon: 'tambah', izin: 'buat_berita' },
       { id: 'wilayah-telaah', label: 'Telaah Wilayah', ikon: 'centang', izin: 'telaah_wilayah', lencana: 'telaahWilayah' },
       { id: 'wilayah-berita', label: 'Berita Wilayah', ikon: 'berita', izin: 'lihat_berita_wilayah' },
+      // Seluruh unit yang dibawahi wilayah ini, bukan sepuluh teratas seperti
+      // di dasbor. Kantor wilayah bertanggung jawab atas setiap unitnya —
+      // termasuk yang tidak pernah muncul di daftar mana pun.
+      { id: 'wilayah-unit', label: 'Unit di Wilayah', ikon: 'peta', izin: 'lihat_unit_wilayah' },
       { id: 'pengguna', label: 'Pengguna Wilayah', ikon: 'pengguna', izin: 'kelola_pengguna_wilayah' },
     ],
   },
@@ -8881,22 +8930,26 @@ function penggunaDemo() {
       auth_user_id: null, last_login: null,
     },
     {
-      id: 'demo-4', username: 'kanwil.jabar', full_name: 'Petugas Kanwil Jawa Barat',
+      id: 'demo-4', username: 'kanwil.jatim', full_name: 'Petugas Kanwil Jawa Timur',
       role: 'kanwil_admin', jabatan: 'Administrator Kantor Wilayah',
       assigned_kanwil: KANWIL_DEMO, assigned_upt: null, aktif: true,
       auth_user_id: 'auth-4', last_login: new Date(Date.now() - 50 * 3600e3).toISOString(),
     },
     {
-      id: 'demo-5', username: 'kanwil.baru', full_name: 'Penelaah Kanwil Baru',
-      role: 'kanwil_penelaah', jabatan: 'Penelaah Berita',
-      assigned_kanwil: null, assigned_upt: null, aktif: true,
-      auth_user_id: 'auth-5', last_login: null, must_change_password: true,
+      id: 'demo-5', username: 'lapas.kediri', full_name: 'Penelaah Lapas Kediri',
+      role: 'upt_penelaah', jabatan: 'Kasubsi Pengamanan',
+      assigned_kanwil: KANWIL_DEMO, assigned_upt: UPT_DEMO, aktif: true,
+      auth_user_id: 'auth-5', last_login: new Date(Date.now() - 5 * 3600e3).toISOString(),
     },
     {
-      id: 'demo-7', username: 'lapas.kediri', full_name: 'Petugas Lapas Kediri',
-      role: 'upt_petugas', jabatan: 'Kasubsi Pengamanan',
-      assigned_kanwil: KANWIL_DEMO, assigned_upt: UPT_DEMO, aktif: true,
-      auth_user_id: 'auth-7', last_login: new Date(Date.now() - 5 * 3600e3).toISOString(),
+      /* Akun penelaah yang unitnya belum ditetapkan. Keadaan ini sengaja ada di
+         data peragaan: ia yang paling sering ditanyakan dan paling sulit dibuat
+         dengan sengaja pada data sungguhan — layarnya kosong, dan yang membuka
+         Manajemen Pengguna harus bisa melihat sebabnya dari daftarnya. */
+      id: 'demo-7', username: 'upt.baru', full_name: 'Penelaah Unit Baru',
+      role: 'upt_penelaah', jabatan: 'Penelaah Berita',
+      assigned_kanwil: KANWIL_DEMO, assigned_upt: null, aktif: true,
+      auth_user_id: 'auth-7', last_login: null, must_change_password: true,
     },
     {
       id: 'demo-6', username: 'agus.lama', full_name: 'Agus Wijaya',
@@ -8907,20 +8960,30 @@ function penggunaDemo() {
   ]
 }
 
-/** Wilayah peragaan, dipakai peran kanwil supaya layarnya ada isinya. */
-const KANWIL_DEMO = 'Kanwil Jawa Barat'
+/*
+   Wilayah dan unit peragaan.
 
-/** Unit peragaan, dengan alasan yang sama bagi peran petugas unit. */
+   Keduanya ditulis PERSIS seperti pada data induk UPT, bukan disingkat menjadi
+   "Kanwil Jawa Barat" seperti sebelumnya. Penyaringan wilayah di seluruh sistem
+   ini mencocokkan huruf demi huruf; nama singkat membuat halaman yang menyaring
+   unit menurut kanwil-nya menemukan nol unit, dan layar kosong itu terbaca
+   sebagai halaman yang rusak, bukan sebagai konstanta peragaan yang keliru.
+
+   Unitnya sengaja Lapas Kediri: itu contoh yang dipakai pengguna sistem ini
+   sendiri ketika menjelaskan apa yang boleh dilihat sebuah unit.
+*/
+const KANWIL_DEMO = 'Kantor Wilayah Ditjenpas Jawa Timur'
+
 const UPT_DEMO = 'Lapas Kelas IIA Kediri'
 
 function profilDemo(peran = 'media_intelligence_analyst') {
-  const unit = peran === 'upt_petugas'
-  const daerah = unit || peran.startsWith('kanwil_')
+  const unit = peran === 'upt_penelaah'
+  const daerah = unit || peran === 'kanwil_admin'
 
   return {
     id: 'demo-pengguna',
     username: unit ? 'demo.upt' : daerah ? 'demo.kanwil' : 'demo',
-    full_name: unit ? 'Petugas Unit Peragaan'
+    full_name: unit ? 'Penelaah Unit Peragaan'
       : daerah ? 'Petugas Kanwil Peragaan' : 'Pengguna Peragaan',
     role: peran,
     jabatan: 'Mode Peragaan',
@@ -14796,544 +14859,544 @@ __daftar('js/lib/peta-upt-contoh.js', function (__minta) {
  * berkas ini ketika mode peragaan aktif. Karena pemuatannya dinamis, peramban
  * petugas tidak pernah mengunduhnya.
  *
- * Bentuk tiap baris: [nama, jenis, kanwil, provinsi, lintang, bujur].
- * Bukan objek, karena 531 objek dengan enam nama kunci yang diulang
+ * Bentuk tiap baris: [nama, jenis, kanwil, provinsi, kabupaten/kota, lintang, bujur].
+ * Bukan objek, karena 531 objek dengan tujuh nama kunci yang diulang
  * memperbesar berkas ini lebih dari dua kali lipat tanpa menambah satu pun
  * keterangan.
  */
 
 const UNIT_CONTOH = [
-  ["Lapas Kelas IIA Banda Aceh","Lapas","Kantor Wilayah Ditjenpas Aceh","Aceh",5.5549,95.3566],
-  ["Lapas Kelas IIA Lhok Seumawe","Lapas","Kantor Wilayah Ditjenpas Aceh","Aceh",5.2024,97.0424],
-  ["Lapas Kelas IIB Bireun","Lapas","Kantor Wilayah Ditjenpas Aceh","Aceh",5.0827,96.5921],
-  ["Lapas Kelas IIB Blangkejeren","Lapas","Kantor Wilayah Ditjenpas Aceh","Aceh",3.9776,97.3321],
-  ["Lapas Kelas IIB Blangpidie","Lapas","Kantor Wilayah Ditjenpas Aceh","Aceh",3.8336,96.8516],
-  ["Lapas Kelas IIB Idi","Lapas","Kantor Wilayah Ditjenpas Aceh","Aceh",5.1048,96.2117],
-  ["Lapas Kelas IIB Kota Bakti","Lapas","Kantor Wilayah Ditjenpas Aceh","Aceh",5.1048,96.2117],
-  ["Lapas Kelas IIB Kuala Simpang","Lapas","Kantor Wilayah Ditjenpas Aceh","Aceh",4.2123,97.9147],
-  ["Lapas Kelas IIB Kutacane","Lapas","Kantor Wilayah Ditjenpas Aceh","Aceh",3.3388,97.7456],
-  ["Lapas Kelas IIB Langsa","Lapas","Kantor Wilayah Ditjenpas Aceh","Aceh",4.4687,97.8986],
-  ["Lapas Kelas IIB Lhoksukon","Lapas","Kantor Wilayah Ditjenpas Aceh","Aceh",4.9912,97.1587],
-  ["Lapas Kelas IIB Meulaboh","Lapas","Kantor Wilayah Ditjenpas Aceh","Aceh",3.8336,96.8516],
-  ["Lapas Kelas III Calang","Lapas","Kantor Wilayah Ditjenpas Aceh","Aceh",4.8115,95.7002],
-  ["Lapas Kelas III Lhok Nga","Lapas","Kantor Wilayah Ditjenpas Aceh","Aceh",5.3542,95.4962],
-  ["Lapas Kelas III Sinabang","Lapas","Kantor Wilayah Ditjenpas Aceh","Aceh",2.629,96.0221],
-  ["Lapas Narkotika Kelas IIB Langsa","Lapas","Kantor Wilayah Ditjenpas Aceh","Aceh",4.4687,97.8986],
-  ["Lapas Perempuan Kelas IIB Sigli","Lapas","Kantor Wilayah Ditjenpas Aceh","Aceh",5.1048,96.2117],
-  ["LPKA Kelas II Banda Aceh","LPKA","Kantor Wilayah Ditjenpas Aceh","Aceh",5.5549,95.3566],
-  ["Rutan Kelas IIB Banda Aceh","Rutan","Kantor Wilayah Ditjenpas Aceh","Aceh",5.5549,95.3566],
-  ["Rutan Kelas IIB Bener Meriah","Rutan","Kantor Wilayah Ditjenpas Aceh","Aceh",4.7739,96.978],
-  ["Rutan Kelas IIB Jantho","Rutan","Kantor Wilayah Ditjenpas Aceh","Aceh",5.3542,95.4962],
-  ["Rutan Kelas IIB Sabang","Rutan","Kantor Wilayah Ditjenpas Aceh","Aceh",5.8319,95.3635],
-  ["Rutan Kelas IIB Sigli","Rutan","Kantor Wilayah Ditjenpas Aceh","Aceh",5.1048,96.2117],
-  ["Rutan Kelas IIB Singkel","Rutan","Kantor Wilayah Ditjenpas Aceh","Aceh",2.3759,97.9244],
-  ["Rutan Kelas IIB Takengon","Rutan","Kantor Wilayah Ditjenpas Aceh","Aceh",4.5643,96.9619],
-  ["Rutan Kelas IIB Tapaktuan","Rutan","Kantor Wilayah Ditjenpas Aceh","Aceh",3.068,97.4688],
-  ["Lapas Kelas IIA Kerobokan","Lapas","Kantor Wilayah Ditjenpas Bali","Bali",-8.6449,115.1359],
-  ["Lapas Kelas IIB Karangasem","Lapas","Kantor Wilayah Ditjenpas Bali","Bali",-8.3356,115.6171],
-  ["Lapas Kelas IIB Singaraja","Lapas","Kantor Wilayah Ditjenpas Bali","Bali",-7.8428,115.197],
-  ["Lapas Kelas IIB Tabanan","Lapas","Kantor Wilayah Ditjenpas Bali","Bali",-8.5567,115.0013],
-  ["Lapas Narkotika Kelas IIA Bangli","Lapas","Kantor Wilayah Ditjenpas Bali","Bali",-8.3333,115.3683],
-  ["Lapas Perempuan Kelas IIA Denpasar","Lapas","Kantor Wilayah Ditjenpas Bali","Bali",-8.6146,115.2267],
-  ["LPKA Kelas II Karangasem","LPKA","Kantor Wilayah Ditjenpas Bali","Bali",-8.3356,115.6171],
-  ["Rutan Kelas IIB Bangli","Rutan","Kantor Wilayah Ditjenpas Bali","Bali",-8.3333,115.3683],
-  ["Rutan Kelas IIB Gianyar","Rutan","Kantor Wilayah Ditjenpas Bali","Bali",-8.7045,115.3523],
-  ["Rutan Kelas IIB Klungkung","Rutan","Kantor Wilayah Ditjenpas Bali","Bali",-8.7446,115.5575],
-  ["Rutan Kelas IIB Negara","Rutan","Kantor Wilayah Ditjenpas Bali","Bali",-8.3956,114.7055],
-  ["Lapas Kelas I Tangerang","Lapas","Kantor Wilayah Ditjenpas Banten","Banten",-6.3559,106.7134],
-  ["Lapas Kelas IIA Cilegon","Lapas","Kantor Wilayah Ditjenpas Banten","Banten",-6.0163,106.0363],
-  ["Lapas Kelas IIA Serang","Lapas","Kantor Wilayah Ditjenpas Banten","Banten",-6.117,106.1518],
-  ["Lapas Kelas IIA Tangerang","Lapas","Kantor Wilayah Ditjenpas Banten","Banten",-6.3559,106.7134],
-  ["Lapas Kelas III Rangkasbitung","Lapas","Kantor Wilayah Ditjenpas Banten","Banten",-6.6433,106.1873],
-  ["Lapas Pemuda Kelas IIA Tangerang","Lapas","Kantor Wilayah Ditjenpas Banten","Banten",-6.3559,106.7134],
-  ["Lapas Perempuan Kelas IIA Tangerang","Lapas","Kantor Wilayah Ditjenpas Banten","Banten",-6.3559,106.7134],
-  ["Lapas Terbuka Kelas IIB Ciangir","Lapas","Kantor Wilayah Ditjenpas Banten","Banten",-6.3559,106.7134],
-  ["LPKA Kelas I Tangerang","LPKA","Kantor Wilayah Ditjenpas Banten","Banten",-6.3559,106.7134],
-  ["Rutan Kelas I Tangerang","Rutan","Kantor Wilayah Ditjenpas Banten","Banten",-6.3559,106.7134],
-  ["Rutan Kelas IIB Pandeglang","Rutan","Kantor Wilayah Ditjenpas Banten","Banten",-6.5474,105.7995],
-  ["Rutan Kelas IIB Serang","Rutan","Kantor Wilayah Ditjenpas Banten","Banten",-6.117,106.1518],
-  ["Lapas Kelas IIA Bengkulu","Lapas","Kantor Wilayah Ditjenpas Bengkulu","Bengkulu",-4.359,103.002],
-  ["Lapas Kelas IIA Curup","Lapas","Kantor Wilayah Ditjenpas Bengkulu","Bengkulu",-3.4389,102.6985],
-  ["Lapas Kelas IIB Argamakmur","Lapas","Kantor Wilayah Ditjenpas Bengkulu","Bengkulu",-3.1891,101.8576],
-  ["Lapas Perempuan Kelas IIB Bengkulu","Lapas","Kantor Wilayah Ditjenpas Bengkulu","Bengkulu",-4.359,103.002],
-  ["LPKA Kelas II Bengkulu","LPKA","Kantor Wilayah Ditjenpas Bengkulu","Bengkulu",-4.359,103.002],
-  ["Rutan Kelas IIB Bengkulu","Rutan","Kantor Wilayah Ditjenpas Bengkulu","Bengkulu",-4.359,103.002],
-  ["Rutan Kelas IIB Manna","Rutan","Kantor Wilayah Ditjenpas Bengkulu","Bengkulu",-4.359,103.002],
-  ["Lapas Kelas IIA Yogyakarta","Lapas","Kantor Wilayah Ditjenpas D.I. Yogyakarta","D.I. Yogyakarta",-7.8261,110.4021],
-  ["Lapas Kelas IIB Sleman","Lapas","Kantor Wilayah Ditjenpas D.I. Yogyakarta","D.I. Yogyakarta",-7.6902,110.342],
-  ["Lapas Kelas IIB Wonosari","Lapas","Kantor Wilayah Ditjenpas D.I. Yogyakarta","D.I. Yogyakarta",-7.993,110.5579],
-  ["Lapas Narkotika Kelas IIA Yogyakarta","Lapas","Kantor Wilayah Ditjenpas D.I. Yogyakarta","D.I. Yogyakarta",-7.8261,110.4021],
-  ["Lapas Perempuan Kelas IIB Yogyakarta","Lapas","Kantor Wilayah Ditjenpas D.I. Yogyakarta","D.I. Yogyakarta",-7.8261,110.4021],
-  ["LPKA Kelas II Yogyakarta","LPKA","Kantor Wilayah Ditjenpas D.I. Yogyakarta","D.I. Yogyakarta",-7.8261,110.4021],
-  ["Rutan Kelas IIA Yogyakarta","Rutan","Kantor Wilayah Ditjenpas D.I. Yogyakarta","D.I. Yogyakarta",-7.8261,110.4021],
-  ["Rutan Kelas IIB Bantul","Rutan","Kantor Wilayah Ditjenpas D.I. Yogyakarta","D.I. Yogyakarta",-7.8877,110.3274],
-  ["Rutan Kelas IIB Wates","Rutan","Kantor Wilayah Ditjenpas D.I. Yogyakarta","D.I. Yogyakarta",-7.8123,110.148],
-  ["Lapas Kelas I Cipinang","Lapas","Kantor Wilayah Ditjenpas DKI Jakarta","DKI Jakarta",-6.2629,106.8822],
-  ["Lapas Kelas IIA Salemba","Lapas","Kantor Wilayah Ditjenpas DKI Jakarta","DKI Jakarta",-6.1823,106.8429],
-  ["Lapas Narkotika Kelas IIA Jakarta","Lapas","Kantor Wilayah Ditjenpas DKI Jakarta","DKI Jakarta",-6.2838,106.8049],
-  ["Lapas Perempuan Kelas IIA Jakarta","Lapas","Kantor Wilayah Ditjenpas DKI Jakarta","DKI Jakarta",-6.2838,106.8049],
-  ["LPKA Kelas II Jakarta","LPKA","Kantor Wilayah Ditjenpas DKI Jakarta","DKI Jakarta",-6.2629,106.8822],
-  ["Rutan Kelas I Cipinang","Rutan","Kantor Wilayah Ditjenpas DKI Jakarta","DKI Jakarta",-6.2629,106.8822],
-  ["Rutan Kelas I Jakarta Pusat","Rutan","Kantor Wilayah Ditjenpas DKI Jakarta","DKI Jakarta",-6.1823,106.8429],
-  ["Rutan Kelas I Pondok Bambu","Rutan","Kantor Wilayah Ditjenpas DKI Jakarta","DKI Jakarta",-6.2629,106.8822],
-  ["Lapas Kelas IIA Gorontalo","Lapas","Kantor Wilayah Ditjenpas Gorontalo","Gorontalo",0.8662,123.0495],
-  ["Lapas Kelas IIB Boalemo","Lapas","Kantor Wilayah Ditjenpas Gorontalo","Gorontalo",0.6876,122.3357],
-  ["Lapas Kelas IIB Pahuwato","Lapas","Kantor Wilayah Ditjenpas Gorontalo","Gorontalo",0.6999,122.4467],
-  ["Lapas Perempuan Kelas III Gorontalo","Lapas","Kantor Wilayah Ditjenpas Gorontalo","Gorontalo",0.8662,123.0495],
-  ["LPKA Kelas II Gorontalo","LPKA","Kantor Wilayah Ditjenpas Gorontalo","Gorontalo",0.8662,123.0495],
-  ["Lapas Kelas IIA Jambi","Lapas","Kantor Wilayah Ditjenpas Jambi","Jambi",-1.7077,103.7861],
-  ["Lapas Kelas IIB Bangko","Lapas","Kantor Wilayah Ditjenpas Jambi","Jambi",-2.2084,102.1171],
-  ["Lapas Kelas IIB Kuala Tungkal","Lapas","Kantor Wilayah Ditjenpas Jambi","Jambi",-0.9831,103.2692],
-  ["Lapas Kelas IIB Muara Bulian","Lapas","Kantor Wilayah Ditjenpas Jambi","Jambi",-1.8592,103.0075],
-  ["Lapas Kelas IIB Muara Bungo","Lapas","Kantor Wilayah Ditjenpas Jambi","Jambi",-1.5152,101.9989],
-  ["Lapas Kelas IIB Muara Tebo","Lapas","Kantor Wilayah Ditjenpas Jambi","Jambi",-1.3885,102.4406],
-  ["Lapas Kelas IIB Sarolangun","Lapas","Kantor Wilayah Ditjenpas Jambi","Jambi",-2.3312,102.6275],
-  ["Lapas Narkotika Kelas IIB Muara Sabak","Lapas","Kantor Wilayah Ditjenpas Jambi","Jambi",-1.1773,104.2285],
-  ["Lapas Perempuan Kelas IIB Jambi","Lapas","Kantor Wilayah Ditjenpas Jambi","Jambi",-1.7077,103.7861],
-  ["LPKA Kelas II Muara Bulia","LPKA","Kantor Wilayah Ditjenpas Jambi","Jambi",-1.8592,103.0075],
-  ["Rutan Kelas IIB Sungai Penuh","Rutan","Kantor Wilayah Ditjenpas Jambi","Jambi",-2.0491,101.3491],
-  ["Lapas Kelas I Cirebon","Lapas","Kantor Wilayah Ditjenpas Jawa Barat","Jawa Barat",-6.7137,108.5608],
-  ["Lapas Kelas I Sukamiskin","Lapas","Kantor Wilayah Ditjenpas Jawa Barat","Jawa Barat",-6.8978,107.4124],
-  ["Lapas Kelas IIA Banceuy Bandung","Lapas","Kantor Wilayah Ditjenpas Jawa Barat","Jawa Barat",-6.8978,107.4124],
-  ["Lapas Kelas IIA Bekasi","Lapas","Kantor Wilayah Ditjenpas Jawa Barat","Jawa Barat",-6.235,106.9945],
-  ["Lapas Kelas IIA Bogor","Lapas","Kantor Wilayah Ditjenpas Jawa Barat","Jawa Barat",-6.5963,106.7972],
-  ["Lapas Kelas IIA Cibinong","Lapas","Kantor Wilayah Ditjenpas Jawa Barat","Jawa Barat",-6.5963,106.7972],
-  ["Lapas Kelas IIA Cikarang","Lapas","Kantor Wilayah Ditjenpas Jawa Barat","Jawa Barat",-6.235,106.9945],
-  ["Lapas Kelas IIA Karawang","Lapas","Kantor Wilayah Ditjenpas Jawa Barat","Jawa Barat",-6.3022,107.3046],
-  ["Lapas Kelas IIA Kuningan","Lapas","Kantor Wilayah Ditjenpas Jawa Barat","Jawa Barat",-6.987,108.5538],
-  ["Lapas Kelas IIA Subang","Lapas","Kantor Wilayah Ditjenpas Jawa Barat","Jawa Barat",-6.4984,107.7395],
-  ["Lapas Kelas IIB Banjar","Lapas","Kantor Wilayah Ditjenpas Jawa Barat","Jawa Barat",-7.3917,108.615],
-  ["Lapas Kelas IIB Ciamis","Lapas","Kantor Wilayah Ditjenpas Jawa Barat","Jawa Barat",-7.3132,108.4049],
-  ["Lapas Kelas IIB Cianjur","Lapas","Kantor Wilayah Ditjenpas Jawa Barat","Jawa Barat",-7.0542,107.0691],
-  ["Lapas Kelas IIB Garut","Lapas","Kantor Wilayah Ditjenpas Jawa Barat","Jawa Barat",-7.2163,107.9015],
-  ["Lapas Kelas IIB Indramayu","Lapas","Kantor Wilayah Ditjenpas Jawa Barat","Jawa Barat",-6.4419,108.1765],
-  ["Lapas Kelas IIB Majalengka","Lapas","Kantor Wilayah Ditjenpas Jawa Barat","Jawa Barat",-6.8074,108.2788],
-  ["Lapas Kelas IIB Purwakarta","Lapas","Kantor Wilayah Ditjenpas Jawa Barat","Jawa Barat",-6.5528,107.4465],
-  ["Lapas Kelas IIB Sukabumi","Lapas","Kantor Wilayah Ditjenpas Jawa Barat","Jawa Barat",-6.9199,106.9265],
-  ["Lapas Kelas IIB Sumedang","Lapas","Kantor Wilayah Ditjenpas Jawa Barat","Jawa Barat",-6.8099,107.9818],
-  ["Lapas Kelas IIB Tasikmalaya","Lapas","Kantor Wilayah Ditjenpas Jawa Barat","Jawa Barat",-7.3262,108.2201],
-  ["Lapas Kelas IIB Warung Kiara","Lapas","Kantor Wilayah Ditjenpas Jawa Barat","Jawa Barat",-6.9199,106.9265],
-  ["Lapas Khusus Kelas IIA Gunung Sindur","Lapas","Kantor Wilayah Ditjenpas Jawa Barat","Jawa Barat",-6.5963,106.7972],
-  ["Lapas Khusus Kelas IIB Sentul","Lapas","Kantor Wilayah Ditjenpas Jawa Barat","Jawa Barat",-6.5963,106.7972],
-  ["Lapas Narkotika Kelas IIA Bandung","Lapas","Kantor Wilayah Ditjenpas Jawa Barat","Jawa Barat",-6.8978,107.4124],
-  ["Lapas Narkotika Kelas IIA Cirebon","Lapas","Kantor Wilayah Ditjenpas Jawa Barat","Jawa Barat",-6.7137,108.5608],
-  ["Lapas Narkotika Kelas IIA Gunung Sindur","Lapas","Kantor Wilayah Ditjenpas Jawa Barat","Jawa Barat",-6.5963,106.7972],
-  ["Lapas Perempuan Kelas IIA Bandung","Lapas","Kantor Wilayah Ditjenpas Jawa Barat","Jawa Barat",-6.8978,107.4124],
-  ["LPKA Kelas II Bandung","LPKA","Kantor Wilayah Ditjenpas Jawa Barat","Jawa Barat",-6.8978,107.4124],
-  ["Rutan Kelas I Bandung","Rutan","Kantor Wilayah Ditjenpas Jawa Barat","Jawa Barat",-6.8978,107.4124],
-  ["Rutan Kelas I Cirebon","Rutan","Kantor Wilayah Ditjenpas Jawa Barat","Jawa Barat",-6.7137,108.5608],
-  ["Rutan Kelas I Depok","Rutan","Kantor Wilayah Ditjenpas Jawa Barat","Jawa Barat",-6.4298,106.7427],
-  ["Rutan Kelas IIB Garut","Rutan","Kantor Wilayah Ditjenpas Jawa Barat","Jawa Barat",-7.2163,107.9015],
-  ["Rutan Perempuan Kelas IIA Bandung","Rutan","Kantor Wilayah Ditjenpas Jawa Barat","Jawa Barat",-6.8978,107.4124],
-  ["Lapas Kelas I Batu High Risk Narkotika Nusakambangan","Lapas","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah",-7.4617,108.8046],
-  ["Lapas Kelas I Semarang","Lapas","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah",-6.9904,110.4229],
-  ["Lapas Kelas IIA Ambarawa","Lapas","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah",-6.9904,110.4229],
-  ["Lapas Kelas IIA Besi Nusakambangan","Lapas","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah",-7.4617,108.8046],
-  ["Lapas Kelas IIA Gladakan Nusakambangan","Lapas","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah",-7.4617,108.8046],
-  ["Lapas Kelas IIA Kembang Kuning Nusakambangan","Lapas","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah",-7.4617,108.8046],
-  ["Lapas Kelas IIA Kendal","Lapas","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah",-7.0191,110.1375],
-  ["Lapas Kelas IIA Kumbang Nusakambangan","Lapas","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah",-7.4617,108.8046],
-  ["Lapas Kelas IIA Magelang","Lapas","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah",-7.4771,110.2182],
-  ["Lapas Kelas IIA Ngaseman Nusakambangan","Lapas","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah",-7.4617,108.8046],
-  ["Lapas Kelas IIA Pasir Putih Nusakambangan","Lapas","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah",-7.4617,108.8046],
-  ["Lapas Kelas IIA Pekalongan","Lapas","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah",-6.8905,109.6761],
-  ["Lapas Kelas IIA Permisan Nusakambangan","Lapas","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah",-7.4617,108.8046],
-  ["Lapas Kelas IIA Purwokerto","Lapas","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah",-7.4551,109.1167],
-  ["Lapas Kelas IIA Sragen","Lapas","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah",-7.3925,110.953],
-  ["Lapas Kelas IIB Batang","Lapas","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah",-7.0324,109.868],
-  ["Lapas Kelas IIB Brebes","Lapas","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah",-7.0521,108.8881],
-  ["Lapas Kelas IIB Cilacap","Lapas","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah",-7.4617,108.8046],
-  ["Lapas Kelas IIB Klaten","Lapas","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah",-7.6732,110.6285],
-  ["Lapas Kelas IIB Nirbaya Nusakambangan","Lapas","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah",-7.4617,108.8046],
-  ["Lapas Kelas IIB Pati","Lapas","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah",-6.7071,111.087],
-  ["Lapas Kelas IIB Purwodadi","Lapas","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah",-7.0981,110.8967],
-  ["Lapas Kelas IIB Slawi","Lapas","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah",-6.8698,109.1151],
-  ["Lapas Kelas IIB Tegal","Lapas","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah",-6.8698,109.1151],
-  ["Lapas Kelas IIB Wonogiri","Lapas","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah",-7.9621,110.9576],
-  ["Lapas Khusus Kelas IIA Karanganyar","Lapas","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah",-7.6197,111.0698],
-  ["Lapas Narkotika Kelas IIA Nusakambangan","Lapas","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah",-7.4617,108.8046],
-  ["Lapas Narkotika Kelas IIB Purwokerto","Lapas","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah",-7.4551,109.1167],
-  ["Lapas Pemuda Kelas IIB Plantungan","Lapas","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah",-7.0191,110.1375],
-  ["Lapas Perempuan Kelas IIA Semarang","Lapas","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah",-6.9904,110.4229],
-  ["Lapas Terbuka Kelas IIB Kendal","Lapas","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah",-7.0191,110.1375],
-  ["Lapas Terbuka Kelas IIB Nusakambangan","Lapas","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah",-7.4617,108.8046],
-  ["LPKA Kelas I Kutoarjo","LPKA","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah",-7.7131,110.0091],
-  ["Rutan Kelas I Semarang","Rutan","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah",-6.9904,110.4229],
-  ["Rutan Kelas I Surakarta","Rutan","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah",-7.5472,110.8176],
-  ["Rutan Kelas IIA Pekalongan","Rutan","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah",-6.8905,109.6761],
-  ["Rutan Kelas IIB Banjarnegara","Rutan","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah",-7.3559,109.6601],
-  ["Rutan Kelas IIB Banyumas","Rutan","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah",-7.4551,109.1167],
-  ["Rutan Kelas IIB Blora","Rutan","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah",-6.9692,111.4131],
-  ["Rutan Kelas IIB Boyolali","Rutan","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah",-7.3872,110.7039],
-  ["Rutan Kelas IIB Demak","Rutan","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah",-6.9229,110.6351],
-  ["Rutan Kelas IIB Jepara","Rutan","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah",-6.5899,110.6673],
-  ["Rutan Kelas IIB Kebumen","Rutan","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah",-7.6687,109.6519],
-  ["Rutan Kelas IIB Kudus","Rutan","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah",-6.8078,110.8417],
-  ["Rutan Kelas IIB Pemalang","Rutan","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah",-7.0111,109.3914],
-  ["Rutan Kelas IIB Purbalingga","Rutan","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah",-7.3273,109.3999],
-  ["Rutan Kelas IIB Purworejo","Rutan","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah",-7.7131,110.0091],
-  ["Rutan Kelas IIB Rembang","Rutan","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah",-6.7699,111.4557],
-  ["Rutan Kelas IIB Salatiga","Rutan","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah",-7.3311,110.5017],
-  ["Rutan Kelas IIB Temanggung","Rutan","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah",-7.2398,110.1217],
-  ["Rutan Kelas IIB Wonosobo","Rutan","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah",-7.3998,109.921],
-  ["Lapas Kelas I Madiun","Lapas","Kantor Wilayah Ditjenpas Jawa Timur","Jawa Timur",-7.6291,111.5169],
-  ["Lapas Kelas I Malang","Lapas","Kantor Wilayah Ditjenpas Jawa Timur","Jawa Timur",-7.9771,112.634],
-  ["Lapas Kelas I Surabaya","Lapas","Kantor Wilayah Ditjenpas Jawa Timur","Jawa Timur",-7.2806,112.669],
-  ["Lapas Kelas IIA Banyuwangi","Lapas","Kantor Wilayah Ditjenpas Jawa Timur","Jawa Timur",-8.3326,114.1416],
-  ["Lapas Kelas IIA Bojonegoro","Lapas","Kantor Wilayah Ditjenpas Jawa Timur","Jawa Timur",-7.2279,111.8146],
-  ["Lapas Kelas IIA Jember","Lapas","Kantor Wilayah Ditjenpas Jawa Timur","Jawa Timur",-8.1689,113.7022],
-  ["Lapas Kelas IIA Kediri","Lapas","Kantor Wilayah Ditjenpas Jawa Timur","Jawa Timur",-7.8111,112.0046],
-  ["Lapas Kelas IIA Pamekasan","Lapas","Kantor Wilayah Ditjenpas Jawa Timur","Jawa Timur",-7.1605,113.4826],
-  ["Lapas Kelas IIA Sidoarjo","Lapas","Kantor Wilayah Ditjenpas Jawa Timur","Jawa Timur",-7.456,112.6609],
-  ["Lapas Kelas IIB Blitar","Lapas","Kantor Wilayah Ditjenpas Jawa Timur","Jawa Timur",-8.1312,112.3116],
-  ["Lapas Kelas IIB Bondowoso","Lapas","Kantor Wilayah Ditjenpas Jawa Timur","Jawa Timur",-7.9451,113.8821],
-  ["Lapas Kelas IIB Jombang","Lapas","Kantor Wilayah Ditjenpas Jawa Timur","Jawa Timur",-7.5615,112.2413],
-  ["Lapas Kelas IIB Lamongan","Lapas","Kantor Wilayah Ditjenpas Jawa Timur","Jawa Timur",-7.1229,112.3282],
-  ["Lapas Kelas IIB Lumajang","Lapas","Kantor Wilayah Ditjenpas Jawa Timur","Jawa Timur",-8.1352,113.2244],
-  ["Lapas Kelas IIB Mojokerto","Lapas","Kantor Wilayah Ditjenpas Jawa Timur","Jawa Timur",-7.5413,112.5095],
-  ["Lapas Kelas IIB Ngawi","Lapas","Kantor Wilayah Ditjenpas Jawa Timur","Jawa Timur",-7.4027,111.4443],
-  ["Lapas Kelas IIB Pasuruan","Lapas","Kantor Wilayah Ditjenpas Jawa Timur","Jawa Timur",-7.7508,112.8185],
-  ["Lapas Kelas IIB Probolinggo","Lapas","Kantor Wilayah Ditjenpas Jawa Timur","Jawa Timur",-7.7441,113.2158],
-  ["Lapas Kelas IIB Tuban","Lapas","Kantor Wilayah Ditjenpas Jawa Timur","Jawa Timur",-6.8963,112.0651],
-  ["Lapas Kelas IIB Tulungagung","Lapas","Kantor Wilayah Ditjenpas Jawa Timur","Jawa Timur",-8.0729,111.8996],
-  ["Lapas Kelas III Arjasa","Lapas","Kantor Wilayah Ditjenpas Jawa Timur","Jawa Timur",-7.0067,113.8599],
-  ["Lapas Narkotika Kelas IIA Pamekasan","Lapas","Kantor Wilayah Ditjenpas Jawa Timur","Jawa Timur",-7.1605,113.4826],
-  ["Lapas Pemuda Kelas IIA Madiun","Lapas","Kantor Wilayah Ditjenpas Jawa Timur","Jawa Timur",-7.6291,111.5169],
-  ["Lapas Perempuan Kelas IIA Malang","Lapas","Kantor Wilayah Ditjenpas Jawa Timur","Jawa Timur",-7.9771,112.634],
-  ["LPKA Kelas I Blitar","LPKA","Kantor Wilayah Ditjenpas Jawa Timur","Jawa Timur",-8.1312,112.3116],
-  ["Rutan Kelas I Surabaya","Rutan","Kantor Wilayah Ditjenpas Jawa Timur","Jawa Timur",-7.2806,112.669],
-  ["Rutan Kelas IIB Bangil","Rutan","Kantor Wilayah Ditjenpas Jawa Timur","Jawa Timur",-7.7508,112.8185],
-  ["Rutan Kelas IIB Bangkalan","Rutan","Kantor Wilayah Ditjenpas Jawa Timur","Jawa Timur",-7.0464,112.8963],
-  ["Rutan Kelas IIB Gresik","Rutan","Kantor Wilayah Ditjenpas Jawa Timur","Jawa Timur",-5.7933,112.6598],
-  ["Rutan Kelas IIB Kraksaan","Rutan","Kantor Wilayah Ditjenpas Jawa Timur","Jawa Timur",-7.7441,113.2158],
-  ["Rutan Kelas IIB Magetan","Rutan","Kantor Wilayah Ditjenpas Jawa Timur","Jawa Timur",-7.6542,111.3361],
-  ["Rutan Kelas IIB Nganjuk","Rutan","Kantor Wilayah Ditjenpas Jawa Timur","Jawa Timur",-7.615,111.9465],
-  ["Rutan Kelas IIB Pacitan","Rutan","Kantor Wilayah Ditjenpas Jawa Timur","Jawa Timur",-8.1017,111.1447],
-  ["Rutan Kelas IIB Ponorogo","Rutan","Kantor Wilayah Ditjenpas Jawa Timur","Jawa Timur",-7.9712,111.4989],
-  ["Rutan Kelas IIB Sampang","Rutan","Kantor Wilayah Ditjenpas Jawa Timur","Jawa Timur",-7.0578,113.2541],
-  ["Rutan Kelas IIB Situbondo","Rutan","Kantor Wilayah Ditjenpas Jawa Timur","Jawa Timur",-7.7068,114.0054],
-  ["Rutan Kelas IIB Sumenep","Rutan","Kantor Wilayah Ditjenpas Jawa Timur","Jawa Timur",-7.0067,113.8599],
-  ["Rutan Kelas IIB Trenggalek","Rutan","Kantor Wilayah Ditjenpas Jawa Timur","Jawa Timur",-8.1359,111.6402],
-  ["Rutan Perempuan Kelas IIA Surabaya","Rutan","Kantor Wilayah Ditjenpas Jawa Timur","Jawa Timur",-7.2806,112.669],
-  ["Lapas Kelas IIA Pontianak","Lapas","Kantor Wilayah Ditjenpas Kalimantan Barat","Kalimantan Barat",-0.0829,109.3518],
-  ["Lapas Kelas IIB Ketapang","Lapas","Kantor Wilayah Ditjenpas Kalimantan Barat","Kalimantan Barat",-1.6815,110.4648],
-  ["Lapas Kelas IIB Singkawang","Lapas","Kantor Wilayah Ditjenpas Kalimantan Barat","Kalimantan Barat",0.7933,108.9863],
-  ["Lapas Kelas IIB Sintang","Lapas","Kantor Wilayah Ditjenpas Kalimantan Barat","Kalimantan Barat",0.1927,111.5598],
-  ["Lapas Perempuan Kelas IIA Pontianak","Lapas","Kantor Wilayah Ditjenpas Kalimantan Barat","Kalimantan Barat",-0.0829,109.3518],
-  ["LPKA Kelas II Sungai Raya","LPKA","Kantor Wilayah Ditjenpas Kalimantan Barat","Kalimantan Barat",-0.0829,109.3518],
-  ["Rutan Kelas IIA Pontianak","Rutan","Kantor Wilayah Ditjenpas Kalimantan Barat","Kalimantan Barat",-0.0829,109.3518],
-  ["Rutan Kelas IIB Bengkayang","Rutan","Kantor Wilayah Ditjenpas Kalimantan Barat","Kalimantan Barat",1.0158,109.708],
-  ["Rutan Kelas IIB Landak","Rutan","Kantor Wilayah Ditjenpas Kalimantan Barat","Kalimantan Barat",0.5046,109.707],
-  ["Rutan Kelas IIB Mempawah","Rutan","Kantor Wilayah Ditjenpas Kalimantan Barat","Kalimantan Barat",0.344,109.102],
-  ["Rutan Kelas IIB Putussibau","Rutan","Kantor Wilayah Ditjenpas Kalimantan Barat","Kalimantan Barat",0.8274,112.7965],
-  ["Rutan Kelas IIB Sambas","Rutan","Kantor Wilayah Ditjenpas Kalimantan Barat","Kalimantan Barat",1.5219,109.4138],
-  ["Rutan Kelas IIB Sanggau","Rutan","Kantor Wilayah Ditjenpas Kalimantan Barat","Kalimantan Barat",0.3502,110.547],
-  ["Lapas Kelas IIA Banjarmasin","Lapas","Kantor Wilayah Ditjenpas Kalimantan Selatan","Kalimantan Selatan",-3.3301,114.5976],
-  ["Lapas Kelas IIA Kotabaru","Lapas","Kantor Wilayah Ditjenpas Kalimantan Selatan","Kalimantan Selatan",-2.7951,115.9713],
-  ["Lapas Kelas IIB Amuntai","Lapas","Kantor Wilayah Ditjenpas Kalimantan Selatan","Kalimantan Selatan",-2.4242,115.1597],
-  ["Lapas Kelas IIB Banjar Baru","Lapas","Kantor Wilayah Ditjenpas Kalimantan Selatan","Kalimantan Selatan",-3.4874,114.7027],
-  ["Lapas Kelas IIB Tanjung","Lapas","Kantor Wilayah Ditjenpas Kalimantan Selatan","Kalimantan Selatan",-1.8363,115.5155],
-  ["Lapas Kelas III Batulicin","Lapas","Kantor Wilayah Ditjenpas Kalimantan Selatan","Kalimantan Selatan",-2.7951,115.9713],
-  ["Lapas Narkotika Kelas IIA Karang Intan","Lapas","Kantor Wilayah Ditjenpas Kalimantan Selatan","Kalimantan Selatan",-3.3301,114.5976],
-  ["Lapas Perempuan Kelas IIA Martapura","Lapas","Kantor Wilayah Ditjenpas Kalimantan Selatan","Kalimantan Selatan",-3.0926,115.2838],
-  ["LPKA Kelas I Martapura","LPKA","Kantor Wilayah Ditjenpas Kalimantan Selatan","Kalimantan Selatan",-3.0926,115.2838],
-  ["Rutan Kelas IIB Barabai","Rutan","Kantor Wilayah Ditjenpas Kalimantan Selatan","Kalimantan Selatan",-2.6188,115.4293],
-  ["Rutan Kelas IIB Kandangan","Rutan","Kantor Wilayah Ditjenpas Kalimantan Selatan","Kalimantan Selatan",-2.7126,115.1588],
-  ["Rutan Kelas IIB Marabahan","Rutan","Kantor Wilayah Ditjenpas Kalimantan Selatan","Kalimantan Selatan",-3.0193,114.6779],
-  ["Rutan Kelas IIB Pelaihari","Rutan","Kantor Wilayah Ditjenpas Kalimantan Selatan","Kalimantan Selatan",-3.844,114.9889],
-  ["Rutan Kelas IIB Rantau","Rutan","Kantor Wilayah Ditjenpas Kalimantan Selatan","Kalimantan Selatan",-2.8623,115.011],
-  ["Rutan Kelas IIB Tanjung","Rutan","Kantor Wilayah Ditjenpas Kalimantan Selatan","Kalimantan Selatan",-1.8363,115.5155],
-  ["Lapas Kelas IIA Palangkaraya","Lapas","Kantor Wilayah Ditjenpas Kalimantan Tengah","Kalimantan Tengah",-1.6815,113.3824],
-  ["Lapas Kelas IIB Muara Teweh","Lapas","Kantor Wilayah Ditjenpas Kalimantan Tengah","Kalimantan Tengah",-0.7542,115.0451],
-  ["Lapas Kelas IIB Pangkalan Bun","Lapas","Kantor Wilayah Ditjenpas Kalimantan Tengah","Kalimantan Tengah",-2.5042,111.6468],
-  ["Lapas Kelas IIB Sampit","Lapas","Kantor Wilayah Ditjenpas Kalimantan Tengah","Kalimantan Tengah",-2.2515,112.7855],
-  ["Lapas Kelas III Sukamara","Lapas","Kantor Wilayah Ditjenpas Kalimantan Tengah","Kalimantan Tengah",-2.5602,111.1838],
-  ["Lapas Narkotika Kelas IIA Kasongan","Lapas","Kantor Wilayah Ditjenpas Kalimantan Tengah","Kalimantan Tengah",-1.8596,113.3369],
-  ["Lapas Perempuan Kelas IIA Palangkaraya","Lapas","Kantor Wilayah Ditjenpas Kalimantan Tengah","Kalimantan Tengah",-1.6815,113.3824],
-  ["LPKA Kelas II Palangkaraya","LPKA","Kantor Wilayah Ditjenpas Kalimantan Tengah","Kalimantan Tengah",-1.6815,113.3824],
-  ["Rutan Kelas IIA Palangkaraya","Rutan","Kantor Wilayah Ditjenpas Kalimantan Tengah","Kalimantan Tengah",-1.6815,113.3824],
-  ["Rutan Kelas IIB Buntok","Rutan","Kantor Wilayah Ditjenpas Kalimantan Tengah","Kalimantan Tengah",-1.9229,114.7889],
-  ["Rutan Kelas IIB Kuala Kapuas","Rutan","Kantor Wilayah Ditjenpas Kalimantan Tengah","Kalimantan Tengah",-1.9229,114.3364],
-  ["Rutan Kelas IIB Tamiang Layang","Rutan","Kantor Wilayah Ditjenpas Kalimantan Tengah","Kalimantan Tengah",-1.9819,115.1804],
-  ["Lapas Kelas IIA Balikpapan","Lapas","Kantor Wilayah Ditjenpas Kalimantan Timur","Kalimantan Timur",-1.2678,116.8537],
-  ["Lapas Kelas IIA Bontang","Lapas","Kantor Wilayah Ditjenpas Kalimantan Timur","Kalimantan Timur",0.1299,117.4507],
-  ["Lapas Kelas IIA Samarinda","Lapas","Kantor Wilayah Ditjenpas Kalimantan Timur","Kalimantan Timur",-0.5304,117.1365],
-  ["Lapas Kelas IIA Tenggarong","Lapas","Kantor Wilayah Ditjenpas Kalimantan Timur","Kalimantan Timur",0.1956,116.2004],
-  ["Lapas Narkotika Kelas IIA Samarinda","Lapas","Kantor Wilayah Ditjenpas Kalimantan Timur","Kalimantan Timur",-0.5304,117.1365],
-  ["Lapas Perempuan Kelas IIA Samarinda","Lapas","Kantor Wilayah Ditjenpas Kalimantan Timur","Kalimantan Timur",-0.5304,117.1365],
-  ["LPKA Kelas II Tenggarong","LPKA","Kantor Wilayah Ditjenpas Kalimantan Timur","Kalimantan Timur",0.1956,116.2004],
-  ["Rutan Kelas IIA Samarinda","Rutan","Kantor Wilayah Ditjenpas Kalimantan Timur","Kalimantan Timur",-0.5304,117.1365],
-  ["Rutan Kelas IIB Balikpapan","Rutan","Kantor Wilayah Ditjenpas Kalimantan Timur","Kalimantan Timur",-1.2678,116.8537],
-  ["Rutan Kelas IIB Tanah Grogot","Rutan","Kantor Wilayah Ditjenpas Kalimantan Timur","Kalimantan Timur",-1.1974,116.5673],
-  ["Rutan Kelas IIB Tanjung Redeb","Rutan","Kantor Wilayah Ditjenpas Kalimantan Timur","Kalimantan Timur",1.7768,117.2692],
-  ["Lapas Kelas IIA Tarakan","Lapas","Kantor Wilayah Ditjenpas Kalimantan Utara","Kalimantan Utara",3.3726,117.572],
-  ["Lapas Kelas IIB Nunukan","Lapas","Kantor Wilayah Ditjenpas Kalimantan Utara","Kalimantan Utara",3.9075,117.0424],
-  ["Lapas Kelas IIA Pangkal Pinang","Lapas","Kantor Wilayah Ditjenpas Kepulauan Bangka Belitung","Kepulauan Bangka Belitung",-2.7411,106.4406],
-  ["Lapas Kelas IIB Sungai Liat","Lapas","Kantor Wilayah Ditjenpas Kepulauan Bangka Belitung","Kepulauan Bangka Belitung",-2.7769,106.294],
-  ["Lapas Kelas IIB Tanjung Pandan","Lapas","Kantor Wilayah Ditjenpas Kepulauan Bangka Belitung","Kepulauan Bangka Belitung",-2.9165,108.0037],
-  ["Lapas Narkotika Kelas IIA Pangkal Pinang","Lapas","Kantor Wilayah Ditjenpas Kepulauan Bangka Belitung","Kepulauan Bangka Belitung",-2.7411,106.4406],
-  ["Lapas Perempuan Kelas III Pangkalpinang","Lapas","Kantor Wilayah Ditjenpas Kepulauan Bangka Belitung","Kepulauan Bangka Belitung",-2.7411,106.4406],
-  ["LPKA Kelas II Pangkal Pinang","LPKA","Kantor Wilayah Ditjenpas Kepulauan Bangka Belitung","Kepulauan Bangka Belitung",-2.7411,106.4406],
-  ["Rutan Kelas IIB Muntok","Rutan","Kantor Wilayah Ditjenpas Kepulauan Bangka Belitung","Kepulauan Bangka Belitung",-1.8412,105.5519],
-  ["Lapas Kelas IIA Batam","Lapas","Kantor Wilayah Ditjenpas Kepulauan Riau","Kepulauan Riau",1.0507,103.9607],
-  ["Lapas Kelas IIA Tanjung Pinang","Lapas","Kantor Wilayah Ditjenpas Kepulauan Riau","Kepulauan Riau",3.9457,108.1429],
-  ["Lapas Kelas III Dabo Singkep","Lapas","Kantor Wilayah Ditjenpas Kepulauan Riau","Kepulauan Riau",-0.5095,104.4142],
-  ["Lapas Narkotika Kelas IIA Tanjung Pinang","Lapas","Kantor Wilayah Ditjenpas Kepulauan Riau","Kepulauan Riau",3.9457,108.1429],
-  ["Lapas Perempuan Kelas IIB Batam","Lapas","Kantor Wilayah Ditjenpas Kepulauan Riau","Kepulauan Riau",1.0507,103.9607],
-  ["LPKA Kelas II Batam","LPKA","Kantor Wilayah Ditjenpas Kepulauan Riau","Kepulauan Riau",1.0507,103.9607],
-  ["Rutan Kelas I Tanjung Pinang","Rutan","Kantor Wilayah Ditjenpas Kepulauan Riau","Kepulauan Riau",3.9457,108.1429],
-  ["Rutan Kelas IIA Batam","Rutan","Kantor Wilayah Ditjenpas Kepulauan Riau","Kepulauan Riau",1.0507,103.9607],
-  ["Rutan Kelas IIB Tanjung Balai Karimun","Rutan","Kantor Wilayah Ditjenpas Kepulauan Riau","Kepulauan Riau",0.7654,103.4287],
-  ["Lapas Kelas I Bandar Lampung","Lapas","Kantor Wilayah Ditjenpas Lampung","Lampung",-5.4479,105.2698],
-  ["Lapas Kelas IIA Kalianda","Lapas","Kantor Wilayah Ditjenpas Lampung","Lampung",-5.5415,105.511],
-  ["Lapas Kelas IIA Kotabumi","Lapas","Kantor Wilayah Ditjenpas Lampung","Lampung",-4.8086,104.8629],
-  ["Lapas Kelas IIA Metro","Lapas","Kantor Wilayah Ditjenpas Lampung","Lampung",-5.1503,105.3016],
-  ["Lapas Kelas IIB Gunung Sugih","Lapas","Kantor Wilayah Ditjenpas Lampung","Lampung",-4.8728,105.326],
-  ["Lapas Kelas IIB Kota Agung","Lapas","Kantor Wilayah Ditjenpas Lampung","Lampung",-5.5141,104.7771],
-  ["Lapas Kelas IIB Waykanan","Lapas","Kantor Wilayah Ditjenpas Lampung","Lampung",-4.5669,104.5162],
-  ["Lapas Narkotika Kelas IIA Bandar Lampung","Lapas","Kantor Wilayah Ditjenpas Lampung","Lampung",-5.4479,105.2698],
-  ["Lapas Perempuan Kelas IIA Bandar Lampung","Lapas","Kantor Wilayah Ditjenpas Lampung","Lampung",-5.4479,105.2698],
-  ["LPKA Kelas II Bandar Lampung","LPKA","Kantor Wilayah Ditjenpas Lampung","Lampung",-5.4479,105.2698],
-  ["Rutan Kelas I Bandar Lampung","Rutan","Kantor Wilayah Ditjenpas Lampung","Lampung",-5.4479,105.2698],
-  ["Rutan Kelas IIB Kota Agung","Rutan","Kantor Wilayah Ditjenpas Lampung","Lampung",-5.5141,104.7771],
-  ["Rutan Kelas IIB Kotabumi","Rutan","Kantor Wilayah Ditjenpas Lampung","Lampung",-4.8086,104.8629],
-  ["Rutan Kelas IIB Krui","Rutan","Kantor Wilayah Ditjenpas Lampung","Lampung",-5.3669,104.1866],
-  ["Rutan Kelas IIB Menggala","Rutan","Kantor Wilayah Ditjenpas Lampung","Lampung",-4.4324,105.1683],
-  ["Rutan Kelas IIB Sukadana","Rutan","Kantor Wilayah Ditjenpas Lampung","Lampung",-5.1197,105.5952],
-  ["Lapas Kelas IIA Ambon","Lapas","Kantor Wilayah Ditjenpas Maluku","Maluku",-3.7109,128.2593],
-  ["Lapas Kelas IIB Piru","Lapas","Kantor Wilayah Ditjenpas Maluku","Maluku",-3.1642,128.4837],
-  ["Lapas Kelas IIB Tual","Lapas","Kantor Wilayah Ditjenpas Maluku","Maluku",-5.5905,132.0041],
-  ["Lapas Kelas III Bandanaira","Lapas","Kantor Wilayah Ditjenpas Maluku","Maluku",-3.1214,129.46],
-  ["Lapas Kelas III Dobo","Lapas","Kantor Wilayah Ditjenpas Maluku","Maluku",-6.2281,134.498],
-  ["Lapas Kelas III Geser","Lapas","Kantor Wilayah Ditjenpas Maluku","Maluku",-3.4232,130.3911],
-  ["Lapas Kelas III Namlea","Lapas","Kantor Wilayah Ditjenpas Maluku","Maluku",-3.4867,126.3502],
-  ["Lapas Kelas III Saparua","Lapas","Kantor Wilayah Ditjenpas Maluku","Maluku",-3.1214,129.46],
-  ["Lapas Kelas III Saumlaki","Lapas","Kantor Wilayah Ditjenpas Maluku","Maluku",-6.2281,134.498],
-  ["Lapas Kelas III Wahai","Lapas","Kantor Wilayah Ditjenpas Maluku","Maluku",-3.1214,129.46],
-  ["Lapas Kelas III Wonreli","Lapas","Kantor Wilayah Ditjenpas Maluku","Maluku",-7.7867,126.2428],
-  ["Lapas Perempuan Kelas III Ambon","Lapas","Kantor Wilayah Ditjenpas Maluku","Maluku",-3.7109,128.2593],
-  ["LPKA Kelas II Ambon","LPKA","Kantor Wilayah Ditjenpas Maluku","Maluku",-3.7109,128.2593],
-  ["Rutan Kelas IIA Ambon","Rutan","Kantor Wilayah Ditjenpas Maluku","Maluku",-3.7109,128.2593],
-  ["Rutan Kelas IIB Masohi","Rutan","Kantor Wilayah Ditjenpas Maluku","Maluku",-3.1214,129.46],
-  ["Lapas Kelas IIA Ternate","Lapas","Kantor Wilayah Ditjenpas Maluku Utara","Maluku Utara",0.8358,127.3553],
-  ["Lapas Kelas IIB Jailolo","Lapas","Kantor Wilayah Ditjenpas Maluku Utara","Maluku Utara",1.3631,127.5738],
-  ["Lapas Kelas IIB Sanana","Lapas","Kantor Wilayah Ditjenpas Maluku Utara","Maluku Utara",-1.8625,125.8306],
-  ["Lapas Kelas IIB Tobello","Lapas","Kantor Wilayah Ditjenpas Maluku Utara","Maluku Utara",1.6179,127.8585],
-  ["Lapas Kelas III Labuha","Lapas","Kantor Wilayah Ditjenpas Maluku Utara","Maluku Utara",-1.5344,127.7166],
-  ["Lapas Perempuan Kelas III Ternate","Lapas","Kantor Wilayah Ditjenpas Maluku Utara","Maluku Utara",0.8358,127.3553],
-  ["LPKA Kelas II Ternate","LPKA","Kantor Wilayah Ditjenpas Maluku Utara","Maluku Utara",0.8358,127.3553],
-  ["Rutan Kelas IIB Soa Siu","Rutan","Kantor Wilayah Ditjenpas Maluku Utara","Maluku Utara",-1.8625,125.8306],
-  ["Rutan Kelas IIB Ternate","Rutan","Kantor Wilayah Ditjenpas Maluku Utara","Maluku Utara",0.8358,127.3553],
-  ["Rutan Kelas IIB Weda","Rutan","Kantor Wilayah Ditjenpas Maluku Utara","Maluku Utara",0.3889,128.5832],
-  ["Lapas Kelas IIA Mataram","Lapas","Kantor Wilayah Ditjenpas Nusa Tenggara Barat","Nusa Tenggara Barat",-8.5994,116.1556],
-  ["Lapas Kelas IIA Sumbawa Besar","Lapas","Kantor Wilayah Ditjenpas Nusa Tenggara Barat","Nusa Tenggara Barat",-8.5949,117.2716],
-  ["Lapas Kelas IIB Dompu","Lapas","Kantor Wilayah Ditjenpas Nusa Tenggara Barat","Nusa Tenggara Barat",-8.5165,118.3312],
-  ["Lapas Kelas IIB Selong","Lapas","Kantor Wilayah Ditjenpas Nusa Tenggara Barat","Nusa Tenggara Barat",-8.6331,116.5588],
-  ["Lapas Perempuan Kelas III Mataram","Lapas","Kantor Wilayah Ditjenpas Nusa Tenggara Barat","Nusa Tenggara Barat",-8.5994,116.1556],
-  ["Lapas Terbuka Kelas IIB Lombok Tengah","Lapas","Kantor Wilayah Ditjenpas Nusa Tenggara Barat","Nusa Tenggara Barat",-8.7031,116.2899],
-  ["LPKA Kelas II Lombok Tengah","LPKA","Kantor Wilayah Ditjenpas Nusa Tenggara Barat","Nusa Tenggara Barat",-8.7031,116.2899],
-  ["Rutan Kelas IIB Praya","Rutan","Kantor Wilayah Ditjenpas Nusa Tenggara Barat","Nusa Tenggara Barat",-8.7031,116.2899],
-  ["Rutan Kelas IIB Raba Bima","Rutan","Kantor Wilayah Ditjenpas Nusa Tenggara Barat","Nusa Tenggara Barat",-8.5648,118.7625],
-  ["Lapas Kelas IIA Kupang","Lapas","Kantor Wilayah Ditjenpas Nusa Tenggara Timur","Nusa Tenggara Timur",-10.1632,123.6018],
-  ["Lapas Kelas IIA Waingapu","Lapas","Kantor Wilayah Ditjenpas Nusa Tenggara Timur","Nusa Tenggara Timur",-9.8343,120.2094],
-  ["Lapas Kelas IIB Atambua","Lapas","Kantor Wilayah Ditjenpas Nusa Tenggara Timur","Nusa Tenggara Timur",-9.176,124.9164],
-  ["Lapas Kelas IIB Ende","Lapas","Kantor Wilayah Ditjenpas Nusa Tenggara Timur","Nusa Tenggara Timur",-8.6729,121.6929],
-  ["Lapas Kelas IIB Kalabahi","Lapas","Kantor Wilayah Ditjenpas Nusa Tenggara Timur","Nusa Tenggara Timur",-8.2911,124.7777],
-  ["Lapas Kelas IIB Waikabubak","Lapas","Kantor Wilayah Ditjenpas Nusa Tenggara Timur","Nusa Tenggara Timur",-9.5378,119.1623],
-  ["Lapas Kelas III Baa","Lapas","Kantor Wilayah Ditjenpas Nusa Tenggara Timur","Nusa Tenggara Timur",-10.687,123.2084],
-  ["Lapas Kelas III Lembata","Lapas","Kantor Wilayah Ditjenpas Nusa Tenggara Timur","Nusa Tenggara Timur",-8.3781,123.5446],
-  ["Lapas Perempuan Kelas IIB Kupang","Lapas","Kantor Wilayah Ditjenpas Nusa Tenggara Timur","Nusa Tenggara Timur",-10.1632,123.6018],
-  ["Lapas Terbuka Kelas IIB Waikabubak","Lapas","Kantor Wilayah Ditjenpas Nusa Tenggara Timur","Nusa Tenggara Timur",-9.5378,119.1623],
-  ["LPKA Kelas I Kupang","LPKA","Kantor Wilayah Ditjenpas Nusa Tenggara Timur","Nusa Tenggara Timur",-10.1632,123.6018],
-  ["Rutan Kelas IIB Bajawa","Rutan","Kantor Wilayah Ditjenpas Nusa Tenggara Timur","Nusa Tenggara Timur",-8.6499,120.9867],
-  ["Rutan Kelas IIB Kefamenanu","Rutan","Kantor Wilayah Ditjenpas Nusa Tenggara Timur","Nusa Tenggara Timur",-9.3405,124.6107],
-  ["Rutan Kelas IIB Kupang","Rutan","Kantor Wilayah Ditjenpas Nusa Tenggara Timur","Nusa Tenggara Timur",-10.1632,123.6018],
-  ["Rutan Kelas IIB Larantuka","Rutan","Kantor Wilayah Ditjenpas Nusa Tenggara Timur","Nusa Tenggara Timur",-8.3185,123.1658],
-  ["Rutan Kelas IIB Maumere","Rutan","Kantor Wilayah Ditjenpas Nusa Tenggara Timur","Nusa Tenggara Timur",-8.5947,122.0926],
-  ["Rutan Kelas IIB Ruteng","Rutan","Kantor Wilayah Ditjenpas Nusa Tenggara Timur","Nusa Tenggara Timur",-8.5741,120.0611],
-  ["Rutan Kelas IIB Soe","Rutan","Kantor Wilayah Ditjenpas Nusa Tenggara Timur","Nusa Tenggara Timur",-9.8231,124.4356],
-  ["Lapas Kelas IIA Abepura","Lapas","Kantor Wilayah Ditjenpas Papua","Papua",-2.5388,140.7037],
-  ["Lapas Kelas IIB Biak","Lapas","Kantor Wilayah Ditjenpas Papua","Papua",-0.9426,135.9414],
-  ["Lapas Kelas IIB Serui","Lapas","Kantor Wilayah Ditjenpas Papua","Papua",-1.7558,136.3665],
-  ["Lapas Narkotika Kelas IIA Jayapura","Lapas","Kantor Wilayah Ditjenpas Papua","Papua",-2.5388,140.7037],
-  ["Lapas Perempuan Kelas III Jayapura","Lapas","Kantor Wilayah Ditjenpas Papua","Papua",-2.5388,140.7037],
-  ["LPKA Kelas II Jayapura","LPKA","Kantor Wilayah Ditjenpas Papua","Papua",-2.5388,140.7037],
-  ["Lapas Kelas IIB Fakfak","Lapas","Kantor Wilayah Ditjenpas Papua Barat","Papua Barat",-1.3361,133.1747],
-  ["Lapas Kelas IIB Manokwari","Lapas","Kantor Wilayah Ditjenpas Papua Barat","Papua Barat",-1.525,134.071],
-  ["Lapas Kelas III Kaimana","Lapas","Kantor Wilayah Ditjenpas Papua Barat","Papua Barat",-3.5158,134.3166],
-  ["Lapas Perempuan Kelas III Manokwari","Lapas","Kantor Wilayah Ditjenpas Papua Barat","Papua Barat",-1.525,134.071],
-  ["Rutan Kelas IIB Bintuni","Rutan","Kantor Wilayah Ditjenpas Papua Barat","Papua Barat",-2.1139,133.5288],
-  ["Lapas Kelas IIB Sorong","Lapas","Kantor Wilayah Ditjenpas Papua Barat Daya","Papua Barat Daya",-1.6431,132.255],
-  ["Lapas Kelas III Teminabuhan","Lapas","Kantor Wilayah Ditjenpas Papua Barat Daya","Papua Barat Daya",-1.6431,132.255],
-  ["Lapas Kelas IIB Wamena","Lapas","Kantor Wilayah Ditjenpas Papua Pegunungan","Papua Pegunungan",-4.1153,138.965],
-  ["Lapas Kelas IIB Merauke","Lapas","Kantor Wilayah Ditjenpas Papua Selatan","Papua Selatan",-7.7925,140.0183],
-  ["Lapas Kelas III Tanah Merah","Lapas","Kantor Wilayah Ditjenpas Papua Selatan","Papua Selatan",-6.1058,140.3131],
-  ["Lapas Kelas IIB Nabire","Lapas","Kantor Wilayah Ditjenpas Papua Tengah","Papua Tengah",-3.3603,135.5024],
-  ["Lapas Kelas IIB Timika","Lapas","Kantor Wilayah Ditjenpas Papua Tengah","Papua Tengah",-4.5875,136.9478],
-  ["Lapas Kelas IIA Bagan Siapi-Api","Lapas","Kantor Wilayah Ditjenpas Riau","Riau",2.1591,100.6874],
-  ["Lapas Kelas IIA Bangkinang","Lapas","Kantor Wilayah Ditjenpas Riau","Riau",0.32,101.0617],
-  ["Lapas Kelas IIA Bengkalis","Lapas","Kantor Wilayah Ditjenpas Riau","Riau",1.7697,101.9124],
-  ["Lapas Kelas IIA Pekanbaru","Lapas","Kantor Wilayah Ditjenpas Riau","Riau",0.6645,101.5256],
-  ["Lapas Kelas IIA Tembilahan","Lapas","Kantor Wilayah Ditjenpas Riau","Riau",-0.2709,103.3285],
-  ["Lapas Kelas IIB Pasir Pangarayan","Lapas","Kantor Wilayah Ditjenpas Riau","Riau",0.8919,100.4665],
-  ["Lapas Kelas IIB Selat Panjang","Lapas","Kantor Wilayah Ditjenpas Riau","Riau",1.0613,102.7019],
-  ["Lapas Kelas IIB Teluk Kuantan","Lapas","Kantor Wilayah Ditjenpas Riau","Riau",-0.4938,101.4897],
-  ["Lapas Narkotika Kelas IIB Rumbai","Lapas","Kantor Wilayah Ditjenpas Riau","Riau",0.6645,101.5256],
-  ["Lapas Perempuan Kelas IIA Pekanbaru","Lapas","Kantor Wilayah Ditjenpas Riau","Riau",0.6645,101.5256],
-  ["Lapas Terbuka Kelas III Rumbai","Lapas","Kantor Wilayah Ditjenpas Riau","Riau",0.6645,101.5256],
-  ["LPKA Kelas II Pekanbaru","LPKA","Kantor Wilayah Ditjenpas Riau","Riau",0.6645,101.5256],
-  ["Rutan Kelas I Pekanbaru","Rutan","Kantor Wilayah Ditjenpas Riau","Riau",0.6645,101.5256],
-  ["Rutan Kelas IIB Dumai","Rutan","Kantor Wilayah Ditjenpas Riau","Riau",1.6476,101.4383],
-  ["Rutan Kelas IIB Rengat","Rutan","Kantor Wilayah Ditjenpas Riau","Riau",-0.4979,102.3008],
-  ["Rutan Kelas IIB Siak Sri Indrapura","Rutan","Kantor Wilayah Ditjenpas Riau","Riau",0.8275,101.8462],
-  ["Lapas Kelas IIB Polewali","Lapas","Kantor Wilayah Ditjenpas Sulawesi Barat","Sulawesi Barat",-3.3032,119.1451],
-  ["Lapas Kelas III Mamasa","Lapas","Kantor Wilayah Ditjenpas Sulawesi Barat","Sulawesi Barat",-3.0004,119.3209],
-  ["Lapas Perempuan Kelas III Mamuju","Lapas","Kantor Wilayah Ditjenpas Sulawesi Barat","Sulawesi Barat",-1.1807,119.3673],
-  ["LPKA Kelas II Mamuju","LPKA","Kantor Wilayah Ditjenpas Sulawesi Barat","Sulawesi Barat",-1.1807,119.3673],
-  ["Rutan Kelas IIB Majene","Rutan","Kantor Wilayah Ditjenpas Sulawesi Barat","Sulawesi Barat",-3.5459,118.9607],
-  ["Rutan Kelas IIB Mamuju","Rutan","Kantor Wilayah Ditjenpas Sulawesi Barat","Sulawesi Barat",-1.1807,119.3673],
-  ["Rutan Kelas IIB Pasangkayu","Rutan","Kantor Wilayah Ditjenpas Sulawesi Barat","Sulawesi Barat",-1.1807,119.3673],
-  ["Lapas Kelas I Makassar","Lapas","Kantor Wilayah Ditjenpas Sulawesi Selatan","Sulawesi Selatan",-5.1486,119.2647],
-  ["Lapas Kelas IIA Bulukumba","Lapas","Kantor Wilayah Ditjenpas Sulawesi Selatan","Sulawesi Selatan",-5.4546,120.2452],
-  ["Lapas Kelas IIA Palopo","Lapas","Kantor Wilayah Ditjenpas Sulawesi Selatan","Sulawesi Selatan",-2.9339,120.1771],
-  ["Lapas Kelas IIA Pare-Pare","Lapas","Kantor Wilayah Ditjenpas Sulawesi Selatan","Sulawesi Selatan",-3.6688,119.9741],
-  ["Lapas Kelas IIA Watampone","Lapas","Kantor Wilayah Ditjenpas Sulawesi Selatan","Sulawesi Selatan",-4.6801,120.0947],
-  ["Lapas Kelas IIB Maros","Lapas","Kantor Wilayah Ditjenpas Sulawesi Selatan","Sulawesi Selatan",-5.1486,119.2647],
-  ["Lapas Kelas IIB Takalar","Lapas","Kantor Wilayah Ditjenpas Sulawesi Selatan","Sulawesi Selatan",-5.4067,119.5375],
-  ["Lapas Narkotika Kelas IIA Sungguminasa","Lapas","Kantor Wilayah Ditjenpas Sulawesi Selatan","Sulawesi Selatan",-5.3291,119.766],
-  ["Lapas Perempuan Kelas IIA Sungguminasa","Lapas","Kantor Wilayah Ditjenpas Sulawesi Selatan","Sulawesi Selatan",-5.3291,119.766],
-  ["LPKA Kelas II Maros","LPKA","Kantor Wilayah Ditjenpas Sulawesi Selatan","Sulawesi Selatan",-5.1486,119.2647],
-  ["Rutan Kelas I Makassar","Rutan","Kantor Wilayah Ditjenpas Sulawesi Selatan","Sulawesi Selatan",-5.1486,119.2647],
-  ["Rutan Kelas IIB Bantaeng","Rutan","Kantor Wilayah Ditjenpas Sulawesi Selatan","Sulawesi Selatan",-5.4709,119.9872],
-  ["Rutan Kelas IIB Barru","Rutan","Kantor Wilayah Ditjenpas Sulawesi Selatan","Sulawesi Selatan",-4.4337,119.6778],
-  ["Rutan Kelas IIB Enrekang","Rutan","Kantor Wilayah Ditjenpas Sulawesi Selatan","Sulawesi Selatan",-3.5657,119.7724],
-  ["Rutan Kelas IIB Jeneponto","Rutan","Kantor Wilayah Ditjenpas Sulawesi Selatan","Sulawesi Selatan",-5.5445,119.612],
-  ["Rutan Kelas IIB Makale","Rutan","Kantor Wilayah Ditjenpas Sulawesi Selatan","Sulawesi Selatan",-3.1169,119.6938],
-  ["Rutan Kelas IIB Malino","Rutan","Kantor Wilayah Ditjenpas Sulawesi Selatan","Sulawesi Selatan",-5.3291,119.766],
-  ["Rutan Kelas IIB Masamba","Rutan","Kantor Wilayah Ditjenpas Sulawesi Selatan","Sulawesi Selatan",-2.4038,120.1301],
-  ["Rutan Kelas IIB Pangkajene","Rutan","Kantor Wilayah Ditjenpas Sulawesi Selatan","Sulawesi Selatan",-4.7544,119.5893],
-  ["Rutan Kelas IIB Pinrang","Rutan","Kantor Wilayah Ditjenpas Sulawesi Selatan","Sulawesi Selatan",-3.7933,119.6529],
-  ["Rutan Kelas IIB Selayar","Rutan","Kantor Wilayah Ditjenpas Sulawesi Selatan","Sulawesi Selatan",-7.2958,120.9505],
-  ["Rutan Kelas IIB Sengkang","Rutan","Kantor Wilayah Ditjenpas Sulawesi Selatan","Sulawesi Selatan",-3.9656,120.1279],
-  ["Rutan Kelas IIB Sidenreng Rapang","Rutan","Kantor Wilayah Ditjenpas Sulawesi Selatan","Sulawesi Selatan",-3.8079,120.045],
-  ["Rutan Kelas IIB Sinjai","Rutan","Kantor Wilayah Ditjenpas Sulawesi Selatan","Sulawesi Selatan",-5.2007,120.1442],
-  ["Rutan Kelas IIB Watansoppeng","Rutan","Kantor Wilayah Ditjenpas Sulawesi Selatan","Sulawesi Selatan",-4.3189,119.9185],
-  ["Lapas Kelas IIA Palu","Lapas","Kantor Wilayah Ditjenpas Sulawesi Tengah","Sulawesi Tengah",-0.8818,119.8861],
-  ["Lapas Kelas IIB Ampana","Lapas","Kantor Wilayah Ditjenpas Sulawesi Tengah","Sulawesi Tengah",-1.2131,121.6196],
-  ["Lapas Kelas IIB Luwuk","Lapas","Kantor Wilayah Ditjenpas Sulawesi Tengah","Sulawesi Tengah",-1.3518,123.1809],
-  ["Lapas Kelas IIB Toli-Toli","Lapas","Kantor Wilayah Ditjenpas Sulawesi Tengah","Sulawesi Tengah",0.9703,120.8803],
-  ["Lapas Kelas III Kolonedale","Lapas","Kantor Wilayah Ditjenpas Sulawesi Tengah","Sulawesi Tengah",-1.8419,121.0772],
-  ["Lapas Kelas III Leok","Lapas","Kantor Wilayah Ditjenpas Sulawesi Tengah","Sulawesi Tengah",1.0124,121.3121],
-  ["Lapas Kelas III Parigi","Lapas","Kantor Wilayah Ditjenpas Sulawesi Tengah","Sulawesi Tengah",-0.2384,119.9599],
-  ["Lapas Perempuan Kelas III Palu","Lapas","Kantor Wilayah Ditjenpas Sulawesi Tengah","Sulawesi Tengah",-0.8818,119.8861],
-  ["LPKA Kelas II Palu","LPKA","Kantor Wilayah Ditjenpas Sulawesi Tengah","Sulawesi Tengah",-0.8818,119.8861],
-  ["Rutan Kelas IIA Palu","Rutan","Kantor Wilayah Ditjenpas Sulawesi Tengah","Sulawesi Tengah",-0.8818,119.8861],
-  ["Rutan Kelas IIB Donggala","Rutan","Kantor Wilayah Ditjenpas Sulawesi Tengah","Sulawesi Tengah",-1.0478,119.6758],
-  ["Rutan Kelas IIB Poso","Rutan","Kantor Wilayah Ditjenpas Sulawesi Tengah","Sulawesi Tengah",-1.6569,120.5422],
-  ["Lapas Kelas IIA Baubau","Lapas","Kantor Wilayah Ditjenpas Sulawesi Tenggara","Sulawesi Tenggara",-5.458,122.602],
-  ["Lapas Kelas IIA Kendari","Lapas","Kantor Wilayah Ditjenpas Sulawesi Tenggara","Sulawesi Tenggara",-4.0034,122.5156],
-  ["Lapas Perempuan Kelas III Kendari","Lapas","Kantor Wilayah Ditjenpas Sulawesi Tenggara","Sulawesi Tenggara",-4.0034,122.5156],
-  ["LPKA Kelas II Kendari","LPKA","Kantor Wilayah Ditjenpas Sulawesi Tenggara","Sulawesi Tenggara",-4.0034,122.5156],
-  ["Rutan Kelas IIA Kendari","Rutan","Kantor Wilayah Ditjenpas Sulawesi Tenggara","Sulawesi Tenggara",-4.0034,122.5156],
-  ["Rutan Kelas IIB Kolaka","Rutan","Kantor Wilayah Ditjenpas Sulawesi Tenggara","Sulawesi Tenggara",-3.2605,121.0934],
-  ["Rutan Kelas IIB Raha","Rutan","Kantor Wilayah Ditjenpas Sulawesi Tenggara","Sulawesi Tenggara",-4.8037,122.4515],
-  ["Rutan Kelas IIB Unaaha","Rutan","Kantor Wilayah Ditjenpas Sulawesi Tenggara","Sulawesi Tenggara",-4.1195,123.0986],
-  ["Lapas Kelas IIA Manado","Lapas","Kantor Wilayah Ditjenpas Sulawesi Utara","Sulawesi Utara",1.4875,124.8563],
-  ["Lapas Kelas IIB Bitung","Lapas","Kantor Wilayah Ditjenpas Sulawesi Utara","Sulawesi Utara",1.4626,125.2429],
-  ["Lapas Kelas IIB Tahuna","Lapas","Kantor Wilayah Ditjenpas Sulawesi Utara","Sulawesi Utara",3.5527,125.5466],
-  ["Lapas Kelas IIB Tondano","Lapas","Kantor Wilayah Ditjenpas Sulawesi Utara","Sulawesi Utara",0.9883,124.7307],
-  ["Lapas Kelas IIB Ulu Siau","Lapas","Kantor Wilayah Ditjenpas Sulawesi Utara","Sulawesi Utara",0.6247,123.975],
-  ["Lapas Kelas III Amurang","Lapas","Kantor Wilayah Ditjenpas Sulawesi Utara","Sulawesi Utara",1.0703,124.4362],
-  ["Lapas Kelas III Enemawira","Lapas","Kantor Wilayah Ditjenpas Sulawesi Utara","Sulawesi Utara",3.5527,125.5466],
-  ["Lapas Kelas III Lirung","Lapas","Kantor Wilayah Ditjenpas Sulawesi Utara","Sulawesi Utara",4.2695,126.8135],
-  ["Lapas Kelas III Tagulandang","Lapas","Kantor Wilayah Ditjenpas Sulawesi Utara","Sulawesi Utara",0.6247,123.975],
-  ["Lapas Kelas III Tamako","Lapas","Kantor Wilayah Ditjenpas Sulawesi Utara","Sulawesi Utara",3.5527,125.5466],
-  ["Lapas Perempuan Kelas IIB Manado","Lapas","Kantor Wilayah Ditjenpas Sulawesi Utara","Sulawesi Utara",1.4875,124.8563],
-  ["LPKA Kelas II Tomohon","LPKA","Kantor Wilayah Ditjenpas Sulawesi Utara","Sulawesi Utara",0.9883,124.7307],
-  ["Rutan Kelas IIA Manado","Rutan","Kantor Wilayah Ditjenpas Sulawesi Utara","Sulawesi Utara",1.4875,124.8563],
-  ["Rutan Kelas IIB Kotamobagu","Rutan","Kantor Wilayah Ditjenpas Sulawesi Utara","Sulawesi Utara",0.7337,124.2751],
-  ["Lapas Kelas IIA Bukittinggi","Lapas","Kantor Wilayah Ditjenpas Sumatera Barat","Sumatera Barat",-0.308,100.3963],
-  ["Lapas Kelas IIA Padang","Lapas","Kantor Wilayah Ditjenpas Sumatera Barat","Sumatera Barat",-0.5691,100.277],
-  ["Lapas Kelas IIB Lubuk Basung","Lapas","Kantor Wilayah Ditjenpas Sumatera Barat","Sumatera Barat",-0.2547,100.17],
-  ["Lapas Kelas IIB Muara Sijunjung","Lapas","Kantor Wilayah Ditjenpas Sumatera Barat","Sumatera Barat",-0.6964,100.9936],
-  ["Lapas Kelas IIB Pariaman","Lapas","Kantor Wilayah Ditjenpas Sumatera Barat","Sumatera Barat",-0.5691,100.277],
-  ["Lapas Kelas IIB Payakumbuh","Lapas","Kantor Wilayah Ditjenpas Sumatera Barat","Sumatera Barat",-0.2478,100.6349],
-  ["Lapas Kelas IIB Solok","Lapas","Kantor Wilayah Ditjenpas Sumatera Barat","Sumatera Barat",-1.5573,101.2395],
-  ["Lapas Kelas III Alahan Panjang","Lapas","Kantor Wilayah Ditjenpas Sumatera Barat","Sumatera Barat",-1.5573,101.2395],
-  ["Lapas Kelas III Dharmasraya","Lapas","Kantor Wilayah Ditjenpas Sumatera Barat","Sumatera Barat",-1.2586,101.5799],
-  ["Lapas Kelas III Suliki","Lapas","Kantor Wilayah Ditjenpas Sumatera Barat","Sumatera Barat",0.0279,100.5913],
-  ["Lapas Kelas III Talu","Lapas","Kantor Wilayah Ditjenpas Sumatera Barat","Sumatera Barat",0.1875,99.6935],
-  ["Lapas Narkotika Kelas III Sawahlunto","Lapas","Kantor Wilayah Ditjenpas Sumatera Barat","Sumatera Barat",-0.6383,100.7837],
-  ["Lapas Perempuan Kelas IIB Padang","Lapas","Kantor Wilayah Ditjenpas Sumatera Barat","Sumatera Barat",-0.5691,100.277],
-  ["Lapas Terbuka Kelas IIB Pasaman","Lapas","Kantor Wilayah Ditjenpas Sumatera Barat","Sumatera Barat",0.1875,99.6935],
-  ["LPKA Kelas II Payakumbuh","LPKA","Kantor Wilayah Ditjenpas Sumatera Barat","Sumatera Barat",-0.2478,100.6349],
-  ["Rutan Kelas IIB Batusangkar","Rutan","Kantor Wilayah Ditjenpas Sumatera Barat","Sumatera Barat",-0.469,100.6362],
-  ["Rutan Kelas IIB Lubuk Sikaping","Rutan","Kantor Wilayah Ditjenpas Sumatera Barat","Sumatera Barat",0.1875,99.6935],
-  ["Rutan Kelas IIB Maninjau","Rutan","Kantor Wilayah Ditjenpas Sumatera Barat","Sumatera Barat",-0.2547,100.17],
-  ["Rutan Kelas IIB Muara Labuh","Rutan","Kantor Wilayah Ditjenpas Sumatera Barat","Sumatera Barat",-1.5573,101.2395],
-  ["Rutan Kelas IIB Padang","Rutan","Kantor Wilayah Ditjenpas Sumatera Barat","Sumatera Barat",-0.5691,100.277],
-  ["Rutan Kelas IIB Padang Panjang","Rutan","Kantor Wilayah Ditjenpas Sumatera Barat","Sumatera Barat",-0.4661,100.4037],
-  ["Rutan Kelas IIB Painan","Rutan","Kantor Wilayah Ditjenpas Sumatera Barat","Sumatera Barat",-1.7186,100.927],
-  ["Rutan Kelas IIB Sawahlunto","Rutan","Kantor Wilayah Ditjenpas Sumatera Barat","Sumatera Barat",-0.6383,100.7837],
-  ["Lapas Kelas I Palembang","Lapas","Kantor Wilayah Ditjenpas Sumatera Selatan","Sumatera Selatan",-2.9644,104.7742],
-  ["Lapas Kelas IIA Banyuasin","Lapas","Kantor Wilayah Ditjenpas Sumatera Selatan","Sumatera Selatan",-2.4909,103.7048],
-  ["Lapas Kelas IIA Lahat","Lapas","Kantor Wilayah Ditjenpas Sumatera Selatan","Sumatera Selatan",-3.8793,103.4141],
-  ["Lapas Kelas IIA Lubuk Linggau","Lapas","Kantor Wilayah Ditjenpas Sumatera Selatan","Sumatera Selatan",-3.2799,102.8591],
-  ["Lapas Kelas IIA Tanjung Raja","Lapas","Kantor Wilayah Ditjenpas Sumatera Selatan","Sumatera Selatan",-3.3982,104.6525],
-  ["Lapas Kelas IIB Empat Lawang","Lapas","Kantor Wilayah Ditjenpas Sumatera Selatan","Sumatera Selatan",-3.7155,102.9325],
-  ["Lapas Kelas IIB Kayu Agung","Lapas","Kantor Wilayah Ditjenpas Sumatera Selatan","Sumatera Selatan",-3.3289,105.3998],
-  ["Lapas Kelas IIB Martapura","Lapas","Kantor Wilayah Ditjenpas Sumatera Selatan","Sumatera Selatan",-4.116,104.5585],
-  ["Lapas Kelas IIB Muara Dua","Lapas","Kantor Wilayah Ditjenpas Sumatera Selatan","Sumatera Selatan",-4.5702,103.925],
-  ["Lapas Kelas IIB Muara Enim","Lapas","Kantor Wilayah Ditjenpas Sumatera Selatan","Sumatera Selatan",-3.8467,103.9616],
-  ["Lapas Kelas IIB Sekayu","Lapas","Kantor Wilayah Ditjenpas Sumatera Selatan","Sumatera Selatan",-2.4909,103.7048],
-  ["Lapas Kelas III Pagar Alam","Lapas","Kantor Wilayah Ditjenpas Sumatera Selatan","Sumatera Selatan",-4.1428,103.2225],
-  ["Lapas Kelas III Sarolangun Rawas","Lapas","Kantor Wilayah Ditjenpas Sumatera Selatan","Sumatera Selatan",-2.7352,102.9015],
-  ["Lapas Narkotika Kelas IIA Muara Beliti","Lapas","Kantor Wilayah Ditjenpas Sumatera Selatan","Sumatera Selatan",-2.7352,102.9015],
-  ["Lapas Narkotika Kelas IIB Banyuasin","Lapas","Kantor Wilayah Ditjenpas Sumatera Selatan","Sumatera Selatan",-2.4909,103.7048],
-  ["Lapas Perempuan Kelas IIA Palembang","Lapas","Kantor Wilayah Ditjenpas Sumatera Selatan","Sumatera Selatan",-2.9644,104.7742],
-  ["LPKA Kelas I Palembang","LPKA","Kantor Wilayah Ditjenpas Sumatera Selatan","Sumatera Selatan",-2.9644,104.7742],
-  ["Rutan Kelas I Palembang","Rutan","Kantor Wilayah Ditjenpas Sumatera Selatan","Sumatera Selatan",-2.9644,104.7742],
-  ["Rutan Kelas IIB Baturaja","Rutan","Kantor Wilayah Ditjenpas Sumatera Selatan","Sumatera Selatan",-4.5702,103.925],
-  ["Rutan Kelas IIB Prabumulih","Rutan","Kantor Wilayah Ditjenpas Sumatera Selatan","Sumatera Selatan",-3.5167,104.2071],
-  ["Lapas Kelas I Medan","Lapas","Kantor Wilayah Ditjenpas Sumatera Utara","Sumatera Utara",3.5387,98.6351],
-  ["Lapas Kelas IIA Binjai","Lapas","Kantor Wilayah Ditjenpas Sumatera Utara","Sumatera Utara",3.6004,98.4926],
-  ["Lapas Kelas IIA Labuhan Ruku","Lapas","Kantor Wilayah Ditjenpas Sumatera Utara","Sumatera Utara",3.5723,99.6353],
-  ["Lapas Kelas IIA Pancur Batu","Lapas","Kantor Wilayah Ditjenpas Sumatera Utara","Sumatera Utara",3.6952,98.8311],
-  ["Lapas Kelas IIA Pematang Siantar","Lapas","Kantor Wilayah Ditjenpas Sumatera Utara","Sumatera Utara",2.9355,99.0637],
-  ["Lapas Kelas IIA Rantau Prapat","Lapas","Kantor Wilayah Ditjenpas Sumatera Utara","Sumatera Utara",1.8337,100.0684],
-  ["Lapas Kelas IIA Sibolga","Lapas","Kantor Wilayah Ditjenpas Sumatera Utara","Sumatera Utara",1.7311,98.7892],
-  ["Lapas Kelas IIB Gunung Sitoli","Lapas","Kantor Wilayah Ditjenpas Sumatera Utara","Sumatera Utara",1.217,97.5782],
-  ["Lapas Kelas IIB Lubuk Pakam","Lapas","Kantor Wilayah Ditjenpas Sumatera Utara","Sumatera Utara",3.6952,98.8311],
-  ["Lapas Kelas IIB Padang Sidempuan","Lapas","Kantor Wilayah Ditjenpas Sumatera Utara","Sumatera Utara",1.4599,99.254],
-  ["Lapas Kelas IIB Panyabungan","Lapas","Kantor Wilayah Ditjenpas Sumatera Utara","Sumatera Utara",0.7457,99.2189],
-  ["Lapas Kelas IIB Siborong-Borong","Lapas","Kantor Wilayah Ditjenpas Sumatera Utara","Sumatera Utara",1.9981,99.0648],
-  ["Lapas Kelas IIB Tanjung Balai Asahan","Lapas","Kantor Wilayah Ditjenpas Sumatera Utara","Sumatera Utara",2.9462,99.8199],
-  ["Lapas Kelas IIB Tebing Tinggi Deli","Lapas","Kantor Wilayah Ditjenpas Sumatera Utara","Sumatera Utara",3.3289,99.1652],
-  ["Lapas Kelas III Barus","Lapas","Kantor Wilayah Ditjenpas Sumatera Utara","Sumatera Utara",1.8231,98.2798],
-  ["Lapas Kelas III Gunung Tua","Lapas","Kantor Wilayah Ditjenpas Sumatera Utara","Sumatera Utara",1.6364,99.691],
-  ["Lapas Kelas III Kota Pinang","Lapas","Kantor Wilayah Ditjenpas Sumatera Utara","Sumatera Utara",1.8337,100.0684],
-  ["Lapas Kelas III Kotanopan","Lapas","Kantor Wilayah Ditjenpas Sumatera Utara","Sumatera Utara",0.7457,99.2189],
-  ["Lapas Kelas III Labuhan Bilik","Lapas","Kantor Wilayah Ditjenpas Sumatera Utara","Sumatera Utara",2.1154,99.5451],
-  ["Lapas Kelas III Pangururan","Lapas","Kantor Wilayah Ditjenpas Sumatera Utara","Sumatera Utara",2.5447,98.5719],
-  ["Lapas Kelas III Teluk Dalam","Lapas","Kantor Wilayah Ditjenpas Sumatera Utara","Sumatera Utara",0.0681,98.2622],
-  ["Lapas Narkotika Kelas IIA Langkat","Lapas","Kantor Wilayah Ditjenpas Sumatera Utara","Sumatera Utara",3.8294,98.2483],
-  ["Lapas Narkotika Kelas IIA Pematang Siantar","Lapas","Kantor Wilayah Ditjenpas Sumatera Utara","Sumatera Utara",2.9355,99.0637],
-  ["Lapas Pemuda Kelas III Langkat","Lapas","Kantor Wilayah Ditjenpas Sumatera Utara","Sumatera Utara",3.8294,98.2483],
-  ["Lapas Perempuan Kelas IIA Medan","Lapas","Kantor Wilayah Ditjenpas Sumatera Utara","Sumatera Utara",3.5387,98.6351],
-  ["LPKA Kelas I Medan","LPKA","Kantor Wilayah Ditjenpas Sumatera Utara","Sumatera Utara",3.5387,98.6351],
-  ["Rutan Kelas I Labuhan Deli","Rutan","Kantor Wilayah Ditjenpas Sumatera Utara","Sumatera Utara",2.1154,99.5451],
-  ["Rutan Kelas I Medan","Rutan","Kantor Wilayah Ditjenpas Sumatera Utara","Sumatera Utara",3.5387,98.6351],
-  ["Rutan Kelas IIB Balige","Rutan","Kantor Wilayah Ditjenpas Sumatera Utara","Sumatera Utara",2.3855,99.3315],
-  ["Rutan Kelas IIB Humbang Hasundutan","Rutan","Kantor Wilayah Ditjenpas Sumatera Utara","Sumatera Utara",2.2476,98.601],
-  ["Rutan Kelas IIB Kabanjahe","Rutan","Kantor Wilayah Ditjenpas Sumatera Utara","Sumatera Utara",3.0999,98.337],
-  ["Rutan Kelas IIB Natal","Rutan","Kantor Wilayah Ditjenpas Sumatera Utara","Sumatera Utara",0.7457,99.2189],
-  ["Rutan Kelas IIB Pangkalan Brandan","Rutan","Kantor Wilayah Ditjenpas Sumatera Utara","Sumatera Utara",3.8294,98.2483],
-  ["Rutan Kelas IIB Sibuhuan","Rutan","Kantor Wilayah Ditjenpas Sumatera Utara","Sumatera Utara",1.6364,99.691],
-  ["Rutan Kelas IIB Sidikalang","Rutan","Kantor Wilayah Ditjenpas Sumatera Utara","Sumatera Utara",2.8353,98.2845],
-  ["Rutan Kelas IIB Sipirok","Rutan","Kantor Wilayah Ditjenpas Sumatera Utara","Sumatera Utara",1.5511,99.2118],
-  ["Rutan Kelas IIB Tanjung Pura","Rutan","Kantor Wilayah Ditjenpas Sumatera Utara","Sumatera Utara",2.9462,99.8199],
-  ["Rutan Kelas IIB Tarutung","Rutan","Kantor Wilayah Ditjenpas Sumatera Utara","Sumatera Utara",1.9981,99.0648],
-  ["Rutan Perempuan Kelas IIA Medan","Rutan","Kantor Wilayah Ditjenpas Sumatera Utara","Sumatera Utara",3.5387,98.6351],
+  ["Lapas Kelas IIA Banda Aceh","Lapas","Kantor Wilayah Ditjenpas Aceh","Aceh","Kota Banda Aceh",5.5549,95.3566],
+  ["Lapas Kelas IIA Lhok Seumawe","Lapas","Kantor Wilayah Ditjenpas Aceh","Aceh","Kota Lhokseumawe",5.2024,97.0424],
+  ["Lapas Kelas IIB Bireun","Lapas","Kantor Wilayah Ditjenpas Aceh","Aceh","Bireuen",5.0827,96.5921],
+  ["Lapas Kelas IIB Blangkejeren","Lapas","Kantor Wilayah Ditjenpas Aceh","Aceh","Gayo Lues",3.9776,97.3321],
+  ["Lapas Kelas IIB Blangpidie","Lapas","Kantor Wilayah Ditjenpas Aceh","Aceh","Aceh Barat Daya",3.8336,96.8516],
+  ["Lapas Kelas IIB Idi","Lapas","Kantor Wilayah Ditjenpas Aceh","Aceh","Pidie Jaya",5.1048,96.2117],
+  ["Lapas Kelas IIB Kota Bakti","Lapas","Kantor Wilayah Ditjenpas Aceh","Aceh","Pidie Jaya",5.1048,96.2117],
+  ["Lapas Kelas IIB Kuala Simpang","Lapas","Kantor Wilayah Ditjenpas Aceh","Aceh","Aceh Tamiang",4.2123,97.9147],
+  ["Lapas Kelas IIB Kutacane","Lapas","Kantor Wilayah Ditjenpas Aceh","Aceh","Aceh Tenggara",3.3388,97.7456],
+  ["Lapas Kelas IIB Langsa","Lapas","Kantor Wilayah Ditjenpas Aceh","Aceh","Kota Langsa",4.4687,97.8986],
+  ["Lapas Kelas IIB Lhoksukon","Lapas","Kantor Wilayah Ditjenpas Aceh","Aceh","Aceh Utara",4.9912,97.1587],
+  ["Lapas Kelas IIB Meulaboh","Lapas","Kantor Wilayah Ditjenpas Aceh","Aceh","Aceh Barat Daya",3.8336,96.8516],
+  ["Lapas Kelas III Calang","Lapas","Kantor Wilayah Ditjenpas Aceh","Aceh","Aceh Jaya",4.8115,95.7002],
+  ["Lapas Kelas III Lhok Nga","Lapas","Kantor Wilayah Ditjenpas Aceh","Aceh","Aceh Besar",5.3542,95.4962],
+  ["Lapas Kelas III Sinabang","Lapas","Kantor Wilayah Ditjenpas Aceh","Aceh","Simeulue",2.629,96.0221],
+  ["Lapas Narkotika Kelas IIB Langsa","Lapas","Kantor Wilayah Ditjenpas Aceh","Aceh","Kota Langsa",4.4687,97.8986],
+  ["Lapas Perempuan Kelas IIB Sigli","Lapas","Kantor Wilayah Ditjenpas Aceh","Aceh","Pidie Jaya",5.1048,96.2117],
+  ["LPKA Kelas II Banda Aceh","LPKA","Kantor Wilayah Ditjenpas Aceh","Aceh","Kota Banda Aceh",5.5549,95.3566],
+  ["Rutan Kelas IIB Banda Aceh","Rutan","Kantor Wilayah Ditjenpas Aceh","Aceh","Kota Banda Aceh",5.5549,95.3566],
+  ["Rutan Kelas IIB Bener Meriah","Rutan","Kantor Wilayah Ditjenpas Aceh","Aceh","Bener Meriah",4.7739,96.978],
+  ["Rutan Kelas IIB Jantho","Rutan","Kantor Wilayah Ditjenpas Aceh","Aceh","Aceh Besar",5.3542,95.4962],
+  ["Rutan Kelas IIB Sabang","Rutan","Kantor Wilayah Ditjenpas Aceh","Aceh","Kota Sabang",5.8319,95.3635],
+  ["Rutan Kelas IIB Sigli","Rutan","Kantor Wilayah Ditjenpas Aceh","Aceh","Pidie Jaya",5.1048,96.2117],
+  ["Rutan Kelas IIB Singkel","Rutan","Kantor Wilayah Ditjenpas Aceh","Aceh","Aceh Singkil",2.3759,97.9244],
+  ["Rutan Kelas IIB Takengon","Rutan","Kantor Wilayah Ditjenpas Aceh","Aceh","Aceh Tengah",4.5643,96.9619],
+  ["Rutan Kelas IIB Tapaktuan","Rutan","Kantor Wilayah Ditjenpas Aceh","Aceh","Aceh Selatan",3.068,97.4688],
+  ["Lapas Kelas IIA Kerobokan","Lapas","Kantor Wilayah Ditjenpas Bali","Bali","Badung",-8.6449,115.1359],
+  ["Lapas Kelas IIB Karangasem","Lapas","Kantor Wilayah Ditjenpas Bali","Bali","Karangasem",-8.3356,115.6171],
+  ["Lapas Kelas IIB Singaraja","Lapas","Kantor Wilayah Ditjenpas Bali","Bali","Buleleng",-7.8428,115.197],
+  ["Lapas Kelas IIB Tabanan","Lapas","Kantor Wilayah Ditjenpas Bali","Bali","Tabanan",-8.5567,115.0013],
+  ["Lapas Narkotika Kelas IIA Bangli","Lapas","Kantor Wilayah Ditjenpas Bali","Bali","Bangli",-8.3333,115.3683],
+  ["Lapas Perempuan Kelas IIA Denpasar","Lapas","Kantor Wilayah Ditjenpas Bali","Bali","Kota Denpasar",-8.6146,115.2267],
+  ["LPKA Kelas II Karangasem","LPKA","Kantor Wilayah Ditjenpas Bali","Bali","Karangasem",-8.3356,115.6171],
+  ["Rutan Kelas IIB Bangli","Rutan","Kantor Wilayah Ditjenpas Bali","Bali","Bangli",-8.3333,115.3683],
+  ["Rutan Kelas IIB Gianyar","Rutan","Kantor Wilayah Ditjenpas Bali","Bali","Gianyar",-8.7045,115.3523],
+  ["Rutan Kelas IIB Klungkung","Rutan","Kantor Wilayah Ditjenpas Bali","Bali","Klungkung",-8.7446,115.5575],
+  ["Rutan Kelas IIB Negara","Rutan","Kantor Wilayah Ditjenpas Bali","Bali","Jembrana",-8.3956,114.7055],
+  ["Lapas Kelas I Tangerang","Lapas","Kantor Wilayah Ditjenpas Banten","Banten","Kota Tangerang Selatan",-6.3559,106.7134],
+  ["Lapas Kelas IIA Cilegon","Lapas","Kantor Wilayah Ditjenpas Banten","Banten","Kota Cilegon",-6.0163,106.0363],
+  ["Lapas Kelas IIA Serang","Lapas","Kantor Wilayah Ditjenpas Banten","Banten","Serang",-6.117,106.1518],
+  ["Lapas Kelas IIA Tangerang","Lapas","Kantor Wilayah Ditjenpas Banten","Banten","Kota Tangerang Selatan",-6.3559,106.7134],
+  ["Lapas Kelas III Rangkasbitung","Lapas","Kantor Wilayah Ditjenpas Banten","Banten","Lebak",-6.6433,106.1873],
+  ["Lapas Pemuda Kelas IIA Tangerang","Lapas","Kantor Wilayah Ditjenpas Banten","Banten","Kota Tangerang Selatan",-6.3559,106.7134],
+  ["Lapas Perempuan Kelas IIA Tangerang","Lapas","Kantor Wilayah Ditjenpas Banten","Banten","Kota Tangerang Selatan",-6.3559,106.7134],
+  ["Lapas Terbuka Kelas IIB Ciangir","Lapas","Kantor Wilayah Ditjenpas Banten","Banten","Kota Tangerang Selatan",-6.3559,106.7134],
+  ["LPKA Kelas I Tangerang","LPKA","Kantor Wilayah Ditjenpas Banten","Banten","Kota Tangerang",-6.3559,106.7134],
+  ["Rutan Kelas I Tangerang","Rutan","Kantor Wilayah Ditjenpas Banten","Banten","Kota Tangerang Selatan",-6.3559,106.7134],
+  ["Rutan Kelas IIB Pandeglang","Rutan","Kantor Wilayah Ditjenpas Banten","Banten","Pandeglang",-6.5474,105.7995],
+  ["Rutan Kelas IIB Serang","Rutan","Kantor Wilayah Ditjenpas Banten","Banten","Serang",-6.117,106.1518],
+  ["Lapas Kelas IIA Bengkulu","Lapas","Kantor Wilayah Ditjenpas Bengkulu","Bengkulu","Bengkulu Selatan",-4.359,103.002],
+  ["Lapas Kelas IIA Curup","Lapas","Kantor Wilayah Ditjenpas Bengkulu","Bengkulu","Rejang Lebong",-3.4389,102.6985],
+  ["Lapas Kelas IIB Argamakmur","Lapas","Kantor Wilayah Ditjenpas Bengkulu","Bengkulu","Bengkulu Utara",-3.1891,101.8576],
+  ["Lapas Perempuan Kelas IIB Bengkulu","Lapas","Kantor Wilayah Ditjenpas Bengkulu","Bengkulu","Bengkulu Selatan",-4.359,103.002],
+  ["LPKA Kelas II Bengkulu","LPKA","Kantor Wilayah Ditjenpas Bengkulu","Bengkulu","Kota Bengkulu",-4.359,103.002],
+  ["Rutan Kelas IIB Bengkulu","Rutan","Kantor Wilayah Ditjenpas Bengkulu","Bengkulu","Bengkulu Selatan",-4.359,103.002],
+  ["Rutan Kelas IIB Manna","Rutan","Kantor Wilayah Ditjenpas Bengkulu","Bengkulu","Bengkulu Selatan",-4.359,103.002],
+  ["Lapas Kelas IIA Yogyakarta","Lapas","Kantor Wilayah Ditjenpas D.I. Yogyakarta","D.I. Yogyakarta","Kota Yogyakarta",-7.8261,110.4021],
+  ["Lapas Kelas IIB Sleman","Lapas","Kantor Wilayah Ditjenpas D.I. Yogyakarta","D.I. Yogyakarta","Sleman",-7.6902,110.342],
+  ["Lapas Kelas IIB Wonosari","Lapas","Kantor Wilayah Ditjenpas D.I. Yogyakarta","D.I. Yogyakarta","Gunungkidul",-7.993,110.5579],
+  ["Lapas Narkotika Kelas IIA Yogyakarta","Lapas","Kantor Wilayah Ditjenpas D.I. Yogyakarta","D.I. Yogyakarta","Kota Yogyakarta",-7.8261,110.4021],
+  ["Lapas Perempuan Kelas IIB Yogyakarta","Lapas","Kantor Wilayah Ditjenpas D.I. Yogyakarta","D.I. Yogyakarta","Kota Yogyakarta",-7.8261,110.4021],
+  ["LPKA Kelas II Yogyakarta","LPKA","Kantor Wilayah Ditjenpas D.I. Yogyakarta","D.I. Yogyakarta","Kota Yogyakarta",-7.8261,110.4021],
+  ["Rutan Kelas IIA Yogyakarta","Rutan","Kantor Wilayah Ditjenpas D.I. Yogyakarta","D.I. Yogyakarta","Kota Yogyakarta",-7.8261,110.4021],
+  ["Rutan Kelas IIB Bantul","Rutan","Kantor Wilayah Ditjenpas D.I. Yogyakarta","D.I. Yogyakarta","Bantul",-7.8877,110.3274],
+  ["Rutan Kelas IIB Wates","Rutan","Kantor Wilayah Ditjenpas D.I. Yogyakarta","D.I. Yogyakarta","Kulon Progo",-7.8123,110.148],
+  ["Lapas Kelas I Cipinang","Lapas","Kantor Wilayah Ditjenpas DKI Jakarta","DKI Jakarta","Kota Jakarta Timur",-6.2629,106.8822],
+  ["Lapas Kelas IIA Salemba","Lapas","Kantor Wilayah Ditjenpas DKI Jakarta","DKI Jakarta","Kota Jakarta Pusat",-6.1823,106.8429],
+  ["Lapas Narkotika Kelas IIA Jakarta","Lapas","Kantor Wilayah Ditjenpas DKI Jakarta","DKI Jakarta","Kota Jakarta Selatan",-6.2838,106.8049],
+  ["Lapas Perempuan Kelas IIA Jakarta","Lapas","Kantor Wilayah Ditjenpas DKI Jakarta","DKI Jakarta","Kota Jakarta Selatan",-6.2838,106.8049],
+  ["LPKA Kelas II Jakarta","LPKA","Kantor Wilayah Ditjenpas DKI Jakarta","DKI Jakarta","Kota Jakarta Timur",-6.2629,106.8822],
+  ["Rutan Kelas I Cipinang","Rutan","Kantor Wilayah Ditjenpas DKI Jakarta","DKI Jakarta","Kota Jakarta Timur",-6.2629,106.8822],
+  ["Rutan Kelas I Jakarta Pusat","Rutan","Kantor Wilayah Ditjenpas DKI Jakarta","DKI Jakarta","Kota Jakarta Pusat",-6.1823,106.8429],
+  ["Rutan Kelas I Pondok Bambu","Rutan","Kantor Wilayah Ditjenpas DKI Jakarta","DKI Jakarta","Kota Jakarta Timur",-6.2629,106.8822],
+  ["Lapas Kelas IIA Gorontalo","Lapas","Kantor Wilayah Ditjenpas Gorontalo","Gorontalo","Gorontalo Utara",0.8662,123.0495],
+  ["Lapas Kelas IIB Boalemo","Lapas","Kantor Wilayah Ditjenpas Gorontalo","Gorontalo","Boalemo",0.6876,122.3357],
+  ["Lapas Kelas IIB Pahuwato","Lapas","Kantor Wilayah Ditjenpas Gorontalo","Gorontalo","Pohuwato",0.6999,122.4467],
+  ["Lapas Perempuan Kelas III Gorontalo","Lapas","Kantor Wilayah Ditjenpas Gorontalo","Gorontalo","Gorontalo Utara",0.8662,123.0495],
+  ["LPKA Kelas II Gorontalo","LPKA","Kantor Wilayah Ditjenpas Gorontalo","Gorontalo","Kota Gorontalo",0.8662,123.0495],
+  ["Lapas Kelas IIA Jambi","Lapas","Kantor Wilayah Ditjenpas Jambi","Jambi","Muaro Jambi",-1.7077,103.7861],
+  ["Lapas Kelas IIB Bangko","Lapas","Kantor Wilayah Ditjenpas Jambi","Jambi","Merangin",-2.2084,102.1171],
+  ["Lapas Kelas IIB Kuala Tungkal","Lapas","Kantor Wilayah Ditjenpas Jambi","Jambi","Tanjung Jabung Barat",-0.9831,103.2692],
+  ["Lapas Kelas IIB Muara Bulian","Lapas","Kantor Wilayah Ditjenpas Jambi","Jambi","Batanghari",-1.8592,103.0075],
+  ["Lapas Kelas IIB Muara Bungo","Lapas","Kantor Wilayah Ditjenpas Jambi","Jambi","Bungo",-1.5152,101.9989],
+  ["Lapas Kelas IIB Muara Tebo","Lapas","Kantor Wilayah Ditjenpas Jambi","Jambi","Tebo",-1.3885,102.4406],
+  ["Lapas Kelas IIB Sarolangun","Lapas","Kantor Wilayah Ditjenpas Jambi","Jambi","Sarolangun",-2.3312,102.6275],
+  ["Lapas Narkotika Kelas IIB Muara Sabak","Lapas","Kantor Wilayah Ditjenpas Jambi","Jambi","Tanjung Jabung Timur",-1.1773,104.2285],
+  ["Lapas Perempuan Kelas IIB Jambi","Lapas","Kantor Wilayah Ditjenpas Jambi","Jambi","Muaro Jambi",-1.7077,103.7861],
+  ["LPKA Kelas II Muara Bulia","LPKA","Kantor Wilayah Ditjenpas Jambi","Jambi","Batanghari",-1.8592,103.0075],
+  ["Rutan Kelas IIB Sungai Penuh","Rutan","Kantor Wilayah Ditjenpas Jambi","Jambi","Kota Sungai Penuh",-2.0491,101.3491],
+  ["Lapas Kelas I Cirebon","Lapas","Kantor Wilayah Ditjenpas Jawa Barat","Jawa Barat","Cirebon",-6.7137,108.5608],
+  ["Lapas Kelas I Sukamiskin","Lapas","Kantor Wilayah Ditjenpas Jawa Barat","Jawa Barat","Bandung Barat",-6.8978,107.4124],
+  ["Lapas Kelas IIA Banceuy Bandung","Lapas","Kantor Wilayah Ditjenpas Jawa Barat","Jawa Barat","Bandung Barat",-6.8978,107.4124],
+  ["Lapas Kelas IIA Bekasi","Lapas","Kantor Wilayah Ditjenpas Jawa Barat","Jawa Barat","Bekasi",-6.235,106.9945],
+  ["Lapas Kelas IIA Bogor","Lapas","Kantor Wilayah Ditjenpas Jawa Barat","Jawa Barat","Bogor",-6.5963,106.7972],
+  ["Lapas Kelas IIA Cibinong","Lapas","Kantor Wilayah Ditjenpas Jawa Barat","Jawa Barat","Bogor",-6.5963,106.7972],
+  ["Lapas Kelas IIA Cikarang","Lapas","Kantor Wilayah Ditjenpas Jawa Barat","Jawa Barat","Bekasi",-6.235,106.9945],
+  ["Lapas Kelas IIA Karawang","Lapas","Kantor Wilayah Ditjenpas Jawa Barat","Jawa Barat","Karawang",-6.3022,107.3046],
+  ["Lapas Kelas IIA Kuningan","Lapas","Kantor Wilayah Ditjenpas Jawa Barat","Jawa Barat","Kuningan",-6.987,108.5538],
+  ["Lapas Kelas IIA Subang","Lapas","Kantor Wilayah Ditjenpas Jawa Barat","Jawa Barat","Subang",-6.4984,107.7395],
+  ["Lapas Kelas IIB Banjar","Lapas","Kantor Wilayah Ditjenpas Jawa Barat","Jawa Barat","Kota Banjar",-7.3917,108.615],
+  ["Lapas Kelas IIB Ciamis","Lapas","Kantor Wilayah Ditjenpas Jawa Barat","Jawa Barat","Ciamis",-7.3132,108.4049],
+  ["Lapas Kelas IIB Cianjur","Lapas","Kantor Wilayah Ditjenpas Jawa Barat","Jawa Barat","Cianjur",-7.0542,107.0691],
+  ["Lapas Kelas IIB Garut","Lapas","Kantor Wilayah Ditjenpas Jawa Barat","Jawa Barat","Garut",-7.2163,107.9015],
+  ["Lapas Kelas IIB Indramayu","Lapas","Kantor Wilayah Ditjenpas Jawa Barat","Jawa Barat","Indramayu",-6.4419,108.1765],
+  ["Lapas Kelas IIB Majalengka","Lapas","Kantor Wilayah Ditjenpas Jawa Barat","Jawa Barat","Majalengka",-6.8074,108.2788],
+  ["Lapas Kelas IIB Purwakarta","Lapas","Kantor Wilayah Ditjenpas Jawa Barat","Jawa Barat","Purwakarta",-6.5528,107.4465],
+  ["Lapas Kelas IIB Sukabumi","Lapas","Kantor Wilayah Ditjenpas Jawa Barat","Jawa Barat","Sukabumi",-6.9199,106.9265],
+  ["Lapas Kelas IIB Sumedang","Lapas","Kantor Wilayah Ditjenpas Jawa Barat","Jawa Barat","Sumedang",-6.8099,107.9818],
+  ["Lapas Kelas IIB Tasikmalaya","Lapas","Kantor Wilayah Ditjenpas Jawa Barat","Jawa Barat","Tasikmalaya",-7.3262,108.2201],
+  ["Lapas Kelas IIB Warung Kiara","Lapas","Kantor Wilayah Ditjenpas Jawa Barat","Jawa Barat","Sukabumi",-6.9199,106.9265],
+  ["Lapas Khusus Kelas IIA Gunung Sindur","Lapas","Kantor Wilayah Ditjenpas Jawa Barat","Jawa Barat","Bogor",-6.5963,106.7972],
+  ["Lapas Khusus Kelas IIB Sentul","Lapas","Kantor Wilayah Ditjenpas Jawa Barat","Jawa Barat","Bogor",-6.5963,106.7972],
+  ["Lapas Narkotika Kelas IIA Bandung","Lapas","Kantor Wilayah Ditjenpas Jawa Barat","Jawa Barat","Bandung Barat",-6.8978,107.4124],
+  ["Lapas Narkotika Kelas IIA Cirebon","Lapas","Kantor Wilayah Ditjenpas Jawa Barat","Jawa Barat","Cirebon",-6.7137,108.5608],
+  ["Lapas Narkotika Kelas IIA Gunung Sindur","Lapas","Kantor Wilayah Ditjenpas Jawa Barat","Jawa Barat","Bogor",-6.5963,106.7972],
+  ["Lapas Perempuan Kelas IIA Bandung","Lapas","Kantor Wilayah Ditjenpas Jawa Barat","Jawa Barat","Bandung Barat",-6.8978,107.4124],
+  ["LPKA Kelas II Bandung","LPKA","Kantor Wilayah Ditjenpas Jawa Barat","Jawa Barat","Kota Bandung",-6.8978,107.4124],
+  ["Rutan Kelas I Bandung","Rutan","Kantor Wilayah Ditjenpas Jawa Barat","Jawa Barat","Bandung Barat",-6.8978,107.4124],
+  ["Rutan Kelas I Cirebon","Rutan","Kantor Wilayah Ditjenpas Jawa Barat","Jawa Barat","Cirebon",-6.7137,108.5608],
+  ["Rutan Kelas I Depok","Rutan","Kantor Wilayah Ditjenpas Jawa Barat","Jawa Barat","Kota Depok",-6.4298,106.7427],
+  ["Rutan Kelas IIB Garut","Rutan","Kantor Wilayah Ditjenpas Jawa Barat","Jawa Barat","Garut",-7.2163,107.9015],
+  ["Rutan Perempuan Kelas IIA Bandung","Rutan","Kantor Wilayah Ditjenpas Jawa Barat","Jawa Barat","Bandung Barat",-6.8978,107.4124],
+  ["Lapas Kelas I Batu High Risk Narkotika Nusakambangan","Lapas","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah","Cilacap",-7.4617,108.8046],
+  ["Lapas Kelas I Semarang","Lapas","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah","Semarang",-6.9904,110.4229],
+  ["Lapas Kelas IIA Ambarawa","Lapas","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah","Semarang",-6.9904,110.4229],
+  ["Lapas Kelas IIA Besi Nusakambangan","Lapas","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah","Cilacap",-7.4617,108.8046],
+  ["Lapas Kelas IIA Gladakan Nusakambangan","Lapas","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah","Cilacap",-7.4617,108.8046],
+  ["Lapas Kelas IIA Kembang Kuning Nusakambangan","Lapas","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah","Cilacap",-7.4617,108.8046],
+  ["Lapas Kelas IIA Kendal","Lapas","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah","Kendal",-7.0191,110.1375],
+  ["Lapas Kelas IIA Kumbang Nusakambangan","Lapas","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah","Cilacap",-7.4617,108.8046],
+  ["Lapas Kelas IIA Magelang","Lapas","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah","Magelang",-7.4771,110.2182],
+  ["Lapas Kelas IIA Ngaseman Nusakambangan","Lapas","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah","Cilacap",-7.4617,108.8046],
+  ["Lapas Kelas IIA Pasir Putih Nusakambangan","Lapas","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah","Cilacap",-7.4617,108.8046],
+  ["Lapas Kelas IIA Pekalongan","Lapas","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah","Pekalongan",-6.8905,109.6761],
+  ["Lapas Kelas IIA Permisan Nusakambangan","Lapas","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah","Cilacap",-7.4617,108.8046],
+  ["Lapas Kelas IIA Purwokerto","Lapas","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah","Banyumas",-7.4551,109.1167],
+  ["Lapas Kelas IIA Sragen","Lapas","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah","Sragen",-7.3925,110.953],
+  ["Lapas Kelas IIB Batang","Lapas","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah","Batang",-7.0324,109.868],
+  ["Lapas Kelas IIB Brebes","Lapas","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah","Brebes",-7.0521,108.8881],
+  ["Lapas Kelas IIB Cilacap","Lapas","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah","Cilacap",-7.4617,108.8046],
+  ["Lapas Kelas IIB Klaten","Lapas","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah","Klaten",-7.6732,110.6285],
+  ["Lapas Kelas IIB Nirbaya Nusakambangan","Lapas","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah","Cilacap",-7.4617,108.8046],
+  ["Lapas Kelas IIB Pati","Lapas","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah","Pati",-6.7071,111.087],
+  ["Lapas Kelas IIB Purwodadi","Lapas","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah","Grobogan",-7.0981,110.8967],
+  ["Lapas Kelas IIB Slawi","Lapas","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah","Tegal",-6.8698,109.1151],
+  ["Lapas Kelas IIB Tegal","Lapas","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah","Tegal",-6.8698,109.1151],
+  ["Lapas Kelas IIB Wonogiri","Lapas","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah","Wonogiri",-7.9621,110.9576],
+  ["Lapas Khusus Kelas IIA Karanganyar","Lapas","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah","Karanganyar",-7.6197,111.0698],
+  ["Lapas Narkotika Kelas IIA Nusakambangan","Lapas","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah","Cilacap",-7.4617,108.8046],
+  ["Lapas Narkotika Kelas IIB Purwokerto","Lapas","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah","Banyumas",-7.4551,109.1167],
+  ["Lapas Pemuda Kelas IIB Plantungan","Lapas","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah","Kendal",-7.0191,110.1375],
+  ["Lapas Perempuan Kelas IIA Semarang","Lapas","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah","Semarang",-6.9904,110.4229],
+  ["Lapas Terbuka Kelas IIB Kendal","Lapas","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah","Kendal",-7.0191,110.1375],
+  ["Lapas Terbuka Kelas IIB Nusakambangan","Lapas","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah","Cilacap",-7.4617,108.8046],
+  ["LPKA Kelas I Kutoarjo","LPKA","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah","Purworejo",-7.7131,110.0091],
+  ["Rutan Kelas I Semarang","Rutan","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah","Kota Semarang",-6.9904,110.4229],
+  ["Rutan Kelas I Surakarta","Rutan","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah","Kota Surakarta",-7.5472,110.8176],
+  ["Rutan Kelas IIA Pekalongan","Rutan","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah","Pekalongan",-6.8905,109.6761],
+  ["Rutan Kelas IIB Banjarnegara","Rutan","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah","Banjarnegara",-7.3559,109.6601],
+  ["Rutan Kelas IIB Banyumas","Rutan","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah","Banyumas",-7.4551,109.1167],
+  ["Rutan Kelas IIB Blora","Rutan","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah","Blora",-6.9692,111.4131],
+  ["Rutan Kelas IIB Boyolali","Rutan","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah","Boyolali",-7.3872,110.7039],
+  ["Rutan Kelas IIB Demak","Rutan","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah","Demak",-6.9229,110.6351],
+  ["Rutan Kelas IIB Jepara","Rutan","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah","Jepara",-6.5899,110.6673],
+  ["Rutan Kelas IIB Kebumen","Rutan","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah","Kebumen",-7.6687,109.6519],
+  ["Rutan Kelas IIB Kudus","Rutan","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah","Kudus",-6.8078,110.8417],
+  ["Rutan Kelas IIB Pemalang","Rutan","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah","Pemalang",-7.0111,109.3914],
+  ["Rutan Kelas IIB Purbalingga","Rutan","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah","Purbalingga",-7.3273,109.3999],
+  ["Rutan Kelas IIB Purworejo","Rutan","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah","Purworejo",-7.7131,110.0091],
+  ["Rutan Kelas IIB Rembang","Rutan","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah","Rembang",-6.7699,111.4557],
+  ["Rutan Kelas IIB Salatiga","Rutan","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah","Kota Salatiga",-7.3311,110.5017],
+  ["Rutan Kelas IIB Temanggung","Rutan","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah","Temanggung",-7.2398,110.1217],
+  ["Rutan Kelas IIB Wonosobo","Rutan","Kantor Wilayah Ditjenpas Jawa Tengah","Jawa Tengah","Wonosobo",-7.3998,109.921],
+  ["Lapas Kelas I Madiun","Lapas","Kantor Wilayah Ditjenpas Jawa Timur","Jawa Timur","Madiun",-7.6291,111.5169],
+  ["Lapas Kelas I Malang","Lapas","Kantor Wilayah Ditjenpas Jawa Timur","Jawa Timur","Malang",-7.9771,112.634],
+  ["Lapas Kelas I Surabaya","Lapas","Kantor Wilayah Ditjenpas Jawa Timur","Jawa Timur","Kota Surabaya",-7.2806,112.669],
+  ["Lapas Kelas IIA Banyuwangi","Lapas","Kantor Wilayah Ditjenpas Jawa Timur","Jawa Timur","Banyuwangi",-8.3326,114.1416],
+  ["Lapas Kelas IIA Bojonegoro","Lapas","Kantor Wilayah Ditjenpas Jawa Timur","Jawa Timur","Bojonegoro",-7.2279,111.8146],
+  ["Lapas Kelas IIA Jember","Lapas","Kantor Wilayah Ditjenpas Jawa Timur","Jawa Timur","Jember",-8.1689,113.7022],
+  ["Lapas Kelas IIA Kediri","Lapas","Kantor Wilayah Ditjenpas Jawa Timur","Jawa Timur","Kediri",-7.8111,112.0046],
+  ["Lapas Kelas IIA Pamekasan","Lapas","Kantor Wilayah Ditjenpas Jawa Timur","Jawa Timur","Pamekasan",-7.1605,113.4826],
+  ["Lapas Kelas IIA Sidoarjo","Lapas","Kantor Wilayah Ditjenpas Jawa Timur","Jawa Timur","Sidoarjo",-7.456,112.6609],
+  ["Lapas Kelas IIB Blitar","Lapas","Kantor Wilayah Ditjenpas Jawa Timur","Jawa Timur","Blitar",-8.1312,112.3116],
+  ["Lapas Kelas IIB Bondowoso","Lapas","Kantor Wilayah Ditjenpas Jawa Timur","Jawa Timur","Bondowoso",-7.9451,113.8821],
+  ["Lapas Kelas IIB Jombang","Lapas","Kantor Wilayah Ditjenpas Jawa Timur","Jawa Timur","Jombang",-7.5615,112.2413],
+  ["Lapas Kelas IIB Lamongan","Lapas","Kantor Wilayah Ditjenpas Jawa Timur","Jawa Timur","Lamongan",-7.1229,112.3282],
+  ["Lapas Kelas IIB Lumajang","Lapas","Kantor Wilayah Ditjenpas Jawa Timur","Jawa Timur","Lumajang",-8.1352,113.2244],
+  ["Lapas Kelas IIB Mojokerto","Lapas","Kantor Wilayah Ditjenpas Jawa Timur","Jawa Timur","Mojokerto",-7.5413,112.5095],
+  ["Lapas Kelas IIB Ngawi","Lapas","Kantor Wilayah Ditjenpas Jawa Timur","Jawa Timur","Ngawi",-7.4027,111.4443],
+  ["Lapas Kelas IIB Pasuruan","Lapas","Kantor Wilayah Ditjenpas Jawa Timur","Jawa Timur","Pasuruan",-7.7508,112.8185],
+  ["Lapas Kelas IIB Probolinggo","Lapas","Kantor Wilayah Ditjenpas Jawa Timur","Jawa Timur","Probolinggo",-7.7441,113.2158],
+  ["Lapas Kelas IIB Tuban","Lapas","Kantor Wilayah Ditjenpas Jawa Timur","Jawa Timur","Tuban",-6.8963,112.0651],
+  ["Lapas Kelas IIB Tulungagung","Lapas","Kantor Wilayah Ditjenpas Jawa Timur","Jawa Timur","Tulungagung",-8.0729,111.8996],
+  ["Lapas Kelas III Arjasa","Lapas","Kantor Wilayah Ditjenpas Jawa Timur","Jawa Timur","Sumenep",-7.0067,113.8599],
+  ["Lapas Narkotika Kelas IIA Pamekasan","Lapas","Kantor Wilayah Ditjenpas Jawa Timur","Jawa Timur","Pamekasan",-7.1605,113.4826],
+  ["Lapas Pemuda Kelas IIA Madiun","Lapas","Kantor Wilayah Ditjenpas Jawa Timur","Jawa Timur","Madiun",-7.6291,111.5169],
+  ["Lapas Perempuan Kelas IIA Malang","Lapas","Kantor Wilayah Ditjenpas Jawa Timur","Jawa Timur","Malang",-7.9771,112.634],
+  ["LPKA Kelas I Blitar","LPKA","Kantor Wilayah Ditjenpas Jawa Timur","Jawa Timur","Kota Blitar",-8.1312,112.3116],
+  ["Rutan Kelas I Surabaya","Rutan","Kantor Wilayah Ditjenpas Jawa Timur","Jawa Timur","Kota Surabaya",-7.2806,112.669],
+  ["Rutan Kelas IIB Bangil","Rutan","Kantor Wilayah Ditjenpas Jawa Timur","Jawa Timur","Pasuruan",-7.7508,112.8185],
+  ["Rutan Kelas IIB Bangkalan","Rutan","Kantor Wilayah Ditjenpas Jawa Timur","Jawa Timur","Bangkalan",-7.0464,112.8963],
+  ["Rutan Kelas IIB Gresik","Rutan","Kantor Wilayah Ditjenpas Jawa Timur","Jawa Timur","Gresik",-5.7933,112.6598],
+  ["Rutan Kelas IIB Kraksaan","Rutan","Kantor Wilayah Ditjenpas Jawa Timur","Jawa Timur","Probolinggo",-7.7441,113.2158],
+  ["Rutan Kelas IIB Magetan","Rutan","Kantor Wilayah Ditjenpas Jawa Timur","Jawa Timur","Magetan",-7.6542,111.3361],
+  ["Rutan Kelas IIB Nganjuk","Rutan","Kantor Wilayah Ditjenpas Jawa Timur","Jawa Timur","Nganjuk",-7.615,111.9465],
+  ["Rutan Kelas IIB Pacitan","Rutan","Kantor Wilayah Ditjenpas Jawa Timur","Jawa Timur","Pacitan",-8.1017,111.1447],
+  ["Rutan Kelas IIB Ponorogo","Rutan","Kantor Wilayah Ditjenpas Jawa Timur","Jawa Timur","Ponorogo",-7.9712,111.4989],
+  ["Rutan Kelas IIB Sampang","Rutan","Kantor Wilayah Ditjenpas Jawa Timur","Jawa Timur","Sampang",-7.0578,113.2541],
+  ["Rutan Kelas IIB Situbondo","Rutan","Kantor Wilayah Ditjenpas Jawa Timur","Jawa Timur","Situbondo",-7.7068,114.0054],
+  ["Rutan Kelas IIB Sumenep","Rutan","Kantor Wilayah Ditjenpas Jawa Timur","Jawa Timur","Sumenep",-7.0067,113.8599],
+  ["Rutan Kelas IIB Trenggalek","Rutan","Kantor Wilayah Ditjenpas Jawa Timur","Jawa Timur","Trenggalek",-8.1359,111.6402],
+  ["Rutan Perempuan Kelas IIA Surabaya","Rutan","Kantor Wilayah Ditjenpas Jawa Timur","Jawa Timur","Kota Surabaya",-7.2806,112.669],
+  ["Lapas Kelas IIA Pontianak","Lapas","Kantor Wilayah Ditjenpas Kalimantan Barat","Kalimantan Barat","Kota Pontianak",-0.0829,109.3518],
+  ["Lapas Kelas IIB Ketapang","Lapas","Kantor Wilayah Ditjenpas Kalimantan Barat","Kalimantan Barat","Ketapang",-1.6815,110.4648],
+  ["Lapas Kelas IIB Singkawang","Lapas","Kantor Wilayah Ditjenpas Kalimantan Barat","Kalimantan Barat","Kota Singkawang",0.7933,108.9863],
+  ["Lapas Kelas IIB Sintang","Lapas","Kantor Wilayah Ditjenpas Kalimantan Barat","Kalimantan Barat","Sintang",0.1927,111.5598],
+  ["Lapas Perempuan Kelas IIA Pontianak","Lapas","Kantor Wilayah Ditjenpas Kalimantan Barat","Kalimantan Barat","Kota Pontianak",-0.0829,109.3518],
+  ["LPKA Kelas II Sungai Raya","LPKA","Kantor Wilayah Ditjenpas Kalimantan Barat","Kalimantan Barat","Kubu Raya",-0.0829,109.3518],
+  ["Rutan Kelas IIA Pontianak","Rutan","Kantor Wilayah Ditjenpas Kalimantan Barat","Kalimantan Barat","Kota Pontianak",-0.0829,109.3518],
+  ["Rutan Kelas IIB Bengkayang","Rutan","Kantor Wilayah Ditjenpas Kalimantan Barat","Kalimantan Barat","Bengkayang",1.0158,109.708],
+  ["Rutan Kelas IIB Landak","Rutan","Kantor Wilayah Ditjenpas Kalimantan Barat","Kalimantan Barat","Landak",0.5046,109.707],
+  ["Rutan Kelas IIB Mempawah","Rutan","Kantor Wilayah Ditjenpas Kalimantan Barat","Kalimantan Barat","Mempawah",0.344,109.102],
+  ["Rutan Kelas IIB Putussibau","Rutan","Kantor Wilayah Ditjenpas Kalimantan Barat","Kalimantan Barat","Kapuas Hulu",0.8274,112.7965],
+  ["Rutan Kelas IIB Sambas","Rutan","Kantor Wilayah Ditjenpas Kalimantan Barat","Kalimantan Barat","Sambas",1.5219,109.4138],
+  ["Rutan Kelas IIB Sanggau","Rutan","Kantor Wilayah Ditjenpas Kalimantan Barat","Kalimantan Barat","Sanggau",0.3502,110.547],
+  ["Lapas Kelas IIA Banjarmasin","Lapas","Kantor Wilayah Ditjenpas Kalimantan Selatan","Kalimantan Selatan","Kota Banjarmasin",-3.3301,114.5976],
+  ["Lapas Kelas IIA Kotabaru","Lapas","Kantor Wilayah Ditjenpas Kalimantan Selatan","Kalimantan Selatan","Kotabaru",-2.7951,115.9713],
+  ["Lapas Kelas IIB Amuntai","Lapas","Kantor Wilayah Ditjenpas Kalimantan Selatan","Kalimantan Selatan","Hulu Sungai Utara",-2.4242,115.1597],
+  ["Lapas Kelas IIB Banjar Baru","Lapas","Kantor Wilayah Ditjenpas Kalimantan Selatan","Kalimantan Selatan","Kota Banjarbaru",-3.4874,114.7027],
+  ["Lapas Kelas IIB Tanjung","Lapas","Kantor Wilayah Ditjenpas Kalimantan Selatan","Kalimantan Selatan","Tabalong",-1.8363,115.5155],
+  ["Lapas Kelas III Batulicin","Lapas","Kantor Wilayah Ditjenpas Kalimantan Selatan","Kalimantan Selatan","Tanah Bumbu",-2.7951,115.9713],
+  ["Lapas Narkotika Kelas IIA Karang Intan","Lapas","Kantor Wilayah Ditjenpas Kalimantan Selatan","Kalimantan Selatan","Kota Banjarmasin",-3.3301,114.5976],
+  ["Lapas Perempuan Kelas IIA Martapura","Lapas","Kantor Wilayah Ditjenpas Kalimantan Selatan","Kalimantan Selatan","Banjar",-3.0926,115.2838],
+  ["LPKA Kelas I Martapura","LPKA","Kantor Wilayah Ditjenpas Kalimantan Selatan","Kalimantan Selatan","Banjar",-3.0926,115.2838],
+  ["Rutan Kelas IIB Barabai","Rutan","Kantor Wilayah Ditjenpas Kalimantan Selatan","Kalimantan Selatan","Hulu Sungai Tengah",-2.6188,115.4293],
+  ["Rutan Kelas IIB Kandangan","Rutan","Kantor Wilayah Ditjenpas Kalimantan Selatan","Kalimantan Selatan","Hulu Sungai Selatan",-2.7126,115.1588],
+  ["Rutan Kelas IIB Marabahan","Rutan","Kantor Wilayah Ditjenpas Kalimantan Selatan","Kalimantan Selatan","Barito Kuala",-3.0193,114.6779],
+  ["Rutan Kelas IIB Pelaihari","Rutan","Kantor Wilayah Ditjenpas Kalimantan Selatan","Kalimantan Selatan","Tanah Laut",-3.844,114.9889],
+  ["Rutan Kelas IIB Rantau","Rutan","Kantor Wilayah Ditjenpas Kalimantan Selatan","Kalimantan Selatan","Tapin",-2.8623,115.011],
+  ["Rutan Kelas IIB Tanjung","Rutan","Kantor Wilayah Ditjenpas Kalimantan Selatan","Kalimantan Selatan","Tabalong",-1.8363,115.5155],
+  ["Lapas Kelas IIA Palangkaraya","Lapas","Kantor Wilayah Ditjenpas Kalimantan Tengah","Kalimantan Tengah","Kota Palangka Raya",-1.6815,113.3824],
+  ["Lapas Kelas IIB Muara Teweh","Lapas","Kantor Wilayah Ditjenpas Kalimantan Tengah","Kalimantan Tengah","Barito Utara",-0.7542,115.0451],
+  ["Lapas Kelas IIB Pangkalan Bun","Lapas","Kantor Wilayah Ditjenpas Kalimantan Tengah","Kalimantan Tengah","Kotawaringin Barat",-2.5042,111.6468],
+  ["Lapas Kelas IIB Sampit","Lapas","Kantor Wilayah Ditjenpas Kalimantan Tengah","Kalimantan Tengah","Kotawaringin Timur",-2.2515,112.7855],
+  ["Lapas Kelas III Sukamara","Lapas","Kantor Wilayah Ditjenpas Kalimantan Tengah","Kalimantan Tengah","Sukamara",-2.5602,111.1838],
+  ["Lapas Narkotika Kelas IIA Kasongan","Lapas","Kantor Wilayah Ditjenpas Kalimantan Tengah","Kalimantan Tengah","Katingan",-1.8596,113.3369],
+  ["Lapas Perempuan Kelas IIA Palangkaraya","Lapas","Kantor Wilayah Ditjenpas Kalimantan Tengah","Kalimantan Tengah","Kota Palangka Raya",-1.6815,113.3824],
+  ["LPKA Kelas II Palangkaraya","LPKA","Kantor Wilayah Ditjenpas Kalimantan Tengah","Kalimantan Tengah","Kota Palangka Raya",-1.6815,113.3824],
+  ["Rutan Kelas IIA Palangkaraya","Rutan","Kantor Wilayah Ditjenpas Kalimantan Tengah","Kalimantan Tengah","Kota Palangka Raya",-1.6815,113.3824],
+  ["Rutan Kelas IIB Buntok","Rutan","Kantor Wilayah Ditjenpas Kalimantan Tengah","Kalimantan Tengah","Barito Selatan",-1.9229,114.7889],
+  ["Rutan Kelas IIB Kuala Kapuas","Rutan","Kantor Wilayah Ditjenpas Kalimantan Tengah","Kalimantan Tengah","Kapuas",-1.9229,114.3364],
+  ["Rutan Kelas IIB Tamiang Layang","Rutan","Kantor Wilayah Ditjenpas Kalimantan Tengah","Kalimantan Tengah","Barito Timur",-1.9819,115.1804],
+  ["Lapas Kelas IIA Balikpapan","Lapas","Kantor Wilayah Ditjenpas Kalimantan Timur","Kalimantan Timur","Kota Balikpapan",-1.2678,116.8537],
+  ["Lapas Kelas IIA Bontang","Lapas","Kantor Wilayah Ditjenpas Kalimantan Timur","Kalimantan Timur","Kota Bontang",0.1299,117.4507],
+  ["Lapas Kelas IIA Samarinda","Lapas","Kantor Wilayah Ditjenpas Kalimantan Timur","Kalimantan Timur","Kota Samarinda",-0.5304,117.1365],
+  ["Lapas Kelas IIA Tenggarong","Lapas","Kantor Wilayah Ditjenpas Kalimantan Timur","Kalimantan Timur","Kutai Kartanegara",0.1956,116.2004],
+  ["Lapas Narkotika Kelas IIA Samarinda","Lapas","Kantor Wilayah Ditjenpas Kalimantan Timur","Kalimantan Timur","Kota Samarinda",-0.5304,117.1365],
+  ["Lapas Perempuan Kelas IIA Samarinda","Lapas","Kantor Wilayah Ditjenpas Kalimantan Timur","Kalimantan Timur","Kota Samarinda",-0.5304,117.1365],
+  ["LPKA Kelas II Tenggarong","LPKA","Kantor Wilayah Ditjenpas Kalimantan Timur","Kalimantan Timur","Kutai Kartanegara",0.1956,116.2004],
+  ["Rutan Kelas IIA Samarinda","Rutan","Kantor Wilayah Ditjenpas Kalimantan Timur","Kalimantan Timur","Kota Samarinda",-0.5304,117.1365],
+  ["Rutan Kelas IIB Balikpapan","Rutan","Kantor Wilayah Ditjenpas Kalimantan Timur","Kalimantan Timur","Kota Balikpapan",-1.2678,116.8537],
+  ["Rutan Kelas IIB Tanah Grogot","Rutan","Kantor Wilayah Ditjenpas Kalimantan Timur","Kalimantan Timur","Penajam Paser Utara",-1.1974,116.5673],
+  ["Rutan Kelas IIB Tanjung Redeb","Rutan","Kantor Wilayah Ditjenpas Kalimantan Timur","Kalimantan Timur","Berau",1.7768,117.2692],
+  ["Lapas Kelas IIA Tarakan","Lapas","Kantor Wilayah Ditjenpas Kalimantan Utara","Kalimantan Utara","Kota Tarakan",3.3726,117.572],
+  ["Lapas Kelas IIB Nunukan","Lapas","Kantor Wilayah Ditjenpas Kalimantan Utara","Kalimantan Utara","Nunukan",3.9075,117.0424],
+  ["Lapas Kelas IIA Pangkal Pinang","Lapas","Kantor Wilayah Ditjenpas Kepulauan Bangka Belitung","Kepulauan Bangka Belitung","Kota Pangkalpinang",-2.7411,106.4406],
+  ["Lapas Kelas IIB Sungai Liat","Lapas","Kantor Wilayah Ditjenpas Kepulauan Bangka Belitung","Kepulauan Bangka Belitung","Bangka Selatan",-2.7769,106.294],
+  ["Lapas Kelas IIB Tanjung Pandan","Lapas","Kantor Wilayah Ditjenpas Kepulauan Bangka Belitung","Kepulauan Bangka Belitung","Belitung Timur",-2.9165,108.0037],
+  ["Lapas Narkotika Kelas IIA Pangkal Pinang","Lapas","Kantor Wilayah Ditjenpas Kepulauan Bangka Belitung","Kepulauan Bangka Belitung","Kota Pangkalpinang",-2.7411,106.4406],
+  ["Lapas Perempuan Kelas III Pangkalpinang","Lapas","Kantor Wilayah Ditjenpas Kepulauan Bangka Belitung","Kepulauan Bangka Belitung","Kota Pangkalpinang",-2.7411,106.4406],
+  ["LPKA Kelas II Pangkal Pinang","LPKA","Kantor Wilayah Ditjenpas Kepulauan Bangka Belitung","Kepulauan Bangka Belitung","Kota Pangkalpinang",-2.7411,106.4406],
+  ["Rutan Kelas IIB Muntok","Rutan","Kantor Wilayah Ditjenpas Kepulauan Bangka Belitung","Kepulauan Bangka Belitung","Bangka Barat",-1.8412,105.5519],
+  ["Lapas Kelas IIA Batam","Lapas","Kantor Wilayah Ditjenpas Kepulauan Riau","Kepulauan Riau","Kota Batam",1.0507,103.9607],
+  ["Lapas Kelas IIA Tanjung Pinang","Lapas","Kantor Wilayah Ditjenpas Kepulauan Riau","Kepulauan Riau","Kota Tanjungpinang",3.9457,108.1429],
+  ["Lapas Kelas III Dabo Singkep","Lapas","Kantor Wilayah Ditjenpas Kepulauan Riau","Kepulauan Riau","Lingga",-0.5095,104.4142],
+  ["Lapas Narkotika Kelas IIA Tanjung Pinang","Lapas","Kantor Wilayah Ditjenpas Kepulauan Riau","Kepulauan Riau","Kota Tanjungpinang",3.9457,108.1429],
+  ["Lapas Perempuan Kelas IIB Batam","Lapas","Kantor Wilayah Ditjenpas Kepulauan Riau","Kepulauan Riau","Kota Batam",1.0507,103.9607],
+  ["LPKA Kelas II Batam","LPKA","Kantor Wilayah Ditjenpas Kepulauan Riau","Kepulauan Riau","Kota Batam",1.0507,103.9607],
+  ["Rutan Kelas I Tanjung Pinang","Rutan","Kantor Wilayah Ditjenpas Kepulauan Riau","Kepulauan Riau","Kota Tanjungpinang",3.9457,108.1429],
+  ["Rutan Kelas IIA Batam","Rutan","Kantor Wilayah Ditjenpas Kepulauan Riau","Kepulauan Riau","Kota Batam",1.0507,103.9607],
+  ["Rutan Kelas IIB Tanjung Balai Karimun","Rutan","Kantor Wilayah Ditjenpas Kepulauan Riau","Kepulauan Riau","Karimun",0.7654,103.4287],
+  ["Lapas Kelas I Bandar Lampung","Lapas","Kantor Wilayah Ditjenpas Lampung","Lampung","Kota Bandar Lampung",-5.4479,105.2698],
+  ["Lapas Kelas IIA Kalianda","Lapas","Kantor Wilayah Ditjenpas Lampung","Lampung","Lampung Selatan",-5.5415,105.511],
+  ["Lapas Kelas IIA Kotabumi","Lapas","Kantor Wilayah Ditjenpas Lampung","Lampung","Lampung Utara",-4.8086,104.8629],
+  ["Lapas Kelas IIA Metro","Lapas","Kantor Wilayah Ditjenpas Lampung","Lampung","Kota Metro",-5.1503,105.3016],
+  ["Lapas Kelas IIB Gunung Sugih","Lapas","Kantor Wilayah Ditjenpas Lampung","Lampung","Lampung Tengah",-4.8728,105.326],
+  ["Lapas Kelas IIB Kota Agung","Lapas","Kantor Wilayah Ditjenpas Lampung","Lampung","Tanggamus",-5.5141,104.7771],
+  ["Lapas Kelas IIB Waykanan","Lapas","Kantor Wilayah Ditjenpas Lampung","Lampung","Way Kanan",-4.5669,104.5162],
+  ["Lapas Narkotika Kelas IIA Bandar Lampung","Lapas","Kantor Wilayah Ditjenpas Lampung","Lampung","Kota Bandar Lampung",-5.4479,105.2698],
+  ["Lapas Perempuan Kelas IIA Bandar Lampung","Lapas","Kantor Wilayah Ditjenpas Lampung","Lampung","Kota Bandar Lampung",-5.4479,105.2698],
+  ["LPKA Kelas II Bandar Lampung","LPKA","Kantor Wilayah Ditjenpas Lampung","Lampung","Kota Bandar Lampung",-5.4479,105.2698],
+  ["Rutan Kelas I Bandar Lampung","Rutan","Kantor Wilayah Ditjenpas Lampung","Lampung","Kota Bandar Lampung",-5.4479,105.2698],
+  ["Rutan Kelas IIB Kota Agung","Rutan","Kantor Wilayah Ditjenpas Lampung","Lampung","Tanggamus",-5.5141,104.7771],
+  ["Rutan Kelas IIB Kotabumi","Rutan","Kantor Wilayah Ditjenpas Lampung","Lampung","Lampung Utara",-4.8086,104.8629],
+  ["Rutan Kelas IIB Krui","Rutan","Kantor Wilayah Ditjenpas Lampung","Lampung","Pesisir Barat",-5.3669,104.1866],
+  ["Rutan Kelas IIB Menggala","Rutan","Kantor Wilayah Ditjenpas Lampung","Lampung","Tulang Bawang Barat",-4.4324,105.1683],
+  ["Rutan Kelas IIB Sukadana","Rutan","Kantor Wilayah Ditjenpas Lampung","Lampung","Lampung Timur",-5.1197,105.5952],
+  ["Lapas Kelas IIA Ambon","Lapas","Kantor Wilayah Ditjenpas Maluku","Maluku","Kota Ambon",-3.7109,128.2593],
+  ["Lapas Kelas IIB Piru","Lapas","Kantor Wilayah Ditjenpas Maluku","Maluku","Seram Bagian Barat",-3.1642,128.4837],
+  ["Lapas Kelas IIB Tual","Lapas","Kantor Wilayah Ditjenpas Maluku","Maluku","Kota Tual",-5.5905,132.0041],
+  ["Lapas Kelas III Bandanaira","Lapas","Kantor Wilayah Ditjenpas Maluku","Maluku","Maluku Tengah",-3.1214,129.46],
+  ["Lapas Kelas III Dobo","Lapas","Kantor Wilayah Ditjenpas Maluku","Maluku","Kepulauan Aru",-6.2281,134.498],
+  ["Lapas Kelas III Geser","Lapas","Kantor Wilayah Ditjenpas Maluku","Maluku","Seram Bagian Timur",-3.4232,130.3911],
+  ["Lapas Kelas III Namlea","Lapas","Kantor Wilayah Ditjenpas Maluku","Maluku","Buru Selatan",-3.4867,126.3502],
+  ["Lapas Kelas III Saparua","Lapas","Kantor Wilayah Ditjenpas Maluku","Maluku","Maluku Tengah",-3.1214,129.46],
+  ["Lapas Kelas III Saumlaki","Lapas","Kantor Wilayah Ditjenpas Maluku","Maluku","Kepulauan Aru",-6.2281,134.498],
+  ["Lapas Kelas III Wahai","Lapas","Kantor Wilayah Ditjenpas Maluku","Maluku","Maluku Tengah",-3.1214,129.46],
+  ["Lapas Kelas III Wonreli","Lapas","Kantor Wilayah Ditjenpas Maluku","Maluku","Maluku Barat Daya",-7.7867,126.2428],
+  ["Lapas Perempuan Kelas III Ambon","Lapas","Kantor Wilayah Ditjenpas Maluku","Maluku","Kota Ambon",-3.7109,128.2593],
+  ["LPKA Kelas II Ambon","LPKA","Kantor Wilayah Ditjenpas Maluku","Maluku","Kota Ambon",-3.7109,128.2593],
+  ["Rutan Kelas IIA Ambon","Rutan","Kantor Wilayah Ditjenpas Maluku","Maluku","Kota Ambon",-3.7109,128.2593],
+  ["Rutan Kelas IIB Masohi","Rutan","Kantor Wilayah Ditjenpas Maluku","Maluku","Maluku Tengah",-3.1214,129.46],
+  ["Lapas Kelas IIA Ternate","Lapas","Kantor Wilayah Ditjenpas Maluku Utara","Maluku Utara","Kota Ternate",0.8358,127.3553],
+  ["Lapas Kelas IIB Jailolo","Lapas","Kantor Wilayah Ditjenpas Maluku Utara","Maluku Utara","Halmahera Barat",1.3631,127.5738],
+  ["Lapas Kelas IIB Sanana","Lapas","Kantor Wilayah Ditjenpas Maluku Utara","Maluku Utara","Kepulauan Sula",-1.8625,125.8306],
+  ["Lapas Kelas IIB Tobello","Lapas","Kantor Wilayah Ditjenpas Maluku Utara","Maluku Utara","Halmahera Utara",1.6179,127.8585],
+  ["Lapas Kelas III Labuha","Lapas","Kantor Wilayah Ditjenpas Maluku Utara","Maluku Utara","Halmahera Selatan",-1.5344,127.7166],
+  ["Lapas Perempuan Kelas III Ternate","Lapas","Kantor Wilayah Ditjenpas Maluku Utara","Maluku Utara","Kota Ternate",0.8358,127.3553],
+  ["LPKA Kelas II Ternate","LPKA","Kantor Wilayah Ditjenpas Maluku Utara","Maluku Utara","Kota Ternate",0.8358,127.3553],
+  ["Rutan Kelas IIB Soa Siu","Rutan","Kantor Wilayah Ditjenpas Maluku Utara","Maluku Utara","Kepulauan Sula",-1.8625,125.8306],
+  ["Rutan Kelas IIB Ternate","Rutan","Kantor Wilayah Ditjenpas Maluku Utara","Maluku Utara","Kota Ternate",0.8358,127.3553],
+  ["Rutan Kelas IIB Weda","Rutan","Kantor Wilayah Ditjenpas Maluku Utara","Maluku Utara","Halmahera Tengah",0.3889,128.5832],
+  ["Lapas Kelas IIA Mataram","Lapas","Kantor Wilayah Ditjenpas Nusa Tenggara Barat","Nusa Tenggara Barat","Kota Mataram",-8.5994,116.1556],
+  ["Lapas Kelas IIA Sumbawa Besar","Lapas","Kantor Wilayah Ditjenpas Nusa Tenggara Barat","Nusa Tenggara Barat","Sumbawa",-8.5949,117.2716],
+  ["Lapas Kelas IIB Dompu","Lapas","Kantor Wilayah Ditjenpas Nusa Tenggara Barat","Nusa Tenggara Barat","Dompu",-8.5165,118.3312],
+  ["Lapas Kelas IIB Selong","Lapas","Kantor Wilayah Ditjenpas Nusa Tenggara Barat","Nusa Tenggara Barat","Lombok Timur",-8.6331,116.5588],
+  ["Lapas Perempuan Kelas III Mataram","Lapas","Kantor Wilayah Ditjenpas Nusa Tenggara Barat","Nusa Tenggara Barat","Kota Mataram",-8.5994,116.1556],
+  ["Lapas Terbuka Kelas IIB Lombok Tengah","Lapas","Kantor Wilayah Ditjenpas Nusa Tenggara Barat","Nusa Tenggara Barat","Lombok Tengah",-8.7031,116.2899],
+  ["LPKA Kelas II Lombok Tengah","LPKA","Kantor Wilayah Ditjenpas Nusa Tenggara Barat","Nusa Tenggara Barat","Lombok Tengah",-8.7031,116.2899],
+  ["Rutan Kelas IIB Praya","Rutan","Kantor Wilayah Ditjenpas Nusa Tenggara Barat","Nusa Tenggara Barat","Lombok Tengah",-8.7031,116.2899],
+  ["Rutan Kelas IIB Raba Bima","Rutan","Kantor Wilayah Ditjenpas Nusa Tenggara Barat","Nusa Tenggara Barat","Bima",-8.5648,118.7625],
+  ["Lapas Kelas IIA Kupang","Lapas","Kantor Wilayah Ditjenpas Nusa Tenggara Timur","Nusa Tenggara Timur","Kupang",-10.1632,123.6018],
+  ["Lapas Kelas IIA Waingapu","Lapas","Kantor Wilayah Ditjenpas Nusa Tenggara Timur","Nusa Tenggara Timur","Sumba Timur",-9.8343,120.2094],
+  ["Lapas Kelas IIB Atambua","Lapas","Kantor Wilayah Ditjenpas Nusa Tenggara Timur","Nusa Tenggara Timur","Belu",-9.176,124.9164],
+  ["Lapas Kelas IIB Ende","Lapas","Kantor Wilayah Ditjenpas Nusa Tenggara Timur","Nusa Tenggara Timur","Ende",-8.6729,121.6929],
+  ["Lapas Kelas IIB Kalabahi","Lapas","Kantor Wilayah Ditjenpas Nusa Tenggara Timur","Nusa Tenggara Timur","Alor",-8.2911,124.7777],
+  ["Lapas Kelas IIB Waikabubak","Lapas","Kantor Wilayah Ditjenpas Nusa Tenggara Timur","Nusa Tenggara Timur","Sumba Barat Daya",-9.5378,119.1623],
+  ["Lapas Kelas III Baa","Lapas","Kantor Wilayah Ditjenpas Nusa Tenggara Timur","Nusa Tenggara Timur","Rote Ndao",-10.687,123.2084],
+  ["Lapas Kelas III Lembata","Lapas","Kantor Wilayah Ditjenpas Nusa Tenggara Timur","Nusa Tenggara Timur","Lembata",-8.3781,123.5446],
+  ["Lapas Perempuan Kelas IIB Kupang","Lapas","Kantor Wilayah Ditjenpas Nusa Tenggara Timur","Nusa Tenggara Timur","Kupang",-10.1632,123.6018],
+  ["Lapas Terbuka Kelas IIB Waikabubak","Lapas","Kantor Wilayah Ditjenpas Nusa Tenggara Timur","Nusa Tenggara Timur","Sumba Barat Daya",-9.5378,119.1623],
+  ["LPKA Kelas I Kupang","LPKA","Kantor Wilayah Ditjenpas Nusa Tenggara Timur","Nusa Tenggara Timur","Kota Kupang",-10.1632,123.6018],
+  ["Rutan Kelas IIB Bajawa","Rutan","Kantor Wilayah Ditjenpas Nusa Tenggara Timur","Nusa Tenggara Timur","Ngada",-8.6499,120.9867],
+  ["Rutan Kelas IIB Kefamenanu","Rutan","Kantor Wilayah Ditjenpas Nusa Tenggara Timur","Nusa Tenggara Timur","Timor Tengah Utara",-9.3405,124.6107],
+  ["Rutan Kelas IIB Kupang","Rutan","Kantor Wilayah Ditjenpas Nusa Tenggara Timur","Nusa Tenggara Timur","Kupang",-10.1632,123.6018],
+  ["Rutan Kelas IIB Larantuka","Rutan","Kantor Wilayah Ditjenpas Nusa Tenggara Timur","Nusa Tenggara Timur","Flores Timur",-8.3185,123.1658],
+  ["Rutan Kelas IIB Maumere","Rutan","Kantor Wilayah Ditjenpas Nusa Tenggara Timur","Nusa Tenggara Timur","Sikka",-8.5947,122.0926],
+  ["Rutan Kelas IIB Ruteng","Rutan","Kantor Wilayah Ditjenpas Nusa Tenggara Timur","Nusa Tenggara Timur","Manggarai Barat",-8.5741,120.0611],
+  ["Rutan Kelas IIB Soe","Rutan","Kantor Wilayah Ditjenpas Nusa Tenggara Timur","Nusa Tenggara Timur","Timor Tengah Selatan",-9.8231,124.4356],
+  ["Lapas Kelas IIA Abepura","Lapas","Kantor Wilayah Ditjenpas Papua","Papua","Jayapura",-2.5388,140.7037],
+  ["Lapas Kelas IIB Biak","Lapas","Kantor Wilayah Ditjenpas Papua","Papua","Biak Numfor",-0.9426,135.9414],
+  ["Lapas Kelas IIB Serui","Lapas","Kantor Wilayah Ditjenpas Papua","Papua","Kepulauan Yapen",-1.7558,136.3665],
+  ["Lapas Narkotika Kelas IIA Jayapura","Lapas","Kantor Wilayah Ditjenpas Papua","Papua","Jayapura",-2.5388,140.7037],
+  ["Lapas Perempuan Kelas III Jayapura","Lapas","Kantor Wilayah Ditjenpas Papua","Papua","Jayapura",-2.5388,140.7037],
+  ["LPKA Kelas II Jayapura","LPKA","Kantor Wilayah Ditjenpas Papua","Papua","Kota Jayapura",-2.5388,140.7037],
+  ["Lapas Kelas IIB Fakfak","Lapas","Kantor Wilayah Ditjenpas Papua Barat","Papua Barat","Fakfak",-1.3361,133.1747],
+  ["Lapas Kelas IIB Manokwari","Lapas","Kantor Wilayah Ditjenpas Papua Barat","Papua Barat","Manokwari Selatan",-1.525,134.071],
+  ["Lapas Kelas III Kaimana","Lapas","Kantor Wilayah Ditjenpas Papua Barat","Papua Barat","Kaimana",-3.5158,134.3166],
+  ["Lapas Perempuan Kelas III Manokwari","Lapas","Kantor Wilayah Ditjenpas Papua Barat","Papua Barat","Manokwari Selatan",-1.525,134.071],
+  ["Rutan Kelas IIB Bintuni","Rutan","Kantor Wilayah Ditjenpas Papua Barat","Papua Barat","Teluk Bintuni",-2.1139,133.5288],
+  ["Lapas Kelas IIB Sorong","Lapas","Kantor Wilayah Ditjenpas Papua Barat Daya","Papua Barat Daya","Sorong Selatan",-1.6431,132.255],
+  ["Lapas Kelas III Teminabuhan","Lapas","Kantor Wilayah Ditjenpas Papua Barat Daya","Papua Barat Daya","Sorong Selatan",-1.6431,132.255],
+  ["Lapas Kelas IIB Wamena","Lapas","Kantor Wilayah Ditjenpas Papua Pegunungan","Papua Pegunungan","Jayawijaya",-4.1153,138.965],
+  ["Lapas Kelas IIB Merauke","Lapas","Kantor Wilayah Ditjenpas Papua Selatan","Papua Selatan","Merauke",-7.7925,140.0183],
+  ["Lapas Kelas III Tanah Merah","Lapas","Kantor Wilayah Ditjenpas Papua Selatan","Papua Selatan","Boven Digoel",-6.1058,140.3131],
+  ["Lapas Kelas IIB Nabire","Lapas","Kantor Wilayah Ditjenpas Papua Tengah","Papua Tengah","Nabire",-3.3603,135.5024],
+  ["Lapas Kelas IIB Timika","Lapas","Kantor Wilayah Ditjenpas Papua Tengah","Papua Tengah","Mimika",-4.5875,136.9478],
+  ["Lapas Kelas IIA Bagan Siapi-Api","Lapas","Kantor Wilayah Ditjenpas Riau","Riau","Rokan Hilir",2.1591,100.6874],
+  ["Lapas Kelas IIA Bangkinang","Lapas","Kantor Wilayah Ditjenpas Riau","Riau","Kampar",0.32,101.0617],
+  ["Lapas Kelas IIA Bengkalis","Lapas","Kantor Wilayah Ditjenpas Riau","Riau","Bengkalis",1.7697,101.9124],
+  ["Lapas Kelas IIA Pekanbaru","Lapas","Kantor Wilayah Ditjenpas Riau","Riau","Kota Pekanbaru",0.6645,101.5256],
+  ["Lapas Kelas IIA Tembilahan","Lapas","Kantor Wilayah Ditjenpas Riau","Riau","Indragiri Hilir",-0.2709,103.3285],
+  ["Lapas Kelas IIB Pasir Pangarayan","Lapas","Kantor Wilayah Ditjenpas Riau","Riau","Rokan Hulu",0.8919,100.4665],
+  ["Lapas Kelas IIB Selat Panjang","Lapas","Kantor Wilayah Ditjenpas Riau","Riau","Kepulauan Meranti",1.0613,102.7019],
+  ["Lapas Kelas IIB Teluk Kuantan","Lapas","Kantor Wilayah Ditjenpas Riau","Riau","Kuantan Singingi",-0.4938,101.4897],
+  ["Lapas Narkotika Kelas IIB Rumbai","Lapas","Kantor Wilayah Ditjenpas Riau","Riau","Kota Pekanbaru",0.6645,101.5256],
+  ["Lapas Perempuan Kelas IIA Pekanbaru","Lapas","Kantor Wilayah Ditjenpas Riau","Riau","Kota Pekanbaru",0.6645,101.5256],
+  ["Lapas Terbuka Kelas III Rumbai","Lapas","Kantor Wilayah Ditjenpas Riau","Riau","Kota Pekanbaru",0.6645,101.5256],
+  ["LPKA Kelas II Pekanbaru","LPKA","Kantor Wilayah Ditjenpas Riau","Riau","Kota Pekanbaru",0.6645,101.5256],
+  ["Rutan Kelas I Pekanbaru","Rutan","Kantor Wilayah Ditjenpas Riau","Riau","Kota Pekanbaru",0.6645,101.5256],
+  ["Rutan Kelas IIB Dumai","Rutan","Kantor Wilayah Ditjenpas Riau","Riau","Kota Dumai",1.6476,101.4383],
+  ["Rutan Kelas IIB Rengat","Rutan","Kantor Wilayah Ditjenpas Riau","Riau","Indragiri Hulu",-0.4979,102.3008],
+  ["Rutan Kelas IIB Siak Sri Indrapura","Rutan","Kantor Wilayah Ditjenpas Riau","Riau","Siak",0.8275,101.8462],
+  ["Lapas Kelas IIB Polewali","Lapas","Kantor Wilayah Ditjenpas Sulawesi Barat","Sulawesi Barat","Polewali Mandar",-3.3032,119.1451],
+  ["Lapas Kelas III Mamasa","Lapas","Kantor Wilayah Ditjenpas Sulawesi Barat","Sulawesi Barat","Mamasa",-3.0004,119.3209],
+  ["Lapas Perempuan Kelas III Mamuju","Lapas","Kantor Wilayah Ditjenpas Sulawesi Barat","Sulawesi Barat","Pasangkayu (Mamuju Utara)",-1.1807,119.3673],
+  ["LPKA Kelas II Mamuju","LPKA","Kantor Wilayah Ditjenpas Sulawesi Barat","Sulawesi Barat","Mamuju",-1.1807,119.3673],
+  ["Rutan Kelas IIB Majene","Rutan","Kantor Wilayah Ditjenpas Sulawesi Barat","Sulawesi Barat","Majene",-3.5459,118.9607],
+  ["Rutan Kelas IIB Mamuju","Rutan","Kantor Wilayah Ditjenpas Sulawesi Barat","Sulawesi Barat","Pasangkayu (Mamuju Utara)",-1.1807,119.3673],
+  ["Rutan Kelas IIB Pasangkayu","Rutan","Kantor Wilayah Ditjenpas Sulawesi Barat","Sulawesi Barat","Pasangkayu (Mamuju Utara)",-1.1807,119.3673],
+  ["Lapas Kelas I Makassar","Lapas","Kantor Wilayah Ditjenpas Sulawesi Selatan","Sulawesi Selatan","Kota Makassar",-5.1486,119.2647],
+  ["Lapas Kelas IIA Bulukumba","Lapas","Kantor Wilayah Ditjenpas Sulawesi Selatan","Sulawesi Selatan","Bulukumba",-5.4546,120.2452],
+  ["Lapas Kelas IIA Palopo","Lapas","Kantor Wilayah Ditjenpas Sulawesi Selatan","Sulawesi Selatan","Kota Palopo",-2.9339,120.1771],
+  ["Lapas Kelas IIA Pare-Pare","Lapas","Kantor Wilayah Ditjenpas Sulawesi Selatan","Sulawesi Selatan","Kota Parepare",-3.6688,119.9741],
+  ["Lapas Kelas IIA Watampone","Lapas","Kantor Wilayah Ditjenpas Sulawesi Selatan","Sulawesi Selatan","Bone",-4.6801,120.0947],
+  ["Lapas Kelas IIB Maros","Lapas","Kantor Wilayah Ditjenpas Sulawesi Selatan","Sulawesi Selatan","Maros",-5.1486,119.2647],
+  ["Lapas Kelas IIB Takalar","Lapas","Kantor Wilayah Ditjenpas Sulawesi Selatan","Sulawesi Selatan","Takalar",-5.4067,119.5375],
+  ["Lapas Narkotika Kelas IIA Sungguminasa","Lapas","Kantor Wilayah Ditjenpas Sulawesi Selatan","Sulawesi Selatan","Gowa",-5.3291,119.766],
+  ["Lapas Perempuan Kelas IIA Sungguminasa","Lapas","Kantor Wilayah Ditjenpas Sulawesi Selatan","Sulawesi Selatan","Gowa",-5.3291,119.766],
+  ["LPKA Kelas II Maros","LPKA","Kantor Wilayah Ditjenpas Sulawesi Selatan","Sulawesi Selatan","Maros",-5.1486,119.2647],
+  ["Rutan Kelas I Makassar","Rutan","Kantor Wilayah Ditjenpas Sulawesi Selatan","Sulawesi Selatan","Kota Makassar",-5.1486,119.2647],
+  ["Rutan Kelas IIB Bantaeng","Rutan","Kantor Wilayah Ditjenpas Sulawesi Selatan","Sulawesi Selatan","Bantaeng",-5.4709,119.9872],
+  ["Rutan Kelas IIB Barru","Rutan","Kantor Wilayah Ditjenpas Sulawesi Selatan","Sulawesi Selatan","Barru",-4.4337,119.6778],
+  ["Rutan Kelas IIB Enrekang","Rutan","Kantor Wilayah Ditjenpas Sulawesi Selatan","Sulawesi Selatan","Enrekang",-3.5657,119.7724],
+  ["Rutan Kelas IIB Jeneponto","Rutan","Kantor Wilayah Ditjenpas Sulawesi Selatan","Sulawesi Selatan","Jeneponto",-5.5445,119.612],
+  ["Rutan Kelas IIB Makale","Rutan","Kantor Wilayah Ditjenpas Sulawesi Selatan","Sulawesi Selatan","Tana Toraja",-3.1169,119.6938],
+  ["Rutan Kelas IIB Malino","Rutan","Kantor Wilayah Ditjenpas Sulawesi Selatan","Sulawesi Selatan","Gowa",-5.3291,119.766],
+  ["Rutan Kelas IIB Masamba","Rutan","Kantor Wilayah Ditjenpas Sulawesi Selatan","Sulawesi Selatan","Luwu Utara",-2.4038,120.1301],
+  ["Rutan Kelas IIB Pangkajene","Rutan","Kantor Wilayah Ditjenpas Sulawesi Selatan","Sulawesi Selatan","Pangkajene Kepulauan",-4.7544,119.5893],
+  ["Rutan Kelas IIB Pinrang","Rutan","Kantor Wilayah Ditjenpas Sulawesi Selatan","Sulawesi Selatan","Pinrang",-3.7933,119.6529],
+  ["Rutan Kelas IIB Selayar","Rutan","Kantor Wilayah Ditjenpas Sulawesi Selatan","Sulawesi Selatan","Kepulauan Selayar",-7.2958,120.9505],
+  ["Rutan Kelas IIB Sengkang","Rutan","Kantor Wilayah Ditjenpas Sulawesi Selatan","Sulawesi Selatan","Wajo",-3.9656,120.1279],
+  ["Rutan Kelas IIB Sidenreng Rapang","Rutan","Kantor Wilayah Ditjenpas Sulawesi Selatan","Sulawesi Selatan","Sidenreng Rappang",-3.8079,120.045],
+  ["Rutan Kelas IIB Sinjai","Rutan","Kantor Wilayah Ditjenpas Sulawesi Selatan","Sulawesi Selatan","Sinjai",-5.2007,120.1442],
+  ["Rutan Kelas IIB Watansoppeng","Rutan","Kantor Wilayah Ditjenpas Sulawesi Selatan","Sulawesi Selatan","Soppeng",-4.3189,119.9185],
+  ["Lapas Kelas IIA Palu","Lapas","Kantor Wilayah Ditjenpas Sulawesi Tengah","Sulawesi Tengah","Kota Palu",-0.8818,119.8861],
+  ["Lapas Kelas IIB Ampana","Lapas","Kantor Wilayah Ditjenpas Sulawesi Tengah","Sulawesi Tengah","Tojo Una Una",-1.2131,121.6196],
+  ["Lapas Kelas IIB Luwuk","Lapas","Kantor Wilayah Ditjenpas Sulawesi Tengah","Sulawesi Tengah","Banggai Kepulauan",-1.3518,123.1809],
+  ["Lapas Kelas IIB Toli-Toli","Lapas","Kantor Wilayah Ditjenpas Sulawesi Tengah","Sulawesi Tengah","Toli Toli",0.9703,120.8803],
+  ["Lapas Kelas III Kolonedale","Lapas","Kantor Wilayah Ditjenpas Sulawesi Tengah","Sulawesi Tengah","Morowali Utara",-1.8419,121.0772],
+  ["Lapas Kelas III Leok","Lapas","Kantor Wilayah Ditjenpas Sulawesi Tengah","Sulawesi Tengah","Buol",1.0124,121.3121],
+  ["Lapas Kelas III Parigi","Lapas","Kantor Wilayah Ditjenpas Sulawesi Tengah","Sulawesi Tengah","Parigi Moutong",-0.2384,119.9599],
+  ["Lapas Perempuan Kelas III Palu","Lapas","Kantor Wilayah Ditjenpas Sulawesi Tengah","Sulawesi Tengah","Kota Palu",-0.8818,119.8861],
+  ["LPKA Kelas II Palu","LPKA","Kantor Wilayah Ditjenpas Sulawesi Tengah","Sulawesi Tengah","Kota Palu",-0.8818,119.8861],
+  ["Rutan Kelas IIA Palu","Rutan","Kantor Wilayah Ditjenpas Sulawesi Tengah","Sulawesi Tengah","Kota Palu",-0.8818,119.8861],
+  ["Rutan Kelas IIB Donggala","Rutan","Kantor Wilayah Ditjenpas Sulawesi Tengah","Sulawesi Tengah","Donggala",-1.0478,119.6758],
+  ["Rutan Kelas IIB Poso","Rutan","Kantor Wilayah Ditjenpas Sulawesi Tengah","Sulawesi Tengah","Poso",-1.6569,120.5422],
+  ["Lapas Kelas IIA Baubau","Lapas","Kantor Wilayah Ditjenpas Sulawesi Tenggara","Sulawesi Tenggara","Kota Bau Bau",-5.458,122.602],
+  ["Lapas Kelas IIA Kendari","Lapas","Kantor Wilayah Ditjenpas Sulawesi Tenggara","Sulawesi Tenggara","Kota Kendari",-4.0034,122.5156],
+  ["Lapas Perempuan Kelas III Kendari","Lapas","Kantor Wilayah Ditjenpas Sulawesi Tenggara","Sulawesi Tenggara","Kota Kendari",-4.0034,122.5156],
+  ["LPKA Kelas II Kendari","LPKA","Kantor Wilayah Ditjenpas Sulawesi Tenggara","Sulawesi Tenggara","Kota Kendari",-4.0034,122.5156],
+  ["Rutan Kelas IIA Kendari","Rutan","Kantor Wilayah Ditjenpas Sulawesi Tenggara","Sulawesi Tenggara","Kota Kendari",-4.0034,122.5156],
+  ["Rutan Kelas IIB Kolaka","Rutan","Kantor Wilayah Ditjenpas Sulawesi Tenggara","Sulawesi Tenggara","Kolaka Utara",-3.2605,121.0934],
+  ["Rutan Kelas IIB Raha","Rutan","Kantor Wilayah Ditjenpas Sulawesi Tenggara","Sulawesi Tenggara","Muna Barat",-4.8037,122.4515],
+  ["Rutan Kelas IIB Unaaha","Rutan","Kantor Wilayah Ditjenpas Sulawesi Tenggara","Sulawesi Tenggara","Konawe Kepulauan",-4.1195,123.0986],
+  ["Lapas Kelas IIA Manado","Lapas","Kantor Wilayah Ditjenpas Sulawesi Utara","Sulawesi Utara","Kota Manado",1.4875,124.8563],
+  ["Lapas Kelas IIB Bitung","Lapas","Kantor Wilayah Ditjenpas Sulawesi Utara","Sulawesi Utara","Kota Bitung",1.4626,125.2429],
+  ["Lapas Kelas IIB Tahuna","Lapas","Kantor Wilayah Ditjenpas Sulawesi Utara","Sulawesi Utara","Kepulauan Sangihe",3.5527,125.5466],
+  ["Lapas Kelas IIB Tondano","Lapas","Kantor Wilayah Ditjenpas Sulawesi Utara","Sulawesi Utara","Minahasa Tenggara",0.9883,124.7307],
+  ["Lapas Kelas IIB Ulu Siau","Lapas","Kantor Wilayah Ditjenpas Sulawesi Utara","Sulawesi Utara","Kepulauan Siau Tagulandang Biaro",0.6247,123.975],
+  ["Lapas Kelas III Amurang","Lapas","Kantor Wilayah Ditjenpas Sulawesi Utara","Sulawesi Utara","Minahasa Selatan",1.0703,124.4362],
+  ["Lapas Kelas III Enemawira","Lapas","Kantor Wilayah Ditjenpas Sulawesi Utara","Sulawesi Utara","Kepulauan Sangihe",3.5527,125.5466],
+  ["Lapas Kelas III Lirung","Lapas","Kantor Wilayah Ditjenpas Sulawesi Utara","Sulawesi Utara","Kepulauan Talaud",4.2695,126.8135],
+  ["Lapas Kelas III Tagulandang","Lapas","Kantor Wilayah Ditjenpas Sulawesi Utara","Sulawesi Utara","Kepulauan Siau Tagulandang Biaro",0.6247,123.975],
+  ["Lapas Kelas III Tamako","Lapas","Kantor Wilayah Ditjenpas Sulawesi Utara","Sulawesi Utara","Kepulauan Sangihe",3.5527,125.5466],
+  ["Lapas Perempuan Kelas IIB Manado","Lapas","Kantor Wilayah Ditjenpas Sulawesi Utara","Sulawesi Utara","Kota Manado",1.4875,124.8563],
+  ["LPKA Kelas II Tomohon","LPKA","Kantor Wilayah Ditjenpas Sulawesi Utara","Sulawesi Utara","Kota Tomohon",0.9883,124.7307],
+  ["Rutan Kelas IIA Manado","Rutan","Kantor Wilayah Ditjenpas Sulawesi Utara","Sulawesi Utara","Kota Manado",1.4875,124.8563],
+  ["Rutan Kelas IIB Kotamobagu","Rutan","Kantor Wilayah Ditjenpas Sulawesi Utara","Sulawesi Utara","Kota Kotamobagu",0.7337,124.2751],
+  ["Lapas Kelas IIA Bukittinggi","Lapas","Kantor Wilayah Ditjenpas Sumatera Barat","Sumatera Barat","Kota Bukittinggi",-0.308,100.3963],
+  ["Lapas Kelas IIA Padang","Lapas","Kantor Wilayah Ditjenpas Sumatera Barat","Sumatera Barat","Padang Pariaman",-0.5691,100.277],
+  ["Lapas Kelas IIB Lubuk Basung","Lapas","Kantor Wilayah Ditjenpas Sumatera Barat","Sumatera Barat","Agam",-0.2547,100.17],
+  ["Lapas Kelas IIB Muara Sijunjung","Lapas","Kantor Wilayah Ditjenpas Sumatera Barat","Sumatera Barat","Sijunjung",-0.6964,100.9936],
+  ["Lapas Kelas IIB Pariaman","Lapas","Kantor Wilayah Ditjenpas Sumatera Barat","Sumatera Barat","Padang Pariaman",-0.5691,100.277],
+  ["Lapas Kelas IIB Payakumbuh","Lapas","Kantor Wilayah Ditjenpas Sumatera Barat","Sumatera Barat","Kota Payakumbuh",-0.2478,100.6349],
+  ["Lapas Kelas IIB Solok","Lapas","Kantor Wilayah Ditjenpas Sumatera Barat","Sumatera Barat","Solok Selatan",-1.5573,101.2395],
+  ["Lapas Kelas III Alahan Panjang","Lapas","Kantor Wilayah Ditjenpas Sumatera Barat","Sumatera Barat","Solok Selatan",-1.5573,101.2395],
+  ["Lapas Kelas III Dharmasraya","Lapas","Kantor Wilayah Ditjenpas Sumatera Barat","Sumatera Barat","Dharmasraya",-1.2586,101.5799],
+  ["Lapas Kelas III Suliki","Lapas","Kantor Wilayah Ditjenpas Sumatera Barat","Sumatera Barat","Lima Puluh Kota",0.0279,100.5913],
+  ["Lapas Kelas III Talu","Lapas","Kantor Wilayah Ditjenpas Sumatera Barat","Sumatera Barat","Pasaman Barat",0.1875,99.6935],
+  ["Lapas Narkotika Kelas III Sawahlunto","Lapas","Kantor Wilayah Ditjenpas Sumatera Barat","Sumatera Barat","Kota Sawahlunto",-0.6383,100.7837],
+  ["Lapas Perempuan Kelas IIB Padang","Lapas","Kantor Wilayah Ditjenpas Sumatera Barat","Sumatera Barat","Padang Pariaman",-0.5691,100.277],
+  ["Lapas Terbuka Kelas IIB Pasaman","Lapas","Kantor Wilayah Ditjenpas Sumatera Barat","Sumatera Barat","Pasaman Barat",0.1875,99.6935],
+  ["LPKA Kelas II Payakumbuh","LPKA","Kantor Wilayah Ditjenpas Sumatera Barat","Sumatera Barat","Lima Puluh Kota",-0.2478,100.6349],
+  ["Rutan Kelas IIB Batusangkar","Rutan","Kantor Wilayah Ditjenpas Sumatera Barat","Sumatera Barat","Tanah Datar",-0.469,100.6362],
+  ["Rutan Kelas IIB Lubuk Sikaping","Rutan","Kantor Wilayah Ditjenpas Sumatera Barat","Sumatera Barat","Pasaman Barat",0.1875,99.6935],
+  ["Rutan Kelas IIB Maninjau","Rutan","Kantor Wilayah Ditjenpas Sumatera Barat","Sumatera Barat","Agam",-0.2547,100.17],
+  ["Rutan Kelas IIB Muara Labuh","Rutan","Kantor Wilayah Ditjenpas Sumatera Barat","Sumatera Barat","Solok Selatan",-1.5573,101.2395],
+  ["Rutan Kelas IIB Padang","Rutan","Kantor Wilayah Ditjenpas Sumatera Barat","Sumatera Barat","Padang Pariaman",-0.5691,100.277],
+  ["Rutan Kelas IIB Padang Panjang","Rutan","Kantor Wilayah Ditjenpas Sumatera Barat","Sumatera Barat","Kota Padang Panjang",-0.4661,100.4037],
+  ["Rutan Kelas IIB Painan","Rutan","Kantor Wilayah Ditjenpas Sumatera Barat","Sumatera Barat","Pesisir Selatan",-1.7186,100.927],
+  ["Rutan Kelas IIB Sawahlunto","Rutan","Kantor Wilayah Ditjenpas Sumatera Barat","Sumatera Barat","Kota Sawahlunto",-0.6383,100.7837],
+  ["Lapas Kelas I Palembang","Lapas","Kantor Wilayah Ditjenpas Sumatera Selatan","Sumatera Selatan","Kota Palembang",-2.9644,104.7742],
+  ["Lapas Kelas IIA Banyuasin","Lapas","Kantor Wilayah Ditjenpas Sumatera Selatan","Sumatera Selatan","Musi Banyuasin",-2.4909,103.7048],
+  ["Lapas Kelas IIA Lahat","Lapas","Kantor Wilayah Ditjenpas Sumatera Selatan","Sumatera Selatan","Lahat",-3.8793,103.4141],
+  ["Lapas Kelas IIA Lubuk Linggau","Lapas","Kantor Wilayah Ditjenpas Sumatera Selatan","Sumatera Selatan","Kota Lubuk Linggau",-3.2799,102.8591],
+  ["Lapas Kelas IIA Tanjung Raja","Lapas","Kantor Wilayah Ditjenpas Sumatera Selatan","Sumatera Selatan","Ogan Ilir",-3.3982,104.6525],
+  ["Lapas Kelas IIB Empat Lawang","Lapas","Kantor Wilayah Ditjenpas Sumatera Selatan","Sumatera Selatan","Empat Lawang",-3.7155,102.9325],
+  ["Lapas Kelas IIB Kayu Agung","Lapas","Kantor Wilayah Ditjenpas Sumatera Selatan","Sumatera Selatan","Ogan Komering Ilir",-3.3289,105.3998],
+  ["Lapas Kelas IIB Martapura","Lapas","Kantor Wilayah Ditjenpas Sumatera Selatan","Sumatera Selatan","Ogan Komering Ulu Timur",-4.116,104.5585],
+  ["Lapas Kelas IIB Muara Dua","Lapas","Kantor Wilayah Ditjenpas Sumatera Selatan","Sumatera Selatan","Ogan Komering Ulu Selatan",-4.5702,103.925],
+  ["Lapas Kelas IIB Muara Enim","Lapas","Kantor Wilayah Ditjenpas Sumatera Selatan","Sumatera Selatan","Muara Enim",-3.8467,103.9616],
+  ["Lapas Kelas IIB Sekayu","Lapas","Kantor Wilayah Ditjenpas Sumatera Selatan","Sumatera Selatan","Musi Banyuasin",-2.4909,103.7048],
+  ["Lapas Kelas III Pagar Alam","Lapas","Kantor Wilayah Ditjenpas Sumatera Selatan","Sumatera Selatan","Kota Pagar Alam",-4.1428,103.2225],
+  ["Lapas Kelas III Sarolangun Rawas","Lapas","Kantor Wilayah Ditjenpas Sumatera Selatan","Sumatera Selatan","Musi Rawas Utara",-2.7352,102.9015],
+  ["Lapas Narkotika Kelas IIA Muara Beliti","Lapas","Kantor Wilayah Ditjenpas Sumatera Selatan","Sumatera Selatan","Musi Rawas Utara",-2.7352,102.9015],
+  ["Lapas Narkotika Kelas IIB Banyuasin","Lapas","Kantor Wilayah Ditjenpas Sumatera Selatan","Sumatera Selatan","Musi Banyuasin",-2.4909,103.7048],
+  ["Lapas Perempuan Kelas IIA Palembang","Lapas","Kantor Wilayah Ditjenpas Sumatera Selatan","Sumatera Selatan","Kota Palembang",-2.9644,104.7742],
+  ["LPKA Kelas I Palembang","LPKA","Kantor Wilayah Ditjenpas Sumatera Selatan","Sumatera Selatan","Kota Palembang",-2.9644,104.7742],
+  ["Rutan Kelas I Palembang","Rutan","Kantor Wilayah Ditjenpas Sumatera Selatan","Sumatera Selatan","Kota Palembang",-2.9644,104.7742],
+  ["Rutan Kelas IIB Baturaja","Rutan","Kantor Wilayah Ditjenpas Sumatera Selatan","Sumatera Selatan","Ogan Komering Ulu Selatan",-4.5702,103.925],
+  ["Rutan Kelas IIB Prabumulih","Rutan","Kantor Wilayah Ditjenpas Sumatera Selatan","Sumatera Selatan","Kota Prabumulih",-3.5167,104.2071],
+  ["Lapas Kelas I Medan","Lapas","Kantor Wilayah Ditjenpas Sumatera Utara","Sumatera Utara","Kota Medan",3.5387,98.6351],
+  ["Lapas Kelas IIA Binjai","Lapas","Kantor Wilayah Ditjenpas Sumatera Utara","Sumatera Utara","Kota Binjai",3.6004,98.4926],
+  ["Lapas Kelas IIA Labuhan Ruku","Lapas","Kantor Wilayah Ditjenpas Sumatera Utara","Sumatera Utara","Batu Bara",3.5723,99.6353],
+  ["Lapas Kelas IIA Pancur Batu","Lapas","Kantor Wilayah Ditjenpas Sumatera Utara","Sumatera Utara","Deli Serdang",3.6952,98.8311],
+  ["Lapas Kelas IIA Pematang Siantar","Lapas","Kantor Wilayah Ditjenpas Sumatera Utara","Sumatera Utara","Kota Pematangsiantar",2.9355,99.0637],
+  ["Lapas Kelas IIA Rantau Prapat","Lapas","Kantor Wilayah Ditjenpas Sumatera Utara","Sumatera Utara","Labuhanbatu Selatan",1.8337,100.0684],
+  ["Lapas Kelas IIA Sibolga","Lapas","Kantor Wilayah Ditjenpas Sumatera Utara","Sumatera Utara","Kota Sibolga",1.7311,98.7892],
+  ["Lapas Kelas IIB Gunung Sitoli","Lapas","Kantor Wilayah Ditjenpas Sumatera Utara","Sumatera Utara","Kota Gunungsitoli",1.217,97.5782],
+  ["Lapas Kelas IIB Lubuk Pakam","Lapas","Kantor Wilayah Ditjenpas Sumatera Utara","Sumatera Utara","Deli Serdang",3.6952,98.8311],
+  ["Lapas Kelas IIB Padang Sidempuan","Lapas","Kantor Wilayah Ditjenpas Sumatera Utara","Sumatera Utara","Kota Padangsidimpuan",1.4599,99.254],
+  ["Lapas Kelas IIB Panyabungan","Lapas","Kantor Wilayah Ditjenpas Sumatera Utara","Sumatera Utara","Mandailing Natal",0.7457,99.2189],
+  ["Lapas Kelas IIB Siborong-Borong","Lapas","Kantor Wilayah Ditjenpas Sumatera Utara","Sumatera Utara","Tapanuli Utara",1.9981,99.0648],
+  ["Lapas Kelas IIB Tanjung Balai Asahan","Lapas","Kantor Wilayah Ditjenpas Sumatera Utara","Sumatera Utara","Kota Tanjung Balai",2.9462,99.8199],
+  ["Lapas Kelas IIB Tebing Tinggi Deli","Lapas","Kantor Wilayah Ditjenpas Sumatera Utara","Sumatera Utara","Kota Tebing Tinggi",3.3289,99.1652],
+  ["Lapas Kelas III Barus","Lapas","Kantor Wilayah Ditjenpas Sumatera Utara","Sumatera Utara","Tapanuli Tengah",1.8231,98.2798],
+  ["Lapas Kelas III Gunung Tua","Lapas","Kantor Wilayah Ditjenpas Sumatera Utara","Sumatera Utara","Padang Lawas Utara",1.6364,99.691],
+  ["Lapas Kelas III Kota Pinang","Lapas","Kantor Wilayah Ditjenpas Sumatera Utara","Sumatera Utara","Labuhanbatu Selatan",1.8337,100.0684],
+  ["Lapas Kelas III Kotanopan","Lapas","Kantor Wilayah Ditjenpas Sumatera Utara","Sumatera Utara","Mandailing Natal",0.7457,99.2189],
+  ["Lapas Kelas III Labuhan Bilik","Lapas","Kantor Wilayah Ditjenpas Sumatera Utara","Sumatera Utara","Labuhanbatu",2.1154,99.5451],
+  ["Lapas Kelas III Pangururan","Lapas","Kantor Wilayah Ditjenpas Sumatera Utara","Sumatera Utara","Samosir",2.5447,98.5719],
+  ["Lapas Kelas III Teluk Dalam","Lapas","Kantor Wilayah Ditjenpas Sumatera Utara","Sumatera Utara","Nias Selatan",0.0681,98.2622],
+  ["Lapas Narkotika Kelas IIA Langkat","Lapas","Kantor Wilayah Ditjenpas Sumatera Utara","Sumatera Utara","Langkat",3.8294,98.2483],
+  ["Lapas Narkotika Kelas IIA Pematang Siantar","Lapas","Kantor Wilayah Ditjenpas Sumatera Utara","Sumatera Utara","Kota Pematangsiantar",2.9355,99.0637],
+  ["Lapas Pemuda Kelas III Langkat","Lapas","Kantor Wilayah Ditjenpas Sumatera Utara","Sumatera Utara","Langkat",3.8294,98.2483],
+  ["Lapas Perempuan Kelas IIA Medan","Lapas","Kantor Wilayah Ditjenpas Sumatera Utara","Sumatera Utara","Kota Medan",3.5387,98.6351],
+  ["LPKA Kelas I Medan","LPKA","Kantor Wilayah Ditjenpas Sumatera Utara","Sumatera Utara","Deli Serdang",3.5387,98.6351],
+  ["Rutan Kelas I Labuhan Deli","Rutan","Kantor Wilayah Ditjenpas Sumatera Utara","Sumatera Utara","Kota Medan",2.1154,99.5451],
+  ["Rutan Kelas I Medan","Rutan","Kantor Wilayah Ditjenpas Sumatera Utara","Sumatera Utara","Kota Medan",3.5387,98.6351],
+  ["Rutan Kelas IIB Balige","Rutan","Kantor Wilayah Ditjenpas Sumatera Utara","Sumatera Utara","Toba",2.3855,99.3315],
+  ["Rutan Kelas IIB Humbang Hasundutan","Rutan","Kantor Wilayah Ditjenpas Sumatera Utara","Sumatera Utara","Humbang Hasundutan",2.2476,98.601],
+  ["Rutan Kelas IIB Kabanjahe","Rutan","Kantor Wilayah Ditjenpas Sumatera Utara","Sumatera Utara","Karo",3.0999,98.337],
+  ["Rutan Kelas IIB Natal","Rutan","Kantor Wilayah Ditjenpas Sumatera Utara","Sumatera Utara","Mandailing Natal",0.7457,99.2189],
+  ["Rutan Kelas IIB Pangkalan Brandan","Rutan","Kantor Wilayah Ditjenpas Sumatera Utara","Sumatera Utara","Langkat",3.8294,98.2483],
+  ["Rutan Kelas IIB Sibuhuan","Rutan","Kantor Wilayah Ditjenpas Sumatera Utara","Sumatera Utara","Padang Lawas Utara",1.6364,99.691],
+  ["Rutan Kelas IIB Sidikalang","Rutan","Kantor Wilayah Ditjenpas Sumatera Utara","Sumatera Utara","Dairi",2.8353,98.2845],
+  ["Rutan Kelas IIB Sipirok","Rutan","Kantor Wilayah Ditjenpas Sumatera Utara","Sumatera Utara","Tapanuli Selatan",1.5511,99.2118],
+  ["Rutan Kelas IIB Tanjung Pura","Rutan","Kantor Wilayah Ditjenpas Sumatera Utara","Sumatera Utara","Kota Tanjung Balai",2.9462,99.8199],
+  ["Rutan Kelas IIB Tarutung","Rutan","Kantor Wilayah Ditjenpas Sumatera Utara","Sumatera Utara","Tapanuli Utara",1.9981,99.0648],
+  ["Rutan Perempuan Kelas IIA Medan","Rutan","Kantor Wilayah Ditjenpas Sumatera Utara","Sumatera Utara","Kota Medan",3.5387,98.6351],
 ]
 
 return { UNIT_CONTOH };
@@ -15866,7 +15929,7 @@ function halamanPeta({ keadaan, isi }) {
          penggelaran sungguhan.
       */
       const { UNIT_CONTOH } = __minta('js/lib/peta-upt-contoh.js')
-      keadaanPeta.unit = UNIT_CONTOH.map(([nama, jenis, kanwil, provinsi, lat, lon]) =>
+      keadaanPeta.unit = UNIT_CONTOH.map(([nama, jenis, kanwil, provinsi, , lat, lon]) =>
         ({ nama, jenis, kanwil, provinsi, lat, lon }))
       keadaanPeta.dimuat = true
       gambar()
@@ -18237,6 +18300,419 @@ function halamanWilayahTelaah({ keadaan, isi }) {
 return { halamanWilayahTelaah };
 });
 
+__daftar('js/pages/wilayah-unit.js', function (__minta) {
+/**
+ * Unit di Wilayah — seluruh UPT yang dibawahi sebuah kantor wilayah.
+ *
+ * Berbeda dari tabel "unit yang paling banyak disorot" pada dasbor, yang hanya
+ * menampilkan sepuluh teratas. Kantor wilayah bertanggung jawab atas SETIAP
+ * unitnya, termasuk — dan terutama — yang tidak pernah muncul di daftar mana
+ * pun. Sebuah unit yang tidak pernah diberitakan bukan unit yang tidak ada, dan
+ * daftar yang hanya memuat yang berisik akan membuatnya lenyap dari perhatian
+ * justru ketika ia perlu ditanyakan kabarnya.
+ *
+ * Karena itu daftar unitnya diambil dari tabel `upt`, bukan diturunkan dari
+ * berita yang kebetulan ada. Kalau diturunkan dari berita, unit tanpa
+ * pemberitaan mustahil muncul, dan halaman ini akan menjawab pertanyaan yang
+ * berbeda dari yang ditanyakan judulnya.
+ *
+ * Halaman ini hanya untuk Administrator Kantor Wilayah. Penelaah unit tidak
+ * pernah membukanya — cakupannya satu unit, dan daftar unit tetangga bukan
+ * urusannya.
+ */
+
+const { ubin, kartu, keping, kosong, pesanSistem, bidangCari } = __minta('js/ui/komponen.js');
+const { amankan, angka, ringkas, jarakWaktu, nadaUrgensi } = __minta('js/lib/format.js');
+const { ikon } = __minta('js/lib/ikon.js');
+const { ambil, pesanRamah } = __minta('js/lib/api.js');
+const { dasar, menungguTelaahWilayah, sudahDitanggapi, tingkatKerawanan, KERAWANAN } = __minta('js/lib/hitung.js');
+const { ember } = __minta('js/lib/sentimen.js');
+const { belumTerpetakan } = __minta('js/lib/pencocokan-upt.js');
+
+const keadaanUnit = {
+  dimuat: false,
+  galat: null,
+  /** Daftar unit di wilayah ini, dari data induk. */
+  daftar: [],
+  /** Wilayah yang daftarnya sudah dimuat, supaya tidak ditarik ulang percuma. */
+  untukWilayah: null,
+  cari: '',
+  urut: 'mendesak',
+  dipilih: null,
+}
+
+/** Benar bila gambar ulang berikutnya harus mengembalikan fokus ke kolom cari. */
+let fokusCari = false
+
+const URUTAN = [
+  { kode: 'mendesak', label: 'Paling mendesak' },
+  { kode: 'negatif', label: 'Paling negatif' },
+  { kode: 'total', label: 'Paling banyak diberitakan' },
+  { kode: 'menunggu', label: 'Paling banyak menunggu telaah' },
+  { kode: 'nama', label: 'Nama unit' },
+]
+
+function halamanWilayahUnit({ keadaan, isi }) {
+  const wilayah = keadaan.profil?.assigned_kanwil || null
+
+  /** Menggabungkan data induk unit dengan berita yang terpetakan kepadanya. */
+  function susun() {
+    const perUnit = new Map()
+    for (const b of dasar(keadaan.berita || [])) {
+      if (belumTerpetakan(b.nama_upt)) continue
+      const kumpulan = perUnit.get(b.nama_upt) || []
+      kumpulan.push(b)
+      perUnit.set(b.nama_upt, kumpulan)
+    }
+
+    return keadaanUnit.daftar.map((u) => {
+      const berita = perUnit.get(u.nama) || []
+      return {
+        ...u,
+        berita,
+        total: berita.length,
+        negatif: berita.filter((b) => ember(b) === 'negatif').length,
+        mendesak: berita.filter((b) => ['Tinggi', 'Kritis'].includes(b.urgensi)).length,
+        menunggu: berita.filter(menungguTelaahWilayah).length,
+        ditanggapi: berita.filter(sudahDitanggapi).length,
+        tingkat: tingkatKerawanan(berita),
+      }
+    })
+  }
+
+  function saring(semua) {
+    const kata = keadaanUnit.cari.trim().toLowerCase()
+    const hasil = semua.filter((u) => !kata
+      || u.nama.toLowerCase().includes(kata)
+      || String(u.kabupaten || '').toLowerCase().includes(kata))
+
+    const urut = keadaanUnit.urut
+    return hasil.sort((a, b) => {
+      if (urut === 'nama') return a.nama.localeCompare(b.nama)
+      // Pengurut kedua selalu sama, supaya unit yang angkanya seri tidak
+      // berpindah tempat setiap kali halaman digambar ulang — perpindahan yang
+      // tidak diminta siapa pun membuat daftar panjang mustahil dibaca dua kali.
+      return (b[urut] - a[urut]) || (b.total - a.total) || a.nama.localeCompare(b.nama)
+    })
+  }
+
+  function gambar() {
+    if (!wilayah) {
+      isi.innerHTML = kartu({
+        isi: pesanSistem(
+          '<b>Akun Anda belum ditetapkan kantor wilayahnya.</b> Selama itu belum diisi '
+          + 'administrator sistem, tidak ada satu unit pun yang bisa ditampilkan di sini — '
+          + 'basis data belum tahu unit mana yang menjadi urusan Anda.',
+          'kritis', 'peringatan'),
+      })
+      return
+    }
+
+    if (keadaanUnit.galat) {
+      isi.innerHTML = kartu({
+        isi: pesanSistem(`<b>Data induk unit gagal dimuat.</b> ${amankan(keadaanUnit.galat)}`,
+          'kritis', 'peringatan'),
+      })
+      return
+    }
+
+    if (!keadaanUnit.dimuat) {
+      isi.innerHTML = kartu({ isi: '<div class="rangka" style="height:360px"></div>' })
+      return
+    }
+
+    const semua = susun()
+    const daftar = saring(semua)
+
+    const bermasalah = semua.filter((u) => ['kritis', 'rawan'].includes(u.tingkat.kode))
+    const sepi = semua.filter((u) => u.tingkat.kode === 'sepi')
+    const menungguTotal = semua.reduce((a, u) => a + u.menunggu, 0)
+
+    isi.innerHTML = `
+      <div class="tumpuk">
+        <div class="kisi kisi-4">
+          ${ubin({
+            label: 'Unit di wilayah ini',
+            nilai: semua.length,
+            nada: 'aksen',
+            kaki: `${angka(semua.length - sepi.length)} pernah diberitakan`,
+          })}
+          ${ubin({
+            label: 'Rawan atau kritis',
+            nilai: bermasalah.length,
+            nada: bermasalah.length ? 'kritis' : 'positif',
+            kaki: 'menurut pemberitaan yang tercatat',
+          })}
+          ${ubin({
+            label: 'Menunggu telaah',
+            nilai: menungguTotal,
+            nada: menungguTotal ? 'sedang' : 'positif',
+            kaki: 'berita di seluruh unit wilayah ini',
+          })}
+          ${ubin({
+            label: 'Tanpa pemberitaan',
+            nilai: sepi.length,
+            nada: 'netral',
+            kaki: 'belum ada berita yang terpetakan',
+          })}
+        </div>
+
+        <div class="peta-tata">
+          ${kartu({
+            rapat: true,
+            isi: `
+              <div class="bilah-alat">
+                ${bidangCari(keadaanUnit.cari, 'Cari nama unit atau kabupaten/kota')}
+                <select class="pilihan" data-urut aria-label="Urutkan unit"
+                        style="width:auto;min-width:210px">
+                  ${URUTAN.map((u) => `
+                    <option value="${amankan(u.kode)}"${u.kode === keadaanUnit.urut ? ' selected' : ''}>
+                      ${amankan(u.label)}
+                    </option>`).join('')}
+                </select>
+                <span class="dorong mini-teks samar-teks">
+                  ${angka(daftar.length)} dari ${angka(semua.length)} unit
+                </span>
+              </div>
+
+              ${daftar.length ? tabelUnit(daftar, keadaanUnit.dipilih) : kosong(
+                'Tidak ada unit yang cocok',
+                'Tidak ada unit di wilayah ini yang cocok dengan pencarian itu.')}`,
+          })}
+          ${panelUnit(semua)}
+        </div>
+      </div>`
+
+    pasangPenyimak()
+  }
+
+  /** Rincian satu unit, atau legenda beserta petunjuk bila belum ada yang dipilih. */
+  function panelUnit(semua) {
+    const u = keadaanUnit.dipilih ? semua.find((x) => x.nama === keadaanUnit.dipilih) : null
+
+    if (!u) {
+      return `
+        <div class="peta-panel">
+          <div class="peta-panel-kop"><span class="label-mono">Rincian unit</span></div>
+          <p class="ket" style="padding:8px 2px 12px">
+            Pilih salah satu unit di sebelah kiri untuk membaca angkanya beserta pemberitaan
+            terakhirnya — tanpa perlu berganti akun.
+          </p>
+          <div class="unit-legenda">
+            ${KERAWANAN.map((k) => `
+              <span class="peta-legenda-butir" title="${amankan(k.ket)}">
+                <i data-nada="${amankan(k.nada)}"></i>${amankan(k.label)}
+                <b class="angka">${angka(semua.filter((x) => x.tingkat.kode === k.kode).length)}</b>
+              </span>`).join('')}
+          </div>
+        </div>`
+    }
+
+    const terbaru = [...u.berita]
+      .sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')))
+      .slice(0, 6)
+
+    return `
+      <div class="peta-panel">
+        <div class="peta-panel-kop">
+          <span class="label-mono">Rincian unit</span>
+          <button class="tbl kecil samar" data-aksi="tutup-unit">${ikon('tutup')}Tutup</button>
+        </div>
+
+        <h3 class="peta-panel-judul">${amankan(u.nama)}</h3>
+        <p class="mini-teks samar-teks">
+          ${amankan(u.jenis || '')}${u.kabupaten ? ` · ${amankan(u.kabupaten)}` : ''}
+        </p>
+
+        <div class="baris gap-6" style="margin:10px 0 12px;flex-wrap:wrap">
+          ${keping(u.tingkat.label, u.tingkat.nada)}
+          <span class="mini-teks samar-teks">${amankan(u.tingkat.ket)}</span>
+        </div>
+
+        <dl class="peta-angka">
+          <div><dt>Berita</dt><dd class="angka">${angka(u.total)}</dd></div>
+          <div><dt>Negatif</dt><dd class="angka">${angka(u.negatif)}</dd></div>
+          <div><dt>Mendesak</dt><dd class="angka">${angka(u.mendesak)}</dd></div>
+          <div><dt>Ditanggapi</dt><dd class="angka">${angka(u.ditanggapi)}</dd></div>
+        </dl>
+
+        ${u.menunggu ? pesanSistem(
+          `<b>${angka(u.menunggu)} berita unit ini menunggu telaah.</b> Penelaah unitnya yang `
+          + 'memeriksa lebih dulu; bila akunnya belum ada, terbitkan dari Pengguna Wilayah.',
+          'sedang', 'info') : ''}
+
+        ${terbaru.length ? `
+          <div class="peta-panel-kop" style="margin-top:14px">
+            <span class="label-mono">Pemberitaan terakhir</span>
+          </div>
+          <ul class="peta-berita">
+            ${terbaru.map((b) => `
+              <li>
+                <span class="peta-berita-judul">${amankan(ringkas(b.judul || 'Tanpa judul', 92))}</span>
+                <span class="mini-teks samar-teks">
+                  ${keping(b.urgensi || '—', nadaUrgensi(b.urgensi), true)}
+                  ${amankan(b.media || '')} · ${amankan(jarakWaktu(b.created_at))}
+                </span>
+              </li>`).join('')}
+          </ul>`
+          : `<p class="ket" style="margin-top:12px">
+             Belum ada berita yang terpetakan ke unit ini. Itu bisa berarti unitnya memang tidak
+             diberitakan, atau beritanya ada tetapi belum terhubung ke unit mana pun — dan yang
+             kedua hanya bisa dibereskan analis pusat lewat Pemetaan UPT.</p>`}
+      </div>`
+  }
+
+  /* ------------------------------------------------------------ penyimak */
+
+  function pasangPenyimak() {
+    const kotak = isi.querySelector('input[data-peran="cari"]')
+    if (kotak) {
+      /*
+         Fokus dikembalikan sesudah gambar ulang. Gambar ulang membuang kolom
+         isian ini beserta kursor di dalamnya, dan tanpa pengembalian itu yang
+         mengetik kehilangan tempatnya di tengah kata — berkali-kali, sampai ia
+         berhenti memakai kolomnya.
+      */
+      if (fokusCari) {
+        kotak.focus({ preventScroll: true })
+        kotak.setSelectionRange(kotak.value.length, kotak.value.length)
+        fokusCari = false
+      }
+      let jeda = null
+      kotak.addEventListener('input', (ev) => {
+        keadaanUnit.cari = ev.target.value
+        clearTimeout(jeda)
+        jeda = setTimeout(() => { fokusCari = true; gambar() }, 260)
+      })
+    }
+
+    isi.querySelector('[data-urut]')?.addEventListener('change', (ev) => {
+      keadaanUnit.urut = ev.target.value
+      gambar()
+    })
+
+    for (const baris of isi.querySelectorAll('tr[data-unit]')) {
+      baris.addEventListener('click', () => {
+        // Menekan unit yang sedang terbuka menutupnya kembali. Tanpa itu, satu-
+        // satunya jalan keluar adalah tombol Tutup, dan tombol itu berada di
+        // ujung lain layar.
+        keadaanUnit.dipilih = baris.dataset.unit === keadaanUnit.dipilih ? null : baris.dataset.unit
+        gambar()
+      })
+    }
+
+    isi.querySelector('[data-aksi="tutup-unit"]')?.addEventListener('click', () => {
+      keadaanUnit.dipilih = null
+      gambar()
+    })
+  }
+
+  /* ---------------------------------------------------------------- muat */
+
+  async function muat() {
+    // Ditarik ulang hanya bila wilayahnya berganti. Daftar unit tidak berubah
+    // dari menit ke menit, dan menariknya setiap kali halaman dibuka hanya
+    // menambah jeda yang terlihat tanpa menambah satu keterangan pun.
+    if (keadaanUnit.dimuat && keadaanUnit.untukWilayah === wilayah) { gambar(); return }
+
+    keadaanUnit.untukWilayah = wilayah
+    keadaanUnit.galat = null
+
+    if (keadaan.demo) {
+      const { UNIT_CONTOH } = __minta('js/lib/peta-upt-contoh.js')
+      keadaanUnit.daftar = UNIT_CONTOH
+        .filter(([, , kanwil]) => kanwil === wilayah)
+        .map(([nama, jenis, , , kabupaten]) => ({ nama, jenis, kabupaten }))
+      keadaanUnit.dimuat = true
+      gambar()
+      perbaruiSubjudul()
+      return
+    }
+
+    try {
+      const baris = await ambil('upt', {
+        select: 'nama_upt,jenis_upt,kabupaten_kota',
+        kanwil: `eq.${wilayah}`,
+        aktif: 'eq.true',
+        limit: 1000,
+      }) || []
+      keadaanUnit.daftar = baris.map((u) => ({
+        nama: u.nama_upt, jenis: u.jenis_upt, kabupaten: u.kabupaten_kota,
+      }))
+    } catch (galat) {
+      keadaanUnit.galat = pesanRamah(galat)
+    }
+
+    keadaanUnit.dimuat = true
+    gambar()
+    perbaruiSubjudul()
+  }
+
+  /**
+   * Kerangka layar menanyakan keterangan bilah kepala sekali, pada saat halaman
+   * dibangun — dan pada saat itu daftar unitnya belum sampai. Tanpa pembaruan
+   * ini, bilahnya terus berbunyi "memuat" sekalipun tabelnya sudah penuh.
+   */
+  function perbaruiSubjudul() {
+    const bilah = document.getElementById('bilah-sub')
+    if (bilah) bilah.textContent = subjudul()
+  }
+
+  function subjudul() {
+    if (!wilayah) return 'Wilayah belum ditetapkan'
+    return keadaanUnit.dimuat
+      ? `${wilayah} · ${angka(keadaanUnit.daftar.length)} unit dibawahi`
+      : `${wilayah} · memuat daftar unit…`
+  }
+
+  gambar()
+  muat()
+
+  return { judul: 'Unit di Wilayah', sub: subjudul() }
+}
+
+function tabelUnit(daftar, dipilih) {
+  const puncak = Math.max(1, ...daftar.map((u) => u.total))
+
+  return `
+  <div class="tabel-bungkus">
+    <table class="tabel tabel-pilih">
+      <thead><tr>
+        <th>Unit</th>
+        <th style="width:96px">Sebaran</th>
+        <th style="width:56px" class="rata-kanan">Total</th>
+        <th style="width:66px" class="rata-kanan">Negatif</th>
+        <th style="width:76px" class="rata-kanan">Mendesak</th>
+        <th style="width:82px" class="rata-kanan">Menunggu</th>
+        <th style="width:120px">Keadaan</th>
+      </tr></thead>
+      <tbody>
+        ${daftar.map((u) => `
+          <tr data-unit="${amankan(u.nama)}"${u.nama === dipilih ? ' aria-selected="true"' : ''}>
+            <td>
+              <span class="judul-sel">${amankan(u.nama)}</span>
+              <span class="mini-teks samar-teks">${amankan(u.kabupaten || u.jenis || '')}</span>
+            </td>
+            <td>
+              <div class="bar-lacak" title="${angka(u.total)} berita">
+                <div class="bar-isi" data-nada="${amankan(u.tingkat.nada)}"
+                     style="--lebar:${((u.total / puncak) * 100).toFixed(1)}%"></div>
+              </div>
+            </td>
+            <td class="angka rata-kanan">${u.total ? angka(u.total) : '—'}</td>
+            <td class="angka rata-kanan">${u.negatif ? `<span style="color:var(--kritis)">${angka(u.negatif)}</span>` : '—'}</td>
+            <td class="angka rata-kanan">${u.mendesak ? `<span style="color:var(--tinggi);font-weight:650">${angka(u.mendesak)}</span>` : '—'}</td>
+            <td class="angka rata-kanan">${u.menunggu ? angka(u.menunggu) : '—'}</td>
+            <td>${keping(u.tingkat.label, u.tingkat.nada, true)}</td>
+          </tr>`).join('')}
+      </tbody>
+    </table>
+  </div>`
+}
+
+return { halamanWilayahUnit };
+});
+
 __daftar('js/pages/pengguna.js', function (__minta) {
 /**
  * Manajemen Pengguna.
@@ -18251,9 +18727,8 @@ __daftar('js/pages/pengguna.js', function (__minta) {
  * Wewenangnya bertingkat, sesuai cara kerja organisasinya:
  *
  *   Administrator Sistem Intelijen  →  menerbitkan peran apa pun.
- *   Administrator Kantor Wilayah    →  hanya Penelaah Berita Kantor Wilayah dan
- *                                      Petugas Unit Pelaksana Teknis, dan hanya
- *                                      di wilayahnya sendiri.
+ *   Administrator Kantor Wilayah    →  hanya Penelaah Berita UPT, dan hanya
+ *                                      untuk unit di wilayahnya sendiri.
  *
  * Formulir di bawah menyembunyikan pilihan yang tidak berhak dipakai, tetapi
  * itu bukan pengamanannya. Pengamanannya ada di peladen, dan tetap menolak
@@ -18300,12 +18775,11 @@ const keadaanPengguna = {
 /**
  * Peran yang boleh diterbitkan Administrator Kantor Wilayah.
  *
- * Dua, bukan satu. Sejak 1 September 2026 kantor wilayah menerbitkan penelaah
- * wilayahnya sendiri dan petugas untuk tiap unit di bawahnya; keduanya sama
- * sekali tidak bisa menerbitkan akun lain, dan batas itu ditegakkan Edge
+ * Tinggal satu: Penelaah Berita UPT, untuk unit-unit di wilayahnya. Peran itu
+ * sendiri tidak bisa menerbitkan akun apa pun. Batasnya ditegakkan Edge
  * Function — daftar ini hanya menentukan isi kotak pilihan.
  */
-const PERAN_TERBIT_KANWIL = ['kanwil_penelaah', 'upt_petugas']
+const PERAN_TERBIT_KANWIL = ['upt_penelaah']
 
 function pilihanPeran(hanyaDaerah) {
   const daftar = Object.entries(PERAN).map(([kode, p]) => ({
@@ -18418,7 +18892,7 @@ function barisPengguna(u, sedangDisunting, kanwil, bolehSunting) {
 /* -------------------------------------------------------- formulir terbit */
 
 function formulirTerbit({ hanyaDaerah, wilayahTetap, daftarKanwil }) {
-  const peran = keadaanPengguna.peranBaru || (hanyaDaerah ? 'kanwil_penelaah' : 'news_data_operator')
+  const peran = keadaanPengguna.peranBaru || (hanyaDaerah ? 'upt_penelaah' : 'news_data_operator')
   const wilayah = adalahEksternal(peran)
   const unit = adalahUnit(peran)
 
@@ -18602,7 +19076,7 @@ function halamanPengguna({ keadaan, isi }) {
         ${keadaanPengguna.tambah && bolehTerbit ? kartu({
           judul: 'Terbitkan akun baru',
           ket: bolehWilayah
-            ? `Penelaah wilayah atau petugas unit di ${amankan(wilayahSaya || 'wilayah Anda')}`
+            ? `Penelaah Berita UPT untuk salah satu unit di ${amankan(wilayahSaya || 'wilayah Anda')}`
             : 'Peran pusat, peran kantor wilayah, maupun peran unit',
           isi: formulirTerbit({
             hanyaDaerah: bolehWilayah,
@@ -18888,7 +19362,7 @@ function halamanPengguna({ keadaan, isi }) {
     if (aksi === 'buka-terbit') {
       keadaanPengguna.tambah = true
       keadaanPengguna.terbit = null
-      keadaanPengguna.peranBaru = bolehWilayah ? 'kanwil_penelaah' : ''
+      keadaanPengguna.peranBaru = bolehWilayah ? 'upt_penelaah' : ''
       gambar()
       isi.querySelector('#t-nama')?.focus()
     } else if (aksi === 'batal-terbit') {
@@ -18919,7 +19393,7 @@ function halamanPengguna({ keadaan, isi }) {
         ? penggunaDemo().filter((u) => u.assigned_kanwil === (wilayahSaya || KANWIL_DEMO))
         : penggunaDemo()
       keadaanPengguna.kanwil = [KANWIL_DEMO, 'Kanwil Jawa Tengah', 'Kanwil Jawa Timur']
-      keadaanPengguna.upt = ['Lapas Kelas IIA Kediri', 'Rutan Kelas IIB Kediri', 'LPKA Kelas I Blitar']
+      keadaanPengguna.upt = ['Lapas Kelas IIA Kediri', 'Lapas Kelas IIB Blitar', 'LPKA Kelas I Blitar']
       keadaanPengguna.dimuat = true
       gambar()
       return
@@ -18966,7 +19440,7 @@ function halamanPengguna({ keadaan, isi }) {
   return {
     judul: bolehWilayah ? 'Pengguna Wilayah' : 'Manajemen Pengguna',
     sub: bolehWilayah
-      ? `Menerbitkan penelaah wilayah dan petugas unit${wilayahSaya ? ` di ${wilayahSaya}` : ''}`
+      ? `Menerbitkan penelaah berita unit${wilayahSaya ? ` di ${wilayahSaya}` : ''}`
       : 'Penerbitan akun, peran, wilayah penugasan, dan keaktifan',
   }
 }
@@ -19119,6 +19593,7 @@ const { halamanInput } = __minta('js/pages/input.js');
 const { halamanSinkronisasi } = __minta('js/pages/sinkronisasi.js');
 const { halamanKanwilDasbor, halamanUptDasbor, halamanWilayahBerita } = __minta('js/pages/kanwil.js');
 const { halamanWilayahTelaah } = __minta('js/pages/wilayah-telaah.js');
+const { halamanWilayahUnit } = __minta('js/pages/wilayah-unit.js');
 const { halamanPengguna } = __minta('js/pages/pengguna.js');
 const { halamanBelumSiap } = __minta('js/pages/belum-siap.js');
 
@@ -19159,6 +19634,7 @@ const HALAMAN = {
   'upt-dasbor': halamanUptDasbor,
   'wilayah-telaah': halamanWilayahTelaah,
   'wilayah-berita': halamanWilayahBerita,
+  'wilayah-unit': halamanWilayahUnit,
   /* Nama lama halaman berita daerah. Petugas yang menyimpan tautannya di
      peramban tidak perlu tahu halamannya berganti nama. */
   'kanwil-riwayat': halamanWilayahBerita,

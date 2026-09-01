@@ -3345,3 +3345,49 @@ kbd {
   line-height: 1.4;
   margin-bottom: 4px;
 }
+
+/* ==========================================================================
+   Tabel yang barisnya bisa dipilih
+   --------------------------------------------------------------------------
+   Dipakai halaman Unit di Wilayah: menekan satu baris membuka rinciannya di
+   panel sebelah. Barisnya diberi kursor dan sorotan supaya terbaca sebagai
+   sesuatu yang bisa ditekan — tabel yang diam-diam bisa diklik hanya ditemukan
+   orang yang kebetulan mencoba.
+   ========================================================================== */
+
+/* Kolom pertama menampung nama unit yang panjang — "Lapas Perempuan Kelas IIA
+   Martapura" dan sejenisnya. Tanpa lebar minimum, tujuh kolom angka di
+   sebelahnya memerasnya sampai nama unitnya patah menjadi tiga baris, dan
+   tabel yang seharusnya bisa dipindai cepat berubah menjadi paragraf. Lebih
+   baik tabelnya menggulir mendatar. */
+.tabel-pilih { min-width: 720px; }
+.tabel-pilih tbody td:first-child { min-width: 230px; }
+
+.tabel-pilih tbody tr {
+  cursor: pointer;
+}
+
+.tabel-pilih tbody tr:hover {
+  background: var(--surface-3);
+}
+
+.tabel-pilih tbody tr[aria-selected="true"] {
+  background: var(--accent-soft);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+/* Legenda keadaan unit di dalam panel samping. Berdiri di alirannya sendiri,
+   bukan melayang seperti legenda peta. */
+.unit-legenda {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line-2);
+}
+
+.unit-legenda .peta-legenda-butir i[data-nada="kritis"]  { background: var(--kritis); }
+.unit-legenda .peta-legenda-butir i[data-nada="sedang"]  { background: var(--tinggi); }
+.unit-legenda .peta-legenda-butir i[data-nada="rendah"]  { background: var(--ink-4); }
+.unit-legenda .peta-legenda-butir i[data-nada="positif"] { background: var(--positif); }
+.unit-legenda .peta-legenda-butir i[data-nada="netral"]  { background: var(--line); }

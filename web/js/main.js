@@ -32,6 +32,7 @@ import { halamanInput } from './pages/input.js'
 import { halamanSinkronisasi } from './pages/sinkronisasi.js'
 import { halamanKanwilDasbor, halamanUptDasbor, halamanWilayahBerita } from './pages/kanwil.js'
 import { halamanWilayahTelaah } from './pages/wilayah-telaah.js'
+import { halamanWilayahUnit } from './pages/wilayah-unit.js'
 import { halamanPengguna } from './pages/pengguna.js'
 import { halamanBelumSiap } from './pages/belum-siap.js'
 
@@ -72,6 +73,7 @@ const HALAMAN = {
   'upt-dasbor': halamanUptDasbor,
   'wilayah-telaah': halamanWilayahTelaah,
   'wilayah-berita': halamanWilayahBerita,
+  'wilayah-unit': halamanWilayahUnit,
   /* Nama lama halaman berita daerah. Petugas yang menyimpan tautannya di
      peramban tidak perlu tahu halamannya berganti nama. */
   'kanwil-riwayat': halamanWilayahBerita,

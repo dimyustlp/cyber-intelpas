@@ -524,7 +524,7 @@ export function halamanPeta({ keadaan, isi }) {
          penggelaran sungguhan.
       */
       const { UNIT_CONTOH } = await import('../lib/peta-upt-contoh.js')
-      keadaanPeta.unit = UNIT_CONTOH.map(([nama, jenis, kanwil, provinsi, lat, lon]) =>
+      keadaanPeta.unit = UNIT_CONTOH.map(([nama, jenis, kanwil, provinsi, , lat, lon]) =>
         ({ nama, jenis, kanwil, provinsi, lat, lon }))
       keadaanPeta.dimuat = true
       gambar()

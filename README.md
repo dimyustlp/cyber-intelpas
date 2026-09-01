@@ -127,22 +127,24 @@ http://localhost:4173/?mode=demo&tema=gelap
 Parameter `peran` menerima salah satu dari: `super_admin`, `news_data_operator`,
 `media_intelligence_analyst`, `field_verification_officer`,
 `evaluation_recommendation_analyst`, `executive_decision_maker`,
-`kanwil_admin`, `kanwil_penelaah`, `upt_petugas`.
+`kanwil_admin`, `upt_penelaah`.
 
-Tiga peran terakhir membuka ruang daerah — menu, warna aksen, dan halaman yang
+Dua peran terakhir membuka ruang daerah — menu, warna aksen, dan halaman yang
 berbeda di dalam aplikasi yang sama:
 
-| Peran | Ruang | Melihat | Boleh |
-| --- | --- | --- | --- |
-| `kanwil_admin` | Kantor wilayah | seluruh berita wilayahnya | memasukkan berita, menelaah, menerbitkan akun daerah |
-| `kanwil_penelaah` | Kantor wilayah | seluruh berita wilayahnya | menelaah — memvalidasi atau merevisi penilaian mesin |
-| `upt_petugas` | Unit pelaksana teknis | berita unitnya sendiri saja | menelaah, dan menuliskan tanggapan resmi unit |
+| Peran | Cakupan | Boleh |
+| --- | --- | --- |
+| `kanwil_admin` | seluruh unit di wilayahnya | memasukkan berita untuk tiap unit, menelaah, menerbitkan akun penelaah unit, memantau dasbor wilayah beserta seluruh unitnya |
+| `upt_penelaah` | satu unit saja | menelaah berita unitnya, menuliskan tanggapan resmi unit, memantau dasbor unitnya |
 
-Sejak 1 September 2026 **hanya `kanwil_admin` yang memasukkan berita dari
-daerah**, supaya setiap kiriman punya satu penanggung jawab yang jelas. Peran
-`kanwil_penginput` yang lama berganti nama menjadi `kanwil_penelaah` beserta
-pekerjaannya; nama lamanya masih diterima basis data dan halaman web selama masa
-peralihan.
+Pembagiannya menurut **cakupan**, bukan menurut jenis pekerjaan. Sejak 1
+September 2026 **hanya `kanwil_admin` yang memasukkan berita dari daerah**,
+supaya setiap kiriman punya satu penanggung jawab yang jelas.
+
+Tiga nama peran yang sudah dihapus — `kanwil_penginput`, `kanwil_penelaah`,
+dan `upt_petugas` — masih diterjemahkan menjadi `upt_penelaah` oleh halaman web
+dan Edge Function selama masa peralihan, sebab penggelaran tidak pernah serentak.
+Basis data sendiri sudah tidak menerimanya.
 
 Putusan telaah daerah TIDAK menyentuh `status_verifikasi` — kolom itu tetap
 milik analis pusat dan menentukan sebuah berita ikut dihitung atau tidak.

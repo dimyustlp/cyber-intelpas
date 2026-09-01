@@ -240,6 +240,7 @@ const iNama = kolom('nama_upt')
 const iJenis = kolom('jenis_upt')
 const iKanwil = kolom('kanwil')
 const iProv = kolom('provinsi')
+const iKab = kolom('kabupaten_kota')
 const iLat = kolom('latitude')
 const iLon = kolom('longitude')
 
@@ -251,6 +252,7 @@ const unit = garis.slice(1)
     b[iJenis],
     b[iKanwil],
     b[iProv],
+    b[iKab],
     Number(Number(b[iLat]).toFixed(4)),
     Number(Number(b[iLon]).toFixed(4)),
   ])
@@ -266,8 +268,8 @@ const isiUnit = `/**
  * berkas ini ketika mode peragaan aktif. Karena pemuatannya dinamis, peramban
  * petugas tidak pernah mengunduhnya.
  *
- * Bentuk tiap baris: [nama, jenis, kanwil, provinsi, lintang, bujur].
- * Bukan objek, karena ${unit.length} objek dengan enam nama kunci yang diulang
+ * Bentuk tiap baris: [nama, jenis, kanwil, provinsi, kabupaten/kota, lintang, bujur].
+ * Bukan objek, karena ${unit.length} objek dengan tujuh nama kunci yang diulang
  * memperbesar berkas ini lebih dari dua kali lipat tanpa menambah satu pun
  * keterangan.
  */

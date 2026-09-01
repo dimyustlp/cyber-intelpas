@@ -360,7 +360,7 @@ if (terpakai[i]) continue
 const t = token[i]
 if (KATA_DALAM_PENANDA.has(t)) {
 const p = posisiKata(jendela, t)
-if (p >= batasAwal) terpakai[i] = true
+if (p >= batasAwal && hanyaKataKelas(jendela.slice(batasAwal, p))) terpakai[i] = true
 continue
 }
 if (t.length >= 7 ? adaDiJendela(t) : cocokKata(jendela, t)) terpakai[i] = true
@@ -378,6 +378,10 @@ if (n >= 1 && gabung.length >= 7) hasil.add(gabung)
 }
 }
 return hasil
+}
+function hanyaKataKelas(potongan) {
+const kata = potongan.split(' ').filter(Boolean)
+return kata.every((k) => KATA_UMUM.has(k))
 }
 function posisiKata(haystack, kata) {
 if (!kata) return -1

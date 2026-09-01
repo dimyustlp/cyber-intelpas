@@ -67,7 +67,7 @@ const SUMBER_NASIONAL = join(AKAR, 'data', 'sumber', 'daftar-upt-nasional.csv')
  * ulang dari data/master-upt.csv: verifikasi tangan itu akan hilang tanpa suara.
  * Bila hari itu tiba, ambil potret baru dari basis data lebih dulu.
  */
-const SUMBER_LAMA = join(AKAR, 'sumber-lama', 'cyberintelpas-main', 'data', 'master_upt_coordinates.csv')
+const SUMBER_LAMA = join(AKAR, 'data', 'sumber', 'master-upt-lama.csv')
 const KELUARAN_CSV = join(AKAR, 'data', 'master-upt.csv')
 const KELUARAN_SQL = join(AKAR, 'supabase', 'migrations', '20260901040000_master_upt_nasional.sql')
 
@@ -172,6 +172,41 @@ const KABKOTA_BARU = {
   'Lapas Kelas III Batulicin': 'Tanah Bumbu',
   'Lapas Kelas IIB Maros': 'Maros',
   'Lapas Kelas IIA Bukittinggi': 'Kota Bukittinggi',
+}
+
+/**
+ * Kabupaten/kota unit lama yang kolomnya kosong sejak awal.
+ *
+ * Tujuh belas unit masuk ke data induk tanpa kabupaten/kota jauh sebelum
+ * penyusunan ini — seluruh unit Palangkaraya, Pangkal Pinang, dan Tanjung
+ * Pinang di antaranya. Lubangnya tidak kelihatan di layar, tetapi mesin
+ * pencocokan memakai kolom itu pada lapisan terakhirnya: "napi kabur dari
+ * Rutan Lampung Timur" hanya bisa dipetakan lewat kabupaten, bukan nama unit.
+ * Selama kolomnya kosong, tujuh belas unit itu kehilangan lapisan tersebut,
+ * dan penyaringan per kabupaten di layar juga tidak pernah menemukan mereka.
+ *
+ * Diisi tangan karena `location_hint` mereka pun kosong — tidak ada apa pun di
+ * data yang bisa diturunkan. Yang dipakai adalah kabupaten/kota tempat gedung
+ * itu berdiri menurut penamaan wilayah resmi.
+ */
+const KABKOTA_TAMBALAN = {
+  'Lapas Kelas IIB Pahuwato': 'Pohuwato',
+  'Lapas Perempuan Kelas IIA Martapura': 'Banjar',
+  'Lapas Kelas IIA Palangkaraya': 'Kota Palangka Raya',
+  'Lapas Perempuan Kelas IIA Palangkaraya': 'Kota Palangka Raya',
+  'Rutan Kelas IIA Palangkaraya': 'Kota Palangka Raya',
+  'Lapas Kelas IIA Pangkal Pinang': 'Kota Pangkalpinang',
+  'Lapas Narkotika Kelas IIA Pangkal Pinang': 'Kota Pangkalpinang',
+  'Lapas Perempuan Kelas III Pangkalpinang': 'Kota Pangkalpinang',
+  'Lapas Kelas IIA Tanjung Pinang': 'Kota Tanjungpinang',
+  'Lapas Narkotika Kelas IIA Tanjung Pinang': 'Kota Tanjungpinang',
+  'Rutan Kelas I Tanjung Pinang': 'Kota Tanjungpinang',
+  'Lapas Kelas IIB Fakfak': 'Fakfak',
+  'Lapas Kelas IIA Pare-Pare': 'Kota Parepare',
+  'Lapas Kelas IIB Ulu Siau': 'Kepulauan Siau Tagulandang Biaro',
+  'Lapas Kelas III Tagulandang': 'Kepulauan Siau Tagulandang Biaro',
+  'Lapas Kelas III Labuhan Bilik': 'Labuhanbatu',
+  'Rutan Kelas I Labuhan Deli': 'Kota Medan',
 }
 
 /**
@@ -433,7 +468,7 @@ for (const r of terpantau) {
     subjenis_upt: induk && !padanan?.gantiNama ? (induk.subjenis_upt || 'Umum') : subjenisDari(baku),
     provinsi: induk?.provinsi || '',
     kanwil: induk?.kanwil || `Kantor Wilayah Ditjenpas ${r.kanwilSumber.replace(/^D\. I\. /, 'D.I. ')}`,
-    kabupaten_kota: induk?.kabupaten_kota || KABKOTA_BARU[namaAkhir] || '',
+    kabupaten_kota: induk?.kabupaten_kota || KABKOTA_TAMBALAN[namaAkhir] || KABKOTA_BARU[namaAkhir] || '',
     alamat: induk?.alamat || '',
     latitude: induk?.latitude || '',
     longitude: induk?.longitude || '',

@@ -109,6 +109,16 @@ ditambahkan, 32 di antaranya seluruh LPKA di Indonesia, dan empat unit yang naik
 status dari Rutan menjadi Lapas diganti namanya berikut berita dan penugasan
 pengguna yang menunjuk nama lama.
 
+### Kabupaten/kota yang kosong
+
+Tujuh belas unit masuk ke data induk tanpa kabupaten/kota — seluruh unit
+Palangkaraya, Pangkal Pinang, dan Tanjung Pinang di antaranya. Lubang itu tidak
+terlihat di layar, tetapi ia mematikan lapisan terakhir mesin pencocokan:
+berita yang menyebut kabupaten tanpa menyebut nama unitnya hanya bisa sampai
+lewat kolom tersebut. Migrasi `20260901050000_kabupaten_kota_yang_kosong.sql`
+mengisinya; daftar yang sama ada di `tools/susun-master-upt.mjs` sebagai
+`KABKOTA_TAMBALAN`, sehingga tabel dan `data/master-upt.csv` tidak berselisih.
+
 ### Yang masih terbuka
 
 **Bapas tetap tidak ada di tabel ini, dan itu keputusan, bukan kelalaian.**

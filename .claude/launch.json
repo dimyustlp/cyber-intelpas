@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "cyber-intelpas",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["tools/server-lokal.mjs"],
+      "port": 4173
+    }
+  ]
+}

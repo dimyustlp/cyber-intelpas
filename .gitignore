@@ -1,0 +1,23 @@
+node_modules/
+.DS_Store
+*.log
+
+# Simpanan sementara Supabase CLI: versi yang diunduh dan penanda proyek
+# tertaut. Keduanya berubah sendiri setiap kali CLI dijalankan, dan sempat
+# ikut terlacak sehingga muncul sebagai perubahan pada setiap commit.
+supabase/.temp/
+
+# Potret halaman: hasil tools/potret.mjs, dibuat ulang kapan saja dan berukuran
+# puluhan megabita bila ikut disimpan.
+potret/
+
+# Repositori Streamlit lama, disimpan untuk rujukan sejarah. Satu-satunya berkas
+# yang benar-benar dipakai alat di repositori ini — potret koordinat data induk —
+# sudah disalin ke data/sumber/master-upt-lama.csv.
+sumber-lama/
+
+# Pemberian izin alat kepada mesin ini. Isinya membuka penulisan ke basis data
+# produksi, dan itu keputusan tiap orang untuk dirinya sendiri, bukan sesuatu
+# yang ikut dibagikan lewat repositori.
+.claude/settings.json
+.claude/settings.local.json

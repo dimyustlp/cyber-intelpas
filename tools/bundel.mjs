@@ -26,7 +26,12 @@ import { join, dirname, resolve, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const AKAR = join(fileURLToPath(new URL('.', import.meta.url)), '..', 'web')
-const KELUARAN = process.argv[2] || join(AKAR, '..', 'cyber-intelpas-mandiri.html')
+/* Argumen berbentuk penanda tidak boleh dikira nama berkas keluaran. Pernah
+   terjadi: `node tools/bundel.mjs --demo` menulis sebuah berkas yang namanya
+   justru penandanya sendiri, sementara berkas mandiri yang dimaksud tidak
+   pernah ada — dan tidak ada satu baris pun yang mengatakannya. */
+const KELUARAN = process.argv.slice(2).find((a) => !a.startsWith('--'))
+  || join(AKAR, '..', 'trans-siber-pas-mandiri.html')
 
 /**
  * Dengan --demo, berkas hasil selalu memakai data peragaan dan tidak pernah

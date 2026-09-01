@@ -13,11 +13,6 @@ import { ikon } from '../lib/ikon.js'
 import { INDUK_UPT } from '../lib/konfig.js'
 
 const RENCANA = {
-  peta: {
-    judul: 'Peta Sebaran',
-    isi: `Peta ${INDUK_UPT.jumlah} unit dengan penanda berwarna menurut tingkat kerawanan, dapat disaring per kantor wilayah.`,
-    tunggu: `Menunggu verifikasi koordinat: ${INDUK_UPT.belumTerverifikasi} dari ${INDUK_UPT.jumlah} unit masih memakai titik pusat kota atau provinsi, sehingga penanda akan meleset dari lokasi gedung yang sebenarnya.`,
-  },
   tren: {
     judul: 'Tren Pemberitaan',
     isi: 'Perbandingan antarperiode, isu yang menanjak, dan unit yang paling sering muncul dalam sorotan.',

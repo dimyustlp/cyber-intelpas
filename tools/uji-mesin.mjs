@@ -13,6 +13,7 @@
 import { readFileSync, existsSync } from 'node:fs'
 import { klasifikasikan, META_MESIN } from '../web/js/lib/klasifikasi.js'
 import { bangunIndeks, cocokkanUpt, META_PENCOCOK } from '../web/js/lib/pencocokan-upt.js'
+import { bersihkanTeks } from '../web/js/lib/teks.js'
 
 // Bawaannya menunjuk salinan yang ikut disimpan di dalam repositori, sama
 // seperti tools/uji-lintas-jenis.mjs dan tools/uji-peristiwa.mjs. Berkas ini
@@ -356,7 +357,60 @@ for (const k of kasusUpt) {
 
 console.log(`\n  Hasil: ${lulusUpt} dari ${kasusUpt.length} kasus uji lulus.`)
 
-const semuaLulus = lulus === kasus.length && lulusUpt === kasusUpt.length
+// --- 5. Pembersihan templat crawler ------------------------------------------
+
+judul('5. PEMBERSIHAN TEMPLAT CRAWLER')
+
+/**
+ * Lima bentuk pertama diambil apa adanya dari arsip, tempat mereka menutupi 447
+ * dari 779 baris. Teks itu ikut ditimbang mesin klasifikasi — kata "institusi",
+ * "masalah", dan "ancaman" di dalamnya berasal dari templat, bukan dari
+ * beritanya — dan ikut tercetak pada lampiran laporan harian di bawah setiap
+ * butir, kalimat yang sama berulang-ulang.
+ *
+ * Dua kasus terakhir yang paling penting: templat harus lenyap tanpa memakan
+ * kalimat di depannya, dan kalimat manusia yang kebetulan memuat kata "topik:"
+ * serta "rekomendasi:" harus tetap utuh.
+ */
+const kasusBersih = [
+  ['templat frekuensi',
+    'TOPIK: Umum FREKUENSI ISU: 3 Berita POTENSI VIRAL: RENDAH (1.2/5) SKOR ANCAMAN: 2/5 (RENDAH) '
+    + 'SENTIMEN: Fallback LOKASI/SATKER: Umum RINGKASAN: Terdeteksi kata kunci. REKOMENDASI: Verifikasi data awal.', ''],
+  ['templat rule-based',
+    'TOPIK: Isu Potensial (Rule-Based) SKOR ANCAMAN: 2/5 (SEDANG) RINGKASAN: Terdeteksi kata kunci '
+    + 'institusi & masalah pada konten. REKOMENDASI: Verifikasi lapangan.', ''],
+  ['templat pemasyarakatan',
+    'TOPIK: Pemasyarakatan SKOR ANCAMAN: 1/5 (RENDAH) SENTIMEN: Faktual Netral / Positif '
+    + 'RINGKASAN: Informasi publik terdeteksi. REKOMENDASI: Catat dan arsipkan.', ''],
+  ['templat tanpa TOPIK',
+    'SKOR ANCAMAN: 1/5 (RENDAH) SENTIMEN: Deteksi Otomatis (Fallback) LOKASI/SATKER: Umum '
+    + 'RINGKASAN: Terdeteksi kata kunci ancaman. REKOMENDASI: Lakukan verifikasi data awal.', ''],
+  ['isi berita lalu templat',
+    'Napi kabur dari Lapas Kelas IIB Sukadana ditangkap di Myanmar. TOPIK: Isu Potensial (Rule-Based) '
+    + 'SKOR ANCAMAN: 2/5 (SEDANG) RINGKASAN: Terdeteksi kata kunci institusi. REKOMENDASI: Verifikasi lapangan.',
+    'Napi kabur dari Lapas Kelas IIB Sukadana ditangkap di Myanmar.'],
+  ['kalimat manusia, jangan disentuh',
+    'Kepala Lapas memberi arahan tentang topik: integritas petugas dan rekomendasi: perbaikan layanan kunjungan.',
+    'Kepala Lapas memberi arahan tentang topik: integritas petugas dan rekomendasi: perbaikan layanan kunjungan.'],
+]
+
+let lulusBersih = 0
+for (const [nama, masuk, harap] of kasusBersih) {
+  const dapat = bersihkanTeks(masuk)
+  const cocok = dapat === harap
+  if (cocok) lulusBersih++
+  console.log(`  ${cocok ? 'LULUS  ' : 'GAGAL  '} ${nama}`)
+  if (!cocok) {
+    console.log(`          diharapkan "${harap.slice(0, 70)}"`)
+    console.log(`          didapat    "${dapat.slice(0, 70)}"`)
+  }
+}
+
+console.log(`\n  Hasil: ${lulusBersih} dari ${kasusBersih.length} kasus uji lulus.`)
+
+const semuaLulus = lulus === kasus.length
+  && lulusUpt === kasusUpt.length
+  && lulusBersih === kasusBersih.length
 console.log('\n' + '─'.repeat(78))
 console.log(semuaLulus ? 'SELURUH UJI PERILAKU LULUS.' : 'ADA UJI YANG BELUM LULUS — periksa keluaran di atas.')
 console.log('─'.repeat(78))

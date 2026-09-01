@@ -43,7 +43,7 @@ export function halamanMasuk({ onMasuk }) {
         </div>
 
         <div class="masuk-judul-plate">
-          <h1>Cyber-Intelpas</h1>
+          <h1>${amankan(KONFIG.nama)}</h1>
           <p class="sub">Sistem manajemen intelijen pemberitaan pemasyarakatan —
           dari deteksi media, telaah analis, verifikasi lapangan, sampai keputusan pimpinan.</p>
         </div>

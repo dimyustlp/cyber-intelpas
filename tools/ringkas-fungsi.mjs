@@ -8,7 +8,22 @@
  */
 import { readFileSync, writeFileSync } from 'node:fs'
 
-const BERKAS = ['teks.js', 'taksonomi.js', 'penerbit.js', 'klasifikasi.js', 'pencocokan-upt.js']
+/**
+ * Modul yang dibutuhkan tiap Edge Function.
+ *
+ * Dua fungsi memakai modul yang sama sebagian. Yang berbahaya bukan salinannya
+ * — salinan dibuat ulang alat ini setiap kali — melainkan godaan menulis versi
+ * sendiri di dalam salah satu fungsi ketika ada yang perlu diubah. Laporan
+ * harian mengelompokkan publikasi menjadi peristiwa dengan `peristiwa.js` yang
+ * SAMA PERSIS dengan yang dipakai dasbor dan halaman Kanal Negatif; kalau tidak,
+ * pimpinan akan membaca "tiga peristiwa" pada lampiran dan "lima peristiwa" di
+ * layar untuk hari yang sama.
+ */
+const KEBUTUHAN = {
+  klasifikasi: ['teks.js', 'taksonomi.js', 'penerbit.js', 'klasifikasi.js', 'pencocokan-upt.js'],
+  // peristiwa.js mengimpor teks.js dan pencocokan-upt.js; keduanya ikut.
+  'laporan-harian': ['teks.js', 'pencocokan-upt.js', 'peristiwa.js'],
+}
 
 function buangKomentar(kode) {
   let hasil = ''
@@ -57,17 +72,20 @@ function buangKomentar(kode) {
   return hasil
 }
 
-for (const nama of BERKAS) {
-  const sumber = readFileSync(`web/js/lib/${nama}`, 'utf8')
-  // Lekukan ikut dibuang. Nomor baris tetap utuh — dan nomor baris itulah yang
-  // dipakai jejak galat Deno; kolomnya tidak pernah dibaca siapa pun. Pada
-  // taksonomi yang isinya ribuan baris larik berlekuk sepuluh spasi, potongan
-  // ini saja bernilai belasan kilobita setiap kali fungsi digelar.
-  const ringkas = buangKomentar(sumber)
-    .split('\n')
-    .map((b) => b.trim())
-    .filter((b) => b !== '')
-    .join('\n')
-  writeFileSync(`supabase/functions/klasifikasi/${nama}`, ringkas + '\n')
-  console.log(nama.padEnd(20), String(sumber.length).padStart(6), '->', String(ringkas.length).padStart(6))
+for (const [fungsi, berkas] of Object.entries(KEBUTUHAN)) {
+  console.log(`\n  supabase/functions/${fungsi}/`)
+  for (const nama of berkas) {
+    const sumber = readFileSync(`web/js/lib/${nama}`, 'utf8')
+    // Lekukan ikut dibuang. Nomor baris tetap utuh — dan nomor baris itulah yang
+    // dipakai jejak galat Deno; kolomnya tidak pernah dibaca siapa pun. Pada
+    // taksonomi yang isinya ribuan baris larik berlekuk sepuluh spasi, potongan
+    // ini saja bernilai belasan kilobita setiap kali fungsi digelar.
+    const ringkas = buangKomentar(sumber)
+      .split('\n')
+      .map((b) => b.trim())
+      .filter((b) => b !== '')
+      .join('\n')
+    writeFileSync(`supabase/functions/${fungsi}/${nama}`, ringkas + '\n')
+    console.log('   ', nama.padEnd(20), String(sumber.length).padStart(6), '->', String(ringkas.length).padStart(6))
+  }
 }

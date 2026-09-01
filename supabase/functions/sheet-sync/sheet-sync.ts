@@ -240,7 +240,7 @@ async function bacaCsv(sumber: Sumber): Promise<{ nilai: string[][]; alamat: str
       const jawab = await fetch(alamat, {
         method: "GET",
         headers: {
-          "User-Agent": `CyberIntelPAS-SheetSync/${VERSI}`,
+          "User-Agent": `TransSiberPAS-SheetSync/${VERSI}`,
           Accept: "text/csv,text/plain,*/*",
         },
         redirect: "follow",

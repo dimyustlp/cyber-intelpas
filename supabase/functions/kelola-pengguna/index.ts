@@ -10,8 +10,9 @@
  * siapa boleh menerbitkan siapa:
  *
  *   Administrator Sistem Intelijen  →  boleh menerbitkan peran apa pun.
- *   Administrator Kantor Wilayah    →  hanya Penginput Berita, hanya di
- *                                      wilayahnya sendiri.
+ *   Administrator Kantor Wilayah    →  hanya Penelaah Berita Kantor Wilayah dan
+ *                                      Petugas Unit Pelaksana Teknis, dan hanya
+ *                                      di wilayahnya sendiri.
  *   Peran lain                      →  tidak boleh sama sekali.
  *
  * Aturan itu ditegakkan di berkas ini, bukan di menu. Menu yang menyembunyikan
@@ -45,7 +46,25 @@ const PERAN_INTERNAL = [
   'executive_decision_maker',
 ]
 
-const PERAN_WILAYAH = ['kanwil_admin', 'kanwil_penginput']
+/*
+   Peran daerah. `kanwil_penginput` masih diterima meskipun sudah tidak
+   diterbitkan lagi: selama beberapa menit di sekitar penggelaran, halaman web
+   yang lama masih mungkin mengirimkannya, dan menolaknya hanya menghasilkan
+   galat yang tidak dipahami siapa pun. Yang menerjemahkannya ke nama baru
+   adalah `bakukanPeran` di bawah.
+*/
+const PERAN_WILAYAH = ['kanwil_admin', 'kanwil_penelaah', 'kanwil_penginput', 'upt_petugas']
+
+/** Peran yang cakupannya satu unit, dan karena itu wajib menyebut unitnya. */
+const PERAN_UNIT = ['upt_petugas']
+
+/** Peran yang boleh diterbitkan Administrator Kantor Wilayah. */
+const PERAN_TERBIT_KANWIL = ['kanwil_penelaah', 'upt_petugas']
+
+/** Nama peran yang sudah tidak dipakai, dipetakan ke penggantinya. */
+function bakukanPeran(peran: string): string {
+  return peran === 'kanwil_penginput' ? 'kanwil_penelaah' : peran
+}
 
 const POLA_SUREL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
 const POLA_USERNAME = /^[a-z0-9][a-z0-9._-]{2,31}$/
@@ -125,7 +144,7 @@ Deno.serve(async (permintaan: Request) => {
       return jawab({ ok: false, pesan: `Aksi "${aksi}" tidak dikenali.` }, 400)
     }
 
-    const peran = bersih(badan.role)
+    const peran = bakukanPeran(bersih(badan.role))
     const namaLengkap = bersih(badan.full_name)
     const jabatan = bersih(badan.jabatan)
     const sandi = String(badan.password ?? '')
@@ -138,11 +157,11 @@ Deno.serve(async (permintaan: Request) => {
     }
 
     // Inilah pembatasan yang menjadi alasan fungsi ini ada.
-    if (bolehWilayah && peran !== 'kanwil_penginput') {
+    if (bolehWilayah && !PERAN_TERBIT_KANWIL.includes(peran)) {
       return jawab({
         ok: false,
         pesan: 'Administrator Kantor Wilayah hanya boleh menerbitkan akun '
-          + 'Penginput Berita Kantor Wilayah.',
+          + 'Penelaah Berita Kantor Wilayah atau Petugas Unit Pelaksana Teknis.',
       }, 403)
     }
 
@@ -155,6 +174,7 @@ Deno.serve(async (permintaan: Request) => {
     }
 
     const peranWilayah = PERAN_WILAYAH.includes(peran)
+    const peranUnit = PERAN_UNIT.includes(peran)
 
     /*
        Akun wilayah memakai alamat surel sungguhan sebagai identitasnya, atas
@@ -209,6 +229,49 @@ Deno.serve(async (permintaan: Request) => {
             : 'Akun kantor wilayah wajib menyebutkan kantor wilayahnya.',
         }, 400)
       }
+    }
+
+    /*
+       Unit penugasan.
+
+       Akun petugas unit tanpa nama unit adalah akun yang tidak pernah melihat
+       satu baris pun: `can_access_upt` menolak setiap baris, dan layarnya kosong
+       tanpa sebab yang terbaca oleh pemakainya. Karena itu unitnya wajib, dan
+       harus benar-benar ada pada data induk — bukan sekadar tidak kosong.
+
+       Bagi admin kanwil, unitnya juga harus berada di wilayahnya sendiri.
+       Tanpa pemeriksaan itu, satu baris pada permintaan cukup untuk menerbitkan
+       akun yang membaca berita unit di provinsi lain.
+    */
+    let uptDitugaskan: string | null = null
+    if (peranUnit) {
+      const diminta = bersih(badan.assigned_upt)
+      if (!diminta) {
+        return jawab({ ok: false, pesan: 'Akun petugas unit wajib menyebutkan unitnya.' }, 400)
+      }
+
+      const { data: unit } = await admin
+        .from('upt')
+        .select('nama_upt,kanwil')
+        .eq('nama_upt', diminta)
+        .maybeSingle()
+
+      if (!unit) {
+        return jawab({
+          ok: false,
+          pesan: `Unit "${diminta}" tidak ada pada data induk UPT. `
+            + 'Namanya harus ditulis persis seperti di sana.',
+        }, 400)
+      }
+
+      if (kanwil && unit.kanwil !== kanwil) {
+        return jawab({
+          ok: false,
+          pesan: `Unit "${diminta}" berada di ${unit.kanwil}, bukan di ${kanwil}.`,
+        }, 403)
+      }
+
+      uptDitugaskan = String(unit.nama_upt)
     }
 
     /* ----------------------------------------------- tolak yang sudah ada */
@@ -268,6 +331,7 @@ Deno.serve(async (permintaan: Request) => {
         full_name: namaLengkap,
         jabatan: jabatan || null,
         assigned_kanwil: kanwil,
+        assigned_upt: uptDitugaskan,
         aktif: true,
         must_change_password: true,
         // Kolom `email` sengaja tidak disentuh: pemicu sudah mengisinya dengan
@@ -305,6 +369,11 @@ Deno.serve(async (permintaan: Request) => {
           username,
           role: peran,
           assigned_kanwil: kanwil,
+          // Unit ikut dicatat. Bagi akun petugas unit, justru kolom inilah yang
+          // menentukan apa yang boleh ia baca — jejak yang menyebut perannya
+          // tetapi tidak menyebut unitnya tidak menjawab pertanyaan yang akan
+          // ditanyakan orang setahun kemudian.
+          assigned_upt: uptDitugaskan,
           diterbitkan_oleh: pemohon.username,
         },
       })

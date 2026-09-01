@@ -1,4 +1,9 @@
-# Cyber-Intelpas v2
+# Trans-Siber PAS v2
+
+> Sistem ini bernama **Cyber-Intelpas** sampai 1 September 2026. Yang berganti
+> hanya namanya di layar: nama folder, nama repositori, nama tabel basis data,
+> dan ranah surel bayangan akun tetap seperti semula, sebab keempatnya pengenal
+> yang sudah tersimpan — bukan tulisan yang dibaca orang.
 
 Sistem manajemen intelijen pemberitaan pemasyarakatan. Menggantikan aplikasi
 Streamlit v6 dengan antarmuka web penuh di atas basis data Supabase yang sama.
@@ -36,6 +41,7 @@ web/                     aplikasi peramban, disajikan apa adanya
       pencocokan-upt.js  pencocokan nama UPT dari teks berita
       pesan-telegram.js  penyusun pesan ringkas untuk grup pimpinan
       peran.js           peran, izin, dan susunan menu
+      peta-indonesia.js  garis pantai Indonesia — dihasilkan tools/susun-peta.mjs
       sentimen.js        tiga ember sentimen beserta keterangannya
       hitung.js          satu himpunan dasar untuk seluruh angka di layar
       api.js             pemanggil PostgREST dan GoTrue tanpa SDK
@@ -49,7 +55,9 @@ web/                     aplikasi peramban, disajikan apa adanya
       palet.js           palet perintah Ctrl+K — cari halaman, unit, dan berita
     pages/               satu berkas per halaman
                            input.js       masukan berita manual, terklasifikasi saat mengetik
-                           kanwil.js      ruang kantor wilayah — ringkasan dan riwayat kiriman
+                           kanwil.js      ruang kantor wilayah dan ruang unit
+                           wilayah-telaah.js  telaah daerah dan tanggapan unit
+                           peta.js        peta sebaran kerawanan 531 unit
                            pengguna.js    peran, wilayah penugasan, dan keaktifan akun
                            sinkronisasi.js  keadaan tiap sumber spreadsheet
     main.js              sesi, kerangka layar, penunjuk halaman
@@ -67,6 +75,7 @@ supabase/
 tools/
   server-lokal.mjs       peladen statis untuk pengembangan
   susun-master-upt.mjs   menyusun data/master-upt.csv + migrasi dari daftar nasional
+  susun-peta.mjs         menyusun garis pantai peta dari GeoJSON Natural Earth
   uji-mesin.mjs          uji perilaku mesin dan pencocokan UPT
   uji-hitung.mjs         uji ember sentimen dan penjumlahan angka dasbor
   uji-peristiwa.mjs      uji pengelompokan publikasi menjadi peristiwa
@@ -118,12 +127,29 @@ http://localhost:4173/?mode=demo&tema=gelap
 Parameter `peran` menerima salah satu dari: `super_admin`, `news_data_operator`,
 `media_intelligence_analyst`, `field_verification_officer`,
 `evaluation_recommendation_analyst`, `executive_decision_maker`,
-`kanwil_admin`, `kanwil_penginput`.
+`kanwil_admin`, `kanwil_penelaah`, `upt_petugas`.
 
-Dua peran terakhir membuka **ruang kantor wilayah**: menu, warna aksen, dan
-halaman yang berbeda di dalam aplikasi yang sama. Dalam mode peragaan, arsipnya
-ikut dipotong supaya layarnya menunjukkan apa yang benar-benar dilihat petugas
-wilayah — bukan angka nasional.
+Tiga peran terakhir membuka ruang daerah — menu, warna aksen, dan halaman yang
+berbeda di dalam aplikasi yang sama:
+
+| Peran | Ruang | Melihat | Boleh |
+| --- | --- | --- | --- |
+| `kanwil_admin` | Kantor wilayah | seluruh berita wilayahnya | memasukkan berita, menelaah, menerbitkan akun daerah |
+| `kanwil_penelaah` | Kantor wilayah | seluruh berita wilayahnya | menelaah — memvalidasi atau merevisi penilaian mesin |
+| `upt_petugas` | Unit pelaksana teknis | berita unitnya sendiri saja | menelaah, dan menuliskan tanggapan resmi unit |
+
+Sejak 1 September 2026 **hanya `kanwil_admin` yang memasukkan berita dari
+daerah**, supaya setiap kiriman punya satu penanggung jawab yang jelas. Peran
+`kanwil_penginput` yang lama berganti nama menjadi `kanwil_penelaah` beserta
+pekerjaannya; nama lamanya masih diterima basis data dan halaman web selama masa
+peralihan.
+
+Putusan telaah daerah TIDAK menyentuh `status_verifikasi` — kolom itu tetap
+milik analis pusat dan menentukan sebuah berita ikut dihitung atau tidak.
+Putusan daerah punya kolomnya sendiri, dan keduanya terbaca berdampingan.
+
+Dalam mode peragaan, arsipnya ikut dipotong supaya layarnya menunjukkan apa yang
+benar-benar dilihat petugas daerah — bukan angka nasional.
 
 ## Menguji mesin
 

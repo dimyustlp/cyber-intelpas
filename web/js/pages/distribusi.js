@@ -372,8 +372,8 @@ export function halamanDistribusi({ keadaan, isi }) {
     if (demo) {
       pilihan.tujuan = [{ id: 'demo-1', label: 'Grup Pimpinan Dirpamintel', min_classification: 'Terbatas' }]
       pilihan.jadwal = [
-        { label: 'Laporan Harian Cyber-Intelpas', report_type: 'harian', cron_expression: '50 16 * * *', timezone: 'Asia/Jakarta', is_active: true, auto_publish: false, auto_send_telegram: true, last_run_at: new Date(Date.now() - 8 * 3600e3).toISOString() },
-        { label: 'Laporan Mingguan Cyber-Intelpas', report_type: 'mingguan', cron_expression: '50 16 * * 0', timezone: 'Asia/Jakarta', is_active: true, auto_publish: false, auto_send_telegram: true, last_run_at: null },
+        { label: 'Laporan Harian Trans-Siber PAS', report_type: 'harian', cron_expression: '50 16 * * *', timezone: 'Asia/Jakarta', is_active: true, auto_publish: false, auto_send_telegram: true, last_run_at: new Date(Date.now() - 8 * 3600e3).toISOString() },
+        { label: 'Laporan Mingguan Trans-Siber PAS', report_type: 'mingguan', cron_expression: '50 16 * * 0', timezone: 'Asia/Jakarta', is_active: true, auto_publish: false, auto_send_telegram: true, last_run_at: null },
       ]
       pilihan.kiriman = []
       pilihan.dimuat = true

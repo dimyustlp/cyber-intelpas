@@ -50,7 +50,19 @@ function acakStabil(benih) {
   }
 }
 
-export function buatBerita(jumlah = 96, acuan = new Date('2026-08-22T09:40:00+07:00')) {
+/*
+   Acuan waktunya hari ini, bukan tanggal tetap.
+
+   Sebelumnya berkas ini menaruh seluruh berita peragaan di sekitar 22 Agustus
+   2026. Selama beberapa hari itu tidak terasa; sesudah beberapa pekan, setiap
+   bagan "empat belas hari terakhir" pada mode peragaan menjadi kosong melompong
+   — dan yang membukanya menyimpulkan bagannya rusak, bukan datanya yang tua.
+
+   Sebaran jam antarberita tetap dihasilkan deret acak berbenih tetap, jadi
+   bentuk datanya tetap sama persis dari satu pemuatan ke pemuatan berikutnya.
+   Yang bergerak hanya titik nolnya.
+*/
+export function buatBerita(jumlah = 96, acuan = new Date()) {
   const acak = acakStabil(20260822)
   const daftar = []
 
@@ -115,10 +127,16 @@ export function penggunaDemo() {
       auth_user_id: 'auth-4', last_login: new Date(Date.now() - 50 * 3600e3).toISOString(),
     },
     {
-      id: 'demo-5', username: 'kanwil.baru', full_name: 'Penginput Kanwil Baru',
-      role: 'kanwil_penginput', jabatan: 'Penginput Berita',
+      id: 'demo-5', username: 'kanwil.baru', full_name: 'Penelaah Kanwil Baru',
+      role: 'kanwil_penelaah', jabatan: 'Penelaah Berita',
       assigned_kanwil: null, assigned_upt: null, aktif: true,
       auth_user_id: 'auth-5', last_login: null, must_change_password: true,
+    },
+    {
+      id: 'demo-7', username: 'lapas.kediri', full_name: 'Petugas Lapas Kediri',
+      role: 'upt_petugas', jabatan: 'Kasubsi Pengamanan',
+      assigned_kanwil: KANWIL_DEMO, assigned_upt: UPT_DEMO, aktif: true,
+      auth_user_id: 'auth-7', last_login: new Date(Date.now() - 5 * 3600e3).toISOString(),
     },
     {
       id: 'demo-6', username: 'agus.lama', full_name: 'Agus Wijaya',
@@ -132,26 +150,37 @@ export function penggunaDemo() {
 /** Wilayah peragaan, dipakai peran kanwil supaya layarnya ada isinya. */
 export const KANWIL_DEMO = 'Kanwil Jawa Barat'
 
+/** Unit peragaan, dengan alasan yang sama bagi peran petugas unit. */
+export const UPT_DEMO = 'Lapas Kelas IIA Kediri'
+
 export function profilDemo(peran = 'media_intelligence_analyst') {
-  const wilayah = peran.startsWith('kanwil_')
+  const unit = peran === 'upt_petugas'
+  const daerah = unit || peran.startsWith('kanwil_')
 
   return {
     id: 'demo-pengguna',
-    username: wilayah ? 'demo.kanwil' : 'demo',
-    full_name: wilayah ? 'Petugas Kanwil Peragaan' : 'Pengguna Peragaan',
+    username: unit ? 'demo.upt' : daerah ? 'demo.kanwil' : 'demo',
+    full_name: unit ? 'Petugas Unit Peragaan'
+      : daerah ? 'Petugas Kanwil Peragaan' : 'Pengguna Peragaan',
     role: peran,
     jabatan: 'Mode Peragaan',
-    // Peran wilayah tanpa wilayah akan melihat layar yang seluruhnya berisi
-    // peringatan. Untuk peragaan, wilayahnya diisi supaya bentuk halamannya
+    // Peran daerah tanpa cakupan akan melihat layar yang seluruhnya berisi
+    // peringatan. Untuk peragaan, cakupannya diisi supaya bentuk halamannya
     // yang terlihat — bukan pesan galatnya.
-    assigned_kanwil: wilayah ? KANWIL_DEMO : null,
-    assigned_upt: null,
+    assigned_kanwil: daerah ? KANWIL_DEMO : null,
+    assigned_upt: unit ? UPT_DEMO : null,
     aktif: true,
   }
 }
 
-/** Deret 14 hari untuk bagan tren. */
-export function deretHarian(berita, hari = 14, acuan = new Date('2026-08-22T09:40:00+07:00')) {
+/**
+ * Deret 14 hari untuk bagan tren.
+ *
+ * Acuannya hari ini. Deret "empat belas hari terakhir" yang ditambatkan ke
+ * sebuah tanggal tetap berhenti bergerak tanpa memberi tahu siapa pun, dan
+ * pembacanya menyimpulkan pemberitaan yang berhenti — bukan bagannya.
+ */
+export function deretHarian(berita, hari = 14, acuan = new Date()) {
   const ember = new Map()
   for (let i = hari - 1; i >= 0; i--) {
     const d = new Date(acuan.getTime() - i * 86_400_000)

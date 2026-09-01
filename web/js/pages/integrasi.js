@@ -32,7 +32,7 @@ import { panggilEdge, ambil, pesanRamah } from '../lib/api.js'
 const DIAGNOSA_DEMO = {
   terpasang: true,
   tersambung: true,
-  bot: { nama: 'Cyber-Intelpas Bot', pengguna: 'cyberintelpas_bot', id: 7654321098 },
+  bot: { nama: 'Trans-Siber PAS Bot', pengguna: 'transsiberpas_bot', id: 7654321098 },
   pemeriksaan_kunci: {
     panjang_total: 46,
     nomor_bot: '7654321098',
@@ -57,9 +57,9 @@ const DIAGNOSA_DEMO = {
 }
 
 const KIRIMAN_DEMO = [
-  { id: 'd1', status: 'sent', delivery_type: 'report', trigger_type: 'scheduled', chat_id: '-1002145887301', caption: 'Laporan Harian Cyber-Intelpas — 22 Agustus 2026', requested_by: 'Penjadwal', requested_at: new Date(Date.now() - 3600e3).toISOString(), delivered_at: new Date(Date.now() - 3598e3).toISOString() },
+  { id: 'd1', status: 'sent', delivery_type: 'report', trigger_type: 'scheduled', chat_id: '-1002145887301', caption: 'Laporan Harian Trans-Siber PAS — 22 Agustus 2026', requested_by: 'Penjadwal', requested_at: new Date(Date.now() - 3600e3).toISOString(), delivered_at: new Date(Date.now() - 3598e3).toISOString() },
   { id: 'd2', status: 'sent', delivery_type: 'urgent_alert', trigger_type: 'manual', chat_id: '-1002145887301', caption: 'PERINGATAN DINI — Kerusuhan Lapas Kelas IIA Cilegon', requested_by: 'Analis OSINT', requested_at: new Date(Date.now() - 26 * 3600e3).toISOString(), delivered_at: new Date(Date.now() - 26 * 3600e3).toISOString() },
-  { id: 'd3', status: 'failed', delivery_type: 'report', trigger_type: 'scheduled', chat_id: '-1002088341170', caption: 'Laporan Harian Cyber-Intelpas — 21 Agustus 2026', requested_by: 'Penjadwal', requested_at: new Date(Date.now() - 50 * 3600e3).toISOString(), error_detail: 'Telegram menolak sendMessage: bot was kicked from the supergroup chat' },
+  { id: 'd3', status: 'failed', delivery_type: 'report', trigger_type: 'scheduled', chat_id: '-1002088341170', caption: 'Laporan Harian Trans-Siber PAS — 21 Agustus 2026', requested_by: 'Penjadwal', requested_at: new Date(Date.now() - 50 * 3600e3).toISOString(), error_detail: 'Telegram menolak sendMessage: bot was kicked from the supergroup chat' },
 ]
 
 /* ------------------------------------------------------------------ bagian */

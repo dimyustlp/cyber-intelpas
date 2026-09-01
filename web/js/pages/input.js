@@ -29,7 +29,7 @@ import { bangunIndeks, cocokkanUpt } from '../lib/pencocokan-upt.js'
 import { KATEGORI, SEMUA_SUBKATEGORI } from '../lib/taksonomi.js'
 import { EMBER, ember, nilaiSimpan } from '../lib/sentimen.js'
 import { KONFIG } from '../lib/konfig.js'
-import { adalahEksternal } from '../lib/peran.js'
+import { adalahEksternal, punyaIzin } from '../lib/peran.js'
 
 const URGENSI = ['Rendah', 'Sedang', 'Tinggi', 'Kritis']
 
@@ -155,6 +155,26 @@ function panelSaranUpt() {
 export function halamanInput({ keadaan, isi }) {
   const profil = keadaan.profil || {}
   const eksternal = adalahEksternal(profil.role)
+
+  /*
+     Sejak 1 September 2026, dari daerah hanya Administrator Kantor Wilayah yang
+     boleh memasukkan berita. Menu sudah tidak menampilkan halaman ini bagi
+     peran lain, tetapi alamat halaman tetap bisa diketik langsung — dan sebuah
+     borang yang bisa diisi sampai penuh lalu ditolak basis data pada tekanan
+     terakhir adalah cara paling melelahkan untuk menyampaikan sebuah aturan.
+     Maka penolakannya disampaikan di depan, beserta alasannya.
+  */
+  if (!punyaIzin(profil.role, 'buat_berita')) {
+    isi.innerHTML = kartu({
+      isi: pesanSistem(
+        '<b>Peran Anda tidak memasukkan berita.</b> Sejak penataan 1 September 2026, '
+        + 'pemasukan berita dari daerah menjadi wewenang Administrator Kantor Wilayah '
+        + 'seorang diri, supaya setiap kiriman punya satu penanggung jawab yang jelas. '
+        + 'Pekerjaan Anda ada di Telaah — menilai apakah penilaian mesin sudah tepat.',
+        'sedang', 'info'),
+    })
+    return { judul: 'Input Berita', sub: 'Tidak tersedia untuk peran Anda' }
+  }
 
   function gambar() {
     const n = keadaanInput.nilai

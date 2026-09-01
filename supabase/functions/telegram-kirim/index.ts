@@ -1,5 +1,5 @@
 /**
- * telegram-kirim — jembatan Cyber-Intelpas ke Telegram.
+ * telegram-kirim — jembatan Trans-Siber PAS ke Telegram.
  *
  * Satu fungsi, lima pekerjaan, karena kelimanya memakai kunci yang sama dan
  * tidak ada gunanya menyebar kunci itu ke lima tempat berbeda:
@@ -281,7 +281,7 @@ async function integrasiTelegram(): Promise<string> {
     method: 'POST',
     body: JSON.stringify({
       provider: 'telegram',
-      label: 'Bot Telegram Cyber-Intelpas',
+      label: 'Bot Telegram Trans-Siber PAS',
       is_active: true,
       secret_vault_name: 'TELEGRAM_BOT_TOKEN',
     }),
@@ -514,7 +514,7 @@ Deno.serve(async (permintaan) => {
 
       const teks = aksi === 'uji'
         ? String(badan.teks
-          ?? '<b>Cyber-Intelpas tersambung.</b>\nPesan ini pesan percobaan. '
+          ?? '<b>Trans-Siber PAS tersambung.</b>\nPesan ini pesan percobaan. '
              + 'Bila Anda membacanya, jalur pengiriman laporan sudah siap dipakai.')
         : String(badan.teks ?? '')
       const dokumen = Array.isArray(badan.dokumen) ? badan.dokumen : []

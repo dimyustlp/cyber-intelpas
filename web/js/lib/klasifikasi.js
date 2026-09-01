@@ -1,5 +1,5 @@
 /**
- * Mesin klasifikasi berita Cyber-Intelpas.
+ * Mesin klasifikasi berita Trans-Siber PAS.
  *
  * ---------------------------------------------------------------------------
  * Versi 4 — mesin mulai membaca penerbit, bukan hanya teks

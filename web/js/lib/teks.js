@@ -1,5 +1,5 @@
 /**
- * Pengolah teks bahasa Indonesia untuk Cyber-Intelpas.
+ * Pengolah teks bahasa Indonesia untuk Trans-Siber PAS.
  *
  * Berkas ini lahir dari satu temuan: mesin lama mencocokkan kata kunci dengan
  * `indexOf` biasa. Akibatnya dua kesalahan terjadi bersamaan setiap hari.
@@ -35,9 +35,32 @@
 
 /* -------------------------------------------------------------- normalisasi */
 
-/** Sisa templat penilaian crawler. Isinya sama untuk hampir semua baris. */
+/**
+ * Sisa templat penilaian crawler. Isinya sama untuk hampir semua baris.
+ *
+ * Bentuk kedua — yang diawali "TOPIK:" atau "SKOR ANCAMAN:" — menutupi 447 dari
+ * 779 baris arsip, lebih dari separuhnya, dan selama ini lolos seluruhnya.
+ * Akibatnya dua tempat sekaligus: mesin klasifikasi menimbang kata "institusi",
+ * "masalah", dan "ancaman" yang berasal dari templat, bukan dari beritanya; dan
+ * lampiran laporan harian mengulang kalimat yang sama di bawah setiap butir,
+ * yang membuat pembacanya berhenti membaca.
+ *
+ * Wujudnya selalu runtun "LABEL: nilai" yang ditutup "REKOMENDASI: ...", dengan
+ * label yang berbeda-beda antar-versi crawler. Karena itu yang dikenali adalah
+ * pembuka dan penutupnya, bukan daftar labelnya — daftar label akan usang pada
+ * versi crawler berikutnya tanpa ada yang tahu.
+ *
+ * Pola itu satu-satunya di daftar ini yang PEKA HURUF BESAR-KECIL, dan itu
+ * disengaja. Versi pertamanya tidak, dan ia memakan kalimat manusia biasa:
+ * "Kepala Lapas memberi arahan tentang topik: integritas petugas dan
+ * rekomendasi: perbaikan layanan kunjungan" tinggal menjadi "Kepala Lapas
+ * memberi arahan tentang". Crawler selalu menulis labelnya dengan huruf besar;
+ * orang yang menulis kalimat tidak. Itu pembeda yang cukup, dan lebih murah
+ * daripada kehilangan separuh kalimat pada berita yang justru penting.
+ */
 const POLA_BOILERPLATE = [
   /risiko\s*:\s*(rendah|sedang|tinggi|kritis)\s*analisis\s*:[\s\S]*?rekomendasi\s*:[^.]*\.?/gi,
+  /(?:TOPIK|SKOR ANCAMAN|FREKUENSI ISU)\s*:[\s\S]*?REKOMENDASI\s*:[^.]*\.?/g,
   /risiko\s*:\s*(rendah|sedang|tinggi|kritis)/gi,
   /analisis\s*:\s*berita(\/konten)?\s*bersifat informatif umum[^.]*\./gi,
   /analisis\s*:\s*isu memerlukan perhatian[^.]*\./gi,

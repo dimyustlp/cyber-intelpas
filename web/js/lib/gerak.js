@@ -1,5 +1,5 @@
 /**
- * Lapisan gerak Cyber-Intelpas.
+ * Lapisan gerak Trans-Siber PAS.
  *
  * Aturan yang dipegang berkas ini: gerak dipakai untuk menjelaskan, bukan untuk
  * menghibur. Setiap animasi di sini menjawab satu pertanyaan yang memang dimiliki

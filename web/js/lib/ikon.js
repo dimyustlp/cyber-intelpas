@@ -32,6 +32,7 @@ export const IKON = {
   unduh: B('<path d="M12 3v12"/><path d="m7.5 10.5 4.5 4.5 4.5-4.5"/><path d="M4 20h16"/>'),
   kirim: B('<path d="M21 3 10.5 13.5"/><path d="M21 3 14.5 21l-4-7.5L3 9.5 21 3Z"/>'),
   tambah: B('<path d="M12 5v14M5 12h14"/>'),
+  kurang: B('<path d="M5 12h14"/>'),
   tutup: B('<path d="m6 6 12 12M18 6 6 18"/>'),
   centang: B('<path d="m5 12.5 4.5 4.5L19 7"/>'),
   panahKanan: B('<path d="M5 12h14"/><path d="m13 6 6 6-6 6"/>'),

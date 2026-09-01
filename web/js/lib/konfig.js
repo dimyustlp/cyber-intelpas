@@ -18,7 +18,21 @@
 const parameter = new URLSearchParams(globalThis.location?.search ?? '')
 
 export const KONFIG = {
-  nama: 'Cyber-Intelpas',
+  /*
+     Nama sistem, satu tempat.
+
+     Sampai 1 September 2026 sistem ini bernama Cyber-Intelpas, dan namanya
+     ditulis ulang di belasan berkas. Sekarang halaman apa pun yang perlu
+     menyebut namanya mengambilnya dari sini — termasuk kop menu samping dan
+     halaman masuk, yang dulu menuliskannya sendiri.
+
+     Yang TIDAK ikut berganti dan tidak boleh diganti: ranah username bayangan
+     di lib/api.js, nama folder, nama repositori, dan nama tabel basis data.
+     Ketiganya bukan tulisan di layar, melainkan pengenal yang sudah tersimpan.
+  */
+  nama: 'Trans-Siber PAS',
+  /** Dua huruf pada lambang menu samping dan ikon peramban. */
+  lambang: 'TS',
   instansi: 'Direktorat Pengamanan dan Intelijen',
   induk: 'Direktorat Jenderal Pemasyarakatan',
   kementerian: 'Kementerian Imigrasi dan Pemasyarakatan',

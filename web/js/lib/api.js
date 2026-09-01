@@ -14,7 +14,17 @@
 
 import { KONFIG } from './konfig.js'
 
-const SIMPAN_SESI = 'cyberintelpas.sesi'
+const SIMPAN_SESI = 'transsiberpas.sesi'
+
+/*
+   Penanda lama, dari masa sistem ini bernama Cyber-Intelpas.
+
+   Mengganti nama penanda tanpa memindahkan isinya berarti setiap petugas yang
+   sedang masuk tiba-tiba terlempar ke halaman masuk pada penggelaran berikutnya
+   — tanpa satu pun pesan yang menjelaskan mengapa. Isinya dipindahkan sekali,
+   lalu penanda lamanya dihapus.
+*/
+const SIMPAN_SESI_LAMA = 'cyberintelpas.sesi'
 
 let sesi = null
 let profil = null
@@ -51,9 +61,22 @@ export function pesanRamah(galat) {
 
 // -------------------------------------------------------------------- sesi
 
+/** Memindahkan sesi yang tersimpan di bawah nama lama, sekali, lalu melupakannya. */
+function pindahkanSesiLama() {
+  try {
+    const lama = localStorage.getItem(SIMPAN_SESI_LAMA)
+    if (!lama) return null
+    localStorage.setItem(SIMPAN_SESI, lama)
+    localStorage.removeItem(SIMPAN_SESI_LAMA)
+    return lama
+  } catch {
+    return null
+  }
+}
+
 export function muatSesi() {
   try {
-    const mentah = localStorage.getItem(SIMPAN_SESI)
+    const mentah = localStorage.getItem(SIMPAN_SESI) || pindahkanSesiLama()
     if (!mentah) return null
     const isi = JSON.parse(mentah)
     if (!isi?.access_token) return null
@@ -181,6 +204,16 @@ export async function panggilEdge(nama, isi = {}) {
  * surel tidak berlaku bagi akun semacam ini. Yang lupa sandi menghubungi
  * administrator.
  */
+/*
+   Ranah ini TIDAK ikut berganti ketika sistem berganti nama menjadi
+   Trans-Siber PAS, dan tidak boleh diganti kelak.
+
+   Alamat bayangan tiap akun sudah tersimpan di GoTrue dalam bentuk
+   `<username>@pengguna.cyber-intelpas.id`. Mengganti ranahnya berarti setiap
+   percobaan masuk mencari alamat yang tidak ada — seluruh petugas terkunci
+   sekaligus, dan tidak ada pesan galat yang menyebutkan sebabnya. Nama sistem
+   adalah tulisan di layar; ranah ini adalah pengenal yang sudah dipakai.
+*/
 export const RANAH_USERNAME = 'pengguna.cyber-intelpas.id'
 
 /** Benar bila yang diketik memang berbentuk alamat surel, bukan username. */

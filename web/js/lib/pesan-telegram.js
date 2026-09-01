@@ -159,7 +159,7 @@ export function pesanLaporan(olahan, opsi = {}) {
   }
 
   baris.push(`<i>Klasifikasi: ${lepas(opsi.klasifikasi || 'Internal')}. `
-    + 'Disusun otomatis oleh Cyber-Intelpas dari data terklasifikasi mesin. '
+    + 'Disusun otomatis oleh Trans-Siber PAS dari data terklasifikasi mesin. '
     + 'Laporan utuh terlampir.</i>')
 
   return rapikan(baris)

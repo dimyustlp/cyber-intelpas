@@ -1,5 +1,5 @@
 /* =============================================================================
-   Cyber-Intelpas — Sistem Desain
+   Trans-Siber PAS — Sistem Desain
    =============================================================================
    Satu berkas, tanpa proses bangun, tanpa kerangka kerja. Seluruh warna hidup
    sebagai token pada :root, dan komponen hanya membaca token. Aturan ini yang
@@ -2896,3 +2896,452 @@ kbd {
 
 .sunting-pengguna .pilihan.penuh,
 .sunting-pengguna .masukan { width: 100%; min-width: 0; }
+
+/* ==========================================================================
+   Ruang unit pelaksana teknis
+   --------------------------------------------------------------------------
+   Ruang ketiga, sesudah ruang pusat dan ruang kantor wilayah. Diberi aksen
+   sendiri dengan alasan yang sama seperti ruang wilayah: petugas yang membuka
+   dua akun berbeda pada dua tab harus tahu tab mana yang mana sebelum membaca
+   satu kata pun — dan yang paling mahal bukan salah baca, melainkan angka satu
+   unit yang dikira angka satu wilayah.
+
+   Rona ambar dipilih karena ia bukan tetangga hijau ruang wilayah maupun biru
+   ruang pusat pada lingkaran warna. Tiga ruang yang ronanya berdekatan hanya
+   bisa dibedakan bila ketiganya dilihat berdampingan, dan pembedaan yang
+   menuntut perbandingan tidak menolong siapa pun.
+   ========================================================================== */
+
+.cangkang[data-ruang="unit"] {
+  --accent:      #8A5512;
+  --accent-2:    #A76C1B;
+  --accent-soft: #F7EBD9;
+  --accent-tepi: #E3CBA2;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-tema="terang"]) .cangkang[data-ruang="unit"] {
+    --accent:      #E0A757;
+    --accent-2:    #EFC183;
+    --accent-soft: #33240C;
+    --accent-tepi: #4D3714;
+  }
+}
+
+:root[data-tema="gelap"] .cangkang[data-ruang="unit"] {
+  --accent:      #E0A757;
+  --accent-2:    #EFC183;
+  --accent-soft: #33240C;
+  --accent-tepi: #4D3714;
+}
+
+.cangkang[data-ruang="unit"] .merek-sub {
+  color: var(--accent-2);
+  font-weight: 600;
+}
+
+.cangkang[data-ruang="unit"] .kolom-utama { position: relative; }
+
+.cangkang[data-ruang="unit"] .kolom-utama::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  z-index: 5;
+}
+
+/* ==========================================================================
+   Kop ruang daerah
+   --------------------------------------------------------------------------
+   Menyebutkan cakupan halaman di kepala layar, dengan ukuran yang tidak bisa
+   dilewatkan. Sebelumnya keterangan itu berupa satu bilah pesan di antara ubin
+   — terbaca sekali pada hari pertama, lalu menjadi bagian dari perabot.
+
+   Angka di sebelah kanan sengaja tiga, bukan enam. Kop bukan tempat menaruh
+   seluruh angka; ia tempat menjawab "saya sedang melihat apa, dan sebesar apa".
+   ========================================================================== */
+
+.kop-wilayah {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px 26px;
+  align-items: flex-end;
+  justify-content: space-between;
+  padding: 18px 20px;
+  border-radius: var(--r-3);
+  border: 1px solid var(--accent-tepi);
+  background:
+    linear-gradient(135deg, var(--accent-soft) 0%, transparent 62%),
+    var(--surface);
+}
+
+.kop-wilayah-teks { min-width: 0; max-width: 62ch; }
+
+.kop-wilayah-teks h2 {
+  font-size: 1.32rem;
+  line-height: 1.25;
+  margin: 4px 0 6px;
+  letter-spacing: -0.012em;
+}
+
+.kop-wilayah-teks p {
+  font-size: 12.5px;
+  color: var(--ink-3);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.kop-wilayah-angka {
+  display: flex;
+  gap: 22px;
+  margin: 0;
+  flex-wrap: wrap;
+}
+
+.kop-wilayah-angka dt {
+  font-size: 10.5px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ink-4);
+  white-space: nowrap;
+}
+
+.kop-wilayah-angka dd {
+  margin: 2px 0 0;
+  font-size: 1.45rem;
+  font-weight: 700;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.kop-wilayah-angka dd[data-nada="kritis"] { color: var(--kritis); }
+
+@media (max-width: 700px) {
+  .kop-wilayah { padding: 15px 15px 16px; }
+  .kop-wilayah-angka { gap: 16px; }
+  .kop-wilayah-angka dd { font-size: 1.2rem; }
+}
+
+/* ==========================================================================
+   Batang perbandingan di dalam tabel
+   --------------------------------------------------------------------------
+   Satu kolom berisi panjang, bukan angka kedua. Mata membandingkan panjang
+   jauh lebih cepat daripada membandingkan sepuluh angka sekolom, dan angkanya
+   tetap ada di kolom sebelahnya bagi yang memerlukan nilai pastinya.
+   ========================================================================== */
+
+.bar-lacak {
+  height: 7px;
+  border-radius: 3px;
+  background: var(--line-3);
+  overflow: hidden;
+}
+
+.bar-lacak .bar-isi {
+  height: 100%;
+  width: var(--lebar, 0%);
+  border-radius: 3px;
+  background: var(--accent);
+}
+
+.bar-lacak .bar-isi[data-nada="kritis"]  { background: var(--kritis); }
+.bar-lacak .bar-isi[data-nada="sedang"]  { background: var(--tinggi); }
+.bar-lacak .bar-isi[data-nada="positif"] { background: var(--positif); }
+.bar-lacak .bar-isi[data-nada="netral"]  { background: var(--ink-4); }
+
+/* ==========================================================================
+   Sikap unit dan tanggapan tersimpan
+   ========================================================================== */
+
+.sikap-deret {
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+}
+
+.sikap-baris { display: flex; flex-direction: column; gap: 5px; }
+
+/* Tanggapan yang sudah pernah ditulis, ditampilkan di dalam kartu beritanya.
+   Diberi tepi kiri, bukan kotak penuh: ia keterangan yang menempel pada berita
+   di atasnya, bukan bagian yang berdiri sendiri. */
+.tanggapan-tersimpan {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-left: 3px solid var(--accent);
+  background: var(--surface-3);
+  border-radius: 0 var(--r-2) var(--r-2) 0;
+}
+
+.tanggapan-tersimpan p {
+  margin: 6px 0 0;
+  line-height: 1.55;
+}
+
+/* Status pusat di kaki panel mesin — keterangan, bukan kendali. */
+.mesin-kaki {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line-2);
+}
+
+.positif-teks { color: var(--positif); }
+
+/* ==========================================================================
+   Peta Sebaran
+   --------------------------------------------------------------------------
+   Petanya SVG biasa, digambar dari garis pantai yang tersimpan di dalam repo.
+   Tidak ada ubin dari peladen luar, jadi tidak ada yang perlu ditunggu dan
+   tidak ada yang bisa gagal dimuat.
+   ========================================================================== */
+
+.peta-tata {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 14px;
+  align-items: start;
+}
+
+@media (max-width: 1080px) {
+  .peta-tata { grid-template-columns: minmax(0, 1fr); }
+}
+
+/*
+   Laut dan daratan diberi warnanya sendiri, bukan dipinjam dari token
+   permukaan.
+
+   Token permukaan disusun untuk kartu yang bertumpuk, dan selisih antartingkatnya
+   memang dibuat halus. Dipakai untuk peta, selisih sehalus itu membuat kepulauan
+   ini terbaca sebagai noda: daratannya nyaris tidak terpisah dari lautnya, dan
+   titik unit yang berdiri di atasnya kehilangan acuan letak sama sekali.
+*/
+.peta-wadah {
+  --peta-laut:  #DCE8F4;
+  --peta-darat: #FBFCFE;
+  --peta-tepi:  #93A6BD;
+
+  position: relative;
+  background: var(--peta-laut);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-2);
+  overflow: hidden;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-tema="terang"]) .peta-wadah {
+    --peta-laut:  #0A111C;
+    --peta-darat: #24334C;
+    --peta-tepi:  #4A5D80;
+  }
+}
+
+:root[data-tema="gelap"] .peta-wadah {
+  --peta-laut:  #0A111C;
+  --peta-darat: #24334C;
+  --peta-tepi:  #4A5D80;
+}
+
+/*
+   Legenda peta ini duduk di bawah petanya, tidak melayang di atasnya seperti
+   bawaan .peta-legenda.
+
+   Kepulauan Indonesia membentang penuh dari tepi kiri sampai tepi kanan kotak
+   pandang, sehingga tidak ada satu pun sudut yang benar-benar kosong: kotak
+   yang melayang selalu menutupi unit seseorang. Yang tertutup itu justru tidak
+   pernah disadari pembacanya — ia hanya melihat daerah yang kebetulan tidak
+   berpenanda.
+*/
+.peta-tata .peta-legenda {
+  position: static;
+  box-shadow: none;
+  border: 0;
+  border-radius: 0;
+  padding: 11px 4px 3px;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  background: none;
+  font-size: 12px;
+}
+
+.peta-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  /* Kepulauan Indonesia jauh lebih lebar daripada tinggi; membiarkan tingginya
+     mengikuti isi membuat peta setinggi satu layar penuh pada layar sempit. */
+  max-height: min(62vh, 560px);
+  cursor: grab;
+  touch-action: none;
+}
+
+.peta-svg.menyeret { cursor: grabbing; }
+
+.peta-daratan path {
+  fill: var(--peta-darat);
+  stroke: var(--peta-tepi);
+  stroke-linejoin: round;
+  /* Tebal garis tidak ikut membesar saat peta diperbesar; tanpa ini, garis
+     pantai pada perbesaran penuh setebal pulaunya sendiri. */
+  vector-effect: non-scaling-stroke;
+  stroke-width: 0.7;
+}
+
+/* Tetangga digambar samar: hadir secukupnya untuk menjelaskan mengapa
+   Kalimantan dan Papua terpotong, tanpa ikut menarik perhatian. */
+.peta-tetangga path {
+  fill: var(--peta-darat);
+  fill-opacity: 0.4;
+  stroke: none;
+}
+
+.peta-titik circle {
+  stroke: var(--peta-darat);
+  cursor: pointer;
+  transition: r 120ms ease;
+}
+
+.peta-titik circle:hover,
+.peta-titik circle:focus-visible {
+  stroke: var(--ink);
+  outline: none;
+}
+
+/* Gaya .peta-legenda sendiri sudah ada di bagian sistem desain — kotak
+   melayang di sudut peta. Yang ditambahkan di sini hanya isi butirnya. */
+.peta-legenda-butir {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--ink-2);
+}
+
+.peta-legenda-butir i {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  display: block;
+  flex: none;
+}
+
+/* Angkanya dirapatkan ke kanan supaya lima baris legenda terbaca sebagai satu
+   kolom angka, bukan sebagai lima kalimat dengan panjang berbeda. */
+.peta-legenda-butir b { color: var(--ink); margin-left: auto; }
+
+.peta-catatan {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  padding: 4px 4px 2px;
+  max-width: 92ch;
+}
+
+.peta-catatan svg { width: 15px; height: 15px; flex: none; margin-top: 1px; }
+
+/* -------------------------------------------------------- panel samping */
+
+.peta-panel {
+  background: var(--surface);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-3);
+  padding: 14px 14px 16px;
+  /* Menempel saat halaman digulir: daftar unit terpanas adalah alasan orang
+     membuka halaman ini, dan menggulir peta tidak boleh membuatnya hilang. */
+  position: sticky;
+  top: 12px;
+  max-height: calc(100vh - 90px);
+  overflow-y: auto;
+}
+
+.peta-panel-kop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.peta-panel-judul {
+  font-size: 1.02rem;
+  line-height: 1.3;
+  margin: 2px 0 4px;
+}
+
+.peta-daftar,
+.peta-berita { list-style: none; margin: 0; padding: 0; }
+
+.peta-daftar button {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 7px 6px;
+  background: none;
+  border: 0;
+  border-radius: var(--r-1);
+  text-align: left;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+}
+
+.peta-daftar button:hover { background: var(--surface-3); }
+
+.peta-daftar i {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex: none;
+}
+
+.peta-daftar span { min-width: 0; flex: 1; display: block; }
+
+.peta-daftar-nama {
+  display: block;
+  font-size: 12.5px;
+  font-weight: 550;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.peta-angka {
+  display: flex;
+  gap: 18px;
+  margin: 0;
+  padding: 10px 0;
+  border-top: 1px solid var(--line-2);
+  border-bottom: 1px solid var(--line-2);
+}
+
+.peta-angka dt {
+  font-size: 10.5px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ink-4);
+}
+
+.peta-angka dd {
+  margin: 2px 0 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.peta-berita li {
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line-3);
+}
+
+.peta-berita li:last-child { border-bottom: 0; }
+
+.peta-berita-judul {
+  display: block;
+  font-size: 12.5px;
+  line-height: 1.4;
+  margin-bottom: 4px;
+}

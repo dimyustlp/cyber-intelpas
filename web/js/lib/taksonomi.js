@@ -1,5 +1,5 @@
 /**
- * Taksonomi isu pemasyarakatan untuk Cyber-Intelpas.
+ * Taksonomi isu pemasyarakatan untuk Trans-Siber PAS.
  *
  * Sumber: rumusan Direktorat Pengamanan dan Intelijen, Ditjen Pemasyarakatan.
  * Berkas ini satu-satunya tempat taksonomi didefinisikan. Mesin klasifikasi,

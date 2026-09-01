@@ -47,27 +47,55 @@ export const PERAN = {
     tugas: 'Memantau dasbor eksekutif, mengkaji rekomendasi, dan menerbitkan keputusan.',
   },
   /*
-     Dua peran wilayah, bukan satu.
+     Tiga peran daerah, bertingkat menurut cakupannya.
 
-     Pekerjaannya memang dua: yang memasukkan berita, dan yang memeriksa
-     kiriman itu sebelum naik ke pusat. Menggabungkannya berarti pemeriksa
-     memeriksa pekerjaannya sendiri. Nama kuncinya sama persis dengan yang
-     diterima basis data pada migrasi 06 — kalau keduanya berbeda, pengguna
-     wilayah akan mendapat menu internal karena perannya tidak dikenali di sini.
+     Sampai 1 September 2026 hanya ada dua, dan keduanya dibagi menurut siapa
+     yang menginput dan siapa yang memeriksa. Pembagian itu diganti: memasukkan
+     berita kini wewenang Administrator Kantor Wilayah seorang diri, sedangkan
+     dua peran lainnya menelaah — satu untuk seluruh wilayah, satu untuk satu
+     unit saja.
+
+     Nama kuncinya sama persis dengan yang diterima basis data pada migrasi 13.
+     Kalau keduanya berbeda, pengguna daerah akan mendapat menu internal karena
+     perannya tidak dikenali di sini.
   */
   kanwil_admin: {
     nama: 'Administrator Kantor Wilayah',
     ringkas: 'Admin Kanwil',
     lingkup: 'eksternal',
-    tugas: 'Memeriksa kiriman berita dari wilayahnya sendiri sebelum naik ke pusat, '
-      + 'dan memantau keadaan pemberitaan wilayahnya. Tidak melihat data pusat.',
+    tugas: 'Memasukkan berita wilayahnya, menelaah kiriman sebelum naik ke pusat, '
+      + 'dan menerbitkan akun penelaah wilayah serta petugas unit. Tidak melihat data pusat.',
   },
-  kanwil_penginput: {
-    nama: 'Penginput Berita Kantor Wilayah',
-    ringkas: 'Penginput Kanwil',
+  kanwil_penelaah: {
+    nama: 'Penelaah Berita Kantor Wilayah',
+    ringkas: 'Penelaah Kanwil',
     lingkup: 'eksternal',
-    tugas: 'Memasukkan berita dari wilayahnya dan melihat riwayat kirimannya sendiri.',
+    tugas: 'Membaca seluruh berita wilayahnya dan menelaahnya — memvalidasi atau '
+      + 'merevisi penilaian mesin. Tidak memasukkan berita.',
   },
+  upt_petugas: {
+    nama: 'Petugas Unit Pelaksana Teknis',
+    ringkas: 'Petugas UPT',
+    lingkup: 'eksternal',
+    tugas: 'Membaca berita yang menyangkut unitnya sendiri, menelaahnya, dan '
+      + 'menuliskan tanggapan resmi unit atas berita itu.',
+  },
+}
+
+/*
+   Nama peran yang sudah tidak dipakai, dipetakan ke penggantinya.
+
+   Penggelaran tidak pernah serentak: basis data, Edge Function, dan berkas web
+   berpindah pada menit yang berbeda. Selama beberapa menit itu masih mungkin
+   sebuah profil terbaca dengan peran `kanwil_penginput`. Tanpa pemetaan ini,
+   pemiliknya masuk dan menemukan menu kosong — dan tidak ada satu kalimat pun
+   di layar yang menjelaskan mengapa.
+*/
+const PERAN_LAMA = { kanwil_penginput: 'kanwil_penelaah' }
+
+/** Nama peran yang berlaku hari ini untuk sebuah nilai apa pun dari basis data. */
+export function peranBaku(peran) {
+  return PERAN_LAMA[peran] || peran
 }
 
 /**
@@ -79,7 +107,10 @@ export const PERAN = {
  * RLS: `can_access_berita` menolak baris yang bukan wilayahnya, dan penolakan
  * itu berlaku sekalipun seseorang mengetik alamat halaman internal langsung.
  */
-export const PERAN_EKSTERNAL = new Set(['kanwil_admin', 'kanwil_penginput'])
+export const PERAN_EKSTERNAL = new Set(['kanwil_admin', 'kanwil_penelaah', 'upt_petugas'])
+
+/** Peran yang cakupannya satu unit, bukan satu kantor wilayah. */
+export const PERAN_UNIT = new Set(['upt_petugas'])
 
 export const IZIN = {
   super_admin: ['*'],
@@ -121,16 +152,38 @@ export const IZIN = {
     'lihat_tindak_lanjut', 'kelola_tindak_lanjut', 'perbarui_tindak_lanjut',
   ],
 
+  /*
+     Memasukkan berita tinggal pada satu peran daerah.
+
+     Sebelumnya `buat_berita` dipegang admin kanwil dan penginput sekaligus.
+     Sejak 1 September 2026 hanya admin kanwil — bukan karena penginput tidak
+     dipercaya, melainkan karena satu pintu masuk berarti satu orang yang bisa
+     ditanya ketika sebuah kiriman keliru.
+  */
   kanwil_admin: [
-    'lihat_dasbor_wilayah', 'buat_berita', 'lihat_kiriman_wilayah',
-    'periksa_kiriman_wilayah',
-    // Menerbitkan akun penginput di wilayahnya sendiri. Batasnya ditegakkan
-    // Edge Function, bukan izin ini — izin ini hanya menentukan menunya muncul.
+    'lihat_dasbor_wilayah', 'buat_berita', 'lihat_berita_wilayah',
+    'lihat_kiriman_wilayah', 'telaah_wilayah',
+    // Menerbitkan akun penelaah dan petugas unit di wilayahnya sendiri.
+    // Batasnya ditegakkan Edge Function, bukan izin ini — izin ini hanya
+    // menentukan menunya muncul.
     'kelola_pengguna_wilayah',
   ],
 
-  kanwil_penginput: [
-    'buat_berita', 'lihat_kiriman_sendiri',
+  kanwil_penelaah: [
+    'lihat_dasbor_wilayah', 'lihat_berita_wilayah', 'telaah_wilayah',
+  ],
+
+  /*
+     Petugas unit tidak mewarisi satu pun izin wilayah.
+
+     Kalau ia diberi `lihat_berita_wilayah`, halaman berita wilayah akan
+     terbuka baginya dan menampilkan — persis — apa yang dikirim peladen, yaitu
+     unitnya sendiri. Layarnya benar, tetapi judulnya berbohong: ia akan
+     membaca "Berita Wilayah" sambil melihat satu unit, dan menyimpulkan
+     wilayahnya hanya punya satu unit yang pernah diberitakan.
+  */
+  upt_petugas: [
+    'lihat_dasbor_unit', 'lihat_berita_unit', 'telaah_wilayah', 'tanggapi_berita_unit',
   ],
 }
 
@@ -140,25 +193,36 @@ export const IZIN_ADMIN = [
   'kelola_integrasi', 'kelola_koordinat', 'kelola_peran',
 ]
 
+/*
+   Seluruh fungsi di bawah menerjemahkan nama peran lebih dulu lewat
+   `peranBaku`. Diletakkan di satu tempat, bukan di tiap pemanggil, supaya
+   penambahan nama lama berikutnya tidak menuntut penyuntingan sepuluh berkas.
+*/
+
 export function punyaIzin(peran, izin) {
-  const daftar = IZIN[peran]
+  const daftar = IZIN[peranBaku(peran)]
   if (!daftar) return false
   if (daftar.includes('*')) return true
   return daftar.includes(izin)
 }
 
 export function izinPeran(peran) {
-  const daftar = IZIN[peran] || []
+  const daftar = IZIN[peranBaku(peran)] || []
   if (daftar.includes('*')) return [...new Set([...Object.values(IZIN).flat().filter((i) => i !== '*'), ...IZIN_ADMIN])]
   return daftar
 }
 
 export function labelPeran(peran) {
-  return PERAN[peran]?.nama || peran
+  return PERAN[peranBaku(peran)]?.nama || peran
 }
 
 export function adalahEksternal(peran) {
-  return PERAN_EKSTERNAL.has(peran)
+  return PERAN_EKSTERNAL.has(peranBaku(peran))
+}
+
+/** Benar bila cakupan peran ini satu unit, bukan satu kantor wilayah. */
+export function adalahUnit(peran) {
+  return PERAN_UNIT.has(peranBaku(peran))
 }
 
 /**
@@ -239,14 +303,36 @@ export const MENU_KANWIL = [
     butir: [
       { id: 'kanwil-dasbor', label: 'Ringkasan Wilayah', ikon: 'dasbor', izin: 'lihat_dasbor_wilayah' },
       { id: 'input', label: 'Kirim Berita', ikon: 'tambah', izin: 'buat_berita' },
-      { id: 'kanwil-riwayat', label: 'Riwayat Kiriman', ikon: 'arsip', izin: 'buat_berita' },
+      { id: 'wilayah-telaah', label: 'Telaah Wilayah', ikon: 'centang', izin: 'telaah_wilayah', lencana: 'telaahWilayah' },
+      { id: 'wilayah-berita', label: 'Berita Wilayah', ikon: 'berita', izin: 'lihat_berita_wilayah' },
       { id: 'pengguna', label: 'Pengguna Wilayah', ikon: 'pengguna', izin: 'kelola_pengguna_wilayah' },
     ],
   },
 ]
 
+/**
+ * Menu ruang unit — berdiri sendiri, dengan alasan yang sama seperti menu
+ * wilayah: butir baru di ruang lain tidak boleh bisa bocor ke sini hanya karena
+ * seseorang lupa memberinya syarat izin.
+ *
+ * Halaman telaahnya persis halaman yang dipakai kantor wilayah. Yang berbeda
+ * hanya cakupan datanya, dan cakupan itu ditentukan peladen — bukan halaman.
+ */
+export const MENU_UPT = [
+  {
+    grup: 'Ruang Unit',
+    butir: [
+      { id: 'upt-dasbor', label: 'Ringkasan Unit', ikon: 'dasbor', izin: 'lihat_dasbor_unit' },
+      { id: 'wilayah-telaah', label: 'Telaah & Tanggapan', ikon: 'centang', izin: 'telaah_wilayah', lencana: 'telaahWilayah' },
+      { id: 'wilayah-berita', label: 'Berita Unit', ikon: 'berita', izin: 'lihat_berita_unit' },
+    ],
+  },
+]
+
 export function menuUntuk(peran) {
-  const sumber = adalahEksternal(peran) ? MENU_KANWIL : MENU
+  const sumber = adalahUnit(peran) ? MENU_UPT
+    : adalahEksternal(peran) ? MENU_KANWIL
+      : MENU
   return sumber
     .map((g) => ({ ...g, butir: g.butir.filter((b) => punyaIzin(peran, b.izin)) }))
     .filter((g) => g.butir.length)
@@ -262,5 +348,7 @@ export function menuUntuk(peran) {
  */
 export function halamanAwal(peran) {
   const menu = menuUntuk(peran)
-  return menu[0]?.butir[0]?.id || (adalahEksternal(peran) ? 'input' : 'dasbor')
+  if (menu[0]?.butir[0]?.id) return menu[0].butir[0].id
+  if (adalahUnit(peran)) return 'upt-dasbor'
+  return adalahEksternal(peran) ? 'kanwil-dasbor' : 'dasbor'
 }

@@ -1,10 +1,11 @@
-# Migrasi Basis Data Cyber-Intelpas
+# Migrasi Basis Data Trans-Siber PAS
 
-Sebelas berkas migrasi. Empat yang pertama membenahi temuan audit 22 Agustus 2026;
-empat terakhir menyiapkan sumber data kantor wilayah, menutup lubang cakupan
-yang lahir dari perubahan itu, dan mendelegasikan penerbitan akun penginput
-kepada admin kanwil. Tiga terakhir membuka jalur Telegram yang selama ini buntu dan
-menutup fungsi tulis yang terbuka bagi seluruh pengguna. Semuanya idempoten —
+Empat belas berkas migrasi. Empat yang pertama membenahi temuan audit 22 Agustus
+2026; empat berikutnya menyiapkan sumber data kantor wilayah, menutup lubang
+cakupan yang lahir dari perubahan itu, dan mendelegasikan penerbitan akun kepada
+admin kanwil. Tiga sesudahnya membuka jalur Telegram yang selama ini buntu dan
+menutup fungsi tulis yang terbuka bagi seluruh pengguna. Tiga terakhir
+melengkapi data induk UPT dan menata ulang peran daerah. Semuanya idempoten —
 aman dijalankan berulang.
 
 | Berkas | Isi |
@@ -20,6 +21,32 @@ aman dijalankan berulang.
 | `20260901010000_integrasi_telegram_baku.sql` | Nilai bawaan `integration_id` — sebab sesungguhnya pendaftaran grup Telegram selalu gagal |
 | `20260901020000_pesan_harian_telegram.sql` | Penyusun pesan harian dari `snapshot_laporan`, beserta cron 06.30 WIB |
 | `20260901030000_tutup_fungsi_tulis_dan_agregat_nasional.sql` | Mencabut hak `authenticated` atas `terapkan_klasifikasi` dan rekap nasional |
+| `20260901040000_master_upt_nasional.sql` | Data induk UPT 492 → 531 unit, termasuk seluruh LPKA yang sebelumnya tidak ada |
+| `20260901050000_kabupaten_kota_yang_kosong.sql` | Menambal kabupaten/kota yang kosong pada data induk |
+| `20260901060000_rincian_negatif_laporan.sql` | Rincian berita negatif pada snapshot laporan |
+| `20260901070000_peran_upt_dan_telaah_wilayah.sql` | Peran `upt_petugas`, `kanwil_penginput` → `kanwil_penelaah`, kolom telaah wilayah dan tanggapan unit, pemicu pagar kolom |
+
+## Mengapa telaah daerah punya kolomnya sendiri (migrasi 13)
+
+Godaannya besar untuk membiarkan penelaah wilayah dan petugas unit mengisi
+`status_verifikasi` — kolom itu sudah ada, sudah punya nilai yang pas, dan
+antrean telaah pusat sudah membacanya.
+
+Yang menghalanginya bukan kerapian, melainkan wewenang. `status_verifikasi`
+menentukan sebuah berita ikut dihitung atau tidak. Bila petugas sebuah lapas
+boleh mengisinya, ia dapat menyatakan berita tentang lapasnya sendiri
+"Tidak Valid", dan berita itu lenyap dari angka nasional tanpa pernah dibaca
+seorang analis pun. Kesalahan semacam itu tidak meninggalkan jejak yang mudah
+terlihat: yang tampak hanyalah sebuah unit yang tidak pernah bermasalah.
+
+Karena itu putusan daerah tinggal di `telaah_wilayah_status`, dan keduanya
+terbaca berdampingan. Yang tetap boleh diubah daerah adalah penilaian mesinnya —
+kategori, sentimen, urgensi — sebab unit yang bersangkutan memang paling tahu
+apakah sebuah kabar menyangkut dirinya, dan revisinya wajib disertai alasan.
+
+Pembatasan kolom itu ditegakkan pemicu `jaga_sunting_wilayah`, bukan policy:
+RLS bekerja per baris, dan begitu sebuah baris boleh disunting, seluruh kolomnya
+boleh disunting.
 
 ## Mengapa migrasi 06 harus ada sebelum akun kanwil pertama
 

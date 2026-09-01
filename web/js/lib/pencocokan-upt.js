@@ -760,12 +760,22 @@ function tokenYangCocok(jendela, token, batasAwal = 0, rapatJendela = null) {
     if (terpakai[i]) continue
     const t = token[i]
 
-    // Token yang juga bagian dari penanda jenis hanya sah bila ia berdiri di
-    // luar penanda itu. Tanpa syarat ini, "rumah tahanan negara" pada berita
-    // rutan mana pun akan menunjuk Rutan Negara di Jembrana.
+    // Token yang juga bagian dari penanda jenis hanya sah bila ia MENEMPEL
+    // pada penanda itu — bukan sekadar berada di luarnya.
+    //
+    // Syarat "di luar penanda" saja tidak cukup, dan kekurangannya terbaca dari
+    // lampiran laporan pertama yang benar-benar dicetak: judul "Kabur dari
+    // Lapas, DPO Pengendali Narkoba Lintas Negara Ditangkap di Myanmar"
+    // dipetakan ke Rutan Kelas IIB Negara di Jembrana. Kata "negara" di situ
+    // milik frasa "lintas negara", bukan nama unit — dan "antarnegara",
+    // "negara tetangga", serta "kepala negara" akan menyusul setiap hari.
+    //
+    // Sebuah unit disebut namanya tepat setelah jenisnya: "Rutan Negara",
+    // "Rutan Kelas IIB Negara". Di antara keduanya hanya boleh ada kata kelas.
+    // Jarak sejauh itu yang membedakan nama unit dari kata biasa.
     if (KATA_DALAM_PENANDA.has(t)) {
       const p = posisiKata(jendela, t)
-      if (p >= batasAwal) terpakai[i] = true
+      if (p >= batasAwal && hanyaKataKelas(jendela.slice(batasAwal, p))) terpakai[i] = true
       continue
     }
 
@@ -794,6 +804,15 @@ function runtunRapat(jendela) {
     }
   }
   return hasil
+}
+
+/**
+ * Benar bila potongan di antara penanda jenis dan sebuah token hanya berisi
+ * kata kelas — "kelas", "iib", dan sejenisnya — atau tidak berisi apa pun.
+ */
+function hanyaKataKelas(potongan) {
+  const kata = potongan.split(' ').filter(Boolean)
+  return kata.every((k) => KATA_UMUM.has(k))
 }
 
 /** Posisi kata utuh pertama di dalam haystack, atau -1. */

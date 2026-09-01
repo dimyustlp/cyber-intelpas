@@ -709,7 +709,7 @@ function bagianCatatan(d, opsi) {
       <li>Satuan analisis adalah <b>peristiwa</b>. Beberapa publikasi yang menunjuk kejadian yang
         sama digabungkan; jumlah publikasi tetap ditampilkan sebagai ukuran eksposur, bukan
         sebagai jumlah kejadian.</li>
-      <li>Klasifikasi dikerjakan mesin aturan Cyber-Intelpas dan
+      <li>Klasifikasi dikerjakan mesin aturan Trans-Siber PAS dan
         <b>tetap memerlukan validasi Analis Intelijen Media</b> sebelum dijadikan dasar keputusan.
         Pada periode ini ${angka(terverifikasi)} dari ${angka(publikasi.length)} publikasi sudah
         diverifikasi analis${perluTelaah.length ? `, dan ${angka(perluTelaah.length)} ditandai perlu telaah` : ''}.</li>
@@ -961,7 +961,7 @@ export function susunLaporan(snapshot, opsi = {}) {
   <footer class="kaki">
     <b>Direktorat Pengamanan dan Intelijen</b> · Direktorat Jenderal Pemasyarakatan ·
     ${esc(nomor)}<br>
-    Disusun otomatis oleh Cyber-Intelpas pada ${esc(waktuSusun(d.dibuat_pada))}.
+    Disusun otomatis oleh Trans-Siber PAS pada ${esc(waktuSusun(d.dibuat_pada))}.
     Mesin klasifikasi aturan, tanpa penyedia AI luar.
   </footer>
 </div>

@@ -11,8 +11,9 @@
  * Wewenangnya bertingkat, sesuai cara kerja organisasinya:
  *
  *   Administrator Sistem Intelijen  →  menerbitkan peran apa pun.
- *   Administrator Kantor Wilayah    →  hanya Penginput Berita, hanya di
- *                                      wilayahnya sendiri.
+ *   Administrator Kantor Wilayah    →  hanya Penelaah Berita Kantor Wilayah dan
+ *                                      Petugas Unit Pelaksana Teknis, dan hanya
+ *                                      di wilayahnya sendiri.
  *
  * Formulir di bawah menyembunyikan pilihan yang tidak berhak dipakai, tetapi
  * itu bukan pengamanannya. Pengamanannya ada di peladen, dan tetap menolak
@@ -30,7 +31,7 @@ import { kartu, keping, kosong, pesanSistem, tombol, roti, konfirmasi } from '..
 import { amankan, angka, jarakWaktu, tanggalJam } from '../lib/format.js'
 import { ikon } from '../lib/ikon.js'
 import { ambil, perbarui, panggilEdge, pesanRamah, RANAH_USERNAME, tampakSurel } from '../lib/api.js'
-import { PERAN, labelPeran, adalahEksternal, punyaIzin } from '../lib/peran.js'
+import { PERAN, labelPeran, adalahEksternal, adalahUnit, peranBaku, punyaIzin } from '../lib/peran.js'
 import { penggunaDemo, KANWIL_DEMO } from '../lib/demo.js'
 
 /** Sama persis dengan pola di Edge Function. Yang menolak tetap peladen. */
@@ -48,15 +49,29 @@ const keadaanPengguna = {
   tambah: false,
   /** Peran yang sedang dipilih pada formulir, supaya keterangannya ikut berubah. */
   peranBaru: '',
+  /** Unit yang sedang diketik pada formulir penerbitan akun petugas unit. */
+  uptBaru: '',
+  /** Nama unit di wilayah penerbit, untuk daftar bantu pada kolom unit. */
+  upt: [],
   /** Hasil penerbitan terakhir — ditampilkan sekali, lalu hilang. */
   terbit: null,
 }
 
-function pilihanPeran(hanyaPenginput) {
+/**
+ * Peran yang boleh diterbitkan Administrator Kantor Wilayah.
+ *
+ * Dua, bukan satu. Sejak 1 September 2026 kantor wilayah menerbitkan penelaah
+ * wilayahnya sendiri dan petugas untuk tiap unit di bawahnya; keduanya sama
+ * sekali tidak bisa menerbitkan akun lain, dan batas itu ditegakkan Edge
+ * Function — daftar ini hanya menentukan isi kotak pilihan.
+ */
+export const PERAN_TERBIT_KANWIL = ['kanwil_penelaah', 'upt_petugas']
+
+function pilihanPeran(hanyaDaerah) {
   const daftar = Object.entries(PERAN).map(([kode, p]) => ({
     kode, nama: p.nama, eksternal: adalahEksternal(kode),
   }))
-  return hanyaPenginput ? daftar.filter((p) => p.kode === 'kanwil_penginput') : daftar
+  return hanyaDaerah ? daftar.filter((p) => PERAN_TERBIT_KANWIL.includes(p.kode)) : daftar
 }
 
 /* ------------------------------------------------------------------ baris */
@@ -162,9 +177,10 @@ function barisPengguna(u, sedangDisunting, kanwil, bolehSunting) {
 
 /* -------------------------------------------------------- formulir terbit */
 
-function formulirTerbit({ hanyaPenginput, wilayahTetap, daftarKanwil }) {
-  const peran = keadaanPengguna.peranBaru || (hanyaPenginput ? 'kanwil_penginput' : 'news_data_operator')
+function formulirTerbit({ hanyaDaerah, wilayahTetap, daftarKanwil }) {
+  const peran = keadaanPengguna.peranBaru || (hanyaDaerah ? 'kanwil_penelaah' : 'news_data_operator')
   const wilayah = adalahEksternal(peran)
+  const unit = adalahUnit(peran)
 
   return `
     <form class="terbit-akun" id="borang-terbit" novalidate>
@@ -177,15 +193,18 @@ function formulirTerbit({ hanyaPenginput, wilayahTetap, daftarKanwil }) {
 
         <div class="isian">
           <label for="t-peran">Peran <span class="wajib">wajib</span></label>
-          ${hanyaPenginput
-            ? `<input class="masukan" id="t-peran-tampil" value="Penginput Berita Kantor Wilayah" readonly>
-               <input type="hidden" id="t-peran" value="kanwil_penginput">`
-            : `<select class="pilihan penuh" id="t-peran">
-                ${pilihanPeran(false).map((p) => `
-                  <option value="${amankan(p.kode)}"${p.kode === peran ? ' selected' : ''}>
-                    ${amankan(p.nama)}${p.eksternal ? ' — wilayah' : ''}
-                  </option>`).join('')}
-               </select>`}
+          ${/*
+            Admin kanwil kini memilih di antara dua peran, bukan menerima satu
+            yang sudah ditetapkan. Kotak pilihannya tetap kotak pilihan yang
+            sama supaya penyimaknya satu, bukan dua jalur yang berpisah pelan-
+            pelan setiap kali salah satunya disunting.
+          */''}
+          <select class="pilihan penuh" id="t-peran">
+            ${pilihanPeran(hanyaDaerah).map((p) => `
+              <option value="${amankan(p.kode)}"${p.kode === peran ? ' selected' : ''}>
+                ${amankan(p.nama)}${!hanyaDaerah && p.eksternal ? ' — daerah' : ''}
+              </option>`).join('')}
+          </select>
           <div class="ket" id="t-ket-peran">${amankan(PERAN[peran]?.tugas || '')}</div>
         </div>
       </div>
@@ -232,13 +251,42 @@ function formulirTerbit({ hanyaPenginput, wilayahTetap, daftarKanwil }) {
                </div>`}
         </div>
 
+        ${/*
+          Kolom unit hanya muncul untuk peran yang cakupannya memang satu unit.
+          Menampilkannya bagi semua peran akan mengundang penerbit mengisinya
+          "sekalian" — dan sebuah akun kantor wilayah yang kolom unitnya terisi
+          diam-diam menyusut menjadi akun satu unit, tanpa satu pun pesan yang
+          menyebutkannya.
+        */''}
+        ${unit ? `
+        <div class="isian">
+          <label for="t-upt">Unit pelaksana teknis <span class="wajib">wajib</span></label>
+          <input class="masukan" id="t-upt" list="daftar-upt-terbit" autocomplete="off"
+                 value="${amankan(keadaanPengguna.uptBaru || '')}"
+                 placeholder="mis. Lapas Kelas IIA Kediri">
+          <datalist id="daftar-upt-terbit">
+            ${(keadaanPengguna.upt || []).map((u) => `<option value="${amankan(u)}"></option>`).join('')}
+          </datalist>
+          <div class="ket">
+            Ditulis <b>persis</b> seperti pada data induk UPT. Petugas ini hanya melihat berita
+            unit ini — salah satu huruf saja berarti layarnya kosong selamanya.
+          </div>
+        </div>` : `
         <div class="isian">
           <label for="t-jabatan">Jabatan</label>
           <input class="masukan" id="t-jabatan" type="text" autocomplete="off"
                  placeholder="mis. Kasubsi Intelijen">
           <div class="ket">Hanya keterangan pada profil. Tidak memengaruhi hak akses.</div>
-        </div>
+        </div>`}
       </div>
+
+      ${unit ? `
+      <div class="isian" style="margin-top:12px">
+        <label for="t-jabatan">Jabatan</label>
+        <input class="masukan" id="t-jabatan" type="text" autocomplete="off"
+               placeholder="mis. Kasubsi Pengamanan">
+        <div class="ket">Hanya keterangan pada profil. Tidak memengaruhi hak akses.</div>
+      </div>` : ''}
 
       <div class="kisi kisi-2" style="gap:12px;margin-top:12px">
         <div class="isian">
@@ -314,10 +362,10 @@ export function halamanPengguna({ keadaan, isi }) {
         ${keadaanPengguna.tambah && bolehTerbit ? kartu({
           judul: 'Terbitkan akun baru',
           ket: bolehWilayah
-            ? `Penginput Berita untuk ${amankan(wilayahSaya || 'wilayah Anda')}`
-            : 'Peran pusat maupun peran kantor wilayah',
+            ? `Penelaah wilayah atau petugas unit di ${amankan(wilayahSaya || 'wilayah Anda')}`
+            : 'Peran pusat, peran kantor wilayah, maupun peran unit',
           isi: formulirTerbit({
-            hanyaPenginput: bolehWilayah,
+            hanyaDaerah: bolehWilayah,
             wilayahTetap: bolehWilayah ? wilayahSaya : null,
             daftarKanwil: keadaanPengguna.kanwil,
           }),
@@ -346,7 +394,7 @@ export function halamanPengguna({ keadaan, isi }) {
                     u,
                     keadaanPengguna.sunting === u.id,
                     keadaanPengguna.kanwil,
-                    bolehSemua || (bolehWilayah && u.role === 'kanwil_penginput'),
+                    bolehSemua || (bolehWilayah && PERAN_TERBIT_KANWIL.includes(peranBaku(u.role))),
                   )).join('')}
                 </tbody>
               </table>
@@ -384,11 +432,13 @@ export function halamanPengguna({ keadaan, isi }) {
     const peran = nilai('#t-peran')
     const username = nilai('#t-username').trim().toLowerCase()
     const kanwil = nilai('#t-kanwil').trim()
+    const upt = nilai('#t-upt').trim()
     const jabatan = nilai('#t-jabatan').trim()
     const sandi = nilai('#t-sandi')
     const sandi2 = nilai('#t-sandi2')
 
     const wilayah = adalahEksternal(peran)
+    const unit = adalahUnit(peran)
     const fokus = (id) => isi.querySelector(id)?.focus()
 
     /*
@@ -421,6 +471,23 @@ export function halamanPengguna({ keadaan, isi }) {
       fokus('#t-kanwil'); return
     }
 
+    /*
+       Akun petugas unit tanpa nama unit adalah akun yang tidak pernah melihat
+       satu baris pun: policy basis data menolak setiap barisnya, dan layarnya
+       kosong tanpa sebab yang terbaca. Ditahan di sini supaya penerbitnya tahu
+       sekarang, bukan sesudah petugasnya melapor.
+    */
+    if (unit && !upt) {
+      roti('Akun petugas unit wajib menyebutkan unitnya.', 'sedang')
+      fokus('#t-upt'); return
+    }
+
+    if (unit && keadaanPengguna.upt.length && !keadaanPengguna.upt.includes(upt)) {
+      roti('Nama unit tidak ada pada data induk. Pilihlah dari daftar yang muncul saat mengetik.',
+        'sedang', 7000)
+      fokus('#t-upt'); return
+    }
+
     if (sandi.length < 8) { roti('Kata sandi awal minimal 8 karakter.', 'sedang'); fokus('#t-sandi'); return }
     if (sandi !== sandi2) { roti('Kedua kata sandi belum sama.', 'sedang'); fokus('#t-sandi2'); return }
 
@@ -451,6 +518,7 @@ export function halamanPengguna({ keadaan, isi }) {
         role: peran,
         jabatan,
         assigned_kanwil: wilayah ? kanwil : null,
+        assigned_upt: unit ? upt : null,
         password: sandi,
       })
 
@@ -460,6 +528,7 @@ export function halamanPengguna({ keadaan, isi }) {
       keadaanPengguna.terbit = { nama, masuk: hasil.masuk_dengan || username }
       keadaanPengguna.tambah = false
       keadaanPengguna.peranBaru = ''
+      keadaanPengguna.uptBaru = ''
       roti(hasil.pesan || 'Akun diterbitkan.', 'positif', 6000)
     } catch (galat) {
       // Pesan dari Edge Function sudah berbahasa Indonesia dan menyebut sebabnya;
@@ -554,6 +623,7 @@ export function halamanPengguna({ keadaan, isi }) {
         jabatan: isi.querySelector('#t-jabatan')?.value || '',
         kanwil: isi.querySelector('#t-kanwil')?.value || '',
       }
+      keadaanPengguna.uptBaru = isi.querySelector('#t-upt')?.value || keadaanPengguna.uptBaru
       keadaanPengguna.peranBaru = ev.target.value
       gambar()
       const pasang = (id, nilai) => { const el = isi.querySelector(id); if (el && nilai) el.value = nilai }
@@ -562,6 +632,10 @@ export function halamanPengguna({ keadaan, isi }) {
       pasang('#t-jabatan', simpanan.jabatan)
       pasang('#t-kanwil', simpanan.kanwil)
     }
+  })
+
+  isi.addEventListener('input', (ev) => {
+    if (ev.target.id === 't-upt') keadaanPengguna.uptBaru = ev.target.value
   })
 
   isi.addEventListener('submit', (ev) => { ev.preventDefault(); terbitkan() })
@@ -574,7 +648,7 @@ export function halamanPengguna({ keadaan, isi }) {
     if (aksi === 'buka-terbit') {
       keadaanPengguna.tambah = true
       keadaanPengguna.terbit = null
-      keadaanPengguna.peranBaru = bolehWilayah ? 'kanwil_penginput' : ''
+      keadaanPengguna.peranBaru = bolehWilayah ? 'kanwil_penelaah' : ''
       gambar()
       isi.querySelector('#t-nama')?.focus()
     } else if (aksi === 'batal-terbit') {
@@ -605,6 +679,7 @@ export function halamanPengguna({ keadaan, isi }) {
         ? penggunaDemo().filter((u) => u.assigned_kanwil === (wilayahSaya || KANWIL_DEMO))
         : penggunaDemo()
       keadaanPengguna.kanwil = [KANWIL_DEMO, 'Kanwil Jawa Tengah', 'Kanwil Jawa Timur']
+      keadaanPengguna.upt = ['Lapas Kelas IIA Kediri', 'Rutan Kelas IIB Kediri', 'LPKA Kelas I Blitar']
       keadaanPengguna.dimuat = true
       gambar()
       return
@@ -625,10 +700,20 @@ export function halamanPengguna({ keadaan, isi }) {
     // yang diketik tangan akan berbeda ejaannya dari yang ada di master, dan
     // pembatasan wilayah dicocokkan persis huruf demi huruf.
     try {
-      const unit = await ambil('upt', { select: 'kanwil', aktif: 'eq.true', limit: 1000 }) || []
+      const unit = await ambil('upt', { select: 'nama_upt,kanwil', aktif: 'eq.true', limit: 1000 }) || []
       keadaanPengguna.kanwil = [...new Set(unit.map((u) => u.kanwil).filter(Boolean))].sort()
+
+      /* Admin kanwil hanya boleh menerbitkan petugas untuk unit di wilayahnya
+         sendiri. Daftar bantunya dipotong di sini juga — bukan sebagai
+         penjagaan, melainkan supaya ia tidak perlu mencari namanya di antara
+         lima ratus unit yang sebagian besar bukan urusannya. */
+      const relevan = bolehWilayah && wilayahSaya
+        ? unit.filter((u) => u.kanwil === wilayahSaya)
+        : unit
+      keadaanPengguna.upt = [...new Set(relevan.map((u) => u.nama_upt).filter(Boolean))].sort()
     } catch {
       keadaanPengguna.kanwil = []
+      keadaanPengguna.upt = []
     }
 
     keadaanPengguna.dimuat = true
@@ -641,7 +726,7 @@ export function halamanPengguna({ keadaan, isi }) {
   return {
     judul: bolehWilayah ? 'Pengguna Wilayah' : 'Manajemen Pengguna',
     sub: bolehWilayah
-      ? `Menerbitkan dan mengatur penginput berita${wilayahSaya ? ` di ${wilayahSaya}` : ''}`
+      ? `Menerbitkan penelaah wilayah dan petugas unit${wilayahSaya ? ` di ${wilayahSaya}` : ''}`
       : 'Penerbitan akun, peran, wilayah penugasan, dan keaktifan',
   }
 }

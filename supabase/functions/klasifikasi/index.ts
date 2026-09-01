@@ -1,7 +1,7 @@
 /**
  * Edge Function: klasifikasi
  *
- * Menjalankan mesin aturan Cyber-Intelpas terhadap tabel `berita`, lalu
+ * Menjalankan mesin aturan Trans-Siber PAS terhadap tabel `berita`, lalu
  * menuliskan kembali kategori, subkategori, sentimen, urgensi, tingkat
  * perhatian, kata kunci, dan nama UPT hasil pencocokan.
  *

@@ -7,7 +7,7 @@
 
 import { KONFIG } from './lib/konfig.js'
 import { muatSesi, profilSekarang, keluar, muatProfil, pesanRamah } from './lib/api.js'
-import { menuUntuk, halamanAwal, labelPeran, adalahEksternal, PERAN } from './lib/peran.js'
+import { menuUntuk, halamanAwal, labelPeran, adalahEksternal, adalahUnit, peranBaku, PERAN } from './lib/peran.js'
 import { lencana } from './lib/hitung.js'
 import { ikon } from './lib/ikon.js'
 import { amankan, tanggalPanjang, inisial } from './lib/format.js'
@@ -26,10 +26,12 @@ import { halamanIntegrasi } from './pages/integrasi.js'
 import { halamanDistribusi } from './pages/distribusi.js'
 import { halamanTelaah } from './pages/telaah.js'
 import { halamanPemetaan } from './pages/pemetaan.js'
+import { halamanPeta } from './pages/peta.js'
 import { halamanProfil } from './pages/profil.js'
 import { halamanInput } from './pages/input.js'
 import { halamanSinkronisasi } from './pages/sinkronisasi.js'
-import { halamanKanwilDasbor, halamanKanwilRiwayat } from './pages/kanwil.js'
+import { halamanKanwilDasbor, halamanUptDasbor, halamanWilayahBerita } from './pages/kanwil.js'
+import { halamanWilayahTelaah } from './pages/wilayah-telaah.js'
 import { halamanPengguna } from './pages/pengguna.js'
 import { halamanBelumSiap } from './pages/belum-siap.js'
 
@@ -47,7 +49,7 @@ export const keadaan = {
   luarLingkup: 0,
   /** Benar bila arsip melewati batas pengaman penarikan dan tidak seluruhnya termuat. */
   terpotong: false,
-  hitungan: { peringatan: 0, telaah: 0, pemetaan: 0, negatif: 0 },
+  hitungan: { peringatan: 0, telaah: 0, pemetaan: 0, negatif: 0, telaahWilayah: 0 },
 }
 
 const HALAMAN = {
@@ -61,24 +63,43 @@ const HALAMAN = {
   distribusi: halamanDistribusi,
   telaah: halamanTelaah,
   pemetaan: halamanPemetaan,
+  peta: halamanPeta,
   profil: halamanProfil,
   input: halamanInput,
   sinkronisasi: halamanSinkronisasi,
   pengguna: halamanPengguna,
   'kanwil-dasbor': halamanKanwilDasbor,
-  'kanwil-riwayat': halamanKanwilRiwayat,
+  'upt-dasbor': halamanUptDasbor,
+  'wilayah-telaah': halamanWilayahTelaah,
+  'wilayah-berita': halamanWilayahBerita,
+  /* Nama lama halaman berita daerah. Petugas yang menyimpan tautannya di
+     peramban tidak perlu tahu halamannya berganti nama. */
+  'kanwil-riwayat': halamanWilayahBerita,
 }
 
 /* ------------------------------------------------------------------- tema */
 
-const KUNCI_TEMA = 'cyberintelpas.tema'
+const KUNCI_TEMA = 'transsiberpas.tema'
+
+/** Nama penanda dari masa sistem ini bernama Cyber-Intelpas. */
+const KUNCI_TEMA_LAMA = 'cyberintelpas.tema'
 
 function temaTersimpan() {
   // Parameter alamat menang atas pilihan tersimpan. Berguna untuk menyematkan
   // tautan bertema tetap, dan untuk memeriksa kedua tampilan saat pengembangan.
   const dariAlamat = new URLSearchParams(location.search).get('tema')
   if (dariAlamat === 'gelap' || dariAlamat === 'terang') return dariAlamat
-  try { return localStorage.getItem(KUNCI_TEMA) || '' } catch { return '' }
+  try {
+    // Pilihan yang tersimpan di bawah nama lama dipindahkan sekali. Tanpa ini,
+    // setiap petugas yang memilih tampilan terang kembali ke tampilan gelap
+    // pada penggelaran nama baru, tanpa pernah menyentuh tombolnya.
+    const lama = localStorage.getItem(KUNCI_TEMA_LAMA)
+    if (lama !== null && localStorage.getItem(KUNCI_TEMA) === null) {
+      localStorage.setItem(KUNCI_TEMA, lama)
+      localStorage.removeItem(KUNCI_TEMA_LAMA)
+    }
+    return localStorage.getItem(KUNCI_TEMA) || ''
+  } catch { return '' }
 }
 
 function pasangTema(nilai) {
@@ -127,7 +148,8 @@ function daftarMenu(peran) {
 function kerangka() {
   const peran = keadaan.profil.role
   const eksternal = adalahEksternal(peran)
-  const info = PERAN[peran] || {}
+  const unit = adalahUnit(peran)
+  const info = PERAN[peranBaku(peran)] || {}
 
   return `
   <a class="lompat" href="#isi">Lompat ke isi halaman</a>
@@ -137,14 +159,18 @@ function kerangka() {
      berada di ruang yang mana tanpa perlu membaca satu kata pun — dan petugas
      pusat yang tidak sengaja masuk dengan akun wilayah langsung menyadarinya.
   -->
-  <div class="cangkang"${eksternal ? ' data-ruang="wilayah"' : ''}>
+  <div class="cangkang"${unit ? ' data-ruang="unit"' : eksternal ? ' data-ruang="wilayah"' : ''}>
     <div class="tirai-menu" data-aksi="tutup-menu" aria-hidden="true"></div>
     <aside class="samping" id="samping">
       <div class="merek">
-        <div class="merek-lambang">CI</div>
+        <div class="merek-lambang">${amankan(KONFIG.lambang)}</div>
         <div class="merek-teks">
-          <div class="merek-nama">Cyber-Intelpas</div>
-          <div class="merek-sub">${amankan(eksternal ? 'Portal Kantor Wilayah' : 'Dirpamintel · Ditjen PAS')}</div>
+          <div class="merek-nama">${amankan(KONFIG.nama)}</div>
+          ${/* Disingkat, bukan diperpanjang. Keterangan yang terpotong di
+                tengah kata menyampaikan lebih sedikit daripada singkatan yang
+                utuh — dan "UPT" memang sebutan sehari-hari pemakainya. */''}
+          <div class="merek-sub">${amankan(unit ? 'Portal UPT'
+            : eksternal ? 'Portal Kantor Wilayah' : 'Dirpamintel · Ditjen PAS')}</div>
         </div>
       </div>
 
@@ -201,7 +227,7 @@ export function gambar() {
 
   try {
     const hasil = bangun({ keadaan, isi })
-    document.getElementById('bilah-judul').textContent = hasil?.judul || 'Cyber-Intelpas'
+    document.getElementById('bilah-judul').textContent = hasil?.judul || KONFIG.nama
     document.getElementById('bilah-sub').textContent = hasil?.sub || tanggalPanjang(new Date())
     // Gerak dipasang setelah isinya jadi, bukan sebelumnya. Kalau dipasang di
     // dalam tiap halaman, cepat atau lambat ada halaman yang lupa memasangnya.
@@ -410,9 +436,19 @@ async function segarkan() {
     */
     if (adalahEksternal(keadaan.profil?.role)) {
       const wilayah = keadaan.profil?.assigned_kanwil
+      const unit = keadaan.profil?.assigned_upt
+
+      // Ruang unit jauh lebih sempit daripada ruang wilayah, dan perbedaan itu
+      // harus terlihat pada peragaannya juga. Ruang unit yang menampilkan
+      // sebanyak ruang wilayah akan membuat siapa pun yang menilai bentuknya
+      // mengira pembatasan unitnya belum bekerja.
       keadaan.berita = keadaan.berita
-        .filter((_, i) => i % 4 === 0)
-        .map((b) => ({ ...b, kanwil_asal: wilayah }))
+        .filter((_, i) => (unit ? i % 17 === 0 : i % 4 === 0))
+        .map((b) => ({
+          ...b,
+          kanwil_asal: wilayah,
+          ...(unit ? { nama_upt: unit } : {}),
+        }))
     }
     keadaan.kesehatan = {
       status: 'sehat', masuk_sehari: 6, masuk_sepekan: 41, masuk_pekan_lalu: 38,

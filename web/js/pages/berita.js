@@ -213,7 +213,7 @@ function unduhCsv(daftar) {
   const berkas = new Blob([isi], { type: 'text/csv;charset=utf-8' })
   const tautan = document.createElement('a')
   tautan.href = URL.createObjectURL(berkas)
-  tautan.download = `cyber-intelpas-berita-${new Date().toISOString().slice(0, 10)}.csv`
+  tautan.download = `trans-siber-pas-berita-${new Date().toISOString().slice(0, 10)}.csv`
   tautan.click()
   setTimeout(() => URL.revokeObjectURL(tautan.href), 1000)
 }

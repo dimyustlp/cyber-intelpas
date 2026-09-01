@@ -26,6 +26,10 @@ const JENIS = {
   '.webp': 'image/webp',
   '.woff2': 'font/woff2',
   '.ico': 'image/x-icon',
+  // Laporan harian diterbitkan sebagai PDF. Tanpa baris ini peladen
+  // mengirimkannya sebagai octet-stream, dan peramban mengunduhnya alih-alih
+  // menampilkannya — yang membuat hasil laporan tidak bisa diperiksa mata.
+  '.pdf': 'application/pdf',
 }
 
 const peladen = createServer(async (permintaan, jawaban) => {
@@ -55,6 +59,6 @@ const peladen = createServer(async (permintaan, jawaban) => {
 })
 
 peladen.listen(PORTA, () => {
-  console.log(`Cyber-Intelpas disajikan di http://localhost:${PORTA}`)
+  console.log(`Trans-Siber PAS disajikan di http://localhost:${PORTA}`)
   console.log(`Mode peragaan          : http://localhost:${PORTA}/?mode=demo`)
 })

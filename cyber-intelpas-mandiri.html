@@ -3146,9 +3146,23 @@ function kueri(params = {}) {
   return s ? `?${s}` : ''
 }
 
+/**
+ * Menarik baris dari sebuah tabel.
+ *
+ * Pernah ada opsi ketiga di sini, `hitung`, yang memasang header
+ * `Prefer: count=…` supaya PostgREST mengembalikan jumlah baris seluruhnya.
+ * Opsi itu tidak pernah bisa bekerja: `panggil()` hanya mengembalikan badan
+ * jawaban dan membuang seluruh headernya, sehingga hitungan yang diminta tidak
+ * punya jalan untuk sampai ke pemanggil. Ia dibuang bersama `hitungBaris()`
+ * yang bersaudara dengannya — keduanya tampak berfungsi, dan itulah yang
+ * membuat keduanya berbahaya untuk ditinggalkan.
+ *
+ * Bila kelak sebuah halaman benar-benar butuh jumlah baris tanpa menariknya,
+ * yang harus diubah lebih dulu adalah `panggil()`, supaya ia meneruskan
+ * header jawaban. Menambahkan kembali opsinya saja hanya mengulang keadaan ini.
+ */
 async function ambil(tabel, params = {}, opsi = {}) {
   const kepala = {}
-  if (opsi.hitung) kepala.Prefer = `count=${opsi.hitung}`
   if (opsi.jangkauan) kepala.Range = opsi.jangkauan
   return panggil(`/rest/v1/${tabel}${kueri(params)}`, { method: 'GET', headers: kepala })
 }
@@ -3990,10 +4004,31 @@ __daftar('js/lib/pencocokan-upt.js', function (__minta) {
  */
 const KATA_UMUM = new Set([
   'lapas', 'rutan', 'lpka', 'lpp', 'bapas', 'lembaga', 'pemasyarakatan', 'rumah',
-  'tahanan', 'negara', 'balai', 'pembinaan', 'khusus', 'kelas', 'i', 'ii', 'iia',
+  'tahanan', 'balai', 'pembinaan', 'khusus', 'kelas', 'i', 'ii', 'iia',
   'iib', 'iii', 'ia', 'ib', 'umum', 'cabang', 'cab', 'kota', 'kabupaten', 'kab',
   'penempatan', 'sementara', 'daerah', 'wilayah', 'kantor', 'ditjenpas', 'pas',
 ])
+
+/**
+ * Kata yang membedakan unit, tetapi juga muncul di dalam penanda jenis.
+ *
+ * Hanya berisi "negara", dan satu kata itu punya sejarahnya sendiri. Ada satu
+ * UPT bernama "Rutan Kelas IIB Negara" — Negara adalah ibu kota Kabupaten
+ * Jembrana, Bali. Selama kata itu dianggap kata umum, unit tersebut tidak punya
+ * satu pun token pembeda dan hilang dari indeks; tiga berita tentangnya pada
+ * arsip saat ini berakhir "Belum Teridentifikasi", termasuk laporan hunian 213
+ * orang atas kapasitas 71.
+ *
+ * Tetapi kata itu juga penutup frasa "rumah tahanan negara", yang muncul pada
+ * hampir setiap berita rutan di Indonesia. Menjadikannya token biasa akan
+ * memetakan semuanya ke Jembrana.
+ *
+ * Jalan keluarnya bukan memilih salah satu, melainkan memakai posisi: token
+ * semacam ini hanya sah bila ia muncul SESUDAH penanda jenis, bukan sebagai
+ * bagian dari penanda itu sendiri. "Rutan Negara kini dihuni 213 warga binaan"
+ * lolos; "Rumah Tahanan Negara Kelas IIB Sidoarjo" tidak.
+ */
+const KATA_DALAM_PENANDA = new Set(['negara'])
 
 /** Penanda jenis UPT di dalam teks berita, dipetakan ke jenis kanonis. */
 const PENANDA_JENIS = [
@@ -4148,6 +4183,33 @@ function tokenPembeda(nama) {
     .filter((t) => t.length > 1 && !KATA_UMUM.has(t))
 }
 
+/** Kata wilayah yang dibuang dari token, tetapi ikut pada bentuk rapat. */
+const KATA_WILAYAH = new Set(['kota', 'kabupaten', 'kab'])
+
+/**
+ * Nama tempat sebuah unit, dirapatkan, dengan awalan wilayahnya tetap ikut.
+ *
+ * Kata "kota" dibuang dari token pembeda, dan memang harus — kalau tidak,
+ * setiap berita yang menyebut "kota" akan menarik unit mana pun yang namanya
+ * memuat kata itu. Tetapi empat unit memakai "Kota" sebagai bagian nama
+ * tempatnya: Kota Agung, Kota Bakti, Kota Pinang. Media menulis rapat,
+ * "Kotaagung", dan pada bentuk itu kata "agung" tidak berdiri sebagai kata
+ * utuh sehingga tidak pernah tercocokkan.
+ *
+ * Bentuk rapat ini hanya dibuat ketika ia benar-benar berbeda dari rapatan
+ * token biasa, sehingga tidak menambah jalur baru bagi unit yang sudah
+ * tertangani.
+ */
+function tempatRapatDari(nama, token) {
+  const tempat = normalkanUpt(nama)
+    .split(' ')
+    .filter((t) => t.length > 1 && (!KATA_UMUM.has(t) || KATA_WILAYAH.has(t)))
+    .join('')
+
+  if (tempat.length < 8 || tempat === token.join('')) return ''
+  return tempat
+}
+
 /**
  * Menyiapkan indeks pencarian dari daftar master UPT. Cukup dipanggil sekali,
  * hasilnya dipakai untuk seluruh berita.
@@ -4161,6 +4223,19 @@ function bangunIndeks(daftarUpt) {
   // sebuah nama tempat menunjuk satu unit saja di seluruh Indonesia.
   const hitungLintasJenis = new Map()
   const hitungKabkota = new Map()
+  // Berapa unit sejenis yang memakai sebuah token. Dipakai untuk mengenali
+  // token yang hanya dimiliki satu unit di seluruh Indonesia.
+  const hitungTokenJenis = new Map()
+
+  // Kata penyusun nama provinsi, dibaca dari data induk itu sendiri, bukan
+  // ditulis tangan — daftar provinsi bertambah, dan daftar tangan akan usang
+  // tanpa ada yang tahu. Dipakai untuk menahan nama provinsi menjadi penunjuk.
+  const KATA_PROVINSI = new Set()
+  for (const upt of daftarUpt) {
+    for (const kata of normalkanUpt(upt.provinsi || '').split(' ')) {
+      if (kata.length > 1) KATA_PROVINSI.add(kata)
+    }
+  }
 
   let dariWilayah = 0
 
@@ -4220,6 +4295,11 @@ function bangunIndeks(daftarUpt) {
     const kabkota = normalkanUpt(upt.kabupaten_kota || '').replace(/^(kota|kabupaten) /, '')
     if (kabkota) hitungKabkota.set(kabkota, (hitungKabkota.get(kabkota) || 0) + 1)
 
+    for (const t of new Set(token)) {
+      const kunciToken = `${jenis}::${t}`
+      hitungTokenJenis.set(kunciToken, (hitungTokenJenis.get(kunciToken) || 0) + 1)
+    }
+
     entri.push({
       nama,
       jenis,
@@ -4236,6 +4316,7 @@ function bangunIndeks(daftarUpt) {
       kunciJenis,
       namaNormal: normalkanUpt(nama),
       namaRapat: normalkanUpt(nama).replace(/\s+/g, ''),
+      tempatRapat: tempatRapatDari(nama, token),
       petunjuk: petunjuk && petunjuk !== kunci ? petunjuk : '',
       sebutan: [],
     })
@@ -4247,6 +4328,24 @@ function bangunIndeks(daftarUpt) {
     // sehingga penyebutan jenis yang keliru pun masih menunjuk unit yang sama.
     e.unikNasional = LINTAS_JENIS.has(e.jenis) && (hitungLintasJenis.get(e.kunci) || 0) === 1
     e.kabkotaUnik = Boolean(e.kabkota) && (hitungKabkota.get(e.kabkota) || 0) === 1
+    // Token yang cukup panjang untuk berarti, dan hanya dipakai unit ini di
+    // seluruh Indonesia. "Ngaseman" dan "Sukamiskin" masuk; "Nusakambangan",
+    // yang dipakai sembilan unit sekaligus, tidak.
+    //
+    // Nama provinsi juga tidak pernah masuk, walau secara hitungan ia bisa
+    // saja hanya muncul pada satu unit. "Lampung" hanya dipakai Rutan Kelas I
+    // Bandar Lampung di antara seluruh rutan — tetapi memberinya bobot sebagai
+    // penunjuk membuat "napi kabur dari Rutan Lampung Timur" dipetakan ke
+    // Bandar Lampung dengan keyakinan 72 persen, tepat melewati ambang, dan
+    // sekaligus menutup lapisan kabupaten/kota yang seharusnya menemukan
+    // Sukadana. Satu jawaban yang salah menggantikan satu jawaban yang benar.
+    e.tokenUnik = new Set(
+      e.token.filter((t) => (
+        t.length >= 6
+        && !KATA_PROVINSI.has(t)
+        && (hitungTokenJenis.get(`${e.jenis}::${t}`) || 0) === 1
+      )),
+    )
   }
 
   // Pasang sebutan populer, dan buang yang namanya tidak ada di data induk
@@ -4336,10 +4435,20 @@ function ambilJendela(teksNormal) {
       const dekat = teksNormal.slice(posisi + penanda.length, posisi + penanda.length + JENDELA_LEMBAGA)
       if (PENANDA_BUKAN_PAS.some((l) => cocokKata(dekat, l))) continue
 
+      const jendela = teksNormal.slice(posisi, posisi + penanda.length + JENDELA)
+
       hasil.push({
         jenis,
         posisi,
-        jendela: teksNormal.slice(posisi, posisi + penanda.length + JENDELA),
+        // Panjang penandanya sendiri, diukur dari awal jendela. Dipakai untuk
+        // menolak token yang cocok hanya karena ia bagian dari penanda —
+        // lihat KATA_DALAM_PENANDA.
+        panjangPenanda: penanda.length,
+        jendela,
+        // Bentuk rapat runtun kata di dalam jendela, dihitung sekali di sini.
+        // Sebelumnya ia dihitung ulang untuk setiap kandidat, yaitu 531 kali
+        // per jendela, untuk hasil yang selalu sama.
+        rapat: runtunRapat(jendela),
       })
     }
   }
@@ -4423,7 +4532,17 @@ function cocokkanUpt(teks, indeks, opsi = {}) {
       // Bentuk rapat hanya diuji sebagai satu kata utuh, bukan sebagai
       // potongan di tengah kata lain. Tanpa penjagaan ini, "Kejagung" akan
       // ditarik menjadi "Rutan Kelas IIB Kota Agung".
-      const cocok = tokenYangCocok(w.jendela, entri.token)
+      // Nama tempat yang dirapatkan media, termasuk awalan "Kota" yang pada
+      // token biasa selalu dibuang. "Lapas-Rutan Kotaagung Gelar Donor Darah"
+      // tidak memuat kata "agung" sebagai kata utuh, sehingga tanpa jalur ini
+      // dua unit di Tanggamus tidak pernah muncul bahkan sebagai saran.
+      if (entri.tempatRapat
+          && (cocokKata(w.jendela, entri.tempatRapat) || w.rapat.has(entri.tempatRapat))) {
+        catat(entri, jenisSama ? 0.9 : 0.8, 'nama-tempat-rapat')
+        continue
+      }
+
+      const cocok = tokenYangCocok(w.jendela, entri.token, w.panjangPenanda, w.rapat)
       if (!cocok.length) continue
 
       // Kata subjenis tidak pernah cukup berdiri sendiri. Judul "Rumah Dinas
@@ -4466,7 +4585,24 @@ function cocokkanUpt(teks, indeks, opsi = {}) {
       if (entri.kelas && w.jendela.includes(`kelas ${entri.kelas}`)) skor += 0.1
       if (entri.subjenis !== 'Umum' && cocokKata(w.jendela, normalkanUpt(entri.subjenis))) skor += 0.1
 
-      catat(entri, Math.min(0.9, skor), 'nama-sebagian')
+      // Token yang hanya dimiliki satu unit di seluruh Indonesia.
+      //
+      // Data induk memakai nama panjang, media memakai nama pendek: unitnya
+      // tercatat "Lapas Kelas IIA Ngaseman Nusakambangan", beritanya menulis
+      // "Lapas Kelas IIA Ngaseman". Separuh token cocok, dan separuh itu
+      // menghasilkan 66 persen — di bawah ambang, sehingga beritanya tidak
+      // terpetakan meskipun tidak ada unit lain di Indonesia yang bisa
+      // dimaksud.
+      //
+      // Rasio jumlah token adalah ukuran yang keliru untuk keadaan ini. Yang
+      // menentukan bukan berapa banyak kata yang cocok, melainkan apakah kata
+      // yang cocok itu menunjuk satu unit saja. "Ngaseman" menunjuk satu;
+      // "Nusakambangan", yang dipakai sembilan unit, tidak menunjuk apa pun
+      // sendirian — dan karena itu tidak ikut memberi tambahan.
+      const adaTokenUnik = cocok.some((t) => entri.tokenUnik.has(t))
+      if (adaTokenUnik) skor += 0.16
+
+      catat(entri, Math.min(0.9, skor), adaTokenUnik ? 'nama-token-unik' : 'nama-sebagian')
     }
   }
 
@@ -4549,17 +4685,32 @@ const TOKEN_SUBJENIS = new Set(['perempuan', 'narkotika', 'anak', 'terbuka', 'pe
  * Mencari token nama unit di dalam jendela, termasuk ketika media menulisnya
  * rapat tanpa spasi.
  *
- * Persoalannya nyata: data induk menulis "Lapas Narkotika Kelas IIA Tanjung
- * Pinang", sedangkan berita menulis "Lapas Narkotika Kelas IIA Tanjungpinang".
- * Menguji token satu per satu gagal pada "tanjung" dan "pinang"; menguji
- * seluruh nama dirapatkan gagal karena "narkotika" tetap terpisah. Yang
- * berhasil adalah menguji setiap runtun token yang berurutan — dan runtun
- * "tanjung pinang" dirapatkan menjadi "tanjungpinang" memang ada di sana.
+ * Persoalannya nyata, dan ia punya DUA arah.
  *
+ * Arah pertama: data induk menulis "Lapas Narkotika Kelas IIA Tanjung Pinang",
+ * berita menulis "Tanjungpinang". Menguji token satu per satu gagal pada
+ * "tanjung" dan "pinang"; menguji seluruh nama dirapatkan gagal karena
+ * "narkotika" tetap terpisah. Yang berhasil adalah merapatkan setiap runtun
+ * token yang berurutan — "tanjung pinang" menjadi "tanjungpinang".
+ *
+ * Arah kedua tertinggal bertahun-tahun, dan baru terlihat ketika empat berita
+ * Palangkaraya diperiksa satu per satu: data induk menulis "Palangkaraya"
+ * rapat, sementara berita — termasuk siaran resmi Ombudsman RI — menulis
+ * "Palangka Raya" berspasi. Merapatkan token induk tidak menolong, sebab yang
+ * perlu dirapatkan justru kata-kata di dalam teks. Karena itu jendela pun kini
+ * dirapatkan per runtun kata, dan kedua arah diperlakukan sama.
+ *
+ * @param {string} jendela potongan teks di sekitar penanda jenis
+ * @param {string[]} token token pembeda nama unit
+ * @param {number} [batasAwal=0] posisi minimum yang sah bagi token yang juga
+ *        muncul di dalam penanda jenis (lihat KATA_DALAM_PENANDA)
  * @returns {string[]} token yang berhasil dicocokkan, tanpa pengulangan
  */
-function tokenYangCocok(jendela, token) {
+function tokenYangCocok(jendela, token, batasAwal = 0, rapatJendela = null) {
   const terpakai = new Array(token.length).fill(false)
+  const rapat = rapatJendela || runtunRapat(jendela)
+
+  const adaDiJendela = (kata) => cocokKataLonggar(jendela, kata, batasAwal) || rapat.has(kata)
 
   // Runtun terpanjang diuji lebih dulu supaya "tanjungpinang" menang atas
   // kemungkinan "tanjung" yang kebetulan berdiri sendiri di tempat lain.
@@ -4570,7 +4721,7 @@ function tokenYangCocok(jendela, token) {
       if (!adaYangKosong) continue
 
       const rapat = token.slice(mulai, mulai + panjang).join('')
-      if (!cocokKataLonggar(jendela, rapat)) continue
+      if (!adaDiJendela(rapat)) continue
       for (let i = mulai; i < mulai + panjang; i += 1) terpakai[i] = true
     }
   }
@@ -4578,10 +4729,55 @@ function tokenYangCocok(jendela, token) {
   for (let i = 0; i < token.length; i += 1) {
     if (terpakai[i]) continue
     const t = token[i]
-    if (t.length >= 7 ? cocokKataLonggar(jendela, t) : cocokKata(jendela, t)) terpakai[i] = true
+
+    // Token yang juga bagian dari penanda jenis hanya sah bila ia berdiri di
+    // luar penanda itu. Tanpa syarat ini, "rumah tahanan negara" pada berita
+    // rutan mana pun akan menunjuk Rutan Negara di Jembrana.
+    if (KATA_DALAM_PENANDA.has(t)) {
+      const p = posisiKata(jendela, t)
+      if (p >= batasAwal) terpakai[i] = true
+      continue
+    }
+
+    if (t.length >= 7 ? adaDiJendela(t) : cocokKata(jendela, t)) terpakai[i] = true
   }
 
   return token.filter((_, i) => terpakai[i])
+}
+
+/**
+ * Seluruh runtun kata berurutan di dalam jendela, dirapatkan tanpa spasi.
+ *
+ * Dibatasi empat kata dan panjang minimum tujuh huruf: runtun pendek seperti
+ * "dikota" tidak membedakan apa pun, sedangkan runtun panjang seperti
+ * "palangkaraya" dan "kotaagung" justru satu-satunya bentuk yang dipakai
+ * sebagian media.
+ */
+function runtunRapat(jendela) {
+  const kata = jendela.split(' ').filter(Boolean)
+  const hasil = new Set()
+  for (let i = 0; i < kata.length; i += 1) {
+    let gabung = ''
+    for (let n = 0; n < 4 && i + n < kata.length; n += 1) {
+      gabung += kata[i + n]
+      if (n >= 1 && gabung.length >= 7) hasil.add(gabung)
+    }
+  }
+  return hasil
+}
+
+/** Posisi kata utuh pertama di dalam haystack, atau -1. */
+function posisiKata(haystack, kata) {
+  if (!kata) return -1
+  let dari = 0
+  for (;;) {
+    const p = haystack.indexOf(kata, dari)
+    if (p === -1) return -1
+    const sebelum = p === 0 ? ' ' : haystack[p - 1]
+    const sesudah = haystack[p + kata.length] ?? ' '
+    if (!/[a-z0-9]/.test(sebelum) && !/[a-z0-9]/.test(sesudah)) return p
+    dari = p + 1
+  }
 }
 
 function cocokKata(haystack, kata) {
@@ -4633,11 +4829,30 @@ function miripSatuHuruf(a, b) {
 }
 
 /** Mencari satu kata dalam jendela dengan toleransi selisih satu huruf. */
-function cocokKataLonggar(haystack, kata) {
+/**
+ * Mencari satu kata dalam jendela dengan toleransi selisih satu huruf.
+ *
+ * Toleransi itu sengaja TIDAK berlaku atas teks penanda jenisnya sendiri.
+ * Kata "tahanan" pada "Rumah Tahanan Negara" berbeda satu huruf dari
+ * "Tabanan", sehingga setiap berita rutan yang menulis nama panjangnya
+ * menyarankan Lapas Kelas IIB Tabanan di Bali dengan keyakinan 66 persen —
+ * cukup tinggi untuk masuk antrean analis, dan selalu keliru. Hal yang sama
+ * mengintai "lembaga", "pembinaan", dan "pemasyarakatan".
+ *
+ * Pencocokan persis tetap boleh menyentuh penanda: kata "perempuan" pada
+ * "Lembaga Pemasyarakatan Perempuan Kelas IIA Jakarta" memang bagian penanda,
+ * dan memang membedakan unitnya.
+ *
+ * @param {number} [batasAwal=0] posisi akhir penanda jenis di dalam jendela
+ */
+function cocokKataLonggar(haystack, kata, batasAwal = 0) {
   if (cocokKata(haystack, kata)) return true
   if (kata.length < 7) return false
+
+  let posisi = 0
   for (const potong of haystack.split(' ')) {
-    if (miripSatuHuruf(potong, kata)) return true
+    if (posisi >= batasAwal && miripSatuHuruf(potong, kata)) return true
+    posisi += potong.length + 1
   }
   return false
 }
@@ -4682,7 +4897,7 @@ function belumTerpetakan(nama) {
   return NILAI_TAK_TERPETAKAN.has(String(nama ?? '').trim().toLowerCase())
 }
 
-const META_PENCOCOK = { versi: 'kedekatan-v2.1', ambangOtomatis: AMBANG_OTOMATIS, ambangSaran: AMBANG_SARAN }
+const META_PENCOCOK = { versi: 'kedekatan-v2.2', ambangOtomatis: AMBANG_OTOMATIS, ambangSaran: AMBANG_SARAN }
 
 return { SEBUTAN_POPULER, normalkanUpt, bangunIndeks, ambilJendela, cocokkanUpt, NILAI_TAK_TERPETAKAN, belumTerpetakan, META_PENCOCOK };
 });

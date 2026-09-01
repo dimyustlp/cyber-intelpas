@@ -302,6 +302,46 @@ const kasusUpt = [
   { teks: 'Sepekan di Rutan KPK, Kejagung Terus Dalami Kasus Febrie Adriansyah', harap: null },
   { teks: 'Bawa Anak, Wanita Coba Selundupkan Sabu ke Rutan Salemba', harap: 'Rutan Kelas I Jakarta Pusat' },
   { teks: 'Kunjungan kerja ke Lembaga Pemasyarakatan Perempuan Kelas IIA Jakarta berjalan lancar', harap: 'Lapas Perempuan Kelas IIA Jakarta' },
+
+  // --- Kasus di bawah ini diambil dari berita yang benar-benar gagal ---
+  // Seluruhnya berakhir "Belum Teridentifikasi" pada arsip 1 September 2026,
+  // dan masing-masing mewakili satu cacat yang berbeda. Kalau salah satu dari
+  // mereka kembali gagal, cacatnya kembali.
+
+  // Nama induk rapat, berita berspasi. Kebalikan dari Tanjungpinang, dan
+  // arah yang tidak pernah ditangani sampai empat berita Palangkaraya
+  // diperiksa satu per satu — termasuk siaran resmi Ombudsman RI.
+  { teks: 'Anggota Ombudsman RI melakukan kunjungan kerja ke Lapas Perempuan Kelas IIA Palangka Raya, Kalimantan Tengah', harap: 'Lapas Perempuan Kelas IIA Palangkaraya' },
+  { teks: 'Pamapta I SPKT Polresta Palangka Raya Cek Rutin Tahanan di Rutan Palangka Raya', harap: 'Rutan Kelas IIA Palangkaraya' },
+
+  // Seluruh nama unitnya kata umum. "Negara" adalah ibu kota Jembrana, dan
+  // sekaligus penutup frasa "rumah tahanan negara" — sah hanya bila ia berdiri
+  // di luar penanda jenis.
+  { teks: 'Kapasitas 71 Orang, Rutan Negara Kini Dihuni 213 Warga Binaan', harap: 'Rutan Kelas IIB Negara' },
+  { teks: 'Petugas Rumah Tahanan Negara menggelar razia blok hunian', harap: null },
+  // Nama panjang sebuah rutan mana pun tidak boleh menarik unit di Jembrana,
+  // dan toleransi ejaan tidak boleh mengubah "tahanan" menjadi "Tabanan".
+  { teks: 'Rumah Tahanan Negara Kelas IIA Surakarta menggelar razia blok hunian', harap: 'Rutan Kelas I Surakarta' },
+
+  // Nama induk lebih panjang daripada yang ditulis media. Setengah token
+  // cocok, tetapi token yang cocok itu hanya dimiliki satu unit di Indonesia.
+  { teks: 'Lapas Kelas IIA Ngaseman menggelar Lomba Catur yang diikuti oleh pegawai dan PPNPN', harap: 'Lapas Kelas IIA Ngaseman Nusakambangan' },
+
+  // Nama provinsi tidak pernah menjadi penunjuk. Tanpa penjagaan ini, berita
+  // ini dipetakan ke Rutan Bandar Lampung dengan keyakinan 72 persen —
+  // melewati ambang, dan menutup lapisan kabupaten/kota yang benar.
+  { teks: 'Napi Kasus Narkoba yang Kabur dari Rutan Lampung Timur Sejak 2024 Ditangkap di Myanmar', harap: 'Rutan Kelas IIB Sukadana' },
+
+  // Unit baru dari daftar nasional, dan unit yang naik status menjadi Lapas.
+  { teks: 'Program Belajar Paket C Perkuat Pembinaan Pendidikan di Lapas Batulicin', harap: 'Lapas Kelas III Batulicin' },
+  { teks: 'Selamat bergabung kepada Peserta MagangHub Angkatan 1 Batch 2 di Lapas Kelas IIB Purwodadi', harap: 'Lapas Kelas IIB Purwodadi' },
+
+  // LPKA dengan nama lama yang dipakai hampir seluruh media.
+  { teks: 'Anak binaan Lapas Anak Kutoarjo mengikuti ujian paket B', harap: 'LPKA Kelas I Kutoarjo' },
+
+  // Berita yang memang tidak boleh dipetakan ke unit mana pun.
+  { teks: 'Kerusuhan di Lapas Ekuador, Petugas Keamanan Dipukul Mundur Narapidana', harap: null },
+  { teks: 'Sebanyak 91 persen Lapas dan Rutan di Jawa Timur mengalami overkapasitas', harap: null },
 ]
 
 let lulusUpt = 0

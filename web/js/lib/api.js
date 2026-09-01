@@ -121,9 +121,23 @@ export function kueri(params = {}) {
   return s ? `?${s}` : ''
 }
 
+/**
+ * Menarik baris dari sebuah tabel.
+ *
+ * Pernah ada opsi ketiga di sini, `hitung`, yang memasang header
+ * `Prefer: count=…` supaya PostgREST mengembalikan jumlah baris seluruhnya.
+ * Opsi itu tidak pernah bisa bekerja: `panggil()` hanya mengembalikan badan
+ * jawaban dan membuang seluruh headernya, sehingga hitungan yang diminta tidak
+ * punya jalan untuk sampai ke pemanggil. Ia dibuang bersama `hitungBaris()`
+ * yang bersaudara dengannya — keduanya tampak berfungsi, dan itulah yang
+ * membuat keduanya berbahaya untuk ditinggalkan.
+ *
+ * Bila kelak sebuah halaman benar-benar butuh jumlah baris tanpa menariknya,
+ * yang harus diubah lebih dulu adalah `panggil()`, supaya ia meneruskan
+ * header jawaban. Menambahkan kembali opsinya saja hanya mengulang keadaan ini.
+ */
 export async function ambil(tabel, params = {}, opsi = {}) {
   const kepala = {}
-  if (opsi.hitung) kepala.Prefer = `count=${opsi.hitung}`
   if (opsi.jangkauan) kepala.Range = opsi.jangkauan
   return panggil(`/rest/v1/${tabel}${kueri(params)}`, { method: 'GET', headers: kepala })
 }

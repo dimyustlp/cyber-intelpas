@@ -10,65 +10,22 @@
 import { kartu, tombol } from '../ui/komponen.js'
 import { amankan } from '../lib/format.js'
 import { ikon } from '../lib/ikon.js'
-import { INDUK_UPT } from '../lib/konfig.js'
 
-const RENCANA = {
-  tren: {
-    judul: 'Tren Pemberitaan',
-    isi: 'Perbandingan antarperiode, isu yang menanjak, dan unit yang paling sering muncul dalam sorotan.',
-    tunggu: 'Membutuhkan arsip terklasifikasi minimal delapan minggu agar perbandingan antarperiode bermakna.',
-  },
-  pemetaan: {
-    judul: 'Pemetaan UPT',
-    isi: 'Antrean berita yang belum terhubung ke unit mana pun, lengkap dengan saran dari mesin pencocokan dan alasannya.',
-    tunggu: 'Mesin pencocokan sudah selesai dan teruji — 431 dari 652 publikasi terpetakan otomatis, 15 menunggu putusan analis. Tinggal antarmuka pemutusnya.',
-  },
-  kasus: {
-    judul: 'Kasus Intelijen',
-    isi: 'Penggabungan beberapa berita menjadi satu kasus, lengkap dengan riwayat perkembangan dan penghitung otomatis.',
-    tunggu: 'Skema basis datanya sudah ada dan masih kosong. Antarmukanya menyusul setelah modul telaah selesai.',
-  },
-  lapangan: {
-    judul: 'Verifikasi Lapangan',
-    isi: 'Surat tugas verifikasi, formulir laporan lapangan, dan unggahan bukti foto atau dokumen.',
-    tunggu: 'Menunggu modul kasus, karena setiap penugasan selalu terikat pada satu kasus.',
-  },
-  evaluasi: {
-    judul: 'Evaluasi dan Rekomendasi',
-    isi: 'Penyandingan narasi media dengan fakta lapangan, akar masalah, dan usulan tindakan untuk pimpinan.',
-    tunggu: 'Menunggu modul verifikasi lapangan.',
-  },
-  keputusan: {
-    judul: 'Keputusan Pimpinan',
-    isi: 'Ruang pimpinan untuk menyetujui, mengembalikan, atau menutup rekomendasi, dengan catatan yang tidak bisa disunting kemudian.',
-    tunggu: 'Menunggu modul evaluasi.',
-  },
-  tindak: {
-    judul: 'Tindak Lanjut',
-    isi: 'Daftar butir tindakan beserta penanggung jawab, tenggat, dan kemajuannya.',
-    tunggu: 'Menunggu modul keputusan.',
-  },
-  laporan: {
-    judul: 'Laporan Berkala',
-    isi: 'Penyusun laporan harian dan mingguan, ekspor PDF dan DOCX, serta alur pengesahan berjenjang.',
-    tunggu: 'Menunggu contoh kop surat resmi dan logo resolusi tinggi.',
-  },
-  koordinat: {
-    judul: 'Koordinat UPT',
-    isi: `Alat verifikasi titik koordinat ${INDUK_UPT.jumlah} unit, satu per satu, dengan pratinjau peta.`,
-    tunggu: 'Siap dibangun kapan saja.',
-  },
-  audit: {
-    judul: 'Jejak Audit',
-    isi: 'Riwayat seluruh tindakan pengguna, tidak dapat disunting maupun dihapus.',
-    tunggu: 'Siap dibangun kapan saja.',
-  },
-  kesehatan: {
-    judul: 'Kesehatan Sistem',
-    isi: 'Keadaan penjadwal, sinkronisasi, dan Edge Function, beserta riwayat gangguan.',
-    tunggu: 'Siap dibangun kapan saja.',
-  },
-}
+/*
+   Yang tersisa.
+
+   Daftar ini pernah memuat sebelas butir. Sepuluh di antaranya sudah dibangun
+   dan dihapus dari sini pada 2 September 2026 — tren, kasus, lapangan,
+   evaluasi, keputusan, tindak, koordinat, audit, kesehatan, dan pemetaan.
+   Membiarkan namanya tetap di sini akan membuat halaman yang sudah jadi
+   terbaca sebagai halaman yang belum ada, oleh siapa pun yang kebetulan
+   membuka alamatnya lewat tautan lama.
+
+   Kosongnya daftar ini bukan pertanda berkas ini boleh dihapus: ia tetap
+   menjadi tempat mendarat bagi alamat yang tidak dikenali, dan itulah cabang
+   terakhir di bawah.
+*/
+const RENCANA = {}
 
 export function halamanBelumSiap({ keadaan, isi }) {
   const r = RENCANA[keadaan.halaman] || {

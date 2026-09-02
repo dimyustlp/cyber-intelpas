@@ -346,3 +346,72 @@ export async function gantiSandiSendiri(sandiBaru) {
  */
 
 export const KONFIG_AKTIF = KONFIG
+
+// -------------------------------------------------------------- penyimpanan
+
+/**
+ * Mengunggah satu berkas ke bucket privat.
+ *
+ * Tidak lewat `panggil()` karena badan permintaannya bukan JSON dan kepala
+ * Content-Type-nya harus jenis berkasnya sendiri — memaksanya lewat pemanggil
+ * bersama berarti pemanggil bersama itu harus tahu dua bentuk badan, dan yang
+ * kedua hanya dipakai di satu tempat.
+ *
+ * Jalurnya mengikuti konvensi migrasi keempat:
+ * `<tahun>/<bulan>/<id-entitas>/<nama-berkas>`. Nama berkasnya diberi awalan
+ * waktu supaya dua petugas yang mengunggah "foto.jpg" pada kasus yang sama
+ * tidak saling menimpa — bucket ini tidak mengaktifkan `upsert`, tetapi
+ * peladen menolak dengan 409 alih-alih menyimpan keduanya, dan penolakan itu
+ * baru terlihat setelah petugasnya pulang dari lapangan.
+ */
+export async function unggahBerkas(bucket, entitasId, berkas) {
+  if (KONFIG.mode === 'demo') {
+    return { jalur: `peragaan/${entitasId}/${berkas.name}`, ukuran: berkas.size }
+  }
+
+  const kini = new Date()
+  const bersih = String(berkas.name).replace(/[^\w.\-]+/g, '-').slice(-80)
+  const jalur = [
+    kini.getFullYear(),
+    String(kini.getMonth() + 1).padStart(2, '0'),
+    entitasId,
+    `${kini.getTime()}-${bersih}`,
+  ].join('/')
+
+  const kepala = {
+    apikey: KONFIG.kunciPublik,
+    'Content-Type': berkas.type || 'application/octet-stream',
+  }
+  if (sesi?.access_token) kepala.Authorization = `Bearer ${sesi.access_token}`
+
+  let jawab
+  try {
+    jawab = await fetch(`${KONFIG.url}/storage/v1/object/${bucket}/${jalur}`, {
+      method: 'POST', headers: kepala, body: berkas,
+    })
+  } catch (e) {
+    throw new GalatApi(e.message, 0)
+  }
+
+  if (!jawab.ok) {
+    const isi = await jawab.json().catch(() => null)
+    throw new GalatApi(isi?.message || jawab.statusText, jawab.status, isi)
+  }
+  return { jalur, ukuran: berkas.size }
+}
+
+/**
+ * Alamat sementara untuk membuka satu berkas privat.
+ *
+ * Bucket-nya privat, jadi tidak ada alamat tetap yang bisa ditempel di
+ * halaman. Alamat yang dikembalikan berlaku satu jam — cukup untuk dibuka,
+ * dan terlalu pendek untuk berguna bila tautannya bocor keluar.
+ */
+export async function tautanBerkas(bucket, jalur, detik = 3600) {
+  if (KONFIG.mode === 'demo') return null
+  const jawaban = await panggil(`/storage/v1/object/sign/${bucket}/${jalur}`, {
+    method: 'POST',
+    body: JSON.stringify({ expiresIn: detik }),
+  })
+  return jawaban?.signedURL ? `${KONFIG.url}/storage/v1${jawaban.signedURL}` : null
+}

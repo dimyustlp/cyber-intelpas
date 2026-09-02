@@ -33,6 +33,19 @@ import { halamanSinkronisasi } from './pages/sinkronisasi.js'
 import { halamanKanwilDasbor, halamanUptDasbor, halamanWilayahBerita } from './pages/kanwil.js'
 import { halamanWilayahTelaah } from './pages/wilayah-telaah.js'
 import { halamanWilayahUnit } from './pages/wilayah-unit.js'
+
+/* Siklus intelijen dan administrasi. Urutan impornya mengikuti urutan menu,
+   bukan urutan penulisannya, supaya yang mencari satu halaman menemukannya di
+   tempat yang sama dengan tempatnya di layar. */
+import { halamanTren } from './pages/tren.js'
+import { halamanKasus } from './pages/kasus.js'
+import { halamanLapangan } from './pages/lapangan.js'
+import { halamanEvaluasi } from './pages/evaluasi.js'
+import { halamanKeputusan } from './pages/keputusan.js'
+import { halamanTindak } from './pages/tindak.js'
+import { halamanKoordinat } from './pages/koordinat.js'
+import { halamanAudit } from './pages/audit.js'
+import { halamanKesehatan } from './pages/kesehatan.js'
 import { halamanPengguna } from './pages/pengguna.js'
 import { halamanBelumSiap } from './pages/belum-siap.js'
 
@@ -65,6 +78,15 @@ const HALAMAN = {
   telaah: halamanTelaah,
   pemetaan: halamanPemetaan,
   peta: halamanPeta,
+  tren: halamanTren,
+  kasus: halamanKasus,
+  lapangan: halamanLapangan,
+  evaluasi: halamanEvaluasi,
+  keputusan: halamanKeputusan,
+  tindak: halamanTindak,
+  koordinat: halamanKoordinat,
+  audit: halamanAudit,
+  kesehatan: halamanKesehatan,
   profil: halamanProfil,
   input: halamanInput,
   sinkronisasi: halamanSinkronisasi,

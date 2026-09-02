@@ -243,3 +243,195 @@ export function lencana(daftar = []) {
     telaahWilayah: r.antreanWilayah.length,
   }
 }
+
+/* --------------------------------------------- unit yang naik ke permukaan */
+
+/** Tanggal sebuah berita sebagai ISO hari, memakai tanggal terbit bila ada. */
+export function hariBerita(b) {
+  return String(b?.tanggal_publikasi || b?.tanggal || b?.created_at || '').slice(0, 10)
+}
+
+/**
+ * Unit yang paling banyak diberitakan pada sebuah rentang, beserta
+ * pembandingnya pada rentang sepanjang itu tepat sebelumnya.
+ *
+ * Dipakai tiga tempat sekaligus: halaman Tren Pemberitaan, kartu di Laporan
+ * Berkala, dan bagan batang di dalam berkas laporan serta pesan Telegram.
+ * Ketiganya menjawab pertanyaan yang sama — "unit apa yang minggu ini naik ke
+ * permukaan, dan berapa beritanya" — dan pertanyaan yang sama harus dijawab
+ * satu hitungan, bukan tiga.
+ *
+ * Pembandingnya bukan hiasan. Dua belas berita di unit yang pekan lalu juga
+ * dua belas adalah keadaan tenang; dua belas di unit yang pekan lalu nol
+ * adalah keadaan yang harus dibaca malam ini juga. Tanpa pembanding, keduanya
+ * tercetak sebagai baris yang sama persis.
+ *
+ * @param {object[]} daftar berita mentah; himpunan dasarnya dihitung di sini
+ * @param {{mulai:string, selesai:string, maks?:number}} rentang ISO, inklusif
+ */
+export function uptNaik(daftar = [], { mulai, selesai, maks = 10 } = {}) {
+  const inti = dasar(daftar)
+  if (!mulai || !selesai) return []
+
+  const satuHari = 86_400_000
+  const awal = new Date(`${mulai}T00:00:00Z`)
+  const akhir = new Date(`${selesai}T00:00:00Z`)
+  const panjang = Math.max(1, Math.round((akhir - awal) / satuHari) + 1)
+
+  const mulaiSebelum = new Date(awal.getTime() - panjang * satuHari).toISOString().slice(0, 10)
+  const selesaiSebelum = new Date(awal.getTime() - satuHari).toISOString().slice(0, 10)
+
+  const dalam = (b, a, z) => {
+    const h = hariBerita(b)
+    return h >= a && h <= z
+  }
+
+  const kini = new Map()
+  const lalu = new Map()
+
+  for (const b of inti) {
+    // Berita yang unitnya belum terpetakan tidak dilekatkan ke unit mana pun.
+    // Aturan yang sama dipakai peta sebaran dan laporan berkala.
+    if (belumTerpetakan(b.nama_upt)) continue
+    if (dalam(b, mulai, selesai)) {
+      const baris = kini.get(b.nama_upt) || { nama: b.nama_upt, jumlah: 0, negatif: 0 }
+      baris.jumlah += 1
+      if (ember(b) === 'negatif') baris.negatif += 1
+      kini.set(b.nama_upt, baris)
+    } else if (dalam(b, mulaiSebelum, selesaiSebelum)) {
+      lalu.set(b.nama_upt, (lalu.get(b.nama_upt) || 0) + 1)
+    }
+  }
+
+  return [...kini.values()]
+    .map((u) => {
+      const sebelum = lalu.get(u.nama) || 0
+      return { ...u, sebelum, delta: u.jumlah - sebelum }
+    })
+    /*
+       Diurutkan menurut jumlah, bukan menurut kenaikan.
+
+       Kenaikan terbesar hampir selalu dimiliki unit yang pekan lalu nol dan
+       pekan ini dua — dan daftar yang dipimpin unit berberita dua tidak
+       menjawab pertanyaan siapa pun. Kenaikannya tetap ditampilkan pada tiap
+       baris, sehingga yang melonjak tetap terbaca tanpa harus memimpin daftar.
+    */
+    .sort((a, b) => b.jumlah - a.jumlah || b.delta - a.delta || a.nama.localeCompare(b.nama))
+    .slice(0, maks)
+}
+
+/** Rentang periode sebelumnya, sepanjang periode yang diberikan. */
+export function periodeSebelum(mulai, selesai) {
+  const satuHari = 86_400_000
+  const awal = new Date(`${mulai}T00:00:00Z`)
+  const akhir = new Date(`${selesai}T00:00:00Z`)
+  const panjang = Math.max(1, Math.round((akhir - awal) / satuHari) + 1)
+  return {
+    mulai: new Date(awal.getTime() - panjang * satuHari).toISOString().slice(0, 10),
+    selesai: new Date(awal.getTime() - satuHari).toISOString().slice(0, 10),
+  }
+}
+
+/**
+ * Deret harian sepanjang rentang mana pun, termasuk hari yang kosong.
+ *
+ * Berbeda dari `deretHarian` di lib/demo.js pada dua hal, dan keduanya
+ * disengaja. Panjangnya bebas, bukan tetap empat belas hari. Dan harinya
+ * diambil dari tanggal terbit bila ada — sebuah berita yang tertarik penyalin
+ * tiga hari sesudah terbit adalah berita hari terbitnya, bukan berita hari
+ * penarikannya, dan pada halaman tren selisih tiga hari itu memindahkan
+ * puncak grafik ke tempat yang salah.
+ *
+ * Hari sepi tetap ditulis dengan nol. Menghilangkannya membuat garis tren
+ * menyambung dua hari yang berjauhan seolah keduanya berurutan.
+ */
+export function deretTren(daftar = [], { mulai, selesai } = {}) {
+  const inti = dasar(daftar)
+  const ember2 = new Map()
+
+  const satuHari = 86_400_000
+  const awal = new Date(`${mulai}T00:00:00Z`)
+  const akhir = new Date(`${selesai}T00:00:00Z`)
+  for (let t = awal.getTime(); t <= akhir.getTime(); t += satuHari) {
+    const iso = new Date(t).toISOString().slice(0, 10)
+    ember2.set(iso, { tanggal: iso, total: 0, negatif: 0, mendesak: 0 })
+  }
+
+  for (const b of inti) {
+    const e = ember2.get(hariBerita(b))
+    if (!e) continue
+    e.total += 1
+    if (ember(b) === 'negatif') e.negatif += 1
+    if (URGENSI_MENDESAK.includes(b.urgensi)) e.mendesak += 1
+  }
+
+  return [...ember2.values()]
+}
+
+/**
+ * Ringkasan satu rentang beserta rentang sepanjang itu tepat sebelumnya.
+ *
+ * Dipakai ubin pembanding di halaman Tren Pemberitaan. Angka tanpa
+ * pembanding hanya bisa dibaca oleh orang yang kebetulan hafal angka pekan
+ * lalu, dan tidak ada yang hafal angka pekan lalu.
+ */
+export function bandingPeriode(daftar = [], { mulai, selesai } = {}) {
+  const inti = dasar(daftar)
+  const lalu = periodeSebelum(mulai, selesai)
+
+  const potong = (a, z) => inti.filter((b) => {
+    const h = hariBerita(b)
+    return h >= a && h <= z
+  })
+
+  const hitung = (kumpulan) => ({
+    publikasi: kumpulan.length,
+    negatif: kumpulan.filter((b) => ember(b) === 'negatif').length,
+    mendesak: kumpulan.filter((b) => URGENSI_MENDESAK.includes(b.urgensi)).length,
+    unit: new Set(kumpulan.filter((b) => !belumTerpetakan(b.nama_upt)).map((b) => b.nama_upt)).size,
+    media: new Set(kumpulan.map((b) => b.media).filter(Boolean)).size,
+  })
+
+  return {
+    periode: { mulai, selesai },
+    sebelum: { ...lalu },
+    kini: hitung(potong(mulai, selesai)),
+    lalu: hitung(potong(lalu.mulai, lalu.selesai)),
+    daftarKini: potong(mulai, selesai),
+    daftarLalu: potong(lalu.mulai, lalu.selesai),
+  }
+}
+
+/**
+ * Perubahan besaran sebuah bidang antar dua periode.
+ *
+ * Menjawab "isu apa yang menanjak" dan "media mana yang tiba-tiba ramai"
+ * dengan satu fungsi, sebab keduanya pertanyaan yang sama atas kolom yang
+ * berbeda. Yang muncul dari nol ikut dihitung — justru itulah yang paling
+ * perlu terbaca.
+ */
+export function pergeseran(kini = [], lalu = [], bidang = 'subkategori', maks = 8) {
+  const hitung = (kumpulan) => {
+    const peta = new Map()
+    for (const b of kumpulan) {
+      const k = b[bidang]
+      if (!k) continue
+      peta.set(k, (peta.get(k) || 0) + 1)
+    }
+    return peta
+  }
+
+  const a = hitung(kini)
+  const z = hitung(lalu)
+  const nama = new Set([...a.keys(), ...z.keys()])
+
+  return [...nama]
+    .map((n) => {
+      const jumlah = a.get(n) || 0
+      const sebelum = z.get(n) || 0
+      return { nama: n, jumlah, sebelum, delta: jumlah - sebelum }
+    })
+    .filter((b) => b.jumlah > 0 || b.sebelum > 0)
+    .sort((x, y) => y.delta - x.delta || y.jumlah - x.jumlah)
+    .slice(0, maks)
+}

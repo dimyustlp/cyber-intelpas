@@ -154,6 +154,27 @@ export function olahLaporan(snapshot) {
     .map((u) => ({ ...u, media: u.media.size, isu: [...u.isu] }))
     .sort((a, b) => b.publikasi - a.publikasi || b.peristiwa - a.peristiwa)
 
+  /*
+     Unit yang naik ke permukaan, beserta pembandingnya.
+
+     `unit_lalu` datang dari snapshot_negatif: jumlah publikasi negatif per
+     unit pada periode sepanjang periode ini, tepat sebelumnya. Tanpanya, angka
+     "delapan publikasi" tidak bisa dibaca siapa pun — delapan di unit yang
+     pekan lalu juga delapan adalah keadaan tenang, delapan di unit yang pekan
+     lalu nol adalah keadaan yang harus dibaca malam ini juga.
+
+     Snapshot lama tidak memuat kunci itu. Yang terjadi kemudian hanyalah
+     seluruh pembandingnya nol — bukan galat, dan bukan angka yang salah;
+     laporan lamanya tetap tersusun, hanya tanpa panah kenaikan.
+  */
+  const unitLalu = snapshot.unit_lalu || {}
+  const uptNaik = daftarUnit
+    .map((u) => {
+      const sebelum = Number(unitLalu[u.nama] || 0)
+      return { ...u, sebelum, delta: u.publikasi - sebelum }
+    })
+    .sort((a, b) => b.publikasi - a.publikasi || b.delta - a.delta)
+
   // Rekap per hari sepanjang periode, termasuk hari yang kosong. Hari sepi
   // adalah informasi; menghilangkannya membuat garis tren berbohong.
   const perHari = []
@@ -214,6 +235,7 @@ export function olahLaporan(snapshot) {
     mendesak,
     perluTelaah,
     daftarUnit,
+    uptNaik,
     perHari,
     perKategori,
     perSubkategori,
@@ -409,6 +431,47 @@ function baganEksposur(peristiwa, maks = 8) {
     </div>`).join('')}</div>`
 }
 
+/**
+ * UPT yang naik ke permukaan: batang mendatar dengan bayangan periode lalu.
+ *
+ * Digambar sebagai div berlatar, bukan sebagai SVG. Alasannya cetak: laporan
+ * ini rutin dicetak menjadi PDF lewat menu cetak peramban, dan batang yang
+ * dibuat dari latar belakang tetap tercetak pada pengaturan bawaan — sedangkan
+ * SVG berisi ratusan simpul memperlambat pratinjau cetaknya tanpa menambah
+ * satu pun keterangan.
+ */
+function baganUptNaik(daftar, periode = {}, maks = 10) {
+  const butir = (daftar || []).filter((u) => u.publikasi > 0).slice(0, maks)
+  if (!butir.length) return '<p class="samar">Tidak ada unit terpetakan pada periode ini.</p>'
+
+  // Skalanya memuat periode sebelumnya juga; kalau tidak, unit yang justru
+  // mereda tergambar dengan bayangan melewati tepi kotaknya.
+  const tertinggi = Math.max(1, ...butir.map((u) => Math.max(u.publikasi, u.sebelum || 0)))
+
+  return `<div class="naik">${butir.map((u, i) => {
+    const arah = u.sebelum === 0 ? 'baru' : u.delta > 0 ? 'naik' : u.delta < 0 ? 'turun' : 'tetap'
+    const label = u.sebelum === 0 ? 'baru muncul'
+      : u.delta === 0 ? 'tetap'
+        : `${u.delta > 0 ? '+' : '−'}${Math.abs(u.delta)}`
+    return `
+    <div class="naik-baris">
+      <span class="naik-no">${i + 1}</span>
+      <span class="naik-nama">${esc(potong(u.nama, 44))}</span>
+      <span class="naik-lacak">
+        ${u.sebelum ? `<i class="naik-lalu" style="width:${((u.sebelum / tertinggi) * 100).toFixed(1)}%"></i>` : ''}
+        <i class="naik-kini" style="width:${((u.publikasi / tertinggi) * 100).toFixed(1)}%"></i>
+      </span>
+      <b class="naik-angka">${angka(u.publikasi)}</b>
+      <span class="naik-delta naik-${arah}">${esc(label)}</span>
+    </div>`
+  }).join('')}</div>
+  <p class="ket">Batang gelap periode ini, batang bergaris di belakangnya periode sebelumnya${
+    periode.pembanding_mulai
+      ? ` (${esc(tanggalPendek(periode.pembanding_mulai))} – ${esc(tanggalPendek(periode.pembanding_selesai))})`
+      : ''}. Diurutkan menurut jumlah publikasi, bukan menurut kenaikan — kenaikan terbesar
+     hampir selalu dimiliki unit yang sebelumnya nol dan sekarang dua.</p>`
+}
+
 /** Sebaran wilayah sebagai pita bertingkat, bukan peta — cetak tetap terbaca. */
 function baganProvinsi(perProvinsi) {
   if (!perProvinsi.length) return '<p class="samar">Belum ada peristiwa yang terhubung ke provinsi.</p>'
@@ -589,6 +652,8 @@ function bagianUnit(d) {
   return `
   <section class="bagian">
     <h2>UPT Paling Disorot</h2>
+    <p class="ket">Unit mana yang naik ke permukaan pada periode ini, dan berapa publikasinya.</p>
+    ${baganUptNaik(d.uptNaik || d.daftarUnit, d.periode)}
     <table class="tabel">
       <thead><tr>
         <th style="width:26px">No</th><th>UPT</th><th>Provinsi</th>
@@ -911,6 +976,68 @@ table.tabel.rapat td { padding: 6px 8px; }
 }
 `
 
+/*
+   Gaya bagan "UPT naik ke permukaan".
+
+   Ditulis sebagai deret sambungan, bukan sebagai templat berlubang, supaya
+   warnanya diambil dari WARNA yang sama dengan seluruh bagan lain di berkas
+   ini — satu palet, bukan dua yang kebetulan mirip.
+*/
+const GAYA_NAIK = `
+.naik { display: flex; flex-direction: column; gap: 6px; margin: 10px 0 6px; }
+
+.naik-baris {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr) minmax(80px, 1.4fr) 34px 62px;
+  align-items: center;
+  gap: 8px;
+  font-size: 10pt;
+}
+
+.naik-no { color: ${WARNA.tinta4}; text-align: right; font-size: 8.5pt; }
+.naik-nama { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.naik-lacak {
+  position: relative;
+  height: 9px;
+  border-radius: 4px;
+  background: ${WARNA.garis2};
+  overflow: hidden;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.naik-lacak i {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  border-radius: 4px;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+/* Periode sebelumnya digambar bergaris, bukan pudar. Pada cetakan hitam-putih
+   dua abu-abu yang berdekatan menjadi satu warna; arsiran tetap terbedakan. */
+.naik-lalu {
+  background: repeating-linear-gradient(135deg, ${WARNA.tinta4} 0 2px, transparent 2px 5px);
+}
+
+.naik-kini { background: ${WARNA.aksen2}; }
+
+.naik-angka { text-align: right; font-variant-numeric: tabular-nums; }
+
+.naik-delta {
+  font-size: 8.5pt;
+  font-weight: 600;
+  text-align: right;
+  color: ${WARNA.tinta4};
+}
+
+.naik-baru, .naik-naik { color: ${WARNA.kritis}; }
+.naik-turun { color: ${WARNA.positif}; }
+`
+
 /* ------------------------------------------------------------ pintu utama */
 
 /**
@@ -939,7 +1066,7 @@ export function susunLaporan(snapshot, opsi = {}) {
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
-<style>${GAYA}</style>
+<style>${GAYA}${GAYA_NAIK}</style>
 </head>
 <body>
 <div class="lembar">

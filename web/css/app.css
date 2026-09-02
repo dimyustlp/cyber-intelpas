@@ -3764,3 +3764,959 @@ kbd {
 .unit-legenda .peta-legenda-butir i[data-nada="rendah"]  { background: var(--ink-4); }
 .unit-legenda .peta-legenda-butir i[data-nada="positif"] { background: var(--positif); }
 .unit-legenda .peta-legenda-butir i[data-nada="netral"]  { background: var(--line); }
+
+/* ==========================================================================
+   Siklus intelijen — kerangka bersama lima halaman
+   --------------------------------------------------------------------------
+   Kasus Intelijen, Verifikasi Lapangan, Evaluasi, Keputusan Pimpinan, dan
+   Tindak Lanjut memakai tata letak yang sama: antrean di kiri, rincian yang
+   dipilih di kanan. Bentuknya sengaja seragam — petugas yang berpindah antar
+   tahap tidak perlu belajar membaca daftar yang lain, dan tahu tanpa diberi
+   tahu bahwa yang di kiri selalu bisa ditekan.
+   ========================================================================== */
+
+.siklus-tata {
+  display: grid;
+  grid-template-columns: minmax(0, 380px) minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+}
+
+@media (max-width: 1180px) {
+  .siklus-tata { grid-template-columns: minmax(0, 1fr); }
+}
+
+.siklus-antrean {
+  background: var(--surface);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-3);
+  overflow: hidden;
+  position: sticky;
+  top: 12px;
+  max-height: calc(100vh - 84px);
+  display: flex;
+  flex-direction: column;
+}
+
+@media (max-width: 1180px) {
+  .siklus-antrean { position: static; max-height: none; }
+}
+
+.siklus-antrean-kop {
+  padding: 11px 13px;
+  border-bottom: 1px solid var(--line-2);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+}
+
+.siklus-antrean-saring {
+  padding: 9px 11px;
+  border-bottom: 1px solid var(--line-3);
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  flex: none;
+}
+
+.siklus-antrean ul { list-style: none; margin: 0; padding: 6px; overflow-y: auto; }
+
+.siklus-rinci {
+  background: var(--surface);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-3);
+  padding: 16px;
+  min-width: 0;
+}
+
+.siklus-kosong {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 54px 20px;
+  color: var(--ink-3);
+}
+
+.siklus-kosong svg { width: 26px; height: 26px; opacity: 0.35; margin-bottom: 10px; }
+.siklus-kosong h3 { font-size: 14px; color: var(--ink-2); margin-bottom: 5px; }
+.siklus-kosong p { font-size: 12.5px; max-width: 46ch; }
+
+/* ------------------------------------------------------------ baris antrean */
+
+.antrean-baris {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  width: 100%;
+  padding: 9px 9px 9px 7px;
+  background: none;
+  border: 0;
+  border-radius: var(--r-2);
+  text-align: left;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+  transition: background 120ms ease;
+}
+
+.antrean-baris:hover { background: var(--surface-3); }
+
+/* Yang terpilih ditandai latar DAN garis kiri, bukan latar saja. Pada tema
+   gelap, selisih latar sehalus itu hilang di layar proyektor ruang rapat. */
+.antrean-baris.terpilih {
+  background: var(--accent-soft);
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+
+.antrean-tanda {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex: none;
+  margin-top: 6px;
+  background: var(--ink-4);
+}
+
+.antrean-tanda[data-nada="kritis"]  { background: var(--kritis); }
+.antrean-tanda[data-nada="tinggi"]  { background: var(--tinggi); }
+.antrean-tanda[data-nada="sedang"]  { background: var(--sedang); }
+.antrean-tanda[data-nada="rendah"]  { background: var(--rendah); }
+.antrean-tanda[data-nada="positif"] { background: var(--positif); }
+.antrean-tanda[data-nada="netral"]  { background: var(--netral); }
+
+.antrean-isi { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.antrean-kop { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+
+.antrean-judul {
+  font-size: 12.5px;
+  font-weight: 550;
+  line-height: 1.35;
+  /* Dua baris, lalu dipotong. Judul berita Indonesia rutin melewati seratus
+     karakter; satu baris memotong terlalu awal untuk bisa dikenali, dan tanpa
+     batas sama sekali satu kasus bisa setinggi empat baris dan mengusir
+     seluruh antrean di bawahnya dari layar. */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.antrean-angka {
+  flex: none;
+  text-align: right;
+  font-size: 15px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+.antrean-angka small {
+  display: block;
+  font-size: 9.5px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-4);
+}
+
+/* --------------------------------------------------------------- rel tahap */
+
+/*
+   Rel enam tahap. Bentuknya rel, bukan bilah persentase — bilah persentase
+   menjawab "berapa persen selesai", dan pertanyaan itu tidak punya jawaban
+   jujur di sini. Rel menjawab yang memang punya jawaban: sudah sampai mana.
+*/
+.rel-tahap {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 0;
+  counter-reset: tahap;
+}
+
+.rel-tahap li {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  position: relative;
+  font-size: 10.5px;
+  line-height: 1.25;
+  text-align: center;
+  color: var(--ink-4);
+}
+
+/* Garis penghubung digambar sebagai lapisan di belakang bulatan, bukan
+   sebagai batas antar butir: batas antar butir menyisakan sela di ujung rel
+   yang membuat tahap pertama dan terakhir terlihat menggantung. */
+.rel-tahap li::before {
+  content: '';
+  position: absolute;
+  top: 5px;
+  left: -50%;
+  width: 100%;
+  height: 2px;
+  background: var(--line-2);
+}
+
+.rel-tahap li:first-child::before { display: none; }
+
+.rel-tahap li i {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 2px solid var(--line);
+  position: relative;
+  z-index: 1;
+  flex: none;
+}
+
+.rel-tahap li.lewat::before { background: var(--accent); }
+.rel-tahap li.lewat i { background: var(--accent); border-color: var(--accent); }
+.rel-tahap li.lewat { color: var(--ink-3); }
+
+.rel-tahap li.kini::before { background: var(--accent); }
+.rel-tahap li.kini i {
+  background: var(--surface);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.rel-tahap li.kini { color: var(--ink); font-weight: 600; }
+
+@media (prefers-reduced-motion: no-preference) {
+  /* Hanya tahap yang sedang berjalan yang berdenyut. Denyut pada seluruh rel
+     akan terbaca sebagai animasi memuat, bukan sebagai penunjuk posisi. */
+  .rel-tahap li.kini i { animation: tahap-denyut 2400ms ease-out infinite; }
+}
+
+@keyframes tahap-denyut {
+  0%   { box-shadow: 0 0 0 0 var(--accent-soft); }
+  70%  { box-shadow: 0 0 0 7px transparent; }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+
+.rel-tahap.ringkas li { gap: 0; }
+.rel-tahap.ringkas li i { width: 9px; height: 9px; }
+
+/* ------------------------------------------------------------ kepala kasus */
+
+.kasus-kepala {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line-2);
+  margin-bottom: 14px;
+}
+
+.kasus-kepala-teks { min-width: 0; flex: 1; }
+.kasus-kepala-teks h3 { font-size: 1.06rem; line-height: 1.3; margin: 3px 0 0; }
+
+/* ---------------------------------------------------------------- borang */
+
+.bidang { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.bidang .label-mono { color: var(--ink-3); }
+
+.borang-kisi {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
+  gap: 12px;
+}
+
+.borang-kisi .penuh { grid-column: 1 / -1; }
+
+.daftar-baris { display: flex; flex-direction: column; gap: 6px; }
+
+.daftar-butir { display: flex; gap: 6px; align-items: center; }
+.daftar-butir .masukan { flex: 1; min-width: 0; }
+
+/* --------------------------------------------------------------- kemajuan */
+
+.maju-lacak {
+  display: block;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--line-3);
+  overflow: hidden;
+  min-width: 60px;
+}
+
+.maju-lacak i {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  width: var(--lebar, 0%);
+  background: var(--accent);
+}
+
+.maju-lacak i[data-nada="kritis"]  { background: var(--kritis); }
+.maju-lacak i[data-nada="tinggi"]  { background: var(--tinggi); }
+.maju-lacak i[data-nada="positif"] { background: var(--positif); }
+.maju-lacak i[data-nada="netral"]  { background: var(--netral); }
+
+@media (prefers-reduced-motion: no-preference) {
+  .maju-lacak i { transition: width 420ms cubic-bezier(0.2, 0.9, 0.25, 1); }
+}
+
+/* ------------------------------------------------------- bagian di rincian */
+
+.siklus-bagian { padding: 14px 0; border-top: 1px solid var(--line-3); }
+.siklus-bagian:first-of-type { border-top: 0; padding-top: 0; }
+
+.siklus-bagian-kop {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 9px;
+}
+
+.siklus-bagian-kop .label-mono { color: var(--ink-3); }
+
+.siklus-daftar { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+
+.siklus-butir {
+  border: 1px solid var(--line-3);
+  border-radius: var(--r-2);
+  padding: 10px 11px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.siklus-butir-kop { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.siklus-butir p { font-size: 12.5px; line-height: 1.5; color: var(--ink-2); margin: 0; }
+
+/* Sandingan dua kolom: narasi media di kiri, fakta lapangan di kanan. */
+.sanding {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr));
+  gap: 12px;
+}
+
+.sanding-kolom {
+  border: 1px solid var(--line-3);
+  border-radius: var(--r-2);
+  padding: 11px 12px;
+}
+
+.sanding-kolom h4 {
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ink-4);
+  margin-bottom: 6px;
+}
+
+.sanding-kolom p { font-size: 12.5px; line-height: 1.55; color: var(--ink-2); }
+
+/* ------------------------------------------------ UPT naik ke permukaan */
+
+.upt-muncul { display: flex; flex-direction: column; gap: 7px; }
+
+.upt-baris {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr) minmax(70px, 2fr) 34px 42px;
+  align-items: center;
+  gap: 9px;
+}
+
+@media (max-width: 620px) {
+  /* Pada layar sempit nama unit dan batangnya bertumpuk, bukan berhimpitan:
+     "Lapas Perempuan Kelas IIA Martapura" pada satu kolom selebar sembilan
+     karakter tidak lagi bisa dikenali siapa pun. */
+  .upt-baris { grid-template-columns: 18px minmax(0, 1fr) 34px 42px; }
+  .upt-lacak { grid-column: 2 / -1; }
+}
+
+.upt-no {
+  font-size: 10.5px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-4);
+  text-align: right;
+}
+
+.upt-nama {
+  font-size: 12.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.upt-lacak {
+  position: relative;
+  height: 9px;
+  border-radius: 4px;
+  background: var(--line-3);
+  overflow: hidden;
+}
+
+.upt-lacak i { position: absolute; left: 0; top: 0; height: 100%; border-radius: 4px; }
+
+/* Bayangan periode sebelumnya digambar sebagai garis bergaris, bukan sebagai
+   blok pudar. Blok pudar pada tema gelap nyaris tak terbedakan dari lataran
+   lacaknya sendiri, dan pembandingnya hilang justru di tema yang paling
+   sering dipakai malam hari. */
+.upt-bayang {
+  background: repeating-linear-gradient(
+    135deg, var(--ink-4) 0 2px, transparent 2px 5px);
+  opacity: 0.55;
+}
+
+.upt-isi { z-index: 1; }
+
+/* Bagian negatif digambar di atas batang utama, dari tepi kiri yang sama.
+   Ditumpuk, bukan disambung: yang ditanyakan pembaca adalah "berapa bagian
+   dari yang ini negatif", dan pertanyaan bagian selalu dijawab tumpukan. */
+.upt-negatif { z-index: 2; border-radius: 4px 0 0 4px; }
+
+.upt-angka { font-size: 12.5px; text-align: right; font-variant-numeric: tabular-nums; }
+
+.upt-delta {
+  font-size: 11px;
+  font-weight: 600;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-4);
+}
+
+.upt-delta[data-arah="naik"]  { color: var(--kritis); }
+.upt-delta[data-arah="turun"] { color: var(--positif); }
+
+.upt-legenda {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-top: 11px;
+  padding-top: 9px;
+  border-top: 1px solid var(--line-3);
+  font-size: 11px;
+  color: var(--ink-3);
+}
+
+.upt-legenda span { display: inline-flex; align-items: center; gap: 5px; }
+.upt-legenda i { width: 10px; height: 8px; border-radius: 2px; flex: none; }
+
+.upt-legenda i.contoh-bayang {
+  background: repeating-linear-gradient(135deg, var(--ink-4) 0 2px, transparent 2px 5px);
+  opacity: 0.55;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .upt-lacak i { animation: upt-tumbuh 520ms cubic-bezier(0.2, 0.9, 0.25, 1) backwards; }
+  .upt-baris:nth-child(2) i { animation-delay: 40ms; }
+  .upt-baris:nth-child(3) i { animation-delay: 80ms; }
+  .upt-baris:nth-child(4) i { animation-delay: 120ms; }
+  .upt-baris:nth-child(5) i { animation-delay: 160ms; }
+  .upt-baris:nth-child(n+6) i { animation-delay: 200ms; }
+}
+
+@keyframes upt-tumbuh { from { width: 0 !important; } }
+
+/* ==========================================================================
+   Tren Pemberitaan
+   --------------------------------------------------------------------------
+   Aturan halamannya: tidak ada satu pun angka yang berdiri tanpa
+   pembandingnya. Gaya di bawah karena itu selalu berpasangan — batang periode
+   ini dan bayangan periode sebelumnya, angka dan selisihnya.
+   ========================================================================== */
+
+.tren-delta {
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.tren-delta[data-nada="kritis"]  { color: var(--kritis); }
+.tren-delta[data-nada="positif"] { color: var(--positif); }
+.tren-delta[data-nada="netral"]  { color: var(--ink-4); }
+
+/* ---------------------------------------------------------- isu bergeser */
+
+.geser-daftar { display: flex; flex-direction: column; gap: 8px; }
+
+.geser-baris {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(60px, 1fr) 30px 40px;
+  align-items: center;
+  gap: 9px;
+}
+
+.geser-nama {
+  font-size: 12.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.geser-lacak {
+  position: relative;
+  height: 9px;
+  border-radius: 4px;
+  background: var(--line-3);
+  overflow: hidden;
+}
+
+.geser-lacak i { position: absolute; left: 0; top: 0; height: 100%; border-radius: 4px; }
+
+/* Periode sebelumnya digambar sebagai garis bergaris di belakang, dengan
+   alasan yang sama seperti pada bagan UPT: blok pudar tidak terbedakan dari
+   lataran lacaknya sendiri pada tema gelap. */
+.geser-lalu {
+  background: repeating-linear-gradient(135deg, var(--ink-4) 0 2px, transparent 2px 5px);
+  opacity: 0.55;
+}
+
+.geser-kini { background: var(--accent); z-index: 1; }
+
+.geser-angka { font-size: 12.5px; text-align: right; font-variant-numeric: tabular-nums; }
+
+.geser-delta {
+  font-size: 11px;
+  font-weight: 600;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-4);
+}
+
+.geser-delta[data-arah="naik"]  { color: var(--kritis); }
+.geser-delta[data-arah="turun"] { color: var(--positif); }
+
+@media (prefers-reduced-motion: no-preference) {
+  .geser-kini { animation: upt-tumbuh 480ms cubic-bezier(0.2, 0.9, 0.25, 1) backwards; }
+}
+
+/* ------------------------------------------------------------- irama pekan */
+
+.irama {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+  align-items: end;
+  min-height: 132px;
+}
+
+.irama-hari {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+}
+
+.irama-batang {
+  position: relative;
+  width: 100%;
+  max-width: 34px;
+  height: 92px;
+  border-radius: var(--r-1) var(--r-1) 3px 3px;
+  background: var(--line-3);
+  overflow: hidden;
+  display: block;
+}
+
+/* Kedua batang bertumpu di dasar, bukan bertumpuk ke atas. Yang ditanyakan
+   pembaca adalah "berapa bagian dari hari ini yang negatif" — pertanyaan
+   bagian, dan pertanyaan bagian selalu dijawab tumpukan dari dasar yang sama. */
+.irama-batang i {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  border-radius: var(--r-1) var(--r-1) 0 0;
+}
+
+.irama-total { background: var(--accent); opacity: 0.72; }
+.irama-negatif { background: var(--kritis); }
+
+.irama-label { font-size: 10.5px; color: var(--ink-4); }
+
+.irama-angka {
+  font-size: 11.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .irama-batang i { animation: irama-naik 520ms cubic-bezier(0.2, 0.9, 0.25, 1) backwards; }
+  .irama-hari:nth-child(2) i { animation-delay: 40ms; }
+  .irama-hari:nth-child(3) i { animation-delay: 80ms; }
+  .irama-hari:nth-child(4) i { animation-delay: 120ms; }
+  .irama-hari:nth-child(5) i { animation-delay: 160ms; }
+  .irama-hari:nth-child(6) i { animation-delay: 200ms; }
+  .irama-hari:nth-child(7) i { animation-delay: 240ms; }
+}
+
+@keyframes irama-naik { from { height: 0 !important; } }
+
+/* Segmen kecil di kepala kartu, sejajar dengan tombol kecil di sebelahnya. */
+.segmen.kecil button { padding: 4px 9px; font-size: 11.5px; }
+
+/* -------------------------------------------------- daftar di dalam rincian */
+
+.riwayat-ringkas {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr));
+  gap: 10px 18px;
+  margin: 0;
+}
+
+.riwayat-ringkas dt {
+  font-size: 10.5px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ink-4);
+  margin-bottom: 2px;
+}
+
+.riwayat-ringkas dd { margin: 0; font-size: 12.5px; color: var(--ink-2); }
+
+.tanya-daftar {
+  margin: 0;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+.tanya-daftar li::marker { color: var(--ink-4); font-variant-numeric: tabular-nums; }
+
+.bukti-daftar { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+
+.bukti-daftar li {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 10px;
+  border: 1px solid var(--line-3);
+  border-radius: var(--r-2);
+}
+
+.bukti-daftar svg { width: 16px; height: 16px; flex: none; color: var(--ink-4); }
+.bukti-daftar .bukti-nama { min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.bukti-daftar .bukti-nama b { font-size: 12.5px; font-weight: 550; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ---------------------------------------------------- matriks penyandingan */
+
+/*
+   Empat kolom pada layar lebar, bertumpuk pada layar sempit. Aspek, kata
+   media, kata lapangan, dan putusan kesesuaiannya adalah satu pernyataan
+   utuh — memecahnya menjadi empat baris terpisah pada layar sempit tetap
+   lebih terbaca daripada empat kolom selebar sepuluh karakter.
+*/
+.matriks-baris {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr) minmax(0, 1.3fr) 150px;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+@media (max-width: 860px) {
+  .matriks-baris { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* ==========================================================================
+   Keputusan Pimpinan
+   ========================================================================== */
+
+.centang { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+.centang input { width: 14px; height: 14px; accent-color: var(--accent); cursor: pointer; }
+
+.siklus-butir.dapat-dipilih { border-color: var(--line-2); background: var(--surface-2); }
+
+.putusan-borang {
+  border-top: 1px solid var(--line-2);
+  background: var(--surface-2);
+  border-radius: var(--r-2);
+  padding: 14px;
+  margin-top: 6px;
+}
+
+/*
+   Lima putusan sebagai kartu, bukan sebagai daftar pilihan.
+
+   Tiap putusan membawa akibat yang berbeda — satu menerbitkan butir tindak
+   lanjut, satu mengembalikan perkara ke analis, satu menutup kasus. Daftar
+   pilihan hanya menampilkan namanya, dan nama saja tidak menyebutkan
+   akibatnya. Kartu memuat kalimat akibat itu di bawah namanya.
+*/
+.putusan-pilihan {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(190px, 100%), 1fr));
+  gap: 8px;
+}
+
+.putusan-kartu {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 10px 11px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-2);
+  background: var(--surface);
+  cursor: pointer;
+  transition: border-color 140ms ease, background 140ms ease;
+}
+
+.putusan-kartu input { position: absolute; opacity: 0; pointer-events: none; }
+.putusan-kartu b { font-size: 12.5px; font-weight: 600; }
+.putusan-kartu span { font-size: 11px; color: var(--ink-3); line-height: 1.4; }
+
+.putusan-kartu:hover { border-color: var(--line); }
+
+.putusan-kartu.terpilih { border-color: var(--nada, var(--accent)); background: var(--surface-3); }
+.putusan-kartu.terpilih b { color: var(--nada, var(--accent)); }
+
+.putusan-kartu[data-nada="kritis"]  { --nada: var(--kritis); }
+.putusan-kartu[data-nada="tinggi"]  { --nada: var(--tinggi); }
+.putusan-kartu[data-nada="positif"] { --nada: var(--positif); }
+.putusan-kartu[data-nada="netral"]  { --nada: var(--netral); }
+.putusan-kartu[data-nada="rendah"]  { --nada: var(--rendah); }
+
+.putusan-kartu:focus-within { outline: 2px solid var(--accent-2); outline-offset: 2px; }
+
+/* ==========================================================================
+   Tindak Lanjut
+   ========================================================================== */
+
+.tindak-daftar { list-style: none; margin: 0; padding: 0; }
+
+.tindak-kartu {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line-3);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tindak-kartu:last-child { border-bottom: 0; }
+
+/* Garis kiri, bukan latar merah. Latar merah pada sepuluh baris beruntun
+   membuat seluruh kartu terbaca sebagai peringatan tunggal; garis kiri tetap
+   terbaca per baris. */
+.tindak-kartu.terlambat { box-shadow: inset 3px 0 0 var(--kritis); }
+.tindak-kartu.dibuka { background: var(--surface-2); }
+
+.tindak-kop { display: flex; align-items: flex-start; gap: 9px; flex-wrap: wrap; }
+.tindak-judul { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.tindak-judul b { font-size: 13px; font-weight: 600; line-height: 1.35; }
+.tindak-keping { display: flex; gap: 5px; flex-wrap: wrap; align-items: center; }
+
+.tindak-maju { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.tindak-maju .maju-lacak { flex: 1; min-width: 90px; max-width: 260px; }
+
+.tindak-ket {
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--ink-3);
+  margin: 0;
+  max-width: 92ch;
+}
+
+.tindak-ubah {
+  border-top: 1px dashed var(--line-2);
+  padding-top: 12px;
+  margin-top: 2px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .tindak-ubah { animation: tindak-buka 200ms ease-out; }
+}
+
+@keyframes tindak-buka {
+  from { opacity: 0; transform: translateY(-5px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* ==========================================================================
+   Koordinat UPT
+   ========================================================================== */
+
+.koordinat-peta {
+  position: relative;
+  margin-bottom: 14px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-2);
+  overflow: hidden;
+  background: var(--peta-laut, #DCE8F4);
+
+  --peta-laut:  #DCE8F4;
+  --peta-darat: #FBFCFE;
+  --peta-tepi:  #93A6BD;
+  --peta-halo:  #B9CFE4;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-tema="terang"]) .koordinat-peta {
+    --peta-laut:  #0A111C;
+    --peta-darat: #24334C;
+    --peta-tepi:  #4A5D80;
+    --peta-halo:  #16233A;
+  }
+}
+
+:root[data-tema="gelap"] .koordinat-peta {
+  --peta-laut:  #0A111C;
+  --peta-darat: #24334C;
+  --peta-tepi:  #4A5D80;
+  --peta-halo:  #16233A;
+}
+
+.koordinat-peta svg { display: block; width: 100%; height: auto; max-height: 260px; }
+
+/* Silang penunjuk, bukan sekadar titik. Sebuah titik di tengah pulau besar
+   sulit dinilai letaknya; dua garis yang memotong seluruh bidang memberi
+   acuan terhadap tepi pulau di kiri, kanan, atas, dan bawahnya sekaligus. */
+.koordinat-silang line {
+  stroke: var(--kritis);
+  stroke-width: 1;
+  stroke-dasharray: 4 3;
+  vector-effect: non-scaling-stroke;
+  opacity: 0.7;
+}
+
+.koordinat-silang circle { fill: var(--kritis); }
+
+.koordinat-silang circle.denyut {
+  fill: none;
+  stroke: var(--kritis);
+  stroke-width: 0.03;
+  transform-box: fill-box;
+  transform-origin: center;
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .koordinat-silang circle.denyut { animation: peta-denyut 2400ms ease-out infinite; }
+}
+
+.koordinat-skala {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  padding: 3px 7px;
+  border-radius: var(--r-1);
+  background: color-mix(in srgb, var(--surface) 82%, transparent);
+  border: 1px solid var(--line-3);
+  font-size: 10.5px;
+  color: var(--ink-3);
+}
+
+.koordinat-tanda { flex: none; display: flex; align-items: center; color: var(--positif); }
+.koordinat-tanda svg { width: 15px; height: 15px; }
+.koordinat-tanda.bahaya { color: var(--kritis); }
+
+/* ==========================================================================
+   Jejak Audit
+   ========================================================================== */
+
+.audit-pelaku { display: flex; flex-direction: column; gap: 1px; }
+.audit-pelaku b { font-size: 12.5px; font-weight: 600; }
+
+/*
+   Metadata dibiarkan sebagai JSON mentah dan dipotong dengan ellipsis.
+
+   Isinya berbeda menurut jenis tindakannya, dan penerjemah yang menebak
+   bentuknya akan menampilkan "undefined" pada bentuk yang belum dikenalnya.
+   Yang membaca halaman ini administrator; JSON adalah bahasa yang ia pahami.
+*/
+.audit-meta {
+  display: block;
+  max-width: 46ch;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ink-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: help;
+}
+
+.audit-meta:hover {
+  white-space: normal;
+  overflow: visible;
+  word-break: break-all;
+}
+
+/* ==========================================================================
+   Kesehatan Sistem
+   ========================================================================== */
+
+.sehat-kisi {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
+  gap: 12px;
+}
+
+.sehat-kartu {
+  background: var(--surface);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-3);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  /* Garis atas berwarna, bukan seluruh kartu. Tiga kartu berlatar merah
+     berjajar terbaca sebagai satu peringatan besar, bukan sebagai tiga
+     komponen yang keadaannya kebetulan sama. */
+  border-top: 3px solid var(--nada, var(--line));
+}
+
+.sehat-kartu[data-nada="kritis"]  { --nada: var(--kritis); }
+.sehat-kartu[data-nada="tinggi"]  { --nada: var(--tinggi); }
+.sehat-kartu[data-nada="positif"] { --nada: var(--positif); }
+.sehat-kartu[data-nada="sedang"]  { --nada: var(--sedang); }
+
+.sehat-kop { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.sehat-kop b { font-size: 13px; font-weight: 600; }
+
+.sehat-lampu {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex: none;
+  background: var(--nada, var(--ink-4));
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* Hanya lampu yang bermasalah berdenyut. Lampu hijau yang ikut berdenyut
+     melatih mata mengabaikan denyut sama sekali. */
+  .sehat-kartu[data-nada="kritis"] .sehat-lampu,
+  .sehat-kartu[data-nada="tinggi"] .sehat-lampu {
+    animation: sehat-denyut 1900ms ease-out infinite;
+  }
+}
+
+@keyframes sehat-denyut {
+  0%   { box-shadow: 0 0 0 0 color-mix(in srgb, var(--nada) 55%, transparent); }
+  70%  { box-shadow: 0 0 0 7px transparent; }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+
+.sehat-kartu p { margin: 0; line-height: 1.5; }
+.sehat-ambang { padding-top: 6px; border-top: 1px solid var(--line-3); margin-top: 2px !important; }
+
+.sehat-gangguan { list-style: none; margin: 0; padding: 0; }
+
+.sehat-gangguan li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--line-3);
+}
+
+.sehat-gangguan li:last-child { border-bottom: 0; }
+.sehat-gangguan li.tutup { opacity: 0.62; }
+.sehat-gangguan-isi { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 4px; }
+.sehat-gangguan-isi b { font-size: 12.5px; font-weight: 600; }
+.sehat-gangguan-isi p { margin: 0; line-height: 1.5; }

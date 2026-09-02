@@ -139,11 +139,9 @@ export function pesanLaporan(olahan, opsi = {}) {
     }
     baris.push('')
 
-    if (daftarUnit.length) {
-      const u = daftarUnit.slice(0, 3)
-        .map((x) => `${lepas(x.nama)} (${angka(x.publikasi)})`)
-        .join(', ')
-      baris.push(`<b>UPT paling disorot:</b> ${u}`)
+    const naik = olahan.uptNaik || daftarUnit
+    if (naik.length) {
+      baris.push(...baganBatangTeks(naik, jenis))
       baris.push('')
     }
   }
@@ -163,6 +161,47 @@ export function pesanLaporan(olahan, opsi = {}) {
     + 'Laporan utuh terlampir.</i>')
 
   return rapikan(baris)
+}
+
+/**
+ * Diagram batang "UPT naik ke permukaan", digambar dari karakter blok.
+ *
+ * Telegram tidak menggambarkan apa pun di dalam pesan, dan lampiran PDF baru
+ * terbuka setelah seseorang menekannya. Yang harus terbaca dalam sepuluh detik
+ * karena itu harus muat sebagai teks — dan batang dari karakter blok di dalam
+ * <code> adalah satu-satunya bentuk yang tetap sejajar di layar telepon,
+ * sebab hanya <code> yang dirender dengan huruf berlebar tetap.
+ *
+ * Nama unit dan batangnya sengaja dipisah dua baris. Digabung satu baris,
+ * "Lapas Perempuan Kelas IIA Martapura" mendorong batangnya keluar layar pada
+ * telepon mana pun, dan yang tersisa terbaca hanya namanya.
+ *
+ * Pembandingnya ikut dicetak. Delapan publikasi di unit yang pekan lalu juga
+ * delapan adalah keadaan tenang; delapan di unit yang pekan lalu nol adalah
+ * keadaan yang harus dibaca malam ini juga.
+ */
+function baganBatangTeks(daftar, jenis, maks = 5) {
+  const butir = (daftar || []).filter((u) => u.publikasi > 0).slice(0, maks)
+  if (!butir.length) return []
+
+  const rentang = { harian: 'hari ini', mingguan: 'pekan ini', bulanan: 'bulan ini' }[jenis] || 'periode ini'
+  const tertinggi = Math.max(1, ...butir.map((u) => u.publikasi))
+
+  const baris = [`<b>UPT naik ke permukaan — ${lepas(rentang)}</b>`]
+  for (const u of butir) {
+    const panjang = Math.max(1, Math.round((u.publikasi / tertinggi) * 12))
+    const sebelum = u.sebelum ?? null
+    const delta = sebelum === null ? null : u.publikasi - sebelum
+    const catatan = sebelum === null ? ''
+      : sebelum === 0 ? ' — <b>baru muncul</b>'
+        : delta > 0 ? ` — naik ${delta}`
+          : delta < 0 ? ` — turun ${Math.abs(delta)}`
+            : ' — tetap'
+
+    baris.push(`• ${lepas(pendek(u.nama, 60))}`)
+    baris.push(`   <code>${'█'.repeat(panjang)}</code> ${angka(u.publikasi)}${catatan}`)
+  }
+  return baris
 }
 
 /**

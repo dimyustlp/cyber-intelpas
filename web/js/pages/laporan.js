@@ -20,6 +20,8 @@ import { kelompokkanPeristiwa } from '../lib/peristiwa.js'
 import { ember } from '../lib/sentimen.js'
 import { dasar } from '../lib/hitung.js'
 import { ikon } from '../lib/ikon.js'
+import { baganUptMuncul } from '../ui/bagan.js'
+import { uptNaik } from '../lib/hitung.js'
 
 /** Pilihan periode yang bertahan selama sesi. */
 const pilihan = { jenis: 'mingguan', mulai: '', selesai: '', hasil: null, sibuk: false }
@@ -180,6 +182,13 @@ export function halamanLaporan({ keadaan, isi }) {
           </div>`,
       })}
 
+      ${kartu({
+        judul: 'UPT yang naik ke permukaan',
+        ket: 'Dihitung dari arsip yang sudah ada di layar, sebagai pratinjau sebelum laporan '
+          + 'disusun. Angka pada berkas laporannya dihitung ulang langsung dari basis data.',
+        isi: '<div id="laporan-upt"></div>',
+      })}
+
       ${hasil ? kartu({
         judul: 'Laporan siap',
         ket: `${angka(hasil.olahan.peristiwa.length)} peristiwa · ${angka(hasil.olahan.publikasi.length)} publikasi · ${angka(hasil.olahan.daftarUnit.length)} UPT terdampak`,
@@ -208,6 +217,22 @@ export function halamanLaporan({ keadaan, isi }) {
   if (hasil) {
     const bingkai = isi.querySelector('iframe')
     if (bingkai) bingkai.srcdoc = hasil.html
+  }
+
+  /*
+     Bagan pratinjau digambar dari arsip yang sudah ada di layar, bukan dari
+     hasil susunan laporan.
+
+     Sengaja: ia harus sudah terbaca SEBELUM tombol susun ditekan. Analis yang
+     memilih periode berhak melihat unit mana yang akan mengisi laporannya
+     sebelum menunggu penyusunannya selesai — dan bila hasilnya tidak seperti
+     dugaannya, periodenya diganti tanpa satu pun panggilan ke peladen.
+  */
+  const wadahUpt = isi.querySelector('#laporan-upt')
+  if (wadahUpt) {
+    baganUptMuncul(wadahUpt, uptNaik(keadaan.berita || [], {
+      mulai: pilihan.mulai, selesai: pilihan.selesai, maks: 10,
+    }))
   }
 
   isi.querySelectorAll('[data-jenis]').forEach((b) => {

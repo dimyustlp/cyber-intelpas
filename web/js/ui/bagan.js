@@ -337,7 +337,7 @@ export function baganUrgensi(wadah, data) {
   for (const b of butir) {
     const potong = document.createElement('div')
     potong.className = 'pita-potong'
-    potong.style.cssText = `flex:${b.jumlah};background:${palet[b.kode]}`
+    potong.style.cssText = `flex:${b.jumlah};background:${palet[b.label]}`
     potong.title = `${b.label}: ${b.jumlah} berita (${((b.jumlah / total) * 100).toFixed(1)}%)`
     pita.appendChild(potong)
   }
@@ -353,10 +353,10 @@ export function baganUrgensi(wadah, data) {
     sel.className = 'urgensi-baris'
     sel.innerHTML = `
       <span class="urgensi-nama">
-        <i style="background:${palet[b.kode]}"></i>${b.label}
+        <i style="background:${palet[b.label]}"></i>${b.label}
       </span>
       <span class="urgensi-batang">
-        <i style="width:${((b.jumlah / tertinggi) * 100).toFixed(1)}%;background:${palet[b.kode]}"></i>
+        <i style="width:${((b.jumlah / tertinggi) * 100).toFixed(1)}%;background:${palet[b.label]}"></i>
       </span>
       <span class="urgensi-angka angka">${b.jumlah}<small>${persen}%</small></span>`
     daftar.appendChild(sel)
@@ -379,4 +379,84 @@ export function garisKilat(nilai, opsi = {}) {
     <path d="${jalurHalus(titik)}" fill="none" stroke="${warna}" stroke-width="1.6" stroke-linecap="round"/>
     <circle cx="${titik[titik.length - 1][0]}" cy="${titik[titik.length - 1][1]}" r="2.2" fill="${warna}"/>
   </svg>`
+}
+
+/* ------------------------------------------- 6. UPT yang naik ke permukaan */
+
+/**
+ * Batang mendatar per unit, dengan pembanding periode sebelumnya.
+ *
+ * Menjawab satu pertanyaan yang selama ini hanya bisa dijawab dengan membaca
+ * tabel baris demi baris: unit mana yang minggu ini naik ke permukaan.
+ *
+ * Yang membuatnya berbeda dari `baganBatang` adalah pembandingnya. Angka
+ * "12 berita" tidak berarti apa-apa sendirian — dua belas berita di unit yang
+ * minggu lalu juga dua belas adalah keadaan tenang, sedangkan dua belas di
+ * unit yang minggu lalu nol adalah keadaan yang harus dibaca malam ini juga.
+ * Karena itu tiap batang membawa bayangan periode sebelumnya di belakangnya
+ * dan selisihnya tertulis sebagai angka.
+ *
+ * @param {HTMLElement} wadah
+ * @param {{nama:string, jumlah:number, sebelum?:number, negatif?:number}[]} data
+ * @param {{maks?:number, satuan?:string}} [opsi]
+ */
+export function baganUptMuncul(wadah, data, opsi = {}) {
+  wadah.innerHTML = ''
+  const butir = (data || []).filter((b) => b.jumlah > 0).slice(0, opsi.maks || 10)
+  if (!butir.length) {
+    wadah.innerHTML = '<p class="samar-teks kecil-teks">Tidak ada unit yang diberitakan pada periode ini.</p>'
+    return
+  }
+
+  const satuan = opsi.satuan || 'berita'
+  // Skalanya memuat periode sebelumnya juga. Kalau hanya memuat periode ini,
+  // unit yang justru MEREDA akan tergambar dengan bayangan yang melewati tepi
+  // kotaknya — dan penurunan terbaca sebagai kenaikan.
+  const tertinggi = Math.max(1, ...butir.map((b) => Math.max(b.jumlah, b.sebelum || 0)))
+  const warnaUtama = token('--accent', '#1D3E6E')
+  const warnaNegatif = gelap() ? '#FA7C6A' : '#8E1B14'
+
+  const daftar = document.createElement('div')
+  daftar.className = 'upt-muncul'
+
+  butir.forEach((b, i) => {
+    const naik = b.sebelum == null ? null : b.jumlah - b.sebelum
+    const arah = naik == null ? '' : naik > 0 ? 'naik' : naik < 0 ? 'turun' : 'tetap'
+    const selisih = naik == null ? ''
+      : naik === 0 ? 'tetap'
+        : `${naik > 0 ? '+' : '−'}${Math.abs(naik)}`
+
+    const baris = document.createElement('div')
+    baris.className = 'upt-baris'
+    baris.innerHTML = `
+      <span class="upt-no">${i + 1}</span>
+      <span class="upt-nama" title="${b.nama.replace(/"/g, '&quot;')}">${b.nama}</span>
+      <span class="upt-lacak">
+        ${b.sebelum ? `<i class="upt-bayang" style="width:${((b.sebelum / tertinggi) * 100).toFixed(1)}%"></i>` : ''}
+        <i class="upt-isi" style="width:${((b.jumlah / tertinggi) * 100).toFixed(1)}%;background:${warnaUtama}"></i>
+        ${b.negatif ? `<i class="upt-negatif" style="width:${((b.negatif / tertinggi) * 100).toFixed(1)}%;background:${warnaNegatif}"></i>` : ''}
+      </span>
+      <b class="upt-angka angka">${b.jumlah}</b>
+      ${arah ? `<span class="upt-delta" data-arah="${arah}">${selisih}</span>` : ''}`
+
+    baris.title = b.sebelum == null
+      ? `${b.nama}: ${b.jumlah} ${satuan}`
+      : `${b.nama}: ${b.jumlah} ${satuan} pada periode ini, ${b.sebelum} pada periode sebelumnya.`
+    daftar.appendChild(baris)
+  })
+
+  wadah.appendChild(daftar)
+
+  const adaBayang = butir.some((b) => b.sebelum)
+  const adaNegatif = butir.some((b) => b.negatif)
+  if (adaBayang || adaNegatif) {
+    const ket = document.createElement('div')
+    ket.className = 'upt-legenda'
+    ket.innerHTML = [
+      `<span><i style="background:${warnaUtama}"></i>Periode ini</span>`,
+      adaNegatif ? `<span><i style="background:${warnaNegatif}"></i>Di antaranya negatif</span>` : '',
+      adaBayang ? '<span><i class="contoh-bayang"></i>Periode sebelumnya</span>' : '',
+    ].filter(Boolean).join('')
+    wadah.appendChild(ket)
+  }
 }

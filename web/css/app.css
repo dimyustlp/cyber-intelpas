@@ -3090,12 +3090,21 @@ kbd {
 
 .positif-teks { color: var(--positif); }
 
+
 /* ==========================================================================
    Peta Sebaran
    --------------------------------------------------------------------------
    Petanya SVG biasa, digambar dari garis pantai yang tersimpan di dalam repo.
    Tidak ada ubin dari peladen luar, jadi tidak ada yang perlu ditunggu dan
    tidak ada yang bisa gagal dimuat.
+
+   Ukuran titik tidak ditulis di dalam berkas ini melainkan diturunkan dari
+   satu peubah, --jari, yang dipasang halaman petanya pada simpul <svg> setiap
+   kali kotak pandang berubah. Satu penulisan peubah per bingkai gambar
+   menggantikan lima ratus penulisan atribut, dan itulah yang membuat
+   perbesaran tetap mulus di komputer kantor. Peramban yang belum mengenal
+   properti CSS `r` mengabaikan aturan ini dan memakai atribut r bawaan
+   titiknya — geraknya menjadi bertahap, bukan rusak.
    ========================================================================== */
 
 .peta-tata {
@@ -3119,9 +3128,13 @@ kbd {
    titik unit yang berdiri di atasnya kehilangan acuan letak sama sekali.
 */
 .peta-wadah {
-  --peta-laut:  #DCE8F4;
-  --peta-darat: #FBFCFE;
-  --peta-tepi:  #93A6BD;
+  --peta-laut:   #DCE8F4;
+  --peta-laut-2: #C7DAEC;
+  --peta-darat:  #FBFCFE;
+  --peta-tepi:   #93A6BD;
+  --peta-halo:   #B9CFE4;
+  --peta-jaring: #9FB4CA;
+  --peta-denyut: #A81E0E;
 
   position: relative;
   background: var(--peta-laut);
@@ -3130,19 +3143,398 @@ kbd {
   overflow: hidden;
 }
 
+.peta-wadah:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 2px; }
+
+/*
+   Cahaya lembut di tengah kotak, bukan di tengah peta.
+
+   Digambar sebagai lapisan di atas kotak dan bukan sebagai gradien di dalam
+   SVG, supaya ia tidak ikut bergeser ketika petanya diseret. Cahaya yang ikut
+   bergeser terbaca sebagai noda yang menempel di kepulauan; cahaya yang diam
+   terbaca sebagai penerangan ruangan.
+*/
+.peta-wadah::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(120% 90% at 50% 8%, rgba(255, 255, 255, 0.5), transparent 62%),
+    radial-gradient(140% 120% at 50% 118%, var(--peta-laut-2), transparent 55%);
+  z-index: 1;
+}
+
 @media (prefers-color-scheme: dark) {
   :root:not([data-tema="terang"]) .peta-wadah {
-    --peta-laut:  #0A111C;
-    --peta-darat: #24334C;
-    --peta-tepi:  #4A5D80;
+    --peta-laut:   #0A111C;
+    --peta-laut-2: #101B2C;
+    --peta-darat:  #24334C;
+    --peta-tepi:   #4A5D80;
+    --peta-halo:   #16233A;
+    --peta-jaring: #2C3C57;
+    --peta-denyut: #FF7B62;
+  }
+
+  :root:not([data-tema="terang"]) .peta-wadah::before {
+    background:
+      radial-gradient(120% 90% at 50% 6%, rgba(90, 130, 190, 0.14), transparent 60%),
+      radial-gradient(140% 120% at 50% 120%, rgba(0, 0, 0, 0.45), transparent 55%);
   }
 }
 
 :root[data-tema="gelap"] .peta-wadah {
-  --peta-laut:  #0A111C;
-  --peta-darat: #24334C;
-  --peta-tepi:  #4A5D80;
+  --peta-laut:   #0A111C;
+  --peta-laut-2: #101B2C;
+  --peta-darat:  #24334C;
+  --peta-tepi:   #4A5D80;
+  --peta-halo:   #16233A;
+  --peta-jaring: #2C3C57;
+  --peta-denyut: #FF7B62;
 }
+
+:root[data-tema="gelap"] .peta-wadah::before {
+  background:
+    radial-gradient(120% 90% at 50% 6%, rgba(90, 130, 190, 0.14), transparent 60%),
+    radial-gradient(140% 120% at 50% 120%, rgba(0, 0, 0, 0.45), transparent 55%);
+}
+
+.peta-svg {
+  display: block;
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  height: auto;
+  /* Kepulauan Indonesia jauh lebih lebar daripada tinggi; membiarkan tingginya
+     mengikuti isi membuat peta setinggi satu layar penuh pada layar sempit. */
+  max-height: min(62vh, 560px);
+  cursor: grab;
+  touch-action: none;
+}
+
+.peta-svg.menyeret { cursor: grabbing; }
+
+/* ------------------------------------------------------------- daratan */
+
+.peta-daratan path {
+  fill: var(--peta-darat);
+  stroke: var(--peta-tepi);
+  stroke-linejoin: round;
+  /* Tebal garis tidak ikut membesar saat peta diperbesar; tanpa ini, garis
+     pantai pada perbesaran penuh setebal pulaunya sendiri. */
+  vector-effect: non-scaling-stroke;
+  stroke-width: 0.7;
+}
+
+/*
+   Halo pantai: salinan garis pantai yang sama, digambar lebih dulu dengan
+   goresan tebal dan pudar.
+
+   Menggantikan drop-shadow. Bayangan tapis harus dihitung ulang oleh peramban
+   setiap bingkai selama peta diseret, dan pada 103 pulau itu terasa tersendat
+   di komputer kantor. Goresan biasa tidak dihitung ulang sama sekali.
+*/
+.peta-halo path {
+  fill: none;
+  stroke: var(--peta-halo);
+  stroke-width: 4;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+/* Tetangga digambar samar: hadir secukupnya untuk menjelaskan mengapa
+   Kalimantan dan Papua terpotong, tanpa ikut menarik perhatian. */
+.peta-tetangga path {
+  fill: var(--peta-darat);
+  fill-opacity: 0.4;
+  stroke: none;
+}
+
+/*
+   Jaring lima derajat. Ia baru berguna pada perbesaran tinggi, dan justru di
+   situlah ia paling terlihat: pada pandangan seluruh Indonesia garisnya jarang
+   dan tipis, tetapi ketika layar hanya memuat satu kabupaten, satu garis yang
+   melintas cukup untuk mengembalikan acuan letak.
+*/
+.peta-jaring line {
+  stroke: var(--peta-jaring);
+  stroke-opacity: 0.28;
+  stroke-width: 0.6;
+  vector-effect: non-scaling-stroke;
+}
+
+.peta-jaring line.khatulistiwa {
+  stroke-opacity: 0.5;
+  stroke-width: 1;
+  stroke-dasharray: 5 5;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* Khatulistiwa merayap pelan sekali. Satu-satunya gerak yang tidak
+     dipicu apa pun; ia menandai bahwa peta ini hidup, bukan gambar tempel. */
+  .peta-jaring line.khatulistiwa { animation: peta-hanyut 24s linear infinite; }
+}
+
+@keyframes peta-hanyut { to { stroke-dashoffset: -100; } }
+
+/* --------------------------------------------------------------- titik */
+
+/*
+   Kepekatan dan jari-jari dipisah dari kelas gerak.
+
+   Titik "sepi" memang lebih pudar daripada yang lain, dan itu diurus
+   fill-opacity. Animasi masuk memakai opacity elemen. Kalau keduanya memakai
+   properti yang sama, titik sepi akan berkedip menjadi pekat penuh di ujung
+   animasinya, lalu memudar lagi.
+*/
+.peta-titik circle {
+  r: calc(var(--jari) * 1px);
+  fill-opacity: var(--pekat, 0.92);
+  stroke: var(--peta-darat);
+  stroke-width: calc(var(--jari) * 0.28px);
+  cursor: pointer;
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: opacity 200ms ease, fill-opacity 200ms ease;
+}
+
+.peta-titik circle.t-sepi { --pekat: 0.42; }
+
+.peta-titik circle:hover,
+.peta-titik circle.tunjuk,
+.peta-titik circle:focus-visible {
+  stroke: var(--ink);
+  stroke-width: calc(var(--jari) * 0.42px);
+  outline: none;
+}
+
+/* Titik yang tidak cocok dengan kata pencarian tetap digambar, hanya
+   dipadamkan. Yang dicari terbaca sebagai letak di dalam kepulauan, bukan
+   sebagai tiga titik yang mengambang tanpa acuan. */
+.peta-titik circle.redup { opacity: 0.14; pointer-events: none; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .peta-titik circle:hover,
+  .peta-titik circle.tunjuk { transform: scale(1.55); }
+
+  .peta-titik circle { transition: opacity 200ms ease, fill-opacity 200ms ease, transform 140ms ease; }
+
+  /*
+     Mekar dari barat ke timur, sekali saja saat data induk sampai.
+
+     Tundanya berasal dari bujur unitnya, bukan dari urutannya di dalam larik:
+     yang terbaca adalah sapuan geografis dari Sabang ke Merauke, bukan urutan
+     baris di dalam basis data yang tidak berarti apa-apa bagi pembacanya.
+  */
+  .peta-titik.mekar circle {
+    animation: peta-mekar 460ms cubic-bezier(0.2, 0.9, 0.25, 1) backwards;
+    animation-delay: var(--tunda, 0ms);
+  }
+}
+
+@keyframes peta-mekar {
+  from { opacity: 0; transform: scale(0.2); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+/*
+   Denyut hanya pada unit kritis.
+
+   Cincinnya membesar dari titik itu sendiri lalu menghilang. Jari-jarinya
+   mengikuti --jari seperti titiknya, sehingga denyutnya tetap sebanding pada
+   perbesaran berapa pun.
+*/
+.peta-denyut circle {
+  r: calc(var(--jari) * 1px);
+  fill: none;
+  stroke: var(--peta-denyut);
+  stroke-width: calc(var(--jari) * 0.5px);
+  transform-box: fill-box;
+  transform-origin: center;
+  opacity: 0;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .peta-denyut circle { animation: peta-denyut 2600ms ease-out infinite; }
+}
+
+@keyframes peta-denyut {
+  0%   { transform: scale(1); opacity: 0.6; }
+  70%  { opacity: 0; }
+  100% { transform: scale(4.4); opacity: 0; }
+}
+
+/* ------------------------------------------------------ cincin terpilih */
+
+.peta-pilih circle {
+  fill: none;
+  pointer-events: none;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.peta-pilih .cincin-luar {
+  r: calc(var(--jari) * 3.4px);
+  stroke: var(--ink-2);
+  stroke-width: calc(var(--jari) * 0.3px);
+  stroke-dasharray: calc(var(--jari) * 1.1px) calc(var(--jari) * 0.8px);
+  opacity: 0.75;
+}
+
+.peta-pilih .cincin-dalam {
+  r: calc(var(--jari) * 2px);
+  stroke: var(--ink);
+  stroke-width: calc(var(--jari) * 0.22px);
+  opacity: 0.55;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* Berputar pelan, bukan berkedip. Kedipan menarik mata terus-menerus;
+     putaran menandai "ini yang sedang dibuka" lalu dilupakan. */
+  .peta-pilih .cincin-luar { animation: peta-putar 9s linear infinite; }
+  .peta-pilih .cincin-dalam { animation: peta-tarik 420ms cubic-bezier(0.2, 0.9, 0.25, 1); }
+}
+
+@keyframes peta-putar { to { transform: rotate(360deg); } }
+@keyframes peta-tarik {
+  from { transform: scale(2.2); opacity: 0; }
+  to   { transform: scale(1); opacity: 0.55; }
+}
+
+/* ------------------------------------------------- kendali & penunjuk */
+
+.peta-kendali {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 4px;
+  border-radius: var(--r-2);
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  border: 1px solid var(--line-2);
+  box-shadow: var(--bayang-1);
+  backdrop-filter: blur(6px);
+}
+
+/*
+   Batang skala dan angka perbesaran duduk di sudut yang sama.
+
+   Keduanya menjawab pertanyaan yang sama — "sedekat apa saya sekarang?" —
+   dan memisahkannya ke dua sudut memaksa mata membandingkan dua tempat.
+*/
+.peta-hud {
+  position: absolute;
+  left: 10px;
+  bottom: 10px;
+  z-index: 3;
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  pointer-events: none;
+  font-size: 11px;
+  color: var(--ink-2);
+}
+
+.peta-skala,
+.peta-zum {
+  padding: 4px 7px;
+  border-radius: var(--r-1);
+  background: color-mix(in srgb, var(--surface) 82%, transparent);
+  border: 1px solid var(--line-3);
+  backdrop-filter: blur(6px);
+}
+
+.peta-skala { display: flex; flex-direction: column; gap: 3px; }
+
+.peta-skala-batang {
+  display: block;
+  height: 5px;
+  min-width: 20px;
+  border: 1px solid var(--ink-3);
+  border-top: 0;
+  transition: width 160ms ease;
+}
+
+.peta-skala-teks,
+.peta-zum b { font-variant-numeric: tabular-nums; letter-spacing: 0.02em; }
+
+/*
+   Keterangan yang mengikuti kursor.
+
+   Menggantikan <title> bawaan SVG. Tip bawaan peramban muncul sesudah jeda
+   satu detik penuh dan hanya memuat satu baris teks tanpa warna — pada peta
+   berisi lima ratus titik, jeda itu berarti setiap penelusuran cepat berakhir
+   tanpa satu nama pun terbaca.
+*/
+.peta-tip {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 4;
+  max-width: 250px;
+  padding: 7px 9px;
+  border-radius: var(--r-1);
+  background: var(--surface);
+  border: 1px solid var(--line-2);
+  box-shadow: var(--bayang-2);
+  pointer-events: none;
+  font-size: 11.5px;
+  line-height: 1.45;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.peta-tip[hidden] { display: none; }
+.peta-tip b { font-size: 12.5px; font-weight: 600; }
+.peta-tip span { display: flex; align-items: center; gap: 5px; color: var(--ink-2); }
+.peta-tip i { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .peta-tip { animation: peta-tip-masuk 130ms ease-out; }
+}
+
+@keyframes peta-tip-masuk { from { opacity: 0; } to { opacity: 1; } }
+/*
+   Petunjuk sekejap ketika roda diputar tanpa penekan.
+
+   Muncul di tengah peta lalu padam sendiri. Ia hanya tampil pada saat orang
+   melakukan hal yang ingin dijelaskan, bukan berdiri terus-menerus sebagai
+   keterangan yang lama-lama tidak dibaca siapa pun.
+*/
+.peta-petunjuk {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 5;
+  margin: 0;
+  transform: translate(-50%, -50%);
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ink) 82%, transparent);
+  color: var(--surface);
+  font-size: 12px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 180ms ease;
+}
+
+.peta-petunjuk.tampak { opacity: 1; }
+
+.peta-petunjuk kbd {
+  font: inherit;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--surface) 24%, transparent);
+}
+
+
+/* ------------------------------------------------------------- legenda */
 
 /*
    Legenda peta ini duduk di bawah petanya, tidak melayang di atasnya seperti
@@ -3159,55 +3551,12 @@ kbd {
   box-shadow: none;
   border: 0;
   border-radius: 0;
-  padding: 11px 4px 3px;
+  padding: 9px 0 3px;
   flex-direction: row;
   flex-wrap: wrap;
-  gap: 6px 18px;
+  gap: 6px 8px;
   background: none;
   font-size: 12px;
-}
-
-.peta-svg {
-  display: block;
-  width: 100%;
-  height: auto;
-  /* Kepulauan Indonesia jauh lebih lebar daripada tinggi; membiarkan tingginya
-     mengikuti isi membuat peta setinggi satu layar penuh pada layar sempit. */
-  max-height: min(62vh, 560px);
-  cursor: grab;
-  touch-action: none;
-}
-
-.peta-svg.menyeret { cursor: grabbing; }
-
-.peta-daratan path {
-  fill: var(--peta-darat);
-  stroke: var(--peta-tepi);
-  stroke-linejoin: round;
-  /* Tebal garis tidak ikut membesar saat peta diperbesar; tanpa ini, garis
-     pantai pada perbesaran penuh setebal pulaunya sendiri. */
-  vector-effect: non-scaling-stroke;
-  stroke-width: 0.7;
-}
-
-/* Tetangga digambar samar: hadir secukupnya untuk menjelaskan mengapa
-   Kalimantan dan Papua terpotong, tanpa ikut menarik perhatian. */
-.peta-tetangga path {
-  fill: var(--peta-darat);
-  fill-opacity: 0.4;
-  stroke: none;
-}
-
-.peta-titik circle {
-  stroke: var(--peta-darat);
-  cursor: pointer;
-  transition: r 120ms ease;
-}
-
-.peta-titik circle:hover,
-.peta-titik circle:focus-visible {
-  stroke: var(--ink);
-  outline: none;
 }
 
 /* Gaya .peta-legenda sendiri sudah ada di bagian sistem desain — kotak
@@ -3216,9 +3565,23 @@ kbd {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  font: inherit;
   font-size: 12px;
   color: var(--ink-2);
+  padding: 4px 9px;
+  border: 1px solid var(--line-2);
+  border-radius: 999px;
+  background: none;
+  cursor: pointer;
+  transition: background 140ms ease, border-color 140ms ease, opacity 140ms ease;
 }
+
+.peta-legenda-butir:hover { background: var(--surface-3); border-color: var(--line-2); }
+
+/* Tingkat yang sedang disembunyikan tetap terbaca angkanya. Butir yang hilang
+   sama sekali membuat orang lupa bahwa ia pernah mematikannya. */
+.peta-legenda-butir.padam { opacity: 0.42; text-decoration: line-through; }
+.peta-legenda-butir.padam i { background: var(--line) !important; }
 
 .peta-legenda-butir i {
   width: 9px;
@@ -3226,11 +3589,10 @@ kbd {
   border-radius: 50%;
   display: block;
   flex: none;
+  transition: background 140ms ease;
 }
 
-/* Angkanya dirapatkan ke kanan supaya lima baris legenda terbaca sebagai satu
-   kolom angka, bukan sebagai lima kalimat dengan panjang berbeda. */
-.peta-legenda-butir b { color: var(--ink); margin-left: auto; }
+.peta-legenda-butir b { color: var(--ink); font-variant-numeric: tabular-nums; }
 
 .peta-catatan {
   display: flex;
@@ -3255,6 +3617,17 @@ kbd {
   top: 12px;
   max-height: calc(100vh - 90px);
   overflow-y: auto;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* Panel berganti isi tanpa berganti tempat, jadi tanpa peralihan pergantian
+     itu terbaca sebagai layar yang berkedip. */
+  .peta-panel.masuk { animation: peta-panel-masuk 240ms ease-out; }
+}
+
+@keyframes peta-panel-masuk {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: none; }
 }
 
 .peta-panel-kop {
@@ -3287,9 +3660,10 @@ kbd {
   cursor: pointer;
   color: inherit;
   font: inherit;
+  transition: background 120ms ease, padding-left 120ms ease;
 }
 
-.peta-daftar button:hover { background: var(--surface-3); }
+.peta-daftar button:hover { background: var(--surface-3); padding-left: 10px; }
 
 .peta-daftar i {
   width: 9px;
@@ -3345,7 +3719,6 @@ kbd {
   line-height: 1.4;
   margin-bottom: 4px;
 }
-
 /* ==========================================================================
    Tabel yang barisnya bisa dipilih
    --------------------------------------------------------------------------

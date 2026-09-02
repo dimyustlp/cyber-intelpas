@@ -19,7 +19,7 @@
  * Modul ES murni, tanpa pustaka luar.
  */
 
-const kurangiGerak = () => {
+export const kurangiGerak = () => {
   try {
     return window.matchMedia('(prefers-reduced-motion: reduce)').matches
   } catch {

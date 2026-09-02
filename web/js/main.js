@@ -236,6 +236,62 @@ function kerangka() {
   </div>`
 }
 
+/* ------------------------------------------------------- fokus yang bertahan */
+
+/**
+ * Mengingat bidang yang sedang diisi, lalu mengembalikannya sesudah layar
+ * digambar ulang.
+ *
+ * Keluhan yang melahirkan bagian ini: mengetik di kotak cari Pusat Data Berita
+ * hanya bisa sejauh satu kata. Kotak carinya memanggil `gambar-ulang` sesudah
+ * jeda 160 milidetik, `gambar()` membuang seluruh isi layar dan membuatnya
+ * lagi — termasuk kotak carinya sendiri — dan kotak yang baru tidak mewarisi
+ * apa pun dari yang lama. Fokusnya jatuh ke <body>, huruf berikutnya tidak
+ * sampai ke mana-mana, dan yang mengalaminya menyimpulkan papan tiknya rusak.
+ *
+ * Diperbaiki di sini, bukan di tiap halaman, karena tiga alasan: halamannya
+ * ada delapan dan bertambah; perbaikan per halaman menuntut tiap halaman baru
+ * mengingatnya; dan yang menyebabkannya memang `gambar()`, bukan halamannya.
+ *
+ * Yang diingat bukan simpulnya melainkan penandanya — `data-peran`,
+ * `data-bidang`, `data-saring`, atau `id`. Simpul lamanya sudah dibuang saat
+ * pengembalian dilakukan, jadi menyimpan rujukannya tidak berguna.
+ */
+function ingatFokus() {
+  const el = document.activeElement
+  if (!el || el === document.body) return null
+  if (!['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName)) return null
+
+  const penanda = el.dataset.peran ? `[data-peran="${el.dataset.peran}"]`
+    : el.dataset.bidang ? `[data-bidang="${el.dataset.bidang}"]`
+      : el.dataset.saring ? `[data-saring="${el.dataset.saring}"]`
+        : el.id ? `#${el.id}`
+          : null
+  if (!penanda) return null
+
+  // Letak kursor hanya ada pada bidang teks. Menanyakannya pada <select> atau
+  // pada input bertipe date melempar galat di sebagian peramban.
+  let awal = null
+  let akhir = null
+  try {
+    awal = el.selectionStart
+    akhir = el.selectionEnd
+  } catch { /* jenis bidang ini tidak punya letak kursor */ }
+
+  return { penanda, awal, akhir }
+}
+
+function kembalikanFokus(ingatan) {
+  if (!ingatan) return
+  const el = document.querySelector(ingatan.penanda)
+  if (!el) return
+  el.focus({ preventScroll: true })
+  if (ingatan.awal == null) return
+  try {
+    el.setSelectionRange(ingatan.awal, ingatan.akhir)
+  } catch { /* jenis bidang ini tidak menerima letak kursor */ }
+}
+
 /* ---------------------------------------------------------------- gambar */
 
 export function gambar() {
@@ -244,6 +300,8 @@ export function gambar() {
     akar.appendChild(halamanMasuk({ onMasuk: mulaiSesi }))
     return
   }
+
+  const ingatan = ingatFokus()
 
   akar.innerHTML = kerangka()
   const isi = document.getElementById('isi')
@@ -256,6 +314,7 @@ export function gambar() {
     // Gerak dipasang setelah isinya jadi, bukan sebelumnya. Kalau dipasang di
     // dalam tiap halaman, cepat atau lambat ada halaman yang lupa memasangnya.
     hidupkan(isi, { ruang: keadaan.halaman || 'umum' })
+    kembalikanFokus(ingatan)
   } catch (galat) {
     isi.innerHTML = `<div class="pesan" data-nada="kritis">${ikon('peringatan')}
       <div><b>Halaman gagal ditampilkan.</b><br>${amankan(galat.message)}</div></div>`

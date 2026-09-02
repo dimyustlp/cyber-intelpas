@@ -335,9 +335,9 @@ export function periodeSebelum(mulai, selesai) {
 /**
  * Deret harian sepanjang rentang mana pun, termasuk hari yang kosong.
  *
- * Berbeda dari `deretHarian` di lib/demo.js pada dua hal, dan keduanya
- * disengaja. Panjangnya bebas, bukan tetap empat belas hari. Dan harinya
- * diambil dari tanggal terbit bila ada — sebuah berita yang tertarik penyalin
+ * Berbeda dari deret harian yang dulu tinggal di lib/demo.js pada dua hal,
+ * dan keduanya disengaja. Panjangnya bebas, bukan tetap empat belas hari. Dan
+ * harinya diambil dari tanggal terbit bila ada — sebuah berita yang tertarik penyalin
  * tiga hari sesudah terbit adalah berita hari terbitnya, bukan berita hari
  * penarikannya, dan pada halaman tren selisih tiga hari itu memindahkan
  * puncak grafik ke tempat yang salah.
@@ -434,4 +434,34 @@ export function pergeseran(kini = [], lalu = [], bidang = 'subkategori', maks = 
     .filter((b) => b.jumlah > 0 || b.sebelum > 0)
     .sort((x, y) => y.delta - x.delta || y.jumlah - x.jumlah)
     .slice(0, maks)
+}
+
+/**
+ * Deret empat belas hari terakhir, siap dipakai bagan tren mana pun.
+ *
+ * Menggantikan `deretHarian` di lib/demo.js yang selama ini dipakai dasbor
+ * pusat dan dasbor wilayah. Dua hal berbeda, dan keduanya penting.
+ *
+ * Harinya kini diambil dari TANGGAL TERBIT bila ada, bukan dari waktu barisnya
+ * masuk. Pada arsip 2 September 2026, 346 dari 815 baris terbit pada hari yang
+ * berbeda dari hari penarikannya — rata-rata selisihnya empat setengah hari,
+ * yang terjauh delapan tahun. Selama bagan dasbor memakai waktu penarikan
+ * sementara laporan berkala memakai tanggal terbit, keduanya menggambar dunia
+ * yang berbeda dari data yang sama, dan yang membandingkannya tidak punya cara
+ * mengetahui mana yang benar.
+ *
+ * Himpunan dasarnya juga sudah disaring aturan lib/hitung.js — berita di luar
+ * lingkup dan yang sudah dinyatakan tidak valid tidak lagi menaikkan garisnya.
+ *
+ * Ubin "Berita masuk hari ini" di dasbor SENGAJA tidak ikut berubah: ia memang
+ * menghitung yang masuk hari ini, dan namanya sudah menyatakan itu.
+ */
+export function deretEmpatBelasHari(daftar = [], hari = 14, acuan = new Date()) {
+  const satuHari = 86_400_000
+  const selesai = new Date(acuan)
+  const mulai = new Date(acuan.getTime() - (hari - 1) * satuHari)
+  return deretTren(daftar, {
+    mulai: mulai.toISOString().slice(0, 10),
+    selesai: selesai.toISOString().slice(0, 10),
+  })
 }

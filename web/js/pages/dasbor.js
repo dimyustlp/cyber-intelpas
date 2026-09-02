@@ -9,14 +9,14 @@
 import { ubin, kartu, keping, kosong, pesanSistem, tombol } from '../ui/komponen.js'
 import { baganTren, baganSentimen, baganBatang, baganUrgensi } from '../ui/bagan.js'
 import { sumberAsli, kelompokkanPeristiwa, validasiBanyak, rekapMutu } from '../lib/peristiwa.js'
-import { deretHarian, sebaran } from '../lib/demo.js'
+import { sebaran } from '../lib/demo.js'
 import {
   angka, persen, delta, tanggalPanjang, jarakWaktu, ringkas,
   nadaUrgensi, amankan,
 } from '../lib/format.js'
 import { ikon } from '../lib/ikon.js'
 import { belumTerpetakan } from '../lib/pencocokan-upt.js'
-import { ringkasan } from '../lib/hitung.js'
+import { ringkasan, deretEmpatBelasHari } from '../lib/hitung.js'
 import { EMBER, BELUM } from '../lib/sentimen.js'
 
 /**
@@ -153,12 +153,14 @@ export function halamanDasbor({ keadaan, isi }) {
 
       ${barisRekonsiliasi(r, keadaan)}
 
+      <div id="dasbor-siklus"><div class="rangka" style="height:104px"></div></div>
+
       ${blokKanal(peristiwaNegatif, peristiwaPositif, negatif, positif, netral, belumDinilai, berita.length)}
 
       <div class="kisi kisi-utama-samping">
         ${kartu({
           judul: 'Arus pemberitaan empat belas hari',
-          ket: 'Garis utuh menghitung seluruh berita, garis putus hanya yang bersentimen negatif',
+          ket: 'Menurut tanggal terbit beritanya, bukan tanggal penarikannya — sama dengan laporan berkala. Garis utuh seluruh berita, garis putus yang bersentimen negatif.',
           isi: `<div id="bagan-tren"></div>
                 <div class="baris gap-12" style="margin-top:10px;font-size:12px" id="legenda-tren"></div>`,
         })}
@@ -225,7 +227,9 @@ export function halamanDasbor({ keadaan, isi }) {
     </div>`
 
   // Bagan digambar setelah rangka HTML terpasang, supaya ukuran wadahnya sudah pasti.
-  const deret = deretHarian(berita)
+  isiSiklus(isi, keadaan)
+
+  const deret = deretEmpatBelasHari(berita)
   const warna = baganTren(document.getElementById('bagan-tren'), deret)
   document.getElementById('legenda-tren').innerHTML = `
     <span class="baris gap-6"><i style="width:14px;height:2px;background:${warna.warnaTotal};display:block"></i> Seluruh berita</span>
@@ -525,4 +529,86 @@ function blokMutu(mutu) {
       ${angka(mutu['perlu-telaah'])} publikasi ditandai perlu telaah analis sebelum dipakai sebagai dasar keputusan.
     </div>
   </div>`
+}
+
+/* ------------------------------------------------------- siklus intelijen */
+
+/**
+ * Ringkasan siklus intelijen di dasbor.
+ *
+ * Celah yang ditutupnya: sejak lima halaman siklus dibangun, tidak ada satu
+ * pun tempat yang menyatakan keadaannya secara keseluruhan. Pimpinan yang
+ * membuka dasbor melihat arus pemberitaan dengan lengkap dan tidak melihat
+ * bahwa tiga kasus sudah menunggu putusannya sejak pekan lalu — untuk
+ * mengetahuinya ia harus membuka empat halaman satu per satu, dan yang harus
+ * dibuka satu per satu tidak dibuka.
+ *
+ * Ditarik SESUDAH dasbor tergambar, bukan sebelumnya. Dasbor adalah layar
+ * pertama sesudah masuk; menunda seluruh isinya demi tiga tabel yang mungkin
+ * kosong berarti setiap orang menunggu lebih lama setiap pagi. Kartunya muncul
+ * sebagai rangka lebih dulu, lalu terisi.
+ *
+ * Kegagalan penarikan tidak memunculkan galat merah. Peran yang tidak berhak
+ * membaca tabel kasus memang ada — dan bagi mereka kartu ini sekadar tidak
+ * pernah muncul, bukan menjadi pesan gagal yang tidak bisa mereka apa-apakan.
+ */
+async function isiSiklus(isi, keadaan) {
+  const wadah = isi.querySelector('#dasbor-siklus')
+  if (!wadah) return
+
+  try {
+    const { bacaSiklus, siapkanDemo } = await import('../lib/siklus-data.js')
+    if (keadaan.demo) siapkanDemo(keadaan.berita || [])
+
+    const [kasus, rekomendasi, penugasan, tindak] = await Promise.all([
+      bacaSiklus('kasus'), bacaSiklus('rekomendasi'),
+      bacaSiklus('penugasan'), bacaSiklus('tindak'),
+    ])
+
+    const { kasusTerbuka, terlambat, tindakSelesai } = await import('../lib/siklus.js')
+
+    const terbuka = kasus.filter(kasusTerbuka)
+    const menungguPutusan = kasus.filter((k) => k.status === 'Menunggu Keputusan')
+    const verifikasiJalan = penugasan.filter(
+      (p) => ['Ditugaskan', 'Diterima', 'Berjalan'].includes(p.status))
+    const tindakTerlambat = tindak.filter((t) => terlambat(t))
+    const tindakJalan = tindak.filter((t) => !tindakSelesai(t))
+    const usulMenunggu = rekomendasi.filter((r) => r.status === 'Diusulkan')
+
+    // Kartu tidak ditampilkan sama sekali bila belum ada satu kasus pun.
+    // Empat angka nol berjajar tidak memberi tahu apa-apa, dan menempati
+    // ruang yang pada dasbor selalu diperebutkan.
+    if (!kasus.length) { wadah.innerHTML = ''; return }
+
+    wadah.innerHTML = kartu({
+      judul: 'Siklus intelijen',
+      ket: 'Keadaan perkara yang sedang berjalan. Tekan salah satu untuk membukanya.',
+      isi: `
+        <div class="kisi kisi-4">
+          ${ubinSiklus('Kasus terbuka', terbuka.length, `dari ${angka(kasus.length)} kasus tercatat`, 'aksen', 'kasus')}
+          ${ubinSiklus('Verifikasi berjalan', verifikasiJalan.length,
+            verifikasiJalan.length ? 'surat tugas menunggu laporan' : 'tidak ada yang di lapangan',
+            verifikasiJalan.length ? 'sedang' : 'netral', 'lapangan')}
+          ${ubinSiklus('Menunggu putusan', menungguPutusan.length,
+            `${angka(usulMenunggu.length)} rekomendasi belum diputus`,
+            menungguPutusan.length ? 'kritis' : 'netral', 'keputusan')}
+          ${ubinSiklus('Tindak lanjut terlambat', tindakTerlambat.length,
+            `dari ${angka(tindakJalan.length)} butir yang berjalan`,
+            tindakTerlambat.length ? 'kritis' : 'positif', 'tindak')}
+        </div>`,
+    })
+  } catch {
+    // Peran yang tidak berhak membaca tabel siklus tidak perlu diberi tahu
+    // bahwa ia tidak berhak; ia sudah tidak melihat menunya.
+    wadah.innerHTML = ''
+  }
+}
+
+function ubinSiklus(label, nilai, kaki, nada, halaman) {
+  return `
+    <button class="ubin ubin-tekan" data-halaman="${amankan(halaman)}" data-nada="${amankan(nada)}">
+      <div class="ubin-label">${amankan(label)}</div>
+      <div class="ubin-nilai angka">${angka(nilai)}</div>
+      <div class="ubin-kaki">${amankan(kaki)}${ikon('panahKanan')}</div>
+    </button>`
 }

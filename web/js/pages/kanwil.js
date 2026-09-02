@@ -27,12 +27,15 @@ import {
   nadaUrgensi, nadaSentimen, nadaStatus, asalTautan,
 } from '../lib/format.js'
 import { ikon } from '../lib/ikon.js'
-import { ringkasan, menungguTelaahWilayah, sudahDitanggapi, TELAAH_WILAYAH, SIKAP_TANGGAPAN } from '../lib/hitung.js'
+import {
+  ringkasan, menungguTelaahWilayah, sudahDitanggapi, deretEmpatBelasHari,
+  TELAAH_WILAYAH, SIKAP_TANGGAPAN,
+} from '../lib/hitung.js'
 import { ember, EMBER, BELUM } from '../lib/sentimen.js'
 import { belumTerpetakan } from '../lib/pencocokan-upt.js'
 import { punyaIzin, adalahUnit } from '../lib/peran.js'
 import { baganSentimen, baganTren, baganUrgensi } from '../ui/bagan.js'
-import { deretHarian, sebaran } from '../lib/demo.js'
+import { sebaran } from '../lib/demo.js'
 
 /* ------------------------------------------------------------- perkakas */
 
@@ -127,7 +130,7 @@ function pasangBagan(berita, r) {
     // Acuannya hari ini, bukan tanggal tetap. Deret empat belas hari yang
     // ditambatkan ke tanggal tertentu berhenti bergerak diam-diam, dan
     // pembacanya menyimpulkan pemberitaan berhenti — bukan bagannya.
-    const warna = baganTren(wadahTren, deretHarian(berita, 14, new Date()))
+    const warna = baganTren(wadahTren, deretEmpatBelasHari(berita))
     const legenda = document.getElementById('legenda-tren-wilayah')
     if (legenda) {
       legenda.innerHTML = `

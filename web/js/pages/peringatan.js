@@ -43,6 +43,7 @@ export function halamanPeringatan({ keadaan, isi }) {
   // pasti ditolak basis data hanya memindahkan penolakan ke tempat yang lebih
   // membingungkan.
   const bolehTelaah = punyaIzin(keadaan.profil?.role, 'telaah_berita')
+  const bolehKasus = punyaIzin(keadaan.profil?.role, 'kelola_kasus')
 
   isi.innerHTML = `
     <div class="tumpuk">
@@ -72,7 +73,7 @@ export function halamanPeringatan({ keadaan, isi }) {
           <div style="padding:14px">
             ${daftar.length
               ? `<div class="kisi kisi-kartu">
-                   ${daftar.slice(0, 24).map((b) => kartuPeringatan(b, bolehTelaah)).join('')}
+                   ${daftar.slice(0, 24).map((b) => kartuPeringatan(b, bolehTelaah, bolehKasus)).join('')}
                  </div>`
               : kosong('Tidak ada peringatan pada saringan ini',
                   'Ubah saringan tingkat atau keadaan verifikasi untuk melihat kejadian lain.')}
@@ -99,16 +100,34 @@ export function halamanPeringatan({ keadaan, isi }) {
   */
   isi.addEventListener('click', (ev) => {
     const tombolTelaah = ev.target.closest('[data-aksi="telaah"]')
-    if (!tombolTelaah) return
-    document.dispatchEvent(new CustomEvent('buka-halaman', {
-      detail: { halaman: 'telaah', fokus: tombolTelaah.dataset.id },
-    }))
+    if (tombolTelaah) {
+      document.dispatchEvent(new CustomEvent('buka-halaman', {
+        detail: { halaman: 'telaah', fokus: tombolTelaah.dataset.id },
+      }))
+      return
+    }
+
+    /*
+       Jalan dari berita ke perkara.
+
+       Sebelum ini, satu-satunya pintu masuk siklus intelijen adalah halaman
+       Kasus Intelijen — seorang analis yang baru membaca peringatan harus
+       mengingat judulnya, berpindah halaman, lalu mencarinya lagi di antara
+       empat puluh peristiwa yang ditawarkan. Yang menuntut mengingat sesuatu
+       antar dua layar akan dikerjakan setengah, atau tidak sama sekali.
+    */
+    const tombolKasus = ev.target.closest('[data-aksi="jadikan-kasus"]')
+    if (tombolKasus) {
+      document.dispatchEvent(new CustomEvent('buka-halaman', {
+        detail: { halaman: 'kasus', fokus: tombolKasus.dataset.id },
+      }))
+    }
   })
 
   return { judul: 'Peringatan Dini', sub: `${angka(semua.length)} kejadian dipantau · ${angka(awal)} masih berstatus awal` }
 }
 
-function kartuPeringatan(b, bolehTelaah) {
+function kartuPeringatan(b, bolehTelaah, bolehKasus) {
   const resmi = b.status_verifikasi === 'Terverifikasi'
   const nada = nadaUrgensi(b.urgensi)
 
@@ -148,6 +167,9 @@ function kartuPeringatan(b, bolehTelaah) {
             ${ikon('tautan')} Sumber asli</a>` : ''}
           ${!resmi && bolehTelaah ? `<button class="tbl kecil utama" data-aksi="telaah" data-id="${amankan(b.id)}">
             ${ikon('centang')} Telaah</button>` : ''}
+          ${bolehKasus ? `<button class="tbl kecil" data-aksi="jadikan-kasus" data-id="${amankan(b.id)}"
+            title="Buka Kasus Intelijen dengan peristiwa ini terpilih">
+            ${ikon('kasus')} Jadikan kasus</button>` : ''}
         </div>
       </div>
     </article>`

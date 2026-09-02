@@ -699,10 +699,60 @@ export function halamanKasus({ keadaan, isi }) {
 
   /* ------------------------------------------------------------------- muat */
 
+  /**
+   * Berita yang dituju dari halaman lain — tombol "Jadikan kasus" di Peringatan
+   * Dini dan Kanal Negatif.
+   *
+   * Yang dibuka bukan borang kosong melainkan borang yang sudah terisi
+   * peristiwa tempat berita itu berada, lengkap dengan seluruh publikasi
+   * serumpunnya. Analis yang menekan tombolnya sudah tahu perkara apa yang
+   * dimaksudnya; memintanya memilih ulang dari empat puluh peristiwa adalah
+   * meminta ia mengerjakan yang sudah dikerjakannya.
+   *
+   * Bila beritanya ternyata SUDAH masuk sebuah kasus, yang dibuka kasus itu —
+   * bukan borang kasus baru. Membentuk kasus kedua atas perkara yang sama
+   * adalah kekeliruan yang mahal dan tidak kentara.
+   */
+  function bukaTujuan() {
+    const id = keadaan.fokus
+    if (!id) return false
+    keadaan.fokus = null
+
+    const kaitan = keadaanKasus.kasusBerita.find((b) => String(b.berita_id) === String(id))
+    if (kaitan) {
+      keadaanKasus.dipilih = kaitan.case_id
+      keadaanKasus.borang = null
+      roti('Berita ini sudah masuk kasus di bawah ini.', 'aksen', 4500)
+      return true
+    }
+
+    if (!bolehKelola) return false
+
+    const peristiwa = peristiwaTanpaKasus(keadaan.berita || [])
+      .find((p2) => p2.publikasi.some((b) => String(b.id) === String(id)))
+    if (!peristiwa) return false
+
+    keadaanKasus.borang = {
+      peristiwa,
+      kasus: {
+        title: peristiwa.judul,
+        primary_upt: belumTerpetakan(peristiwa.nama_upt) ? '' : peristiwa.nama_upt,
+        issue_type: peristiwa.subkategori || peristiwa.kategori || '',
+        status: 'Terdeteksi',
+        priority: peristiwa.urgensi || 'Sedang',
+        actuality_status: 'Tidak Dapat Dipastikan',
+      },
+    }
+    return true
+  }
+
   gambar()
   muat(keadaan)
     .then(() => {
-      if (!keadaanKasus.dipilih) keadaanKasus.dipilih = saring(keadaanKasus.kasus)[0]?.id || null
+      const dituju = bukaTujuan()
+      if (!dituju && !keadaanKasus.dipilih) {
+        keadaanKasus.dipilih = saring(keadaanKasus.kasus)[0]?.id || null
+      }
       gambar()
     })
     .catch((galat) => {

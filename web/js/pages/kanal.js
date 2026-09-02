@@ -25,6 +25,7 @@ import { kelompokkanPeristiwa, validasi, sumberAsli, rapikanJudul } from '../lib
 import { ember } from '../lib/sentimen.js'
 import { dasar } from '../lib/hitung.js'
 import { ikon } from '../lib/ikon.js'
+import { punyaIzin } from '../lib/peran.js'
 
 /** Keadaan tapis per kanal, disimpan supaya pilihan tidak hilang saat digambar ulang. */
 const keadaanTapis = {
@@ -70,7 +71,7 @@ function barisSumber(b) {
 
 /* ---------------------------------------------------------- kartu peristiwa */
 
-function kartuPeristiwa(p, eksposurMaks) {
+function kartuPeristiwa(p, eksposurMaks, bolehKasus = false) {
   const nada = nadaUrgensi(p.urgensi)
   const lebar = eksposurMaks ? Math.max(6, Math.round((p.eksposur / eksposurMaks) * 100)) : 0
   const unit = belumTerpetakan(p.nama_upt) ? null : p.nama_upt
@@ -104,6 +105,14 @@ function kartuPeristiwa(p, eksposurMaks) {
 
     <div class="eksposur" title="Eksposur ${p.eksposur}"><i style="width:${lebar}%"></i></div>
 
+    ${bolehKasus ? `
+      <div class="baris gap-6">
+        <button class="tbl kecil" data-aksi="jadikan-kasus" data-id="${amankan(p.publikasi[0]?.id || '')}"
+                title="Buka Kasus Intelijen dengan peristiwa ini terpilih">
+          ${ikon('kasus')} Jadikan kasus
+        </button>
+      </div>` : ''}
+
     <details style="margin-top:2px">
       <summary style="cursor:pointer;font-size:11.5px;color:var(--ink-3)">
         Sumber pemberitaan (${angka(p.jumlah_publikasi)})
@@ -123,6 +132,8 @@ function gambarKanal({ keadaan, isi }, sisi) {
   const negatif = sisi === 'negatif'
   const daftar = beritaKanal(keadaan, sisi)
   const tapis = keadaanTapis[sisi]
+
+  const bolehKasus = negatif && punyaIzin(keadaan.profil?.role, 'kelola_kasus')
 
   const judul = negatif ? 'Kanal Negatif' : 'Kanal Positif'
   const sub = negatif
@@ -210,7 +221,7 @@ function gambarKanal({ keadaan, isi }, sisi) {
           <div class="segmen" data-peran="tingkat" style="margin-bottom:12px">${tombolTapis}</div>
           <div style="display:grid;gap:10px">
             ${urut.length
-              ? urut.map((p) => kartuPeristiwa(p, eksposurMaks)).join('')
+              ? urut.map((p) => kartuPeristiwa(p, eksposurMaks, bolehKasus)).join('')
               : '<p class="samar-teks kecil-teks">Tidak ada peristiwa pada tingkat urgensi itu.</p>'}
           </div>`,
       })}
@@ -218,6 +229,23 @@ function gambarKanal({ keadaan, isi }, sisi) {
 
   // Tapis dipasang setelah HTML terpasang; halaman meminta gambar ulang lewat
   // acara, bukan dengan mengimpor balik main.js.
+  /*
+     Jalan dari peristiwa ke perkara.
+
+     Kanal Negatif sudah menyatukan publikasi menjadi peristiwa dengan mesin
+     yang sama dengan halaman Kasus Intelijen. Analis yang membacanya di sini
+     sudah melihat perkaranya utuh; memintanya berpindah halaman lalu memilih
+     ulang peristiwa yang sama dari daftar berisi empat puluh adalah meminta
+     ia mengerjakan yang baru saja dikerjakannya.
+  */
+  isi.addEventListener('click', (ev) => {
+    const t = ev.target.closest('[data-aksi="jadikan-kasus"]')
+    if (!t?.dataset.id) return
+    document.dispatchEvent(new CustomEvent('buka-halaman', {
+      detail: { halaman: 'kasus', fokus: t.dataset.id },
+    }))
+  })
+
   isi.querySelectorAll('[data-tapis-tingkat]').forEach((b) => {
     b.addEventListener('click', () => {
       tapis.tingkat = b.dataset.tapisTingkat

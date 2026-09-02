@@ -187,28 +187,17 @@ export function profilDemo(peran = 'media_intelligence_analyst') {
   }
 }
 
-/**
- * Deret 14 hari untuk bagan tren.
- *
- * Acuannya hari ini. Deret "empat belas hari terakhir" yang ditambatkan ke
- * sebuah tanggal tetap berhenti bergerak tanpa memberi tahu siapa pun, dan
- * pembacanya menyimpulkan pemberitaan yang berhenti — bukan bagannya.
- */
-export function deretHarian(berita, hari = 14, acuan = new Date()) {
-  const ember = new Map()
-  for (let i = hari - 1; i >= 0; i--) {
-    const d = new Date(acuan.getTime() - i * 86_400_000)
-    ember.set(d.toISOString().slice(0, 10), { tanggal: d.toISOString().slice(0, 10), total: 0, negatif: 0 })
-  }
-  for (const b of berita) {
-    const k = b.created_at.slice(0, 10)
-    const e = ember.get(k)
-    if (!e) continue
-    e.total += 1
-    if (b.sentimen === 'Negatif') e.negatif += 1
-  }
-  return [...ember.values()]
-}
+/*
+   `deretHarian` pernah ada di sini dan dipakai dasbor pusat maupun dasbor
+   wilayah. Ia dibuang 2 September 2026, bukan sekadar tidak dipakai lagi:
+   fungsi peragaan yang dipakai halaman sungguhan adalah undangan agar aturan
+   hitungnya menyimpang diam-diam, dan itu memang yang terjadi — ia menghitung
+   hari dari waktu penarikan sementara laporan berkala memakai tanggal terbit,
+   dan 42 persen baris arsip terbit pada hari yang berbeda dari penarikannya.
+
+   Penggantinya `deretEmpatBelasHari` di lib/hitung.js, tempat seluruh aturan
+   angka memang tinggal.
+*/
 
 export function sebaran(berita, bidang) {
   const peta = new Map()

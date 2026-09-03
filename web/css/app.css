@@ -74,6 +74,11 @@
   --bayang-2: 0 2px 4px rgba(15, 30, 60, 0.06), 0 8px 20px rgba(15, 30, 60, 0.09);
   --bayang-3: 0 4px 10px rgba(15, 30, 60, 0.10), 0 20px 48px rgba(15, 30, 60, 0.16);
   --bayang-dalam: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  /* Warna bayangan tepi tabel yang masih berlanjut ke samping. Di tampilan
+     terang ia bayangan; di tampilan gelap bayangan hitam tidak terlihat di
+     atas permukaan yang memang sudah hitam, jadi yang dipakai justru sisi
+     terang. Keduanya menjawab pertanyaan yang sama: masih ada lagi di sana. */
+  --tabel-tepi: rgba(15, 30, 60, 0.22);
   --cincin: 0 0 0 3px var(--accent-soft);
 
   /* Gradien kelembagaan */
@@ -170,6 +175,7 @@
     --bayang-2: 0 2px 4px rgba(0, 0, 0, 0.4), 0 8px 20px rgba(0, 0, 0, 0.45);
     --bayang-3: 0 4px 10px rgba(0, 0, 0, 0.5), 0 20px 48px rgba(0, 0, 0, 0.6);
     --bayang-dalam: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    --tabel-tepi: rgba(150, 180, 220, 0.26);
     --cincin: 0 0 0 3px rgba(127, 169, 232, 0.28);
 
     --gradien-tepi: linear-gradient(180deg, #101B2C 0%, #0B1422 62%, #080F1A 100%);
@@ -229,6 +235,7 @@
     --bayang-2: 0 2px 4px rgba(0, 0, 0, 0.4), 0 8px 20px rgba(0, 0, 0, 0.45);
     --bayang-3: 0 4px 10px rgba(0, 0, 0, 0.5), 0 20px 48px rgba(0, 0, 0, 0.6);
     --bayang-dalam: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    --tabel-tepi: rgba(150, 180, 220, 0.26);
     --cincin: 0 0 0 3px rgba(127, 169, 232, 0.28);
 
     --gradien-tepi: linear-gradient(180deg, #101B2C 0%, #0B1422 62%, #080F1A 100%);
@@ -465,7 +472,17 @@ code, .mono, .angka {
 /* margin:0 karena ini sebuah <h1>: tanpa itu kop halaman melar dan turun. */
 .bilah-judul { font-family: var(--disp); font-weight: 600; font-size: 15px; letter-spacing: -0.015em; margin: 0; }
 .bilah-sub { font-size: 11.5px; color: var(--ink-4); }
-.bilah-kanan { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+/*
+   Tombol di kanan bilah tidak boleh menyusut.
+
+   Tanpa `flex: none`, ketiganya diperas ketika judul halaman panjang: pada
+   layar 360px tombol selebar 30px menjadi 15px, isinya meluber keluar
+   kotaknya sendiri, dan seluruh halaman ikut melebar enam piksel — persis
+   gejala yang tools/potret.mjs berhenti dengan kode 3 karenanya. Yang boleh
+   memendek adalah judulnya, dan judul memang sudah dipotong dengan elipsis.
+*/
+.bilah-kanan { margin-left: auto; display: flex; align-items: center; gap: 8px; flex: none; }
+.bilah-kanan > * { flex: none; }
 
 .isi {
   padding: 20px 18px 56px;
@@ -510,7 +527,16 @@ code, .mono, .angka {
    dasbor menggeser ke samping di telepon, dengan angka dan judul terpotong di
    tepi kanan yang tidak bisa dijangkau. */
 .kisi { display: grid; gap: 12px; align-items: start; }
-.kisi-4 { grid-template-columns: repeat(auto-fit, minmax(min(190px, 100%), 1fr)); }
+/* Minimum kisi berisi ubin angka adalah 160px, bukan 190px.
+   Bedanya hanya terasa di satu tempat, dan di tempat itu besar: pada telepon
+   390px, isi halaman selebar 366px dan isi sebuah kartu di dalamnya 334px.
+   Dengan minimum 190px, dua kolom menuntut 392px — lebih lebar daripada
+   keduanya, sehingga ubinnya jatuh satu per baris dan empat angka pembuka
+   dasbor memakan 920 piksel, hampir tiga layar penuh sebelum baris berikutnya
+   terlihat. Dengan 160px dua kolom menuntut 332px, dan itu muat di kedua
+   tempat — termasuk di dalam kartu, tempat empat ubin siklus intelijen
+   tinggal. Di layar 320px kisinya tetap satu kolom, sebagaimana seharusnya. */
+.kisi-4 { grid-template-columns: repeat(auto-fit, minmax(min(160px, 100%), 1fr)); }
 .kisi-3 { grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr)); }
 .kisi-2 { grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr)); }
 
@@ -695,7 +721,33 @@ code, .mono, .angka {
 }
 
 /* Tabel */
-.tabel-bungkus { overflow-x: auto; }
+/*
+   Bayangan tepi: satu-satunya tanda bahwa tabelnya masih berlanjut ke kanan.
+
+   Di telepon, "UPT paling banyak disorot" menampilkan kolom nama saja —
+   TOTAL, NEGATIF, dan MENDESAK ada di luar layar, dan seluruh guna tabel itu
+   justru ada di ketiga kolom itu. Tidak ada apa pun yang mengatakannya: bilah
+   gulir menyamping baru muncul saat sedang digulung, dan di iOS tidak muncul
+   sama sekali. Yang terbaca adalah tabel berisi tujuh nama tanpa angka.
+
+   Bayangannya digambar dengan gradien berlatar `local`: lapisan yang ikut
+   bergulir menutupi bayangan begitu ujungnya tercapai, sehingga tandanya
+   hilang sendiri ketika memang tidak ada lagi yang bisa dilihat — tanpa satu
+   baris JavaScript dan tanpa penyimak gulir.
+
+   Warna penutupnya harus sama dengan latar kartu tempat tabel ini tinggal —
+   `--surface-2`, bukan `--surface`; kartu memakai yang kedua di bagian 4 dan
+   ditimpa menjadi yang pertama di bagian 5. Bila kelak ada tabel di atas
+   permukaan lain, penutupnya akan terlihat sebagai pita samar di kedua tepi.
+*/
+.tabel-bungkus {
+  overflow-x: auto;
+  background:
+    linear-gradient(to right, var(--surface-2) 30%, transparent) left / 32px 100% no-repeat local,
+    linear-gradient(to left,  var(--surface-2) 30%, transparent) right / 32px 100% no-repeat local,
+    radial-gradient(farthest-side at 0 50%, var(--tabel-tepi), transparent) left / 16px 100% no-repeat scroll,
+    radial-gradient(farthest-side at 100% 50%, var(--tabel-tepi), transparent) right / 16px 100% no-repeat scroll;
+}
 table.tabel {
   width: 100%;
   border-collapse: collapse;
@@ -2015,6 +2067,26 @@ table.tabel tbody tr { transition: background var(--cepat), box-shadow var(--cep
   .bilah-kanan .keping { display: none; }
   .kartu-kop { flex-wrap: wrap; gap: 8px; }
   .kartu-kop .dorong { margin-left: 0; }
+
+  /*
+     Label ubin boleh membungkus di sini, dan hanya di sini.
+
+     Di layar lebar labelnya dipotong dengan elipsis karena satu barisnya
+     selalu cukup. Pada dua kolom selebar 175px, aturan yang sama menjadikan
+     "BERITA MASUK HARI INI" terbaca "BERITA MASUK HAR…": ubinnya muat di
+     layar tetapi berhenti menyebutkan angka apa yang sedang ditunjukkannya.
+
+     Tingginya dikunci dua baris supaya angka keempat ubin tetap sebaris —
+     tanpa itu, ubin berlabel pendek menaikkan angkanya sendiri dan barisnya
+     terbaca seperti empat kartu yang tidak sengaja bertetangga.
+  */
+  .ubin-label {
+    white-space: normal;
+    overflow: visible;
+    line-height: 1.35;
+    min-height: 2.7em;
+  }
+  .ubin-nilai { font-size: 1.6rem; }
 }
 
 /*
@@ -2509,7 +2581,72 @@ kbd {
 
 .telaah-rekap { display: flex; gap: 8px; flex-wrap: wrap; }
 
+/* ------------------------------------------------ berikutnya dalam antrean */
+
+/*
+   Empat kolom dengan lebar tetap untuk tiga di antaranya, supaya nomor,
+   urgensi, dan unit berbaris tegak lurus ke bawah. Hanya judul yang melar —
+   dan judul pula satu-satunya yang dipotong, sebab ia satu-satunya yang masih
+   bisa dikenali dari separuh awalnya.
+*/
+.telaah-berikut {
+  list-style: none;
+  /* Lekukan bawaan <ol> masih ada meski butirnya tidak bernomor sendiri, dan
+     lekukan itu mendorong seluruh daftar 40 piksel dari tepi kartu. */
+  padding-inline-start: 0;
+  display: flex;
+  flex-direction: column;
+}
+.telaah-berikut-butir {
+  display: grid;
+  grid-template-columns: 26px 62px minmax(0, 1fr) minmax(0, 190px);
+  align-items: center;
+  gap: 10px;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--line-3);
+  font-size: 13px;
+}
+.telaah-berikut-butir:last-child { border-bottom: none; }
+/* Keping urgensi selebar isinya, bukan selebar kolomnya. Tanpa ini, di layar
+   telepon kolomnya melar sampai tepi kartu dan kepingnya ikut — sebuah pita
+   merah selebar layar untuk satu kata. */
+.telaah-berikut-butir .keping { justify-self: start; }
+.telaah-berikut-nomor {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ink-4);
+  text-align: right;
+}
+.telaah-berikut-judul {
+  color: var(--ink-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.telaah-berikut-unit {
+  font-size: 12px;
+  color: var(--ink-4);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 @media (max-width: 640px) {
+  /* Empat kolom di layar telepon menyisakan sembilan huruf untuk judul.
+     Yang dipertahankan adalah barisnya, bukan kolomnya: nomor dan urgensi
+     tetap berdampingan, judul dan unit turun ke bawahnya. */
+  .telaah-berikut-butir {
+    grid-template-columns: 26px minmax(0, 1fr);
+    row-gap: 3px;
+    padding: 9px 0;
+  }
+  .telaah-berikut-judul,
+  .telaah-berikut-unit {
+    grid-column: 2;
+    white-space: normal;
+  }
+  .telaah-berikut-judul { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+
   .telaah-aksi { gap: 8px; }
   .telaah-aksi .dorong { display: none; }
   .telaah-aksi .tbl { flex: 1 1 auto; justify-content: center; }

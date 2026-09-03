@@ -116,6 +116,61 @@ function susunAntrean(berita) {
 
 /* ------------------------------------------------------------------ bagian */
 
+/** Berapa butir berikutnya yang diperlihatkan. Lima cukup untuk memberi bentuk
+ *  pada antrean tanpa menjadi daftar yang mengundang orang memilih-milih. */
+const PRATINJAU = 5
+
+/**
+ * Lima butir berikutnya dalam antrean.
+ *
+ * Bagian ini menempati ruang yang sebelumnya kosong. Pada layar 1440×900,
+ * kartu telaah berhenti di sekitar 550 piksel dan sisanya — lebih dari
+ * sepertiga layar — tidak berisi apa pun, di halaman yang justru paling lama
+ * dipandangi seorang analis dalam sehari.
+ *
+ * Yang ditaruh di sana sengaja bukan tombol dan bukan tautan. Antrean ini
+ * disusun satu-per-satu dengan maksud: urgensi lebih dahulu, lalu yang paling
+ * tidak diyakini mesin. Daftar yang bisa ditekan akan mengembalikan tepat
+ * kebiasaan yang bentuk antrean ini hindari — analis memilih yang mudah dan
+ * meninggalkan yang berat. Maka yang diberikan hanya pandangan ke depan:
+ * berapa banyak lagi yang kritis, unit mana yang akan muncul, dan apakah
+ * sisanya masih berat atau sudah mereda.
+ */
+function panelBerikutnya(antrean, nomor) {
+  const sisa = antrean.slice(nomor + 1)
+  if (!sisa.length) return ''
+
+  const tampil = sisa.slice(0, PRATINJAU)
+  const kritis = sisa.filter((b) => b.urgensi === 'Kritis').length
+  const tinggi = sisa.filter((b) => b.urgensi === 'Tinggi').length
+
+  const baris = tampil.map((b, i) => `
+    <li class="telaah-berikut-butir">
+      <span class="telaah-berikut-nomor">${angka(nomor + 2 + i)}</span>
+      <span class="keping" data-nada="${nadaUrgensi(b.urgensi)}">${amankan(b.urgensi || '—')}</span>
+      <span class="telaah-berikut-judul">${amankan(ringkas(b.judul || '(tanpa judul)', 90))}</span>
+      <span class="telaah-berikut-unit">${
+        b.nama_upt ? amankan(b.nama_upt) : '<i>unit belum dipetakan</i>'
+      }</span>
+    </li>`).join('')
+
+  return kartu({
+    judul: 'Berikutnya dalam antrean',
+    ket: sisa.length > PRATINJAU
+      ? `${angka(PRATINJAU)} dari ${angka(sisa.length)} yang masih menunggu sesudah ini`
+      : `${angka(sisa.length)} lagi sesudah ini`,
+    aksi: [
+      kritis ? keping(`${angka(kritis)} kritis`, 'kritis') : '',
+      tinggi ? keping(`${angka(tinggi)} tinggi`, 'tinggi') : '',
+    ].filter(Boolean).join(' '),
+    isi: `
+      <ol class="telaah-berikut">${baris}</ol>
+      <p class="ket" style="margin-top:10px">Daftar ini tidak bisa ditekan. Antrean berjalan
+      menurut urgensi dan keyakinan mesin, satu per satu, supaya yang berat tidak tertinggal
+      di belakang yang mudah.</p>`,
+  })
+}
+
 /** Bilah kemajuan sesi. Menelaah tanpa tahu sisa antreannya terasa tanpa ujung. */
 function kemajuan(sisa, awal) {
   const selesai = awal - sisa
@@ -310,6 +365,8 @@ export function halamanTelaah({ keadaan, isi }) {
             ${keadaanTelaah.dikoreksi ? `<span>${keping(`${keadaanTelaah.dikoreksi} dikoreksi`, 'sedang')}</span>` : ''}
             ${keadaanTelaah.ditolak ? `<span>${keping(`${keadaanTelaah.ditolak} tidak valid`, 'rendah')}</span>` : ''}
           </div>` : ''}
+
+        ${panelBerikutnya(antrean, keadaanTelaah.nomor)}
       </div>`
   }
 

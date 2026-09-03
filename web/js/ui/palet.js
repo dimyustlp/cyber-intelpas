@@ -75,7 +75,15 @@ function kumpulkanSasaran(keadaan) {
       ket: `${u.total} publikasi${u.mendesak ? ` · ${u.mendesak} mendesak` : ''}`,
       cari: u.nama,
       halaman: 'berita',
-      saring: { medan: 'upt', nilai: u.nama },
+      /*
+         Saringan ini dulu dikirim sebagai acara `saring-berita` yang tidak
+         pernah didengarkan siapa pun. Akibatnya memilih sebuah unit di palet
+         membuka Pusat Data Berita tanpa saringan apa pun — tombolnya bekerja,
+         dan hasilnya salah, dan tidak ada satu kalimat pun di layar yang
+         mengatakannya. Sekarang ia memakai jalur `saringMasuk` yang sama
+         dengan ubin dasbor.
+      */
+      saring: { cari: u.nama },
     })
   }
 
@@ -88,7 +96,18 @@ function kumpulkanSasaran(keadaan) {
       nada: nadaUrgensi(b.urgensi),
       lencana: ['Tinggi', 'Kritis'].includes(b.urgensi) ? b.urgensi : '',
       cari: `${b.judul} ${b.subkategori || ''} ${b.nama_upt || ''} ${b.media || ''}`,
-      tautan: b.link,
+      /*
+         Menuju catatan institusinya, bukan ke situs medianya.
+
+         Sampai 3 September 2026 butir ini membuka `b.link` di tab baru, sebab
+         memang belum ada halaman lain yang bisa dituju. Sekarang ada — dan
+         perbedaannya besar: petugas piket yang mengetik "Cilegon" sedang
+         mencari apa yang diketahui sistem ini tentang Cilegon, bukan sedang
+         mencari situs Banten Pos. Tautan aslinya tetap satu tekan jauhnya,
+         di kepala halaman detailnya.
+      */
+      halaman: 'berita-detail',
+      fokus: b.id,
     })
   }
 
@@ -187,16 +206,7 @@ export function bukaPalet(keadaan, keHalaman) {
     const s = daftar[pilih]
     if (!s) return
     tutup()
-    if (s.tautan) {
-      // Berita membawa tautan aslinya. Membukanya di tab baru menjaga sesi
-      // aplikasi tetap hidup di belakangnya.
-      window.open(s.tautan, '_blank', 'noopener')
-      return
-    }
-    if (s.saring) {
-      document.dispatchEvent(new CustomEvent('saring-berita', { detail: s.saring }))
-    }
-    keHalaman(s.halaman)
+    keHalaman(s.halaman, { fokus: s.fokus || null, saring: s.saring || null })
   }
 
   function tutup() {

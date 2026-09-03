@@ -81,9 +81,53 @@ async function telegram(kunci: string, metode: string, muatan?: unknown) {
 
   if (!jawaban.ok || isi?.ok === false) {
     const sebab = String(isi?.description || jawaban.statusText || 'tidak diketahui')
-    throw new Error(`Telegram menolak ${metode}: ${sensor(sebab, kunci)}`)
+    throw new Error(`Telegram menolak ${metode}: ${sensor(sebab, kunci)}${artiGalat(jawaban.status, sebab)}`)
   }
   return isi.result
+}
+
+/**
+ * Menerjemahkan penolakan Telegram menjadi kalimat yang menyebutkan apa yang
+ * harus diperbaiki.
+ *
+ * Ini bukan hiasan. Antara 31 Agustus dan 2 September 2026, empat pengiriman
+ * berturut-turut gagal dan yang tercatat di `telegram_deliveries` — satu-satunya
+ * hal yang dibaca petugas — hanya berbunyi "Telegram menolak sendMessage: Not
+ * Found". Kalimat itu benar dan tidak menolong siapa pun: ia tidak menyebut
+ * bahwa yang salah kuncinya, bukan grupnya, sehingga penyiapannya berhari-hari
+ * dicoba dari sisi yang keliru.
+ *
+ * Pembedaan yang paling menentukan, dan yang paling sering tertukar:
+ *
+ *   404 Not Found        — alamatnya yang tidak ada, artinya KUNCI botnya salah.
+ *                          Telegram tidak pernah menjawab 404 karena grup.
+ *   400 chat not found   — kuncinya benar, GRUP-nya yang tidak terjangkau.
+ *   403 Forbidden        — kunci dan grup benar, botnya yang dikeluarkan atau
+ *                          belum pernah dimasukkan ke grup itu.
+ */
+function artiGalat(status: number, sebab: string): string {
+  const s = sebab.toLowerCase()
+
+  if (status === 404 || s.includes('not found') && !s.includes('chat')) {
+    return '. Galat 404 berarti alamat botnya sendiri tidak ditemukan — yang salah '
+      + 'adalah secret TELEGRAM_BOT_TOKEN, bukan chat_id grupnya. Telegram tidak '
+      + 'pernah menjawab 404 karena grup. Perbarui secret itu di Supabase, lalu '
+      + 'tekan "Periksa sambungan" di halaman Integrasi.'
+  }
+  if (s.includes('chat not found')) {
+    return '. Kuncinya sudah benar; yang tidak terjangkau grupnya. Untuk supergrup, '
+      + 'chat_id berawalan -100 dan lebih panjang daripada id yang terlihat di '
+      + 'sebagian aplikasi — periksa apakah awalan itu ikut tersalin.'
+  }
+  if (status === 403 || s.includes('forbidden') || s.includes('kicked') || s.includes('not a member')) {
+    return '. Kunci dan grupnya benar, tetapi botnya tidak berada di dalam grup itu '
+      + 'atau sudah dikeluarkan. Masukkan kembali botnya sebagai anggota.'
+  }
+  if (status === 429 || s.includes('too many requests')) {
+    return '. Terlalu banyak permintaan dalam waktu singkat; Telegram membatasi '
+      + 'sementara. Coba lagi beberapa menit kemudian.'
+  }
+  return ''
 }
 
 /** Mengirim satu berkas. Dipisah karena bentuk badannya bukan JSON. */

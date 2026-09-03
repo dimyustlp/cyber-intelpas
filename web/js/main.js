@@ -19,6 +19,8 @@ import { profilDemo, buatBerita } from './lib/demo.js'
 import { halamanMasuk } from './pages/masuk.js'
 import { halamanDasbor } from './pages/dasbor.js'
 import { halamanBerita } from './pages/berita.js'
+import { halamanBeritaDetail } from './pages/berita-detail.js'
+import { halamanBriefing } from './pages/briefing.js'
 import { halamanPeringatan } from './pages/peringatan.js'
 import { halamanKanalNegatif, halamanKanalPositif } from './pages/kanal.js'
 import { halamanLaporan } from './pages/laporan.js'
@@ -57,6 +59,8 @@ export const keadaan = {
   halaman: null,
   /** Berita yang dituju dari halaman lain, mis. tombol Telaah di Peringatan Dini. */
   fokus: null,
+  /** Saringan titipan dari ubin dasbor. Diambil sekali oleh halaman tujuan. */
+  saringMasuk: null,
   demo: KONFIG.mode === 'demo',
   berita: [],
   dalamLingkup: [],
@@ -68,7 +72,9 @@ export const keadaan = {
 
 const HALAMAN = {
   dasbor: halamanDasbor,
+  briefing: halamanBriefing,
   berita: halamanBerita,
+  'berita-detail': halamanBeritaDetail,
   peringatan: halamanPeringatan,
   negatif: halamanKanalNegatif,
   positif: halamanKanalPositif,
@@ -99,6 +105,34 @@ const HALAMAN = {
   /* Nama lama halaman berita daerah. Petugas yang menyimpan tautannya di
      peramban tidak perlu tahu halamannya berganti nama. */
   'kanwil-riwayat': halamanWilayahBerita,
+}
+
+/**
+ * Halaman yang menampilkan satu objek, sehingga pengenalnya ikut di alamat.
+ *
+ * Bentuk alamatnya `#halaman/pengenal`. Daftar ini yang menentukan halaman
+ * mana yang memakai bentuk itu — bukan tebakan atas ada tidaknya garis miring,
+ * yang akan salah pada hari pertama sebuah pengenal memuat garis miring.
+ */
+const HALAMAN_BEROBJEK = new Set(['berita-detail'])
+
+/**
+ * Memisahkan alamat menjadi halaman dan pengenal.
+ *
+ * `decodeURIComponent` dibungkus try: alamat yang diketik tangan bisa memuat
+ * persen yang bukan penyandian, dan galat di sini akan menggagalkan seluruh
+ * pemuatan halaman — bukan hanya pengenalnya.
+ */
+function bacaAlamat(hash) {
+  const bersih = String(hash || '').replace(/^#/, '')
+  const pisah = bersih.indexOf('/')
+  if (pisah < 0) return { halaman: bersih, fokus: null }
+
+  const halaman = bersih.slice(0, pisah)
+  const sisa = bersih.slice(pisah + 1)
+  let fokus = sisa
+  try { fokus = decodeURIComponent(sisa) } catch { /* pakai apa adanya */ }
+  return { halaman, fokus: fokus || null }
 }
 
 /* ------------------------------------------------------------------- tema */
@@ -154,14 +188,25 @@ function putarTema() {
  * sudah tidak benar lagi; menggambar ulang seluruh layar untuk memperbaiki satu
  * angka akan membuang formulir yang sedang diisi.
  */
+/**
+ * Butir menu yang harus tetap tersorot ketika halaman anaknya terbuka.
+ *
+ * Halaman detail berita tidak punya butir menunya sendiri — dan memang tidak
+ * boleh punya. Tetapi tanpa pemetaan ini, membuka satu berita membuat SELURUH
+ * menu kehilangan penanda halaman aktif, dan pembacanya kehilangan tahu ia
+ * sedang berada di cabang yang mana.
+ */
+const INDUK_HALAMAN = { 'berita-detail': 'berita' }
+
 function daftarMenu(peran) {
+  const aktif = INDUK_HALAMAN[keadaan.halaman] || keadaan.halaman
   return menuUntuk(peran).map((g) => `
     <div class="nav-grup">
       <div class="nav-judul">${amankan(g.grup)}</div>
       ${g.butir.map((b) => {
         const jumlah = b.lencana ? keadaan.hitungan[b.lencana] : 0
         return `<button class="nav-butir" data-halaman="${b.id}"
-          ${b.id === keadaan.halaman ? 'aria-current="page"' : ''}>
+          ${b.id === aktif ? 'aria-current="page"' : ''}>
           ${ikon(b.ikon)}<span>${amankan(b.label)}</span>
           ${jumlah > 0 ? `<span class="lencana">${jumlah > 99 ? '99+' : jumlah}</span>` : ''}
         </button>`
@@ -335,7 +380,25 @@ export function gambar() {
 export function keHalaman(id, opsi = {}) {
   keadaan.halaman = id
   keadaan.fokus = opsi.fokus || null
-  history.replaceState(null, '', `#${id}`)
+  /*
+     Saringan titipan. Halaman tujuan mengambilnya sekali lalu mengosongkannya
+     sendiri — kalau dibiarkan, saringan itu akan dipasang ulang setiap kali
+     halaman digambar ulang, dan petugas yang membersihkan saringannya akan
+     melihatnya kembali dengan sendirinya.
+  */
+  keadaan.saringMasuk = opsi.saring || null
+
+  /*
+     Halaman yang menampilkan satu objek menaruh pengenalnya di alamat.
+
+     Tanpa itu, `keadaan.fokus` hanya hidup di memori: memuat ulang halaman
+     detail berita akan mendarat di layar "berita tidak ditemukan", dan tautan
+     yang disalin ke petugas lain akan membuka halaman kosong baginya. Kedua
+     hal itu justru paling sering terjadi pada halaman yang paling layak
+     dibagikan.
+  */
+  history.replaceState(null, '', `#${HALAMAN_BEROBJEK.has(id) && keadaan.fokus
+    ? `${id}/${encodeURIComponent(keadaan.fokus)}` : id}`)
   // Peralihan membuat perpindahan halaman terbaca sebagai satu gerakan, bukan
   // sebagai layar yang berkedip. Pada peramban yang belum mendukungnya,
   // halaman berganti seperti biasa.
@@ -398,7 +461,19 @@ document.addEventListener('click', async (ev) => {
     // Memilih halaman menutup lacinya. Membiarkannya terbuka berarti halaman
     // yang baru dipilih tertutup oleh menu yang memilihnya.
     if (menuTerbuka()) tutupMenu()
-    keHalaman(nav.dataset.halaman)
+
+    /*
+       Saringan yang dibawa serta, bila ada. Dipakai ubin dasbor supaya daftar
+       yang terbuka berjumlah sama persis dengan angka yang barusan ditekan.
+       Bentuknya JSON di dalam atribut; kalau isinya rusak, yang hilang hanya
+       saringannya — halamannya tetap terbuka.
+    */
+    let saring = null
+    if (nav.dataset.saring) {
+      try { saring = JSON.parse(nav.dataset.saring) } catch { saring = null }
+    }
+
+    keHalaman(nav.dataset.halaman, { saring })
     return
   }
 
@@ -420,8 +495,12 @@ document.addEventListener('click', async (ev) => {
 })
 
 window.addEventListener('hashchange', () => {
-  const id = location.hash.slice(1)
-  if (id && id !== keadaan.halaman) keHalaman(id)
+  const { halaman, fokus } = bacaAlamat(location.hash)
+  if (!halaman) return
+  // Fokus ikut dibandingkan: berpindah dari satu berita ke berita lain tidak
+  // mengubah nama halamannya, dan tanpa perbandingan ini layarnya tidak
+  // berganti ketika tombol maju-mundur peramban ditekan.
+  if (halaman !== keadaan.halaman || fokus !== keadaan.fokus) keHalaman(halaman, { fokus })
 })
 
 // Halaman yang menyaring datanya sendiri meminta gambar ulang lewat acara ini,
@@ -566,7 +645,9 @@ async function segarkan() {
 
 async function mulaiSesi(profil) {
   keadaan.profil = profil
-  keadaan.halaman = location.hash.slice(1) || halamanAwal(profil.role)
+  const { halaman, fokus } = bacaAlamat(location.hash)
+  keadaan.halaman = halaman || halamanAwal(profil.role)
+  keadaan.fokus = fokus
   await segarkan()
 }
 

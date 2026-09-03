@@ -65,6 +65,33 @@ const keadaanPengguna = {
  */
 export const PERAN_TERBIT_KANWIL = ['upt_penelaah']
 
+/**
+ * Isian penugasan yang dianggap kosong.
+ *
+ * Kotak yang benar-benar kosong sudah lama menjadi `null`. Yang belum tertangkap
+ * sampai 3 September 2026 adalah kata "NULL" yang DIKETIK — dan itulah persis
+ * yang ditampilkan editor tabel Supabase untuk sel kosong, sehingga siapa pun
+ * yang menyalin nilai dari sana menyalin empat huruf, bukan ketiadaan nilai.
+ *
+ * Akibatnya sungguh terjadi pada akun `dimyust`: `assigned_upt` berisi teks
+ * "NULL", dan policy RLS `can_access_upt` — yang hanya mengosongkan string
+ * kosong, bukan kata "NULL" — memperlakukannya sebagai petugas yang ditugaskan
+ * pada sebuah unit bernama "NULL". Ia superadmin, dan tidak satu pun dari 822
+ * berita cocok dengan nama unit itu. Dasbornya kosong, tanpa satu pun galat.
+ *
+ * Yang sengaja TIDAK dilakukan: melonggarkan policy RLS supaya ikut menerima
+ * kata "NULL" sebagai ketiadaan. Policy yang gagal menutup lebih berbahaya
+ * daripada policy yang gagal membuka — yang pertama membocorkan data, yang
+ * kedua hanya menghasilkan layar kosong yang segera dilaporkan orang. Maka yang
+ * diperketat adalah penulisnya, bukan pembacanya.
+ */
+export function kosongkan(nilai) {
+  const t = String(nilai ?? '').trim()
+  if (!t) return null
+  if (['null', 'nil', 'none', '-', '—'].includes(t.toLowerCase())) return null
+  return t
+}
+
 function pilihanPeran(hanyaDaerah) {
   const daftar = Object.entries(PERAN).map(([kode, p]) => ({
     kode, nama: p.nama, eksternal: adalahEksternal(kode),
@@ -429,8 +456,10 @@ export function halamanPengguna({ keadaan, isi }) {
     const nama = nilai('#t-nama').trim()
     const peran = nilai('#t-peran')
     const username = nilai('#t-username').trim().toLowerCase()
-    const kanwil = nilai('#t-kanwil').trim()
-    const upt = nilai('#t-upt').trim()
+    // Sama seperti pada formulir suntingan: kata "NULL" yang diketik adalah
+    // ketiadaan nilai, bukan nama kantor wilayah. Lihat `kosongkan()`.
+    const kanwil = kosongkan(nilai('#t-kanwil')) || ''
+    const upt = kosongkan(nilai('#t-upt')) || ''
     const jabatan = nilai('#t-jabatan').trim()
     const sandi = nilai('#t-sandi')
     const sandi2 = nilai('#t-sandi2')
@@ -546,8 +575,8 @@ export function halamanPengguna({ keadaan, isi }) {
     if (!u) return
 
     const peranBaru = isi.querySelector('#p-peran')?.value || u.role
-    const kanwilBaru = isi.querySelector('#p-kanwil')?.value.trim() || null
-    const uptBaru = isi.querySelector('#p-upt')?.value.trim() || null
+    const kanwilBaru = kosongkan(isi.querySelector('#p-kanwil')?.value)
+    const uptBaru = kosongkan(isi.querySelector('#p-upt')?.value)
     const aktifBaru = isi.querySelector('#p-aktif')?.value !== 'nonaktif'
 
     if (adalahEksternal(peranBaru) && !kanwilBaru) {

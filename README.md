@@ -44,6 +44,8 @@ web/                     aplikasi peramban, disajikan apa adanya
       peta-indonesia.js  garis pantai Indonesia — dihasilkan tools/susun-peta.mjs
       sentimen.js        tiga ember sentimen beserta keterangannya
       hitung.js          satu himpunan dasar untuk seluruh angka di layar
+      risiko.js          skor risiko 0–100 beserta rincian penyumbangnya
+      peringatan-laju.js empat aturan peringatan dini berbasis pola
       api.js             pemanggil PostgREST dan GoTrue tanpa SDK
       format.js          tanggal, angka, dan warna semantik
       konfig.js          alamat peladen dan kunci publik
@@ -51,9 +53,12 @@ web/                     aplikasi peramban, disajikan apa adanya
       ikon.js            ikon SVG bawaan
     ui/
       komponen.js        potongan antarmuka yang dipakai berulang
+      panel-mesin.js     dasar penilaian mesin — dipakai telaah dan detail berita
       bagan.js           bagan SVG
       palet.js           palet perintah Ctrl+K — cari halaman, unit, dan berita
     pages/               satu berkas per halaman
+                           berita-detail.js   satu berita, utuh dengan dasar penilaiannya
+                           briefing.js    Executive Brief — situasi dalam satu layar
                            input.js       masukan berita manual, terklasifikasi saat mengetik
                            kanwil.js      ruang kantor wilayah dan ruang unit
                            wilayah-telaah.js  telaah daerah dan tanggapan unit
@@ -79,6 +84,8 @@ tools/
   uji-mesin.mjs          uji perilaku mesin dan pencocokan UPT
   uji-hitung.mjs         uji ember sentimen dan penjumlahan angka dasbor
   uji-peristiwa.mjs      uji pengelompokan publikasi menjadi peristiwa
+  uji-risiko.mjs         uji skor risiko — ketertutupan penjumlahan dan urutannya
+  uji-laju.mjs           uji empat aturan peringatan: menyala dan diamnya
   periksa-lainnya.mjs    uji 62 kasus nyata yang dulu gagal dikelompokkan
   ringkas-fungsi.mjs     menyalin web/js/lib ke Edge Function dalam bentuk ringkas
   potret.mjs             memotret halaman pada lebar layar yang benar-benar diminta
@@ -176,6 +183,61 @@ Yang perlu disiapkan sebelum dipakai sungguhan:
    metadata pengguna.
 3. Rotasi token sinkronisasi Spreadsheet dan simpan yang baru di Supabase Vault.
 
+## Skor risiko
+
+Sejak 3 September 2026 setiap peristiwa punya skor 0–100, dihitung
+`web/js/lib/risiko.js` dari enam faktor berbobot tetap: dampak kejadian (30),
+jangkauan media (20), kredibilitas penerbit (15), laju pemberitaan (15),
+pengulangan (10), dan tanggapan resmi (10). Hasilnya disebut **tekanan
+pemberitaan**, lalu dikalikan **gerbang sentimen** — dan hasil kali itulah skor
+risikonya.
+
+Gerbang itu yang menjaga pasal terpenting: sentimen bukan risiko. Peresmian
+yang diliput sembilan media punya tekanan besar dan risiko kelembagaan nyaris
+nol, dan kedua angka itu tampil berdampingan alih-alih dilebur. Versi pertama
+berkas ini keliru di sini — pengalinya hanya dikenakan pada satu faktor,
+sehingga kegiatan positif berskor 68 — dan `tools/uji-risiko.mjs` yang
+menangkapnya.
+
+Tiga syarat yang mengikat berkas itu, dan wajib tetap berlaku:
+
+1. **Skor tidak pernah berdiri sendiri.** `skorRisiko()` selalu mengembalikan
+   keenam faktornya lengkap dengan bobot, poin, dan kalimat dasarnya. Halaman
+   yang menampilkan angkanya saja sedang melanggar maksud berkas itu.
+2. **Bobotnya terbaca** — tetapan `BOBOT`, satu tempat, lengkap dengan alasan
+   tiap besarannya.
+3. **Perubahan bobot tercatat.** Bobot tinggal di dalam kode, bukan di basis
+   data, sehingga mengubahnya menuntut commit dan penggelaran — dan keduanya
+   meninggalkan jejak bernama dengan tanggal.
+
+Skornya **tidak disimpan**. Faktor laju dan tanggapan berubah setiap hari;
+kolom tersimpan yang tidak dihitung ulang akan menyebut angka kemarin
+selamanya. Bila kelak ia perlu disimpan — dan pada arsip yang jauh lebih besar
+itu akan perlu — yang disimpan harus disertai waktu hitungnya, dan layar harus
+menyebut umurnya.
+
+## Peringatan dini berbasis pola
+
+`web/js/lib/peringatan-laju.js` menjalankan empat aturan atas arsip yang
+termuat, dan hasilnya muncul di puncak halaman Peringatan Dini:
+
+| Aturan | Menyala ketika |
+| --- | --- |
+| Lonjakan | terbitan negatif sebuah unit naik lebih dari 100% dibanding 24 jam sebelumnya |
+| Menyebar ke banyak sumber | satu peristiwa diangkat 3 media atau lebih yang saling bebas, dengan skor di atas 60 |
+| Membesar tanpa tanggapan | peristiwa berskor di atas 65 yang masih berjalan dan belum mendapat sikap resmi |
+| Penumpukan pelan | 5 peristiwa negatif atau lebih di satu unit dalam 30 hari, tanpa satu pun yang berat |
+
+Aturan terakhir yang paling sulit dilihat manusia: sepuluh berita "Sedang"
+tentang satu unit tidak pernah memicu penyaringan urgensi mana pun, dan
+bersama-sama mereka adalah unit yang sedang bermasalah.
+
+Angka penyetelnya ada di tetapan `ATUR`, satu tempat. **Peringatan ini tidak
+punya ingatan** — ia dihitung ulang tiap kali halaman dibuka dan tidak menyimpan
+apakah seseorang sudah membacanya. Itu disebutkan di layar, dan itu pula yang
+membedakannya dari peringatan yang lengkap: nomor, status, dan pemilik menuntut
+tabel `alerts` yang belum ada.
+
 ## Keamanan
 
 - Kunci yang tertanam di `konfig.js` adalah publishable key. Kunci itu tidak
@@ -189,6 +251,9 @@ Yang perlu disiapkan sebelum dipakai sungguhan:
 
 ```bash
 node tools/uji-mesin.mjs        # 14 uji perilaku + 9 uji pencocokan UPT
+node tools/uji-hitung.mjs       # 37 uji ember sentimen dan penjumlahan angka
+node tools/uji-risiko.mjs       # 63 uji skor risiko
+node tools/uji-laju.mjs         # 26 uji aturan peringatan dini
 node tools/periksa-lainnya.mjs  # 62 kasus nyata dari arsip
 ```
 

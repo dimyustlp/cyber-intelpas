@@ -6,16 +6,39 @@
 import { amankan, angka, inisial } from '../lib/format.js'
 import { ikon } from '../lib/ikon.js'
 
-export function ubin({ label, nilai, kaki, nada = 'netral', delta }) {
+/**
+ * Ubin angka.
+ *
+ * Sebutkan `halaman` dan ubinnya menjadi tombol yang membuka daftar di balik
+ * angkanya. Sebuah angka di dasbor yang tidak bisa ditekan memaksa pembacanya
+ * mencari sendiri daftar yang menghasilkannya — dan begitu ia mencari sendiri,
+ * saringannya hampir pasti berbeda, sehingga daftar yang ia temukan tidak akan
+ * berjumlah sama dengan angka yang barusan ia baca.
+ *
+ * `saring` diteruskan apa adanya ke halaman tujuan lewat `keadaan.saringMasuk`.
+ * Halaman yang tidak mengenali kuncinya mengabaikannya; yang mengenali memakai
+ * saringan itu, sehingga panjang daftarnya sama persis dengan angka pada ubin.
+ *
+ * Dibuat sebagai `<button>`, bukan `<div>` berpenyimak klik. Bedanya bukan
+ * gaya: tombol bisa dicapai papan tik, diumumkan pembaca layar sebagai tombol,
+ * dan menanggapi Enter maupun spasi tanpa satu baris kode tambahan.
+ */
+export function ubin({ label, nilai, kaki, nada = 'netral', delta, halaman, saring }) {
   const bagianDelta = delta
     ? `<span class="delta ${delta.arah}">${amankan(delta.teks)}</span>`
     : ''
-  return `
-    <div class="ubin" data-nada="${nada}">
+  const isi = `
       <span class="ubin-label">${amankan(label)}</span>
       <span class="ubin-nilai">${typeof nilai === 'number' ? angka(nilai) : amankan(nilai)}</span>
-      <span class="ubin-kaki">${bagianDelta}${kaki ? amankan(kaki) : ''}</span>
-    </div>`
+      <span class="ubin-kaki">${bagianDelta}${kaki ? amankan(kaki) : ''}${halaman ? ikon('panahKanan') : ''}</span>`
+
+  if (!halaman) return `<div class="ubin" data-nada="${nada}">${isi}</div>`
+
+  return `
+    <button class="ubin ubin-tekan" data-nada="${nada}"
+      data-halaman="${amankan(halaman)}"
+      ${saring ? `data-saring="${amankan(JSON.stringify(saring))}"` : ''}
+      title="Buka daftar di balik angka ini">${isi}</button>`
 }
 
 export function keping(teks, nada = 'rendah', polos = false) {

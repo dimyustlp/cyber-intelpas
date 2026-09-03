@@ -16,6 +16,7 @@ import { amankan, angka, jarakWaktu, tanggalJam, ringkas, nadaUrgensi } from '..
 import { belumTerpetakan } from '../lib/pencocokan-upt.js'
 import { ikon } from '../lib/ikon.js'
 import { punyaIzin } from '../lib/peran.js'
+import { periksaLaju, rekapLaju, ATURAN } from '../lib/peringatan-laju.js'
 
 const saring = { tingkat: 'Semua tingkat', keadaan: 'Semua keadaan' }
 
@@ -45,6 +46,18 @@ export function halamanPeringatan({ keadaan, isi }) {
   const bolehTelaah = punyaIzin(keadaan.profil?.role, 'telaah_berita')
   const bolehKasus = punyaIzin(keadaan.profil?.role, 'kelola_kasus')
 
+  /*
+     Peringatan berbasis laju, dihitung dari arsip yang sama.
+
+     Diletakkan DI ATAS daftar kartu, bukan di bawahnya. Yang di bawah adalah
+     berita yang mesin sudah nilai berat satu per satu — analis akan menemukan
+     mereka cepat atau lambat. Yang di atas adalah pola yang tidak akan pernah
+     ditemukan siapa pun dengan membaca daftar: lonjakan, penyebaran, dan
+     penumpukan pelan.
+  */
+  const laju = periksaLaju(keadaan.berita || [])
+  const rekap = rekapLaju(laju)
+
   isi.innerHTML = `
     <div class="tumpuk">
       ${kritis
@@ -55,6 +68,23 @@ export function halamanPeringatan({ keadaan, isi }) {
         : pesanSistem(
             `Tidak ada kejadian berstatus kritis. ${awal} peringatan masih berstatus awal dan menunggu telaah analis.`,
             'positif', 'centang')}
+
+      ${kartu({
+        judul: 'Pola yang terdeteksi',
+        ket: laju.length
+          ? `${rekap.total} pola aktif — ${rekap.kritis} kritis, ${rekap.tinggi} tinggi, ${rekap.sedang} sedang.`
+          : 'Empat aturan dijalankan atas seluruh arsip yang termuat.',
+        isi: laju.length
+          ? `<div class="laju-daftar">${laju.slice(0, 12).map(kartuLaju).join('')}</div>
+             ${pesanSistem(
+               '<b>Pola ini tidak punya ingatan.</b> Ia dihitung ulang setiap kali halaman '
+               + 'dibuka dan tidak menyimpan apakah seseorang sudah membacanya. Yang perlu '
+               + 'ditindaklanjuti sebaiknya dijadikan kasus, supaya punya pemilik dan riwayat.',
+               'netral', 'info')}`
+          : kosong('Tidak ada pola yang terdeteksi',
+              'Tidak ada lonjakan, penyebaran ke banyak sumber, peristiwa berat yang didiamkan, '
+              + 'maupun penumpukan pelan di satu unit pada arsip yang termuat.'),
+      })}
 
       ${kartu({
         rapat: true,
@@ -99,6 +129,16 @@ export function halamanPeringatan({ keadaan, isi }) {
      entah berapa.
   */
   isi.addEventListener('click', (ev) => {
+    // Judul contoh pada kartu pola membuka catatan beritanya, bukan situs
+    // medianya: yang sedang dibaca di sini adalah apa yang diketahui sistem.
+    const buka = ev.target.closest('[data-buka]')?.dataset.buka
+    if (buka) {
+      document.dispatchEvent(new CustomEvent('buka-halaman', {
+        detail: { halaman: 'berita-detail', fokus: buka },
+      }))
+      return
+    }
+
     const tombolTelaah = ev.target.closest('[data-aksi="telaah"]')
     if (tombolTelaah) {
       document.dispatchEvent(new CustomEvent('buka-halaman', {
@@ -125,6 +165,41 @@ export function halamanPeringatan({ keadaan, isi }) {
   })
 
   return { judul: 'Peringatan Dini', sub: `${angka(semua.length)} kejadian dipantau · ${angka(awal)} masih berstatus awal` }
+}
+
+/**
+ * Satu pola yang terdeteksi.
+ *
+ * Tiga hal wajib ada di setiap kartu, dan ketiganya menjawab pertanyaan yang
+ * pasti muncul: apa yang terjadi (judul), kenapa ini muncul (sebab, lengkap
+ * dengan angkanya), dan aturan mana yang menyalakannya (nama aturan). Sebuah
+ * peringatan yang hanya menyebutkan yang pertama akan dicurigai, lalu
+ * diabaikan.
+ */
+function kartuLaju(a) {
+  const aturan = ATURAN[a.kode] || {}
+  const contoh = (a.berita || []).slice(0, 3)
+
+  return `
+    <article class="laju-kartu" data-nada="${nadaUrgensi(a.tingkat)}">
+      <div class="laju-kop">
+        ${keping(a.tingkat, nadaUrgensi(a.tingkat))}
+        <span class="laju-aturan" title="${amankan(aturan.ket || '')}">${amankan(aturan.nama || a.kode)}</span>
+        <span class="mini-teks samar-teks dorong">${amankan(jarakWaktu(new Date(a.waktu).toISOString()))}</span>
+      </div>
+
+      <h3 class="laju-judul">${amankan(ringkas(a.judul, 120))}</h3>
+      <p class="laju-sebab">${amankan(a.sebab)}</p>
+
+      ${contoh.length ? `
+        <ul class="laju-contoh">
+          ${contoh.map((b) => `
+            <li><button data-buka="${amankan(b.id)}"
+              title="Buka detail berita ini">${amankan(ringkas(b.judul || 'Tanpa judul', 88))}</button></li>`).join('')}
+          ${a.berita.length > contoh.length
+            ? `<li class="samar-teks">dan ${angka(a.berita.length - contoh.length)} terbitan lain</li>` : ''}
+        </ul>` : ''}
+    </article>`
 }
 
 function kartuPeringatan(b, bolehTelaah, bolehKasus) {

@@ -4760,3 +4760,549 @@ kbd {
 @media (prefers-reduced-motion: no-preference) {
   .ubin-tekan:hover .ubin-kaki svg { transform: translateX(3px); }
 }
+
+/* ==========================================================================
+   Halaman detail berita
+   ==========================================================================
+   Seluruh warna di bawah membaca token, tidak satu pun ditulis sebagai nilai
+   tetap. Aturan itu yang membuat mode terang dan gelap tidak pernah saling
+   merusak — dan halaman ini adalah halaman terpadat di seluruh aplikasi,
+   sehingga satu warna tetap saja cukup untuk membuat satu tema tidak terbaca.
+   ====================================================================== */
+
+/* Judul di tabel berita menjadi tombol. Ia tetap harus terbaca sebagai judul,
+   bukan sebagai tombol — yang berubah hanya saat disentuh penunjuk. */
+table.tabel button.judul-buka {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  width: 100%;
+  border-radius: var(--r-1);
+}
+table.tabel button.judul-buka:hover { color: var(--accent); text-decoration: underline; }
+
+.detail-kepala { display: flex; flex-direction: column; gap: 12px; padding: 4px 2px; }
+.detail-lencana { display: flex; flex-wrap: wrap; gap: 6px; }
+
+.detail-judul {
+  font-family: var(--disp);
+  font-size: 1.4rem;
+  line-height: 1.3;
+  letter-spacing: -0.02em;
+  font-weight: 700;
+  margin: 0;
+  max-width: 62ch;
+  text-wrap: balance;
+}
+
+.detail-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  font-size: 12.5px;
+  color: var(--ink-3);
+}
+.detail-meta span { display: inline-flex; align-items: center; gap: 5px; }
+.detail-meta svg { width: 14px; height: 14px; opacity: 0.7; }
+
+.detail-ringkasan {
+  margin: 12px 0 0;
+  font-size: 13.5px;
+  line-height: 1.65;
+  max-width: 68ch;
+  color: var(--ink-2);
+}
+.detail-tautan { color: var(--accent); word-break: break-all; }
+
+/* Daftar istilah-nilai. Dipakai tiga kartu di halaman ini. */
+.rinci { margin: 0; display: flex; flex-direction: column; }
+.rinci-baris {
+  display: grid;
+  grid-template-columns: 42% 1fr;
+  gap: 12px;
+  padding: 8px 2px;
+  border-bottom: 1px solid var(--line-3);
+  align-items: baseline;
+}
+.rinci-baris:last-child { border-bottom: 0; }
+.rinci-baris dt { font-size: 11.5px; color: var(--ink-4); }
+.rinci-baris dd {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.5;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* ------------------------------------------------------------ skor risiko */
+
+.risiko-panel { display: flex; flex-direction: column; gap: 14px; }
+
+.risiko-kepala {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 16px;
+  border-radius: var(--r-3);
+  background: var(--surface-3);
+  border: 1px solid var(--line-2);
+  border-left: 3px solid var(--nada, var(--line));
+}
+.risiko-kepala[data-nada="kritis"]  { --nada: var(--kritis); }
+.risiko-kepala[data-nada="tinggi"]  { --nada: var(--tinggi); }
+.risiko-kepala[data-nada="sedang"]  { --nada: var(--sedang); }
+.risiko-kepala[data-nada="rendah"]  { --nada: var(--ink-4); }
+
+.risiko-angka { display: flex; align-items: baseline; gap: 4px; }
+.risiko-angka b {
+  font-family: var(--disp);
+  font-size: 2.6rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+  color: var(--nada, var(--ink));
+}
+.risiko-angka span { font-size: 12px; color: var(--ink-4); }
+.risiko-tingkat { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.risiko-tingkat p { margin: 0; font-size: 11.5px; line-height: 1.5; color: var(--ink-3); }
+
+/* Rumusnya ditulis di layar, bukan hanya hasilnya. Pembaca yang melihat
+   68 dikali 0,12 sama dengan 8 tidak perlu bertanya kenapa angkanya kecil. */
+.risiko-rumus {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+  font-size: 11.5px;
+  color: var(--ink-3);
+  padding: 9px 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-2);
+}
+.risiko-rumus b {
+  font-family: var(--mono);
+  font-weight: 600;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.risiko-rumus svg { width: 11px; height: 11px; opacity: 0.45; }
+.risiko-sama { margin-left: auto; }
+.risiko-sama b { color: var(--accent); }
+
+.risiko-gerbang-ket {
+  margin: -6px 0 0;
+  font-size: 11.5px;
+  line-height: 1.55;
+  color: var(--ink-3);
+}
+
+.risiko-faktor { display: flex; flex-direction: column; gap: 12px; }
+.risiko-faktor-kop {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--line-2);
+}
+.risiko-faktor-kop .label-mono:last-child { color: var(--ink-4); }
+
+.risiko-baris { display: flex; flex-direction: column; gap: 5px; }
+.risiko-baris-kop {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 12.5px;
+}
+.risiko-baris-kop span { font-weight: 550; }
+.risiko-baris-kop b {
+  margin-left: auto;
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+.risiko-baris-kop i {
+  font-style: normal;
+  font-size: 10.5px;
+  color: var(--ink-4);
+  font-family: var(--mono);
+}
+.risiko-bilah {
+  height: 5px;
+  border-radius: 999px;
+  background: var(--line-2);
+  overflow: hidden;
+}
+.risiko-bilah i { display: block; height: 100%; background: var(--accent); border-radius: 999px; }
+.risiko-baris p { margin: 0; font-size: 11.5px; line-height: 1.5; color: var(--ink-3); }
+
+.risiko-catatan {
+  padding: 11px 13px;
+  border-radius: var(--r-2);
+  background: var(--sedang-bg);
+  border: 1px solid var(--sedang-tepi);
+}
+.risiko-catatan ul { margin: 7px 0 0; padding-left: 17px; display: flex; flex-direction: column; gap: 6px; }
+.risiko-catatan li { font-size: 11.5px; line-height: 1.55; color: var(--ink-2); }
+
+/* ------------------------------------------------------ liputan serumpun */
+
+.serumpun { display: flex; flex-direction: column; gap: 14px; }
+
+.serumpun-angka {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(110px, 100%), 1fr));
+  gap: 1px;
+  background: var(--line-2);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-2);
+  overflow: hidden;
+}
+.serumpun-angka > div {
+  background: var(--surface);
+  padding: 11px 13px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.serumpun-angka b {
+  font-family: var(--disp);
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+.serumpun-angka span { font-size: 11px; color: var(--ink-4); }
+
+.serumpun-daftar { list-style: none; margin: 0; padding: 0; }
+.serumpun-daftar li { border-bottom: 1px solid var(--line-3); }
+.serumpun-daftar li:last-child { border-bottom: 0; }
+
+.serumpun-butir {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 10px;
+  width: 100%;
+  padding: 10px 8px;
+  background: none;
+  border: 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  border-radius: var(--r-2);
+  transition: background var(--cepat);
+}
+.serumpun-butir:hover { background: var(--surface-3); }
+.serumpun-judul { font-size: 13px; font-weight: 550; line-height: 1.45; }
+.serumpun-kaki { grid-column: 2; font-size: 11px; color: var(--ink-4); }
+
+/* --------------------------------------------------------- mutu & pesaing */
+
+.mutu-panel { display: flex; flex-direction: column; gap: 10px; }
+.mutu-temuan { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 7px; }
+.mutu-temuan li {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+.mutu-temuan .mono {
+  font-size: 10.5px;
+  color: var(--ink-4);
+  flex: none;
+  padding: 2px 6px;
+  border-radius: var(--r-1);
+  background: var(--surface-3);
+}
+
+.mesin-pesaing { display: flex; flex-direction: column; gap: 5px; width: 100%; }
+.mesin-pesaing > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--ink-3);
+  padding: 4px 0;
+  border-bottom: 1px dashed var(--line-2);
+}
+.mesin-pesaing > div:last-child { border-bottom: 0; }
+.mesin-pesaing b { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.mesin-pesaing-juara { color: var(--ink); font-weight: 600; }
+.mesin-pesaing-juara b { color: var(--accent); }
+
+/* Di layar sempit dua kolom menjadi satu, dan urutannya menjadi urutan gulir:
+   ringkasan, dasar penilaian mesin, mutu, liputan serumpun, telaah, lalu skor
+   risiko beserta klasifikasi dan sumbernya.
+
+   Skor risiko sengaja TIDAK dinaikkan ke atas. Ia angka turunan — yang
+   menjelaskan sebuah berita adalah ringkasan dan dasar penilaian mesin, dan
+   pembaca yang mendapat angka 68 sebelum membaca dari mana angka itu berasal
+   justru yang paling mungkin mengutipnya tanpa rinciannya. Di telepon, urutan
+   gulir adalah satu-satunya hierarki yang tersisa; maka urutannya dipakai
+   untuk memaksa dasar dibaca lebih dulu, bukan untuk mempercepat kesimpulan. */
+@media (max-width: 900px) {
+  .rinci-baris { grid-template-columns: 1fr; gap: 2px; }
+  .detail-judul { font-size: 1.2rem; }
+  .risiko-angka b { font-size: 2.2rem; }
+}
+
+/* --------------------------------------------------- pola peringatan laju */
+
+.laju-daftar {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(360px, 100%), 1fr));
+  gap: 12px;
+  padding: 14px;
+}
+
+.laju-kartu {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 13px 15px;
+  background: var(--surface-2);
+  border: 1px solid var(--line-2);
+  border-left: 3px solid var(--nada, var(--line));
+  border-radius: var(--r-2);
+}
+.laju-kartu[data-nada="kritis"] { --nada: var(--kritis); }
+.laju-kartu[data-nada="tinggi"] { --nada: var(--tinggi); }
+.laju-kartu[data-nada="sedang"] { --nada: var(--sedang); }
+.laju-kartu[data-nada="rendah"] { --nada: var(--ink-4); }
+
+.laju-kop { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+/* Nama aturan memakai huruf mono: ia penanda mesin, bukan kalimat manusia,
+   dan pembacanya harus bisa membedakan keduanya sekilas. */
+.laju-aturan {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ink-4);
+  cursor: help;
+}
+
+.laju-judul {
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 650;
+  line-height: 1.4;
+  letter-spacing: -0.01em;
+}
+.laju-sebab { margin: 0; font-size: 12px; line-height: 1.55; color: var(--ink-3); }
+
+.laju-contoh {
+  list-style: none;
+  margin: 2px 0 0;
+  padding: 8px 0 0;
+  border-top: 1px solid var(--line-2);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.laju-contoh li { font-size: 11.5px; line-height: 1.45; }
+.laju-contoh button {
+  background: none;
+  border: 0;
+  padding: 2px 0;
+  font: inherit;
+  color: var(--ink-2);
+  text-align: left;
+  cursor: pointer;
+  width: 100%;
+  border-radius: var(--r-1);
+}
+.laju-contoh button:hover { color: var(--accent); text-decoration: underline; }
+
+/* ========================================================= Executive Brief */
+
+.brief-periode {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 2px;
+}
+
+/* Pernyataan tingkat risiko nasional. Satu-satunya tempat di seluruh aplikasi
+   yang memakai huruf sebesar ini untuk sebuah KATA, bukan sebuah angka —
+   sebab yang harus terbaca dalam tiga detik di sini memang kata itu. */
+.brief-nasional {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px 28px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 18px;
+  border-radius: var(--r-3);
+  background: var(--surface-3);
+  border: 1px solid var(--line-2);
+  border-left: 4px solid var(--nada, var(--line));
+}
+.brief-nasional[data-nada="kritis"]  { --nada: var(--kritis); }
+.brief-nasional[data-nada="tinggi"]  { --nada: var(--tinggi); }
+.brief-nasional[data-nada="sedang"]  { --nada: var(--sedang); }
+.brief-nasional[data-nada="positif"] { --nada: var(--positif); }
+
+.brief-nasional > div:first-child { min-width: 0; flex: 1 1 260px; }
+.brief-nasional b {
+  display: block;
+  font-family: var(--disp);
+  font-size: 2.2rem;
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: -0.035em;
+  color: var(--nada, var(--ink));
+  margin: 4px 0 5px;
+}
+.brief-nasional p { margin: 0; font-size: 12.5px; line-height: 1.5; color: var(--ink-3); max-width: 46ch; }
+
+.brief-nasional-angka { display: flex; gap: 22px; flex-wrap: wrap; }
+.brief-nasional-angka > div { display: flex; flex-direction: column; gap: 2px; }
+.brief-nasional-angka b {
+  font-size: 1.6rem;
+  margin: 0;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.brief-nasional-angka span { font-size: 11px; color: var(--ink-4); }
+
+.brief-kalimat {
+  margin: 16px 0 0;
+  font-size: 14px;
+  line-height: 1.7;
+  max-width: 76ch;
+  color: var(--ink-2);
+}
+.brief-kalimat b { color: var(--ink); font-weight: 650; font-variant-numeric: tabular-nums; }
+
+/* ------------------------------------------------------------ temuan kunci */
+
+.brief-temuan { list-style: none; margin: 0; padding: 0; }
+.brief-temuan li {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 12px;
+  align-items: center;
+  padding: 11px 4px;
+  border-bottom: 1px solid var(--line-3);
+}
+.brief-temuan li:last-child { border-bottom: 0; }
+
+.brief-nomor {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--ink-4);
+  font-variant-numeric: tabular-nums;
+}
+.brief-temuan-isi { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.brief-temuan-judul {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+  border-radius: var(--r-1);
+}
+.brief-temuan-judul:hover { color: var(--accent); text-decoration: underline; }
+.brief-temuan-meta { font-size: 11.5px; color: var(--ink-4); }
+
+.brief-temuan-skor { display: flex; align-items: center; gap: 9px; }
+.brief-temuan-skor b {
+  font-family: var(--disp);
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+  min-width: 2.2ch;
+  text-align: right;
+}
+
+/* ------------------------------------------------------------------- pola */
+
+.brief-pola { list-style: none; margin: 0 0 14px; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.brief-pola li {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 11px;
+  align-items: start;
+  padding: 10px 12px;
+  border-radius: var(--r-2);
+  background: var(--surface-2);
+  border: 1px solid var(--line-2);
+  border-left: 3px solid var(--nada, var(--line));
+}
+.brief-pola li[data-nada="kritis"] { --nada: var(--kritis); }
+.brief-pola li[data-nada="tinggi"] { --nada: var(--tinggi); }
+.brief-pola li[data-nada="sedang"] { --nada: var(--sedang); }
+.brief-pola li[data-nada="rendah"] { --nada: var(--ink-4); }
+
+.brief-pola > li > div { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.brief-pola b { font-size: 12.5px; font-weight: 650; }
+.brief-pola span { font-size: 12.5px; color: var(--ink-2); line-height: 1.45; }
+.brief-pola em { font-style: normal; font-size: 11.5px; color: var(--ink-4); line-height: 1.5; }
+
+/* --------------------------------------------------------------- dampak */
+
+.brief-daftar { list-style: none; margin: 7px 0 0; padding: 0; }
+.brief-daftar li {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 10px;
+  align-items: baseline;
+  padding: 7px 2px;
+  border-bottom: 1px solid var(--line-3);
+  font-size: 12.5px;
+}
+.brief-daftar li:last-child { border-bottom: 0; }
+.brief-daftar b { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.brief-daftar i {
+  font-style: normal;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  min-width: 3.5ch;
+  text-align: right;
+}
+.brief-daftar i.naik { color: var(--kritis); }
+
+.brief-bagan { min-height: 180px; }
+
+/* --------------------------------------------------------- rekomendasi */
+
+.brief-rekomendasi { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 12px; }
+.brief-rekomendasi li { font-size: 13px; line-height: 1.65; color: var(--ink-2); max-width: 72ch; }
+.brief-rekomendasi b { color: var(--ink); font-weight: 650; }
+
+.brief-catatan { display: flex; flex-direction: column; gap: 11px; }
+.brief-catatan p { margin: 0; font-size: 12px; line-height: 1.6; color: var(--ink-3); }
+.brief-catatan b { color: var(--ink-2); }
+
+.brief-kaki {
+  margin: 4px 2px 0;
+  font-size: 11.5px;
+  color: var(--ink-4);
+  font-family: var(--mono);
+  line-height: 1.6;
+}
+
+@media (max-width: 700px) {
+  .brief-nasional b { font-size: 1.8rem; }
+  .brief-temuan li { grid-template-columns: auto 1fr; }
+  .brief-temuan-skor { grid-column: 2; }
+}

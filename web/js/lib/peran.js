@@ -233,6 +233,14 @@ export const MENU = [
     grup: 'Ruang Pimpinan',
     butir: [
       { id: 'dasbor', label: 'Dasbor Eksekutif', ikon: 'dasbor', izin: 'lihat_dasbor' },
+      /*
+         Izin `lihat_briefing` sudah diberikan kepada lima peran sejak lama,
+         dan sampai 3 September 2026 tidak ada satu pun butir menu maupun
+         halaman yang memakainya — izin yang menganga tanpa pintu. Siapa pun
+         yang membaca daftar izin di atas berhak menyimpulkan halamannya ada.
+         Sekarang ia ada.
+      */
+      { id: 'briefing', label: 'Executive Brief', ikon: 'laporan', izin: 'lihat_briefing' },
       // Kanal negatif berdiri sendiri di menu. Isu yang merugikan institusi
       // tidak boleh dicari dulu di dalam daftar gabungan sebelum bisa dibaca.
       { id: 'negatif', label: 'Kanal Negatif', ikon: 'peringatan', izin: 'lihat_dasbor', lencana: 'negatif' },

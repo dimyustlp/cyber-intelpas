@@ -21,14 +21,18 @@
  */
 
 import { kartu, tombol, keping, kosong, pesanSistem, roti, konfirmasi } from '../ui/komponen.js'
+/* Panel penilaian mesin tinggal di ui/, bukan di sini, sejak halaman detail
+   berita ikut memakainya. Dua salinan panel yang menampilkan dasar keputusan
+   mesin akan berpisah, dan yang pertama menyadarinya adalah analis yang
+   melihat dua alasan berbeda untuk berita yang sama. */
+import { panelMesin } from '../ui/panel-mesin.js'
 import {
-  amankan, angka, persen, ringkas, jarakWaktu, tanggalJam,
-  nadaUrgensi, nadaSentimen, asalTautan,
+  amankan, angka, ringkas, jarakWaktu, tanggalJam,
+  nadaUrgensi, asalTautan,
 } from '../lib/format.js'
 import { ikon } from '../lib/ikon.js'
 import { perbarui, pesanRamah } from '../lib/api.js'
 import { KATEGORI, SEMUA_SUBKATEGORI } from '../lib/taksonomi.js'
-import { KONFIG } from '../lib/konfig.js'
 import { EMBER, ember, nilaiSimpan } from '../lib/sentimen.js'
 import { menungguTelaah } from '../lib/hitung.js'
 
@@ -125,56 +129,6 @@ function kemajuan(sisa, awal) {
         <span><b>${angka(selesai)}</b> ditelaah sesi ini</span>
         <span>${angka(sisa)} menunggu</span>
       </div>
-    </div>`
-}
-
-/** Penilaian mesin, ditampilkan apa adanya beserta dasarnya. */
-function panelMesin(b) {
-  const yakin = Number(b.ai_confidence) || 0
-  const cukup = yakin >= KONFIG.ambangKeyakinan
-  const kunci = Array.isArray(b.kata_kunci) ? b.kata_kunci : []
-
-  return `
-    <div class="mesin-panel">
-      <div class="mesin-kop">
-        <span class="label-mono">Penilaian mesin</span>
-        <span class="mesin-yakin" data-cukup="${cukup}">
-          ${(yakin * 100).toFixed(0)}% yakin
-        </span>
-      </div>
-
-      <div class="mesin-nilai">
-        <div>
-          <dt>Kategori</dt>
-          <dd>${amankan(b.kategori || '—')}</dd>
-        </div>
-        <div>
-          <dt>Subkategori</dt>
-          <dd>${amankan(b.subkategori || '—')}</dd>
-        </div>
-        <div>
-          <dt>Sentimen</dt>
-          <dd>${keping(b.sentimen || '—', nadaSentimen(b.sentimen))}</dd>
-        </div>
-        <div>
-          <dt>Urgensi</dt>
-          <dd>${keping(b.urgensi || '—', nadaUrgensi(b.urgensi))}</dd>
-        </div>
-      </div>
-
-      ${kunci.length ? `
-        <div class="mesin-kunci">
-          <span class="label-mono">Kata kunci penentu</span>
-          <div>${kunci.map((k) => `<span class="kunci-keping">${amankan(k)}</span>`).join('')}</div>
-        </div>` : ''}
-
-      ${b.ai_alasan ? `<p class="mesin-alasan">${amankan(b.ai_alasan)}</p>` : ''}
-
-      ${!cukup ? pesanSistem(
-        `<b>Di bawah ambang ${persen(KONFIG.ambangKeyakinan, 1, 0)}.</b>
-         Mesin sendiri menandai hasil ini sebagai perlu diperiksa sebelum dipakai.`,
-        'sedang', 'info',
-      ) : ''}
     </div>`
 }
 

@@ -85,8 +85,26 @@ function jawab(isi: unknown, status = 200): Response {
   return new Response(JSON.stringify(isi), { status, headers: KEPALA })
 }
 
+/**
+ * Merapikan sebuah isian teks.
+ *
+ * Kata "NULL" yang diketik atau ditempel dianggap ketiadaan nilai, bukan nama.
+ * Itu bukan kehati-hatian yang berlebihan: editor tabel Supabase menampilkan
+ * sel kosong sebagai `NULL`, dan siapa pun yang menyalin nilai dari sana
+ * menyalin empat huruf. Pada 3 September 2026 akun `dimyust` tersimpan dengan
+ * `assigned_upt = 'NULL'`, dan policy RLS memperlakukannya sebagai petugas
+ * sebuah unit bernama "NULL" — superadmin dengan dasbor kosong, tanpa satu pun
+ * galat di mana pun.
+ *
+ * Penjagaan yang sama ada di sisi peramban pada `kosongkan()` di
+ * `web/js/pages/pengguna.js`. Keduanya memang perlu: yang satu menolong petugas
+ * lebih awal, yang satu lagi menjaga ketika permintaan datang bukan dari
+ * halaman itu.
+ */
 function bersih(nilai: unknown): string {
-  return String(nilai ?? '').replace(/\s+/g, ' ').trim()
+  const t = String(nilai ?? '').replace(/\s+/g, ' ').trim()
+  if (['null', 'nil', 'none', '-', '—'].includes(t.toLowerCase())) return ''
+  return t
 }
 
 Deno.serve(async (permintaan: Request) => {

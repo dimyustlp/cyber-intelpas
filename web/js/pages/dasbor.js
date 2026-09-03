@@ -124,30 +124,43 @@ export function halamanDasbor({ keadaan, isi }) {
       ${garisKeadaan(mendesak, belumTelaah, takTerpetakan)}
 
       <div class="kisi kisi-4">
+        ${/*
+             Keempatnya membuka daftar di baliknya.
+
+             Saringan yang dititipkan bukan hiasan: ia membuat panjang daftar
+             yang terbuka sama persis dengan angka yang barusan ditekan. Ubin
+             yang menyebut 37 lalu membuka 812 baris memindahkan pertanyaan
+             pembacanya ke tempat yang lebih sulit, bukan menjawabnya.
+          */''}
         ${ubin({
           label: 'Berita masuk hari ini',
           nilai: jumlahHariIni,
           nada: 'aksen',
           delta: delta(jumlahHariIni, jumlahKemarin),
           kaki: 'dibanding kemarin',
+          halaman: 'berita',
+          saring: { periode: 'Masuk hari ini', lingkup: 'Yang dihitung' },
         })}
         ${ubin({
           label: 'Perlu respons segera',
           nilai: mendesak.length,
           nada: mendesak.length ? 'kritis' : 'netral',
           kaki: `${uptMendesak.size} UPT terdampak`,
+          halaman: 'peringatan',
         })}
         ${ubin({
           label: 'Menunggu telaah analis',
           nilai: belumTelaah.length,
           nada: belumTelaah.length > 20 ? 'sedang' : 'netral',
           kaki: persen(belumTelaah.length, berita.length) + ' dari arsip',
+          halaman: 'telaah',
         })}
         ${ubin({
           label: 'Peristiwa negatif',
           nilai: peristiwaNegatif.length,
           nada: 'tinggi',
           kaki: `dari ${angka(negatif.length)} publikasi`,
+          halaman: 'negatif',
         })}
       </div>
 
@@ -585,16 +598,20 @@ async function isiSiklus(isi, keadaan) {
       ket: 'Keadaan perkara yang sedang berjalan. Tekan salah satu untuk membukanya.',
       isi: `
         <div class="kisi kisi-4">
-          ${ubinSiklus('Kasus terbuka', terbuka.length, `dari ${angka(kasus.length)} kasus tercatat`, 'aksen', 'kasus')}
-          ${ubinSiklus('Verifikasi berjalan', verifikasiJalan.length,
-            verifikasiJalan.length ? 'surat tugas menunggu laporan' : 'tidak ada yang di lapangan',
-            verifikasiJalan.length ? 'sedang' : 'netral', 'lapangan')}
-          ${ubinSiklus('Menunggu putusan', menungguPutusan.length,
-            `${angka(usulMenunggu.length)} rekomendasi belum diputus`,
-            menungguPutusan.length ? 'kritis' : 'netral', 'keputusan')}
-          ${ubinSiklus('Tindak lanjut terlambat', tindakTerlambat.length,
-            `dari ${angka(tindakJalan.length)} butir yang berjalan`,
-            tindakTerlambat.length ? 'kritis' : 'positif', 'tindak')}
+          ${ubin({ label: 'Kasus terbuka', nilai: terbuka.length, nada: 'aksen',
+            kaki: `dari ${angka(kasus.length)} kasus tercatat`, halaman: 'kasus' })}
+          ${ubin({ label: 'Verifikasi berjalan', nilai: verifikasiJalan.length,
+            nada: verifikasiJalan.length ? 'sedang' : 'netral',
+            kaki: verifikasiJalan.length ? 'surat tugas menunggu laporan' : 'tidak ada yang di lapangan',
+            halaman: 'lapangan' })}
+          ${ubin({ label: 'Menunggu putusan', nilai: menungguPutusan.length,
+            nada: menungguPutusan.length ? 'kritis' : 'netral',
+            kaki: `${angka(usulMenunggu.length)} rekomendasi belum diputus`,
+            halaman: 'keputusan' })}
+          ${ubin({ label: 'Tindak lanjut terlambat', nilai: tindakTerlambat.length,
+            nada: tindakTerlambat.length ? 'kritis' : 'positif',
+            kaki: `dari ${angka(tindakJalan.length)} butir yang berjalan`,
+            halaman: 'tindak' })}
         </div>`,
     })
   } catch {
@@ -604,11 +621,10 @@ async function isiSiklus(isi, keadaan) {
   }
 }
 
-function ubinSiklus(label, nilai, kaki, nada, halaman) {
-  return `
-    <button class="ubin ubin-tekan" data-halaman="${amankan(halaman)}" data-nada="${amankan(nada)}">
-      <div class="ubin-label">${amankan(label)}</div>
-      <div class="ubin-nilai angka">${angka(nilai)}</div>
-      <div class="ubin-kaki">${amankan(kaki)}${ikon('panahKanan')}</div>
-    </button>`
-}
+/*
+   `ubinSiklus()` pernah berdiri di sini — salinan `ubin()` yang tumbuh sendiri
+   hanya karena `ubin()` belum bisa ditekan. Ia dihapus pada 3 September 2026,
+   ketika `ubin()` menerima parameter `halaman`. Dua salinan komponen yang sama
+   selalu berpisah cepat atau lambat, dan yang pertama menyadarinya adalah
+   petugas yang melihat dua ubin bergaya berbeda di satu layar.
+*/

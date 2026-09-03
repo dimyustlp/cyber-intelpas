@@ -11,10 +11,11 @@ import { kartu, keping, kosong, bidangCari, pilihan, tombol, tombolIkon, roti } 
 import { KONFIG } from '../lib/konfig.js'
 import { daftarNamaKategori } from '../lib/taksonomi.js'
 import {
-  amankan, angka, jarakWaktu, tanggalJam, asalTautan,
+  amankan, angka, jarakWaktu, tanggalJam, asalTautan, tanggalIso,
   nadaUrgensi, nadaSentimen, nadaStatus, ringkas,
 } from '../lib/format.js'
 import { belumTerpetakan } from '../lib/pencocokan-upt.js'
+import { dasar } from '../lib/hitung.js'
 import { ikon } from '../lib/ikon.js'
 
 const saring = {
@@ -23,11 +24,61 @@ const saring = {
   urgensi: 'Semua urgensi',
   status: 'Semua status',
   sentimen: 'Semua sentimen',
+  periode: 'Semua waktu',
+  lingkup: 'Semua baris',
 }
+
+const NILAI_BAKU = { ...saring }
+
+/**
+ * Pilihan periode, beserta jumlah harinya.
+ *
+ * Ada supaya ubin "Berita masuk hari ini" di dasbor punya tempat mendarat yang
+ * berjumlah sama dengan angkanya. Sebuah ubin yang menyebut 37 lalu membuka
+ * daftar berisi 812 baris tidak menjawab pertanyaan penekannya — ia
+ * memindahkan pertanyaan itu ke tempat yang lebih sulit.
+ *
+ * Dihitung dari `created_at`, bukan dari tanggal terbit. Itu bukan pilihan
+ * gaya: `ringkasan()` di lib/hitung.js memakai `created_at` untuk "hari ini",
+ * dan kalau halaman ini memakai tanggal terbit, kedua angkanya akan berbeda
+ * pada setiap berita lama yang baru masuk hari ini.
+ */
+const PERIODE = {
+  'Semua waktu': null,
+  'Masuk hari ini': 1,
+  '7 hari terakhir': 7,
+  '30 hari terakhir': 30,
+}
+
+/**
+ * Lingkup baris.
+ *
+ * "Yang dihitung" adalah himpunan dasar lib/hitung.js — dalam lingkup
+ * Pemasyarakatan, dan belum dinyatakan tidak valid atau diarsipkan. Itulah
+ * himpunan yang dipakai SELURUH angka di layar lain.
+ *
+ * Halaman ini sengaja tetap menampilkan seluruh baris secara baku, sebab di
+ * sinilah satu-satunya tempat berita yang sudah dibuang masih bisa dicari
+ * kembali. Tetapi tanpa pilihan ini, tidak ada satu pun cara melihat himpunan
+ * yang menghasilkan angka dasbor — dan siapa pun yang mencoba mencocokkan
+ * keduanya akan selalu menemukan selisih yang tidak bisa ia jelaskan.
+ */
+const LINGKUP = ['Semua baris', 'Yang dihitung']
 
 let batasTampil = 40
 
 export function halamanBerita({ keadaan, isi }) {
+  /*
+     Saringan titipan dari halaman lain. Diambil sekali lalu dikosongkan —
+     kalau dibiarkan, ia akan dipasang ulang tiap kali halaman digambar ulang,
+     dan petugas yang menekan "Bersihkan" akan melihatnya kembali seketika.
+  */
+  if (keadaan.saringMasuk) {
+    Object.assign(saring, NILAI_BAKU, keadaan.saringMasuk)
+    keadaan.saringMasuk = null
+    batasTampil = 40
+  }
+
   const semua = keadaan.berita
   const hasil = terapkan(semua)
 
@@ -44,6 +95,10 @@ export function halamanBerita({ keadaan, isi }) {
           opsi: ['Semua sentimen', 'Negatif', 'Campuran', 'Netral', 'Positif'] })}
         ${pilihan({ nama: 'status', nilai: saring.status, label: 'Saring status telaah',
           opsi: ['Semua status', 'Belum Ditelaah', 'Perlu Koreksi', 'Terverifikasi', 'Tidak Valid', 'Diarsipkan'] })}
+        ${pilihan({ nama: 'periode', nilai: saring.periode, label: 'Saring periode masuk',
+          opsi: Object.keys(PERIODE) })}
+        ${pilihan({ nama: 'lingkup', nilai: saring.lingkup, label: 'Saring lingkup baris',
+          opsi: LINGKUP })}
         <div class="dorong baris gap-6">
           <span class="mini-teks samar-teks">${angka(hasil.length)} dari ${angka(semua.length)}</span>
           ${adaSaringan() ? tombol({ label: 'Bersihkan', ikon: 'tutup', kecil: true, aksi: 'bersihkan-saring' }) : ''}
@@ -75,20 +130,32 @@ export function halamanBerita({ keadaan, isi }) {
 /* ------------------------------------------------------------- penyaringan */
 
 function adaSaringan() {
-  return saring.cari
-    || !saring.kategori.startsWith('Semua')
-    || !saring.urgensi.startsWith('Semua')
-    || !saring.status.startsWith('Semua')
-    || !saring.sentimen.startsWith('Semua')
+  return Object.keys(NILAI_BAKU).some((k) => saring[k] !== NILAI_BAKU[k])
+}
+
+/** Batas bawah periode sebagai ISO hari, atau null bila tanpa batas. */
+function batasPeriode() {
+  const hari = PERIODE[saring.periode]
+  if (!hari) return null
+  const t = new Date()
+  t.setHours(0, 0, 0, 0)
+  t.setDate(t.getDate() - (hari - 1))
+  return tanggalIso(t)
 }
 
 function terapkan(daftar) {
   const kata = saring.cari.trim().toLowerCase()
-  return daftar.filter((b) => {
+  // Himpunan dasar diambil dari lib/hitung.js, tidak ditulis ulang di sini.
+  // Di situlah dulu angka halaman dan angka dasbor mulai berpisah.
+  const sumber = saring.lingkup === 'Yang dihitung' ? dasar(daftar) : daftar
+  const sejak = batasPeriode()
+
+  return sumber.filter((b) => {
     if (!saring.kategori.startsWith('Semua') && b.kategori !== saring.kategori) return false
     if (!saring.urgensi.startsWith('Semua') && b.urgensi !== saring.urgensi) return false
     if (!saring.status.startsWith('Semua') && b.status_verifikasi !== saring.status) return false
     if (!saring.sentimen.startsWith('Semua') && b.sentimen !== saring.sentimen) return false
+    if (sejak && tanggalIso(b.created_at) < sejak) return false
     if (!kata) return true
     return [b.judul, b.nama_upt, b.media, b.subkategori, b.ringkasan]
       .filter(Boolean).join(' ').toLowerCase().includes(kata)
@@ -118,7 +185,18 @@ function tabel(daftar) {
           <tr data-id="${amankan(b.id)}">
             <td>${keping(b.urgensi || 'Rendah', nadaUrgensi(b.urgensi))}</td>
             <td>
-              <span class="judul-sel">${amankan(b.judul || 'Tanpa judul')}</span>
+              ${/*
+                   Judulnya <button>, bukan <tr> berpenyimak klik.
+
+                   Barisnya memuat tautan ke sumber asli di kolom terakhir;
+                   membuat seluruh baris bisa diklik berarti dua sasaran
+                   bertumpuk, dan yang meleset akan membuka situs luar alih-alih
+                   halaman detail. Tombol pada judulnya juga bisa dicapai papan
+                   tik dan diumumkan pembaca layar — sesuatu yang tidak pernah
+                   berlaku bagi baris tabel yang bisa diklik.
+                */''}
+              <button class="judul-sel judul-buka" data-buka="${amankan(b.id)}"
+                title="Buka detail berita ini">${amankan(b.judul || 'Tanpa judul')}</button>
               <span class="mini-teks samar-teks">${amankan(b.media || asalTautan(b.link))}
                 ${b.platform ? ` · ${amankan(b.platform)}` : ''}
                 ${b.ai_confidence ? ` · yakin ${(Number(b.ai_confidence) * 100).toFixed(0)}%` : ''}</span>
@@ -173,12 +251,20 @@ function pasangPenyimak(isi, semua, hasil) {
   }
 
   isi.addEventListener('click', (ev) => {
+    const buka = ev.target.closest('[data-buka]')?.dataset.buka
+    if (buka) {
+      document.dispatchEvent(new CustomEvent('buka-halaman', {
+        detail: { halaman: 'berita-detail', fokus: buka },
+      }))
+      return
+    }
+
     const aksi = ev.target.closest('[data-aksi]')?.dataset.aksi
     if (aksi === 'bersihkan-saring') {
-      Object.assign(saring, {
-        cari: '', kategori: 'Semua kategori', urgensi: 'Semua urgensi',
-        status: 'Semua status', sentimen: 'Semua sentimen',
-      })
+      // Dikembalikan ke NILAI_BAKU, bukan ke daftar yang ditulis ulang di sini.
+      // Daftar kedua akan ketinggalan pada saringan berikutnya yang ditambah,
+      // dan tombol "Bersihkan" diam-diam berhenti membersihkan seluruhnya.
+      Object.assign(saring, NILAI_BAKU)
       batasTampil = 40
       gambarUlang()
     } else if (aksi === 'tampil-lagi') {

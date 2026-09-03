@@ -1,5 +1,5 @@
 import { normalkan, akarKata } from './teks.js'
-import { belumTerpetakan } from './pencocokan-upt.js'
+import { belumTerpetakan } from './unit-terpetakan.js'
 const JENDELA_HARI = 10
 const AMBANG_SERUMPUN = 0.42
 const AMBANG_SERUMPUN_UNIT = 0.12

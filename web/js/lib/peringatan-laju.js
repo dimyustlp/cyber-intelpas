@@ -49,7 +49,7 @@
 
 import { ember } from './sentimen.js'
 import { dasar, URGENSI_MENDESAK } from './hitung.js'
-import { belumTerpetakan } from './pencocokan-upt.js'
+import { belumTerpetakan } from './unit-terpetakan.js'
 import { kelompokkanPeristiwa } from './peristiwa.js'
 import { skorRisiko } from './risiko.js'
 

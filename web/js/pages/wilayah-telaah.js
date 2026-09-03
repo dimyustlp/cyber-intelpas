@@ -34,7 +34,7 @@ import { KONFIG } from '../lib/konfig.js'
 import { EMBER, ember, nilaiSimpan } from '../lib/sentimen.js'
 import { menungguTelaahWilayah, TELAAH_WILAYAH, SIKAP_TANGGAPAN, dasar } from '../lib/hitung.js'
 import { punyaIzin, adalahUnit } from '../lib/peran.js'
-import { belumTerpetakan } from '../lib/pencocokan-upt.js'
+import { belumTerpetakan } from '../lib/unit-terpetakan.js'
 
 const URGENSI = ['Rendah', 'Sedang', 'Tinggi', 'Kritis']
 

@@ -16,12 +16,22 @@ Alasannya bukan kemalasan:
 
 - **Tidak ada bundel yang bisa gagal dibangun.** Menyalin folder `web/` ke mana
   pun sudah menjadikannya aplikasi yang berjalan.
-- **Tidak ada kode pihak ketiga yang ditarik saat halaman dibuka.** Sistem
-  intelijen sebaiknya tidak mengunduh berkas dari peladen orang lain setiap kali
-  seorang petugas membuka dasbor. Satu-satunya sumber luar adalah berkas huruf
-  Google Fonts, dan itu pun punya cadangan huruf sistem.
+- **Tidak ada satu pun berkas dari peladen orang lain yang ditarik saat halaman
+  dibuka.** Sistem intelijen sebaiknya tidak mengumumkan kepada pihak ketiga
+  setiap kali seorang petugas membuka dasbornya. Sampai 3 September 2026 kalimat
+  ini tidak sepenuhnya benar: hurufnya masih ditarik dari Google Fonts. Sekarang
+  hurufnya disimpan sendiri di `web/fonts/` (71 KiB, subset latin, disusun
+  `tools/ambil-huruf.mjs`), dan daftar sumber luarnya benar-benar kosong.
 - **Umur pakai lebih panjang.** Kode yang tidak bergantung pada versi kerangka
   kerja tertentu tidak akan berhenti bisa dibangun dua tahun lagi.
+
+Tanpa bundler, yang biasa dikerjakan bundler tetap harus dikerjakan — dan
+dikerjakan peramban sendiri. Halaman dimuat **saat dibuka**, lewat `import()`
+dinamis di `js/main.js`, bukan diimpor seluruhnya di muka. Bedanya terukur: layar
+masuk dulu menuntut 65 berkas dan lebih dari satu megabita JavaScript sebelum
+kotak nama penggunanya tampil; sekarang 15 berkas dan 145 KiB. Modul halaman
+mulai diunduh begitu tetikus menyentuh butir menunya, sehingga perpindahan
+halaman tetap terasa seketika.
 
 Konsekuensinya: tidak ada TypeScript dan tidak ada JSX. Sebagai gantinya, setiap
 modul diberi anotasi JSDoc dan setiap aturan bisnis diberi penjelasan mengapa ia
@@ -32,13 +42,19 @@ ada.
 ```
 web/                     aplikasi peramban, disajikan apa adanya
   index.html
+  vercel.json            tajuk keamanan — HARUS di sini, bukan di akar repo
+  manifes.webmanifest    nama dan ikon saat dipasang di layar utama telepon
+  fonts/                 huruf, disimpan sendiri — dihasilkan tools/ambil-huruf.mjs
+  ikon/                  ikon aplikasi — dihasilkan dari kanvas peramban
   css/app.css            sistem desain — seluruh warna sebagai token
+  css/huruf.css          @font-face — dihasilkan, jangan disunting
   js/
     lib/
       taksonomi.js       8 kategori, 26 subkategori isu pemasyarakatan
       klasifikasi.js     mesin klasifikasi berbasis aturan (v4)
       penerbit.js        mengenali siapa yang menerbitkan sebuah publikasi
       pencocokan-upt.js  pencocokan nama UPT dari teks berita
+      unit-terpetakan.js satu pemeriksaan "unitnya sudah diketahui?" — sengaja dipisah
       pesan-telegram.js  penyusun pesan ringkas untuk grup pimpinan
       peran.js           peran, izin, dan susunan menu
       peta-indonesia.js  garis pantai Indonesia — dihasilkan tools/susun-peta.mjs
@@ -81,6 +97,7 @@ tools/
   server-lokal.mjs       peladen statis untuk pengembangan
   susun-master-upt.mjs   menyusun data/master-upt.csv + migrasi dari daftar nasional
   susun-peta.mjs         menyusun garis pantai peta dari GeoJSON Natural Earth
+  ambil-huruf.mjs        mengunduh huruf sekali, lalu menyimpannya di web/fonts/
   uji-mesin.mjs          uji perilaku mesin dan pencocokan UPT
   uji-hitung.mjs         uji ember sentimen dan penjumlahan angka dasbor
   uji-peristiwa.mjs      uji pengelompokan publikasi menjadi peristiwa
@@ -175,6 +192,13 @@ sungguhan dari Spreadsheet crawler.
 Folder `web/` adalah situs statis. Bisa digelar ke Vercel, Netlify, Cloudflare
 Pages, atau peladen web instansi, tanpa langkah bangun.
 
+Tajuk keamanannya ada di `web/vercel.json` dan hanya dibaca Vercel. **Bila
+kelak digelar ke tempat lain, tajuk itu harus dipindahkan ke bentuk yang
+dimengerti peladen barunya** — `_headers` untuk Netlify dan Cloudflare Pages,
+blok `add_header` untuk nginx. Situs yang berpindah rumah dan meninggalkan
+berkas itu akan berjalan seperti biasa, tanpa satu pun tanda bahwa seluruh
+lapisan tajuknya baru saja hilang.
+
 Yang perlu disiapkan sebelum dipakai sungguhan:
 
 1. Jalankan keempat berkas di `supabase/migrations/` berurutan — sebaiknya di
@@ -246,6 +270,37 @@ tabel `alerts` yang belum ada.
   ada.** Kunci itu hanya dipegang Edge Function yang berjalan di peladen.
 - Daftar izin di `peran.js` hanya menyembunyikan tombol yang akan ditolak.
   Penegakan sebenarnya ada di 61 policy RLS pada basis data.
+
+### Tajuk yang dikirim peladen
+
+Sampai 3 September 2026 situsnya berjalan **tanpa satu pun tajuk keamanan**;
+Vercel memasang HSTS dengan sendirinya, dan selebihnya kosong. Sekarang
+`web/vercel.json` memasang Content-Security-Policy, `X-Frame-Options: DENY`,
+`nosniff`, `Referrer-Policy: no-referrer`, Permissions-Policy yang menutup
+seluruh izin perangkat, dan `X-Robots-Tag`.
+
+Dua hal tentang berkas itu yang mudah salah dan mahal:
+
+1. **Ia harus berada di dalam `web/`, bukan di akar repositori.** Root Directory
+   proyek Vercel disetel ke `web/`, dan Vercel hanya membaca `vercel.json` dari
+   sana. Berkas yang sama di akar tidak akan pernah dibaca, dan tidak akan ada
+   satu pun pesan yang mengatakannya.
+2. **`tools/server-lokal.mjs` membaca berkas yang sama** dan mengirimkan tajuk
+   yang sama. Itu bukan kemewahan: CSP yang memblokir sesuatu yang dipakai
+   aplikasi akan berjalan mulus di komputer pengembang dan baru gagal di layar
+   petugas. Sekarang ia gagal lebih dulu di komputer sendiri.
+
+`Referrer-Policy: no-referrer` dipilih dengan sengaja: halaman Verifikasi
+Lapangan membuka tautan berita ke situs luar, dan tanpa baris itu setiap situs
+yang dibuka petugas menerima catatan bahwa ia dibuka dari alamat sistem ini.
+
+`Cache-Control` untuk JS dan CSS sengaja dibiarkan pada bawaan Vercel
+(`must-revalidate`). Nama berkasnya tidak memuat sidik isi — tanpa langkah
+bangun, tidak ada yang bisa memberinya — sehingga menyimpan lama berarti sebuah
+peramban bisa menjalankan modul lama bersama modul baru, dan pada sistem yang
+seluruh angkanya diturunkan `lib/hitung.js`, campuran itu menampilkan angka yang
+salah tanpa satu pun pesan galat. Yang disimpan setahun hanya `web/fonts/`:
+isinya tidak pernah berubah, dan namanya menyebut versinya.
 
 ## Menguji
 

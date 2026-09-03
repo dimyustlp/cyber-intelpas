@@ -27,7 +27,7 @@
  */
 
 import { normalkan, akarKata } from './teks.js'
-import { belumTerpetakan } from './pencocokan-upt.js'
+import { belumTerpetakan } from './unit-terpetakan.js'
 
 /** Rentang hari maksimum dua publikasi masih boleh dianggap satu peristiwa. */
 const JENDELA_HARI = 10

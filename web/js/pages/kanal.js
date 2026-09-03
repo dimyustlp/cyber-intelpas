@@ -20,7 +20,7 @@
 
 import { kartu, keping, kosong, tombol, pesanSistem } from '../ui/komponen.js'
 import { amankan, angka, jarakWaktu, tanggalPanjang, ringkas, nadaUrgensi } from '../lib/format.js'
-import { belumTerpetakan } from '../lib/pencocokan-upt.js'
+import { belumTerpetakan } from '../lib/unit-terpetakan.js'
 import { kelompokkanPeristiwa, validasi, sumberAsli, rapikanJudul } from '../lib/peristiwa.js'
 import { ember } from '../lib/sentimen.js'
 import { dasar } from '../lib/hitung.js'

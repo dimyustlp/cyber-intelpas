@@ -21,7 +21,8 @@
  *      dan dikembalikan sebagai butir yang perlu diputuskan analis, bukan
  *      ditebak diam-diam.
  *
- * Modul ES murni tanpa impor.
+ * Modul ES murni; satu-satunya impornya adalah `unit-terpetakan.js`, yang
+ * diekspor ulang di ujung berkas.
  */
 
 /**
@@ -937,13 +938,13 @@ function susunAlasan(juara, bersaing, otomatis) {
   return `Kandidat terkuat ${juara.entri.nama} baru mencapai ${Math.round(juara.skor * 100)} persen, di bawah ambang penerimaan otomatis.`
 }
 
-export const NILAI_TAK_TERPETAKAN = new Set([
-  '', 'belum teridentifikasi', 'tidak diketahui', 'null', 'none', 'nan', '-', 'undefined',
-])
-
-/** Satu-satunya pemeriksaan "apakah UPT ini sudah terpetakan" di seluruh sistem. */
-export function belumTerpetakan(nama) {
-  return NILAI_TAK_TERPETAKAN.has(String(nama ?? '').trim().toLowerCase())
-}
+/*
+   Definisinya pindah ke `unit-terpetakan.js` pada 3 September 2026, dan
+   diekspor ulang dari sini supaya tidak ada satu pun pemanggil lama yang
+   perlu diubah. Alasan pemindahannya ada di kepala berkas itu: hampir setiap
+   halaman menanyakan pemeriksaan sebaris ini, dan tidak satu pun dari mereka
+   memerlukan mesin pencocokan nama di berkas ini.
+*/
+export { NILAI_TAK_TERPETAKAN, belumTerpetakan } from './unit-terpetakan.js'
 
 export const META_PENCOCOK = { versi: 'kedekatan-v2.2', ambangOtomatis: AMBANG_OTOMATIS, ambangSaran: AMBANG_SARAN }

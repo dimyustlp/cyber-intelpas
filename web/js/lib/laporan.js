@@ -22,7 +22,8 @@
  */
 
 import { kelompokkanPeristiwa, validasi, sumberAsli, rapikanJudul } from './peristiwa.js'
-import { belumTerpetakan } from './pencocokan-upt.js'
+import { belumTerpetakan } from './unit-terpetakan.js'
+import { KONFIG } from './konfig.js'
 
 /* ------------------------------------------------------------------ dasar */
 
@@ -501,13 +502,23 @@ function bagianKop(d, opsi) {
     ? `${namaHari(d.periode.mulai)}, ${tanggalPanjang(d.periode.mulai)}`
     : `${tanggalPanjang(d.periode.mulai)} — ${tanggalPanjang(d.periode.selesai)}`
 
+  /*
+     Lambang dan nama lembaga diambil dari KONFIG, tidak diketik di sini.
+
+     Sampai 3 September 2026 baris lambangnya berbunyi "CI" — inisial
+     Cyber-Intelpas, nama sistem sampai 1 September 2026. Penggantian nama waktu
+     itu hanya menyentuh tulisan di layar, dan kop surat ini bukan layar: ia
+     berkas yang dicetak, ditandatangani, dan naik ke pimpinan. Selama dua hari
+     setiap laporan resmi keluar dengan lambang sistem yang sudah tidak ada,
+     dan tidak ada satu pun layar yang memperlihatkannya.
+  */
   return `
   <header class="kop">
-    <div class="kop-lambang">CI</div>
+    <div class="kop-lambang">${esc(KONFIG.lambang)}</div>
     <div class="kop-teks">
-      <div class="kop-lembaga">Kementerian Imigrasi dan Pemasyarakatan<br>Direktorat Jenderal Pemasyarakatan</div>
+      <div class="kop-lembaga">${esc(KONFIG.kementerian)}<br>${esc(KONFIG.induk)}</div>
       <h1>Laporan Intelijen Pemberitaan Negatif</h1>
-      <div class="kop-sub">Laporan ${esc(jenis)} · Direktorat Pengamanan dan Intelijen</div>
+      <div class="kop-sub">Laporan ${esc(jenis)} · ${esc(KONFIG.instansi)}</div>
     </div>
     <div class="kop-kanan">
       <div class="kop-nomor">${esc(opsi.nomor || nomorLaporan(opsi.jenis, opsi.urutan || 1, d.periode.selesai))}</div>
@@ -1086,9 +1097,9 @@ export function susunLaporan(snapshot, opsi = {}) {
   ${bagianSumber(d)}`}
   ${bagianCatatan(d, opsi)}
   <footer class="kaki">
-    <b>Direktorat Pengamanan dan Intelijen</b> · Direktorat Jenderal Pemasyarakatan ·
+    <b>${esc(KONFIG.instansi)}</b> · ${esc(KONFIG.induk)} ·
     ${esc(nomor)}<br>
-    Disusun otomatis oleh Trans-Siber PAS pada ${esc(waktuSusun(d.dibuat_pada))}.
+    Disusun otomatis oleh ${esc(KONFIG.nama)} pada ${esc(waktuSusun(d.dibuat_pada))}.
     Mesin klasifikasi aturan, tanpa penyedia AI luar.
   </footer>
 </div>

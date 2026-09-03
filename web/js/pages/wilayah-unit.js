@@ -24,7 +24,7 @@ import { ikon } from '../lib/ikon.js'
 import { ambil, pesanRamah } from '../lib/api.js'
 import { dasar, menungguTelaahWilayah, sudahDitanggapi, tingkatKerawanan, KERAWANAN } from '../lib/hitung.js'
 import { ember } from '../lib/sentimen.js'
-import { belumTerpetakan } from '../lib/pencocokan-upt.js'
+import { belumTerpetakan } from '../lib/unit-terpetakan.js'
 
 const keadaanUnit = {
   dimuat: false,

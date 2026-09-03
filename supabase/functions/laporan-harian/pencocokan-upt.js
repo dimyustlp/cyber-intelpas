@@ -469,10 +469,5 @@ return `Nama unit yang disebut dipakai oleh lebih dari satu UPT. Perlu dipastika
 }
 return `Kandidat terkuat ${juara.entri.nama} baru mencapai ${Math.round(juara.skor * 100)} persen, di bawah ambang penerimaan otomatis.`
 }
-export const NILAI_TAK_TERPETAKAN = new Set([
-'', 'belum teridentifikasi', 'tidak diketahui', 'null', 'none', 'nan', '-', 'undefined',
-])
-export function belumTerpetakan(nama) {
-return NILAI_TAK_TERPETAKAN.has(String(nama ?? '').trim().toLowerCase())
-}
+export { NILAI_TAK_TERPETAKAN, belumTerpetakan } from './unit-terpetakan.js'
 export const META_PENCOCOK = { versi: 'kedekatan-v2.2', ambangOtomatis: AMBANG_OTOMATIS, ambangSaran: AMBANG_SARAN }

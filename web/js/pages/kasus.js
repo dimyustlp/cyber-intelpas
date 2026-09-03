@@ -39,7 +39,7 @@ import { punyaIzin } from '../lib/peran.js'
 import { dasar } from '../lib/hitung.js'
 import { ember } from '../lib/sentimen.js'
 import { kelompokkanPeristiwa } from '../lib/peristiwa.js'
-import { belumTerpetakan } from '../lib/pencocokan-upt.js'
+import { belumTerpetakan } from '../lib/unit-terpetakan.js'
 import {
   NAMA_STATUS_KASUS, PRIORITAS, NAMA_KEAKTUALAN, statusKasus,
   kasusTerbuka, langkahBerikut, PERINGKAT_PRIORITAS,

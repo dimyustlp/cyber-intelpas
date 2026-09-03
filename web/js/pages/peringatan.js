@@ -13,7 +13,7 @@
 
 import { kartu, keping, kosong, pilihan, tombol, pesanSistem } from '../ui/komponen.js'
 import { amankan, angka, jarakWaktu, tanggalJam, ringkas, nadaUrgensi } from '../lib/format.js'
-import { belumTerpetakan } from '../lib/pencocokan-upt.js'
+import { belumTerpetakan } from '../lib/unit-terpetakan.js'
 import { ikon } from '../lib/ikon.js'
 import { punyaIzin } from '../lib/peran.js'
 import { periksaLaju, rekapLaju, ATURAN } from '../lib/peringatan-laju.js'

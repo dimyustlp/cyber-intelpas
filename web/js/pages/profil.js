@@ -49,13 +49,13 @@ export function halamanProfil({ keadaan, isi }) {
               <div class="ket">Dipakai orang lain untuk mengenali Anda di jejak audit dan penugasan — bukan untuk masuk. Masuk tetap memakai surel.</div>
             </div>
             <div class="isian">
-              <label>Surel</label>
-              <input class="masukan" value="${amankan(p.email || '—')}" disabled>
+              <label for="profil-surel">Surel</label>
+              <input class="masukan" id="profil-surel" value="${amankan(p.email || '—')}" disabled>
               <div class="ket">Belum bisa diubah dari halaman ini. Hubungi administrator bila surel perlu diganti.</div>
             </div>
             <div class="isian">
-              <label>Peran</label>
-              <input class="masukan" value="${amankan(labelPeran(p.role))}" disabled>
+              <label for="profil-peran">Peran</label>
+              <input class="masukan" id="profil-peran" value="${amankan(labelPeran(p.role))}" disabled>
             </div>
             <div id="galat-identitas" aria-live="assertive"></div>
             <div class="baris">

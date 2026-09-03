@@ -14,7 +14,7 @@ import {
   amankan, angka, jarakWaktu, tanggalJam, asalTautan, tanggalIso,
   nadaUrgensi, nadaSentimen, nadaStatus, ringkas,
 } from '../lib/format.js'
-import { belumTerpetakan } from '../lib/pencocokan-upt.js'
+import { belumTerpetakan } from '../lib/unit-terpetakan.js'
 import { dasar } from '../lib/hitung.js'
 import { ikon } from '../lib/ikon.js'
 

@@ -48,7 +48,7 @@ import { ikon } from '../lib/ikon.js'
 import { ambil, pesanRamah } from '../lib/api.js'
 import { KERAWANAN, tingkatKerawanan, dasar } from '../lib/hitung.js'
 import { ember } from '../lib/sentimen.js'
-import { belumTerpetakan } from '../lib/pencocokan-upt.js'
+import { belumTerpetakan } from '../lib/unit-terpetakan.js'
 import { BATAS, DARATAN, TETANGGA } from '../lib/peta-indonesia.js'
 import { kurangiGerak } from '../lib/gerak.js'
 

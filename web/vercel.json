@@ -1,0 +1,79 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+
+  "//": [
+    "Berkas ini harus berada di dalam web/, bukan di akar repositori.",
+    "",
+    "Root Directory proyek Vercel disetel ke web/, dan Vercel hanya membaca",
+    "vercel.json dari root directory itu. Diperiksa dengan cara yang tidak bisa",
+    "salah: https://trans-siberpas.vercel.app/README.md membalas 404, sedangkan",
+    "/css/app.css membalas 200 — artinya yang menjadi akar situs adalah web/.",
+    "Berkas yang sama di akar repositori tidak akan pernah dibaca, dan tidak akan",
+    "ada satu pun pesan yang mengatakannya.",
+    "",
+    "Sebelum berkas ini ada, situs berjalan tanpa satu pun tajuk keamanan.",
+    "Vercel memasang HSTS dengan sendirinya; selebihnya kosong.",
+    "",
+    "Cache-Control JS dan CSS SENGAJA dibiarkan pada bawaan Vercel",
+    "(max-age=0, must-revalidate). Nama berkasnya tidak memuat sidik isi — tidak",
+    "ada langkah bangun yang bisa memberinya — sehingga menyimpan lama berarti",
+    "sebuah peramban bisa menjalankan modul lama bersama modul baru. Pada sistem",
+    "yang seluruh angkanya diturunkan lib/hitung.js, campuran itu menampilkan",
+    "angka yang salah tanpa satu pun pesan galat. Round-trip-nya sudah ditekan",
+    "dengan cara lain: pemuatan halaman secara malas di js/main.js memangkas",
+    "berkas pada layar masuk dari 65 menjadi 15.",
+    "",
+    "Huruf berbeda: isinya tidak pernah berubah, dan namanya menyebut versinya."
+  ],
+
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "//": "script-src tanpa 'unsafe-inline': tidak ada satu pun <script> sebaris di seluruh aplikasi, dan itu harus tetap begitu. style-src memerlukannya — atribut style dipakai di mana-mana, dan ui/koridor.js menyusun <style> saat berjalan. connect-src menyebut satu peladen Supabase saja: bila kelak ada modul yang mencoba mengirim data ke tempat lain, peramban yang menolaknya, bukan pembaca kode.",
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'none'; connect-src 'self' https://ffcebfslmnhivravwhvm.supabase.co; frame-src 'self'; worker-src 'none'; manifest-src 'self'; upgrade-insecure-requests"
+        },
+        {
+          "//": "Dua ranah Google Fonts di style-src dan font-src BUKAN untuk aplikasinya. Sejak 3 September 2026 aplikasi menyajikan hurufnya sendiri dari /fonts dan tidak pernah menghubungi Google. Yang masih memerlukannya adalah berkas laporan: ia HTML mandiri yang dibagikan dan dicetak di komputer lain, jadi ia menaut hurufnya sendiri — dan pratinjaunya di halaman Laporan Berkala, beserta jendela 'Buka di tab baru', mewarisi kebijakan ini. Menghapus keduanya tidak memutus apa pun kecuali rupa laporan pada layar analis yang sedang memeriksanya sebelum dikirim.",
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "//": "Berlebihan di samping frame-ancestors, dan sengaja: peramban lama tidak mengenal frame-ancestors, dan justru peramban lamalah yang masih terpasang di banyak komputer kantor.",
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "//": "no-referrer, bukan strict-origin-when-cross-origin. Halaman Verifikasi Lapangan membuka tautan berita ke situs luar; tanpa baris ini, setiap situs yang dibuka petugas menerima catatan bahwa ia dibuka dari alamat sistem intelijen ini. Yang hilang karenanya tidak ada — tidak satu pun bagian aplikasi membaca Referer.",
+          "key": "Referrer-Policy",
+          "value": "no-referrer"
+        },
+        {
+          "//": "Seluruhnya ditutup. Aplikasi ini tidak meminta satu pun izin perangkat, dan daftar yang menutup semuanya lebih mudah ditinjau daripada daftar yang menutup sebagian.",
+          "key": "Permissions-Policy",
+          "value": "accelerometer=(), autoplay=(), camera=(), display-capture=(), encrypted-media=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), midi=(), payment=(), publickey-credentials-get=(), screen-wake-lock=(), serial=(), usb=(), xr-spatial-tracking=()"
+        },
+        {
+          "//": "allow-popups, bukan same-origin: pages/laporan.js membuka jendela baru lalu menulis laporannya ke sana lewat rujukan jendela itu. same-origin memutus rujukannya, dan tombol Buka di tab baru berhenti bekerja tanpa pesan apa pun.",
+          "key": "Cross-Origin-Opener-Policy",
+          "value": "same-origin-allow-popups"
+        },
+        { "key": "Cross-Origin-Resource-Policy", "value": "same-origin" },
+        { "key": "X-Permitted-Cross-Domain-Policies", "value": "none" },
+        {
+          "//": "Meta robots di index.html hanya menjaga halaman itu. Tajuk ini menjaga setiap berkas — termasuk laporan PDF dan berkas JS yang bisa ditemukan mesin pencari lewat tautan orang lain.",
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow, noarchive, nosnippet"
+        }
+      ]
+    },
+    {
+      "source": "/fonts/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+      ]
+    }
+  ]
+}

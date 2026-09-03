@@ -15,7 +15,7 @@ import {
   nadaUrgensi, amankan,
 } from '../lib/format.js'
 import { ikon } from '../lib/ikon.js'
-import { belumTerpetakan } from '../lib/pencocokan-upt.js'
+import { belumTerpetakan } from '../lib/unit-terpetakan.js'
 import { ringkasan, deretEmpatBelasHari } from '../lib/hitung.js'
 import { EMBER, BELUM } from '../lib/sentimen.js'
 

@@ -50,17 +50,35 @@ function siapkanPeriode() {
  * Sengaja dua langkah terpisah: yang pertama boleh gagal karena jaringan,
  * yang kedua tidak boleh gagal sama sekali.
  */
-async function buat(isi) {
+async function buat(isi, keadaan) {
   pilihan.sibuk = true
   gambarUlang()
 
   try {
-    const snapshot = await panggilFungsi('snapshot_negatif', {
-      p_mulai: pilihan.mulai,
-      p_selesai: pilihan.selesai,
-    })
+    /*
+       Mode peragaan menyusun bahan mentahnya dari arsip yang sudah ada di
+       layar. Tanpa cabang ini halaman ini adalah satu-satunya yang tidak bisa
+       menunjukkan hasilnya tanpa akun sungguhan — dan hasilnya justru bagian
+       yang paling perlu diperiksa mata sebelum dikirim ke pimpinan.
 
-    const data = Array.isArray(snapshot) ? snapshot[0] : snapshot
+       Cabangnya berhenti di sini. Yang di bawah — pengolahan dan penyusunan
+       berkasnya — dijalani kedua mode dengan kode yang sama persis; kalau
+       tidak, laporan yang diperiksa di peragaan bukan laporan yang terbit.
+    */
+    let data
+    if (keadaan?.demo) {
+      const { snapshotDemo } = await import('../lib/demo.js')
+      data = snapshotDemo(keadaan.berita || [], {
+        mulai: pilihan.mulai, selesai: pilihan.selesai,
+      })
+    } else {
+      const snapshot = await panggilFungsi('snapshot_negatif', {
+        p_mulai: pilihan.mulai,
+        p_selesai: pilihan.selesai,
+      })
+      data = Array.isArray(snapshot) ? snapshot[0] : snapshot
+    }
+
     if (!data) throw new Error('Basis data tidak mengembalikan apa pun.')
 
     const olahan = olahLaporan(data)
@@ -152,13 +170,17 @@ export function halamanLaporan({ keadaan, isi }) {
               <div class="label-mono" style="margin-bottom:5px">Jenis laporan</div>
               <div class="segmen" data-peran="jenis">${jenisTombol}</div>
             </div>
+            ${/* Keterangan di atas kotaknya adalah <label for>, bukan sekadar teks
+                  yang kebetulan berada di dekatnya. Tanpa itu pembaca layar
+                  menyebut kedua kotak ini "tanggal, edit" — dua kali, tanpa
+                  satu pun petunjuk mana yang awal dan mana yang akhir. */''}
             <div>
-              <div class="label-mono" style="margin-bottom:5px">Mulai</div>
-              <input class="masukan" type="date" data-peran="mulai" value="${amankan(pilihan.mulai)}" style="width:150px">
+              <label class="label-mono" for="laporan-mulai" style="display:block;margin-bottom:5px">Mulai</label>
+              <input class="masukan" type="date" id="laporan-mulai" data-peran="mulai" value="${amankan(pilihan.mulai)}" style="width:150px">
             </div>
             <div>
-              <div class="label-mono" style="margin-bottom:5px">Sampai</div>
-              <input class="masukan" type="date" data-peran="selesai" value="${amankan(pilihan.selesai)}" style="width:150px">
+              <label class="label-mono" for="laporan-selesai" style="display:block;margin-bottom:5px">Sampai</label>
+              <input class="masukan" type="date" id="laporan-selesai" data-peran="selesai" value="${amankan(pilihan.selesai)}" style="width:150px">
             </div>
             <div class="dorong">
               ${tombol({
@@ -253,7 +275,7 @@ export function halamanLaporan({ keadaan, isi }) {
     pilihan.hasil = null
   })
 
-  isi.querySelector('[data-aksi="susun-laporan"]')?.addEventListener('click', () => buat(isi))
+  isi.querySelector('[data-aksi="susun-laporan"]')?.addEventListener('click', () => buat(isi, keadaan))
   isi.querySelector('[data-aksi="unduh-laporan"]')?.addEventListener('click', unduh)
   isi.querySelector('[data-aksi="buka-laporan"]')?.addEventListener('click', bukaTab)
 

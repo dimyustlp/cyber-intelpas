@@ -20,9 +20,9 @@ import { readFileSync, writeFileSync } from 'node:fs'
  * layar untuk hari yang sama.
  */
 const KEBUTUHAN = {
-  klasifikasi: ['teks.js', 'taksonomi.js', 'penerbit.js', 'klasifikasi.js', 'pencocokan-upt.js'],
-  // peristiwa.js mengimpor teks.js dan pencocokan-upt.js; keduanya ikut.
-  'laporan-harian': ['teks.js', 'pencocokan-upt.js', 'peristiwa.js'],
+  klasifikasi: ['unit-terpetakan.js', 'teks.js', 'taksonomi.js', 'penerbit.js', 'klasifikasi.js', 'pencocokan-upt.js'],
+  // peristiwa.js mengimpor teks.js dan unit-terpetakan.js; keduanya ikut.
+  'laporan-harian': ['unit-terpetakan.js', 'teks.js', 'pencocokan-upt.js', 'peristiwa.js'],
 }
 
 function buangKomentar(kode) {

@@ -26,7 +26,7 @@
 
 import { ember, hitungEmber } from './sentimen.js'
 import { tanggalIso } from './format.js'
-import { belumTerpetakan } from './pencocokan-upt.js'
+import { belumTerpetakan } from './unit-terpetakan.js'
 
 /** Status yang menyatakan sebuah berita sudah tidak dipakai sebagai angka. */
 export const STATUS_DIKECUALIKAN = ['Tidak Valid', 'Diarsipkan']

@@ -1,0 +1,61 @@
+/*
+ * Huruf yang disimpan sendiri — DIHASILKAN, jangan disunting.
+ *
+ * Disusun oleh tools/ambil-huruf.mjs dari Google Fonts, sekali, lalu ikut ke
+ * dalam repo. Alasan lengkapnya ada di kepala alat itu; ringkasnya: aplikasi
+ * ini tidak boleh menarik satu berkas pun dari peladen orang lain ketika
+ * seorang petugas membuka dasbornya.
+ *
+ * Berkasnya di web/fonts/, dengan versi Google di dalam namanya, dan disajikan
+ * dengan Cache-Control immutable selama setahun (web/vercel.json).
+ *
+ * Disusun 2026-09-03. Total 71 KiB.
+ */
+
+@font-face {
+  font-family: 'IBM Plex Mono';
+  font-style: normal;
+  font-weight: 400;
+  /* swap: teksnya terbaca sejak cat pertama dengan huruf sistem, lalu berganti.
+     Pada jaringan lambat, alternatifnya adalah beberapa detik layar yang
+     susunannya sudah benar tetapi seluruh tulisannya tidak ada. */
+  font-display: swap;
+  src: url('../fonts/ibm-plex-mono-v20-latin-400.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'IBM Plex Mono';
+  font-style: normal;
+  font-weight: 500;
+  /* swap: teksnya terbaca sejak cat pertama dengan huruf sistem, lalu berganti.
+     Pada jaringan lambat, alternatifnya adalah beberapa detik layar yang
+     susunannya sudah benar tetapi seluruh tulisannya tidak ada. */
+  font-display: swap;
+  src: url('../fonts/ibm-plex-mono-v20-latin-500.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'IBM Plex Mono';
+  font-style: normal;
+  font-weight: 600;
+  /* swap: teksnya terbaca sejak cat pertama dengan huruf sistem, lalu berganti.
+     Pada jaringan lambat, alternatifnya adalah beberapa detik layar yang
+     susunannya sudah benar tetapi seluruh tulisannya tidak ada. */
+  font-display: swap;
+  src: url('../fonts/ibm-plex-mono-v20-latin-600.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Plus Jakarta Sans';
+  font-style: normal;
+  font-weight: 200 800;
+  /* swap: teksnya terbaca sejak cat pertama dengan huruf sistem, lalu berganti.
+     Pada jaringan lambat, alternatifnya adalah beberapa detik layar yang
+     susunannya sudah benar tetapi seluruh tulisannya tidak ada. */
+  font-display: swap;
+  src: url('../fonts/plus-jakarta-sans-v12-latin-variabel.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}

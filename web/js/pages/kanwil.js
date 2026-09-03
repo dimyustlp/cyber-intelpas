@@ -32,7 +32,7 @@ import {
   TELAAH_WILAYAH, SIKAP_TANGGAPAN,
 } from '../lib/hitung.js'
 import { ember, EMBER, BELUM } from '../lib/sentimen.js'
-import { belumTerpetakan } from '../lib/pencocokan-upt.js'
+import { belumTerpetakan } from '../lib/unit-terpetakan.js'
 import { punyaIzin, adalahUnit } from '../lib/peran.js'
 import { baganSentimen, baganTren, baganUrgensi } from '../ui/bagan.js'
 import { sebaran } from '../lib/demo.js'

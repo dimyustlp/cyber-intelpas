@@ -8,9 +8,48 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Trans-Siber PAS</title>
 
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<!--
+   Warna bilah peramban, satu untuk tiap tampilan.
+
+   Tanpa keduanya, Chrome di Android menggambar bilah alamatnya putih di atas
+   dasbor gelap — sebuah garis terang di puncak layar yang membuat aplikasinya
+   terlihat seperti halaman web yang salah muat, bukan seperti perkakas.
+-->
+<meta name="theme-color" content="#F6F8FC" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0B1220" media="(prefers-color-scheme: dark)">
+
+<!--
+   Dipasang di layar utama telepon: bukan supaya bisa dipakai luring — ia
+   memang tidak bisa, dan sengaja tidak dibuat begitu, sebab dasbor intelijen
+   yang menyajikan angka kemarin seolah angka hari ini lebih berbahaya daripada
+   dasbor yang menolak terbuka. Yang diberikan manifes ini hanya ikon, nama, dan
+   layar tanpa bilah alamat bagi petugas lapangan yang membukanya setiap hari.
+-->
+<link rel="manifest" href="manifes.webmanifest">
+<link rel="apple-touch-icon" href="ikon/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Trans-Siber">
+
+<!--
+   Huruf disajikan dari peladen ini sendiri, bukan dari Google.
+
+   Sampai 3 September 2026 tiga baris di tempat ini menarik huruf dari
+   fonts.googleapis.com. Akibatnya tiga hal yang semuanya bertentangan dengan
+   apa yang tertulis di README: setiap pembukaan dasbor memberi tahu pihak
+   ketiga alamat IP dan jam kerja petugas; dua perjalanan lintas-ranah berdiri
+   di depan cat pertama; dan di jaringan kantor yang memblokir ranah Google,
+   seluruh aplikasi tampil berhuruf sistem tanpa ada yang tahu sebabnya.
+
+   Berkasnya di web/fonts/, disusun tools/ambil-huruf.mjs. Dua yang paling
+   dahulu dipakai — huruf badan dan huruf angka — dimuat lebih awal; sisanya
+   menyusul sendiri. `crossorigin` wajib ada meski berkasnya seranah: unduhan
+   huruf selalu berjalan dalam mode CORS, dan tanpa penanda itu berkasnya
+   diunduh dua kali.
+-->
+<link rel="preload" href="fonts/plus-jakarta-sans-v12-latin-variabel.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/ibm-plex-mono-v20-latin-400.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="css/huruf.css">
 <link rel="stylesheet" href="css/app.css">
 
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230F2C55'/%3E%3Ctext x='16' y='22' font-family='Plus Jakarta Sans,sans-serif' font-size='15' font-weight='700' fill='white' text-anchor='middle'%3ETS%3C/text%3E%3C/svg%3E">

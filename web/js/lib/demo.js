@@ -10,6 +10,9 @@
  */
 
 import { klasifikasikan } from './klasifikasi.js'
+import { dasar } from './hitung.js'
+import { ember } from './sentimen.js'
+import { belumTerpetakan } from './unit-terpetakan.js'
 
 const JUDUL_CONTOH = [
   ['Tiga Narapidana Kabur dari Lapas Kelas IIB Warungkiara Saat Program Asimilasi', 'Lapas Kelas IIB Warungkiara', 'Radar Sukabumi'],
@@ -208,4 +211,92 @@ export function sebaran(berita, bidang) {
   return [...peta.entries()]
     .map(([label, jumlah]) => ({ label, jumlah }))
     .sort((a, b) => b.jumlah - a.jumlah)
+}
+
+/**
+ * Bahan mentah Laporan Berkala untuk mode peragaan.
+ *
+ * Sampai 3 September 2026 halaman Laporan Berkala adalah satu-satunya halaman
+ * yang tidak bisa menunjukkan hasilnya di mode peragaan: ia memanggil fungsi
+ * `snapshot_negatif` di basis data, dan di mode peragaan tidak ada basis data.
+ * Yang muncul selalu "Tidak dapat menghubungi peladen" — sehingga bentuk
+ * laporannya, bagian yang paling layak diperiksa mata sebelum dikirim ke
+ * pimpinan, tidak pernah bisa dilihat siapa pun tanpa akun sungguhan.
+ *
+ * Bentuk yang dikembalikan menyalin `snapshot_negatif` kunci demi kunci. Yang
+ * membuatnya boleh ada di sini hanyalah itu: `susunLaporan()` tidak diberi
+ * jalur peragaan sama sekali, dan tetap menerima satu bentuk masukan. Kalau
+ * fungsi basis datanya berubah, yang perlu diperbarui satu tempat ini.
+ *
+ * @param {object[]} berita  arsip peragaan yang sudah ada di layar
+ * @param {{mulai: string, selesai: string}} periode  batas tanggal, format ISO
+ */
+export function snapshotDemo(berita = [], { mulai, selesai }) {
+  const hari = (b) => String(b.tanggal_publikasi || b.created_at || '').slice(0, 10)
+
+  /*
+     Himpunan dasarnya diambil `dasar()`, bukan disaring di sini. Fungsi basis
+     data menuliskan aturan yang sama dalam SQL; menuliskannya untuk ketiga
+     kalinya dalam JavaScript adalah cara paling murah membuat laporan peragaan
+     dan laporan sungguhan menghitung dua himpunan yang berbeda.
+  */
+  const inti = dasar(berita)
+  const dalam = inti.filter((b) => hari(b) >= mulai && hari(b) <= selesai)
+
+  // Periode pembanding: sepanjang periode ini, tepat sebelumnya.
+  const panjang = Math.round((Date.parse(selesai) - Date.parse(mulai)) / 86_400_000) + 1
+  const geser = (iso, n) => new Date(Date.parse(iso) + n * 86_400_000).toISOString().slice(0, 10)
+  const lalu = { mulai: geser(mulai, -panjang), selesai: geser(mulai, -1) }
+  const sebelum = inti.filter((b) => hari(b) >= lalu.mulai && hari(b) <= lalu.selesai)
+
+  const negatif = (daftar) => daftar.filter((b) => ember(b) === 'negatif')
+
+  const unitLalu = {}
+  for (const b of negatif(sebelum)) {
+    if (belumTerpetakan(b.nama_upt)) continue
+    unitLalu[b.nama_upt] = (unitLalu[b.nama_upt] || 0) + 1
+  }
+
+  return {
+    periode: {
+      mulai,
+      selesai,
+      hari: panjang,
+      pembanding_mulai: lalu.mulai,
+      pembanding_selesai: lalu.selesai,
+    },
+    konteks: {
+      total: dalam.length,
+      negatif: negatif(dalam).length,
+      positif: dalam.filter((b) => ember(b) === 'positif').length,
+      netral: dalam.filter((b) => ember(b) === 'netral').length,
+      lalu_total: sebelum.length,
+      lalu_negatif: negatif(sebelum).length,
+    },
+    unit_lalu: unitLalu,
+    publikasi: negatif(dalam)
+      .map((b) => ({
+        id: b.id,
+        judul: b.judul,
+        media: b.media || 'Tidak tercatat',
+        platform: b.platform || 'Lainnya',
+        link: b.link,
+        tanggal: b.tanggal_publikasi || b.created_at,
+        kategori: b.kategori || 'Lainnya',
+        subkategori: b.subkategori || 'Belum Dikelompokkan',
+        subkategori_kode: b.subkategori_kode || '0.1',
+        urgensi: b.urgensi || 'Rendah',
+        sentimen: b.sentimen || 'Netral',
+        nama_upt: b.nama_upt || 'Belum Teridentifikasi',
+        status_verifikasi: b.status_verifikasi || 'Belum Ditelaah',
+        ai_confidence: b.ai_confidence ?? null,
+        // Data induk UPT tidak ikut dimuat di mode peragaan. Laporan sungguhan
+        // mengambil keduanya dari tabel `upt`; di sini kolomnya sengaja
+        // kosong, dan olahLaporan() sudah menggantinya dengan tanda pisah.
+        provinsi: b.provinsi || null,
+        kanwil: b.kanwil_asal || null,
+      }))
+      .sort((a, b) => String(b.tanggal).localeCompare(String(a.tanggal))),
+    dibuat_pada: new Date().toISOString(),
+  }
 }

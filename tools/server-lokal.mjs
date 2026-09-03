@@ -9,17 +9,65 @@
 
 import { createServer } from 'node:http'
 import { readFile, stat } from 'node:fs/promises'
+import { readFileSync } from 'node:fs'
 import { join, extname, normalize } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const AKAR = join(fileURLToPath(new URL('.', import.meta.url)), '..', 'web')
 const PORTA = Number(process.argv[2] || 4173)
 
+/**
+ * Tajuk yang sama persis dengan yang dikirim Vercel, dibaca dari sumber yang
+ * sama: `web/vercel.json`.
+ *
+ * Alasannya satu kelas kegagalan yang khas dan mahal: Content-Security-Policy
+ * hanya berlaku di penggelaran, sehingga kebijakan yang memblokir sesuatu yang
+ * dipakai aplikasi — sebuah <style> yang disusun saat berjalan, sebuah bingkai
+ * pratinjau, sebuah panggilan ke peladen — berjalan mulus di komputer
+ * pengembang dan baru gagal di layar petugas. Dengan membaca berkas yang sama,
+ * peladen ini menolak hal yang sama, dan yang salah ketahuan sebelum digelar.
+ *
+ * Ditulis apa adanya: dua pola sumber yang benar-benar dipakai, bukan penafsir
+ * pola Vercel yang utuh. Penafsir setengah jadi lebih berbahaya daripada tidak
+ * ada — ia akan cocok pada sesuatu yang di penggelaran tidak cocok.
+ */
+function bacaTajukVercel() {
+  try {
+    const berkas = JSON.parse(readFileSync(join(AKAR, 'vercel.json'), 'utf8'))
+    return (berkas.headers || []).map((aturan) => ({
+      cocok: aturan.source === '/(.*)'
+        ? () => true
+        : (jalur) => jalur.startsWith(aturan.source.replace('/(.*)', '/')),
+      tajuk: Object.fromEntries(
+        (aturan.headers || []).filter((h) => h.key).map((h) => [h.key, h.value]),
+      ),
+    }))
+  } catch (galat) {
+    console.warn(`  Peringatan: web/vercel.json tidak terbaca (${galat.message}).`)
+    console.warn('  Peladen berjalan tanpa tajuk keamanan — dan produksi TIDAK begitu.')
+    return []
+  }
+}
+
+const ATURAN_TAJUK = bacaTajukVercel()
+
+function tajukUntuk(jalur) {
+  const hasil = {}
+  for (const aturan of ATURAN_TAJUK) {
+    if (aturan.cocok(jalur)) Object.assign(hasil, aturan.tajuk)
+  }
+  return hasil
+}
+
 const JENIS = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',
   '.css': 'text/css; charset=utf-8',
   '.json': 'application/json; charset=utf-8',
+  // Tanpa baris ini peramban menerima manifesnya sebagai octet-stream dan
+  // mengabaikannya diam-diam — tidak ada galat, hanya tombol "Pasang" yang
+  // tidak pernah muncul dan tidak ada yang menjelaskan mengapa.
+  '.webmanifest': 'application/manifest+json; charset=utf-8',
   '.svg': 'image/svg+xml',
   '.png': 'image/png',
   '.jpg': 'image/jpeg',
@@ -48,7 +96,11 @@ const peladen = createServer(async (permintaan, jawaban) => {
 
     const isi = await readFile(berkas)
     jawaban.writeHead(200, {
+      ...tajukUntuk(jalur),
       'Content-Type': JENIS[extname(berkas)] || 'application/octet-stream',
+      // Menang atas Cache-Control dari vercel.json, dan memang harus: berkas
+      // yang tersimpan di peramban saat pengembangan berarti suntingan yang
+      // tidak muncul, dan setengah jam mencari sebabnya di tempat yang salah.
       'Cache-Control': 'no-store',
     })
     jawaban.end(isi)

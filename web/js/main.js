@@ -14,41 +14,16 @@ import { amankan, tanggalPanjang, inisial } from './lib/format.js'
 import { roti, tombolIkon } from './ui/komponen.js'
 import { hidupkan, denganPeralihan, lupakanNilai } from './lib/gerak.js'
 import { bukaPalet, paletTerbuka } from './ui/palet.js'
-import { profilDemo, buatBerita } from './lib/demo.js'
 
+/*
+   Dua halaman diimpor tetap, dan hanya dua.
+
+   Halaman masuk adalah layar pertama yang dilihat siapa pun yang belum punya
+   sesi; menundanya berarti menunda satu-satunya hal yang bisa dikerjakan orang
+   itu. Halaman "belum siap" adalah jaring pengaman penunjuk halaman — ia harus
+   sudah ada justru pada saat pemuatan sedang gagal.
+*/
 import { halamanMasuk } from './pages/masuk.js'
-import { halamanDasbor } from './pages/dasbor.js'
-import { halamanBerita } from './pages/berita.js'
-import { halamanBeritaDetail } from './pages/berita-detail.js'
-import { halamanBriefing } from './pages/briefing.js'
-import { halamanPeringatan } from './pages/peringatan.js'
-import { halamanKanalNegatif, halamanKanalPositif } from './pages/kanal.js'
-import { halamanLaporan } from './pages/laporan.js'
-import { halamanIntegrasi } from './pages/integrasi.js'
-import { halamanDistribusi } from './pages/distribusi.js'
-import { halamanTelaah } from './pages/telaah.js'
-import { halamanPemetaan } from './pages/pemetaan.js'
-import { halamanPeta } from './pages/peta.js'
-import { halamanProfil } from './pages/profil.js'
-import { halamanInput } from './pages/input.js'
-import { halamanSinkronisasi } from './pages/sinkronisasi.js'
-import { halamanKanwilDasbor, halamanUptDasbor, halamanWilayahBerita } from './pages/kanwil.js'
-import { halamanWilayahTelaah } from './pages/wilayah-telaah.js'
-import { halamanWilayahUnit } from './pages/wilayah-unit.js'
-
-/* Siklus intelijen dan administrasi. Urutan impornya mengikuti urutan menu,
-   bukan urutan penulisannya, supaya yang mencari satu halaman menemukannya di
-   tempat yang sama dengan tempatnya di layar. */
-import { halamanTren } from './pages/tren.js'
-import { halamanKasus } from './pages/kasus.js'
-import { halamanLapangan } from './pages/lapangan.js'
-import { halamanEvaluasi } from './pages/evaluasi.js'
-import { halamanKeputusan } from './pages/keputusan.js'
-import { halamanTindak } from './pages/tindak.js'
-import { halamanKoordinat } from './pages/koordinat.js'
-import { halamanAudit } from './pages/audit.js'
-import { halamanKesehatan } from './pages/kesehatan.js'
-import { halamanPengguna } from './pages/pengguna.js'
 import { halamanBelumSiap } from './pages/belum-siap.js'
 
 const akar = document.getElementById('akar')
@@ -70,41 +45,120 @@ export const keadaan = {
   hitungan: { peringatan: 0, telaah: 0, pemetaan: 0, negatif: 0, telaahWilayah: 0 },
 }
 
+/**
+ * Penunjuk halaman: nama halaman → **pemuat** modulnya, bukan modulnya.
+ *
+ * Sampai 3 September 2026 daftar ini berisi impor tetap, dan akibatnya seluruh
+ * 30 halaman beserta seluruh pustaka yang mereka pakai — taksonomi, mesin
+ * pencocokan UPT, penyusun laporan, garis pantai peta — diunduh sebelum layar
+ * masuk sempat digambar sekalipun. Yang diukur di penggelaran: 65 berkas,
+ * lebih dari satu megabita, untuk menampilkan sebuah kotak nama pengguna.
+ *
+ * Di jaringan kantor yang lambat itu bukan angka di alat ukur, melainkan
+ * belasan detik layar kosong pada pagi hari ketika seluruh petugas masuk
+ * bersamaan.
+ *
+ * Bentuk `() => import(...)` dipilih, bukan `import()` yang langsung
+ * dijalankan: yang kedua akan mengunduh seluruhnya saat berkas ini dibaca,
+ * yaitu persis keadaan yang sedang diperbaiki. Peramban menyimpan modul yang
+ * sudah diunduh, jadi memanggil pemuat yang sama dua kali tidak mengunduh dua
+ * kali — tetapi `halamanTermuat` di bawah tetap diperlukan, sebab `gambar()`
+ * berjalan serentak dan tidak boleh menunggu janji untuk halaman yang modulnya
+ * sudah ada di tangan.
+ *
+ * Urutannya mengikuti urutan menu, bukan urutan penulisannya, supaya yang
+ * mencari satu halaman menemukannya di tempat yang sama dengan tempatnya di
+ * layar.
+ */
 const HALAMAN = {
-  dasbor: halamanDasbor,
-  briefing: halamanBriefing,
-  berita: halamanBerita,
-  'berita-detail': halamanBeritaDetail,
-  peringatan: halamanPeringatan,
-  negatif: halamanKanalNegatif,
-  positif: halamanKanalPositif,
-  laporan: halamanLaporan,
-  integrasi: halamanIntegrasi,
-  distribusi: halamanDistribusi,
-  telaah: halamanTelaah,
-  pemetaan: halamanPemetaan,
-  peta: halamanPeta,
-  tren: halamanTren,
-  kasus: halamanKasus,
-  lapangan: halamanLapangan,
-  evaluasi: halamanEvaluasi,
-  keputusan: halamanKeputusan,
-  tindak: halamanTindak,
-  koordinat: halamanKoordinat,
-  audit: halamanAudit,
-  kesehatan: halamanKesehatan,
-  profil: halamanProfil,
-  input: halamanInput,
-  sinkronisasi: halamanSinkronisasi,
-  pengguna: halamanPengguna,
-  'kanwil-dasbor': halamanKanwilDasbor,
-  'upt-dasbor': halamanUptDasbor,
-  'wilayah-telaah': halamanWilayahTelaah,
-  'wilayah-berita': halamanWilayahBerita,
-  'wilayah-unit': halamanWilayahUnit,
+  dasbor: () => import('./pages/dasbor.js').then((m) => m.halamanDasbor),
+  briefing: () => import('./pages/briefing.js').then((m) => m.halamanBriefing),
+  berita: () => import('./pages/berita.js').then((m) => m.halamanBerita),
+  'berita-detail': () => import('./pages/berita-detail.js').then((m) => m.halamanBeritaDetail),
+  peringatan: () => import('./pages/peringatan.js').then((m) => m.halamanPeringatan),
+  negatif: () => import('./pages/kanal.js').then((m) => m.halamanKanalNegatif),
+  positif: () => import('./pages/kanal.js').then((m) => m.halamanKanalPositif),
+  laporan: () => import('./pages/laporan.js').then((m) => m.halamanLaporan),
+  integrasi: () => import('./pages/integrasi.js').then((m) => m.halamanIntegrasi),
+  distribusi: () => import('./pages/distribusi.js').then((m) => m.halamanDistribusi),
+  telaah: () => import('./pages/telaah.js').then((m) => m.halamanTelaah),
+  pemetaan: () => import('./pages/pemetaan.js').then((m) => m.halamanPemetaan),
+  peta: () => import('./pages/peta.js').then((m) => m.halamanPeta),
+  tren: () => import('./pages/tren.js').then((m) => m.halamanTren),
+  kasus: () => import('./pages/kasus.js').then((m) => m.halamanKasus),
+  lapangan: () => import('./pages/lapangan.js').then((m) => m.halamanLapangan),
+  evaluasi: () => import('./pages/evaluasi.js').then((m) => m.halamanEvaluasi),
+  keputusan: () => import('./pages/keputusan.js').then((m) => m.halamanKeputusan),
+  tindak: () => import('./pages/tindak.js').then((m) => m.halamanTindak),
+  koordinat: () => import('./pages/koordinat.js').then((m) => m.halamanKoordinat),
+  audit: () => import('./pages/audit.js').then((m) => m.halamanAudit),
+  kesehatan: () => import('./pages/kesehatan.js').then((m) => m.halamanKesehatan),
+  profil: () => import('./pages/profil.js').then((m) => m.halamanProfil),
+  input: () => import('./pages/input.js').then((m) => m.halamanInput),
+  sinkronisasi: () => import('./pages/sinkronisasi.js').then((m) => m.halamanSinkronisasi),
+  pengguna: () => import('./pages/pengguna.js').then((m) => m.halamanPengguna),
+  'kanwil-dasbor': () => import('./pages/kanwil.js').then((m) => m.halamanKanwilDasbor),
+  'upt-dasbor': () => import('./pages/kanwil.js').then((m) => m.halamanUptDasbor),
+  'wilayah-telaah': () => import('./pages/wilayah-telaah.js').then((m) => m.halamanWilayahTelaah),
+  'wilayah-berita': () => import('./pages/kanwil.js').then((m) => m.halamanWilayahBerita),
+  'wilayah-unit': () => import('./pages/wilayah-unit.js').then((m) => m.halamanWilayahUnit),
   /* Nama lama halaman berita daerah. Petugas yang menyimpan tautannya di
      peramban tidak perlu tahu halamannya berganti nama. */
-  'kanwil-riwayat': halamanWilayahBerita,
+  'kanwil-riwayat': () => import('./pages/kanwil.js').then((m) => m.halamanWilayahBerita),
+}
+
+/** Modul halaman yang sudah ada di memori: nama halaman → fungsi pembangunnya. */
+const halamanTermuat = new Map()
+
+/** Unduhan yang sedang berjalan, supaya satu halaman tidak diminta dua kali. */
+const halamanBerjalan = new Map()
+
+/**
+ * Mengunduh modul sebuah halaman, sekali saja.
+ *
+ * Kegagalan sengaja dibiarkan naik ke pemanggil, bukan ditelan dan diganti
+ * `null`: pemanggilnya perlu membedakan "halaman ini tidak ada dalam daftar"
+ * dari "halaman ini ada tetapi jaringannya putus", dan hanya yang kedua yang
+ * pantas menawarkan tombol coba lagi. Halaman yang gagal tidak dicatat sebagai
+ * termuat, sehingga percobaan berikutnya benar-benar mengunduh ulang.
+ */
+function muatHalaman(id) {
+  if (halamanTermuat.has(id)) return Promise.resolve(halamanTermuat.get(id))
+  if (halamanBerjalan.has(id)) return halamanBerjalan.get(id)
+
+  const pemuat = HALAMAN[id]
+  if (!pemuat) return Promise.resolve(null)
+
+  const janji = pemuat()
+    .then((bangun) => {
+      halamanBerjalan.delete(id)
+      halamanTermuat.set(id, bangun)
+      return bangun
+    })
+    .catch((galat) => {
+      halamanBerjalan.delete(id)
+      throw galat
+    })
+
+  halamanBerjalan.set(id, janji)
+  return janji
+}
+
+/**
+ * Mengunduh modul sebuah halaman lebih awal, tanpa menampilkan apa pun.
+ *
+ * Dipanggil ketika tetikus menyentuh butir menu atau butir itu menerima fokus
+ * papan tik. Jeda antara "berniat menekan" dan "menekan" biasanya beberapa
+ * ratus milidetik, dan itu cukup untuk mengunduh satu berkas — sehingga
+ * pemuatan malas tidak berarti tunggu setiap kali berpindah halaman.
+ *
+ * Kegagalannya diabaikan dengan sengaja: ini tebakan, bukan permintaan. Kalau
+ * unduhannya gagal, yang menanggung akibatnya adalah penekanan sungguhan
+ * nanti, yang punya layar galatnya sendiri.
+ */
+function siapkanHalaman(id) {
+  if (!id || halamanTermuat.has(id) || halamanBerjalan.has(id)) return
+  muatHalaman(id).catch(() => { /* sekadar tebakan; diamkan */ })
 }
 
 /**
@@ -263,7 +317,19 @@ function kerangka() {
           aria-label="Buka menu navigasi" aria-expanded="false"
           aria-controls="samping">${ikon('menu')}</button>
         <div>
-          <div class="bilah-judul" id="bilah-judul"></div>
+          ${/* <h1>, bukan <div>.
+
+                Sebelum 3 September 2026 tidak ada satu pun judul tingkat satu di
+                seluruh aplikasi: nama halaman tinggal di sebuah <div>, dan
+                susunan judulnya karena itu selalu mulai dari <h2>. Bagi yang
+                menjelajah dengan pembaca layar, cara tercepat mengetahui "saya
+                sedang di halaman apa" adalah melompat ke judul pertama — dan
+                lompatan itu mendarat di "Siklus intelijen", bukan di "Dasbor
+                Eksekutif".
+
+                Rupanya tidak berubah: .bilah-judul sudah menetapkan ukuran dan
+                ketebalannya sendiri, dan margin bawaan <h1> dimatikan di CSS. */''}
+          <h1 class="bilah-judul" id="bilah-judul"></h1>
           <div class="bilah-sub" id="bilah-sub"></div>
         </div>
         <div class="bilah-kanan">
@@ -339,19 +405,29 @@ function kembalikanFokus(ingatan) {
 
 /* ---------------------------------------------------------------- gambar */
 
-export function gambar() {
-  if (!keadaan.profil) {
-    akar.innerHTML = ''
-    akar.appendChild(halamanMasuk({ onMasuk: mulaiSesi }))
-    return
-  }
+/** Kerangka abu-abu selama modul sebuah halaman masih diunduh. */
+function rangkaHalaman() {
+  return `<div class="rangka-halaman" aria-hidden="true">
+    <div class="rangka" style="height:20px;width:38%"></div>
+    <div class="rangka" style="height:13px;width:62%"></div>
+    <div class="rangka-ubin">
+      <div class="rangka" style="height:88px"></div>
+      <div class="rangka" style="height:88px"></div>
+      <div class="rangka" style="height:88px"></div>
+      <div class="rangka" style="height:88px"></div>
+    </div>
+    <div class="rangka" style="height:220px"></div>
+  </div>`
+}
 
-  const ingatan = ingatFokus()
-
-  akar.innerHTML = kerangka()
-  const isi = document.getElementById('isi')
-  const bangun = HALAMAN[keadaan.halaman] || halamanBelumSiap
-
+/**
+ * Menjalankan pembangun halaman dan memasang judul, gerak, serta fokusnya.
+ *
+ * Dipisahkan dari `gambar()` karena kini ada dua jalan menuju ke sini — yang
+ * langsung, dan yang lewat unduhan modul — dan dua jalan yang menyalin isi
+ * yang sama akan berpisah pada perubahan berikutnya.
+ */
+function gambarIsi(bangun, isi, ingatan) {
   try {
     const hasil = bangun({ keadaan, isi })
     document.getElementById('bilah-judul').textContent = hasil?.judul || KONFIG.nama
@@ -365,6 +441,56 @@ export function gambar() {
       <div><b>Halaman gagal ditampilkan.</b><br>${amankan(galat.message)}</div></div>`
     console.error(galat)
   }
+}
+
+export function gambar() {
+  if (!keadaan.profil) {
+    akar.innerHTML = ''
+    akar.appendChild(halamanMasuk({ onMasuk: mulaiSesi }))
+    return
+  }
+
+  const ingatan = ingatFokus()
+
+  akar.innerHTML = kerangka()
+  const isi = document.getElementById('isi')
+  const id = keadaan.halaman
+
+  /*
+     Tiga keadaan, dan hanya yang ketiga yang menunggu.
+
+     Halaman yang tidak dikenal — alamat yang salah ketik, atau menu yang belum
+     dibuat — langsung mendapat halaman "belum siap"; halaman yang modulnya
+     sudah pernah diunduh digambar seketika, persis seperti sebelum pemuatan
+     malas ada. Yang menunggu hanyalah kunjungan pertama ke sebuah halaman.
+  */
+  const bangun = HALAMAN[id] ? halamanTermuat.get(id) : halamanBelumSiap
+  if (bangun) { gambarIsi(bangun, isi, ingatan); return }
+
+  isi.innerHTML = rangkaHalaman()
+  document.getElementById('bilah-judul').textContent = KONFIG.nama
+  document.getElementById('bilah-sub').textContent = 'Memuat halaman…'
+
+  muatHalaman(id).then(() => {
+    // Petugas yang tidak sabar sudah menekan menu lain sementara ini berjalan.
+    // Menggambar hasil unduhan ini sekarang akan melemparkannya kembali ke
+    // halaman yang sudah ia tinggalkan.
+    if (keadaan.halaman === id) gambar()
+  }).catch((galat) => {
+    if (keadaan.halaman !== id) return
+    console.error(galat)
+    document.getElementById('bilah-sub').textContent = 'Halaman gagal dimuat'
+    isi.innerHTML = `<div class="pesan" data-nada="kritis">${ikon('peringatan')}
+      <div>
+        <b>Halaman ini gagal diunduh.</b><br>
+        Sambungan ke peladen terputus di tengah jalan. Data yang sudah tampil di
+        layar lain tidak terpengaruh.
+        <div style="margin-top:10px">
+          <button class="tbl kecil" data-aksi="ulangi-halaman">Coba lagi</button>
+        </div>
+      </div>
+    </div>`
+  })
 }
 
 /* -------------------------------------------------------------- navigasi */
@@ -481,6 +607,7 @@ document.addEventListener('click', async (ev) => {
   if (!aksi) return
 
   if (aksi === 'tema') putarTema()
+  else if (aksi === 'ulangi-halaman') gambar()
   else if (aksi === 'menu') bukaMenu()
   else if (aksi === 'tutup-menu') tutupMenu()
   else if (aksi === 'cari') bukaPalet(keadaan, keHalaman)
@@ -492,6 +619,26 @@ document.addEventListener('click', async (ev) => {
     lupakanNilai()
     gambar()
   }
+})
+
+/*
+   Unduhan yang didahulukan.
+
+   Dipasang pada dokumen, bukan pada tiap butir menu, karena menunya digambar
+   ulang setiap kali layar berganti — pemasangan per butir akan hilang bersama
+   butirnya, dan menambahkannya kembali di setiap tempat yang menggambar menu
+   adalah cara yang paling cepat dilupakan orang berikutnya.
+
+   `pointerover` menangkap tetikus dan pena; `focusin` menangkap papan tik.
+   Keduanya perlu: petugas yang menjelajah dengan Tab tidak pernah memicu
+   `pointerover` sekalipun, dan justru merekalah yang paling terbantu.
+*/
+document.addEventListener('pointerover', (ev) => {
+  siapkanHalaman(ev.target.closest?.('[data-halaman]')?.dataset.halaman)
+}, { passive: true })
+
+document.addEventListener('focusin', (ev) => {
+  siapkanHalaman(ev.target.closest?.('[data-halaman]')?.dataset.halaman)
 })
 
 window.addEventListener('hashchange', () => {
@@ -586,6 +733,15 @@ export function hitungUlang() {
 
 async function segarkan() {
   if (keadaan.demo) {
+    /*
+       Data peragaan diunduh hanya di mode peragaan.
+
+       `demo.js` menarik serta mesin klasifikasi dan seluruh taksonomi — sekitar
+       seratus kilobita — dan sebelumnya ia diimpor tetap, sehingga setiap
+       petugas sungguhan ikut mengunduhnya untuk sesuatu yang tidak akan pernah
+       dipanggil sekali pun di jalur mereka.
+    */
+    const { buatBerita } = await import('./lib/demo.js')
     keadaan.berita = buatBerita()
 
     /*
@@ -648,8 +804,128 @@ async function mulaiSesi(profil) {
   const { halaman, fokus } = bacaAlamat(location.hash)
   keadaan.halaman = halaman || halamanAwal(profil.role)
   keadaan.fokus = fokus
-  await segarkan()
+
+  /*
+     Modul halaman pertama diunduh berbarengan dengan datanya, bukan sesudahnya.
+
+     Tanpa baris ini, layar pertama sesudah masuk selalu berkedip lewat kerangka
+     abu-abu — data sudah siap, tetapi halamannya baru mulai diunduh. Keduanya
+     tidak saling bergantung, jadi tidak ada alasan menjalankannya berurutan.
+     Kegagalannya diabaikan di sini; `gambar()` yang akan menampilkan layar
+     galatnya beserta tombol coba lagi.
+  */
+  const modul = muatHalaman(keadaan.halaman).catch(() => { /* ditangani gambar() */ })
+  await Promise.all([segarkan(), modul])
+
+  /*
+     Sesudah layar pertama berdiri, sisa menu peran ini diunduh saat peramban
+     sedang menganggur. Yang didahulukan hanya empat butir teratas: itulah yang
+     dibuka orang setiap hari, sedangkan sisanya sudah cukup terlayani oleh
+     unduhan saat tetikus menyentuh menunya.
+  */
+  const nganggur = globalThis.requestIdleCallback || ((f) => setTimeout(f, 1200))
+  nganggur(() => {
+    menuUntuk(profil.role)
+      .flatMap((g) => g.butir)
+      .slice(0, 4)
+      .forEach((b) => siapkanHalaman(b.id))
+  })
 }
+
+/* ------------------------------------------------- kegagalan yang menyeluruh */
+
+/**
+ * Layar terakhir, ketika yang gagal bukan sebuah halaman melainkan aplikasinya.
+ *
+ * `gambar()` sudah menangkap halaman yang melempar galat, dan penunjuk halaman
+ * sudah menangkap modul yang gagal diunduh. Yang tidak tertangkap keduanya
+ * adalah kegagalan sebelum keduanya sempat berjalan — modul inti yang gagal
+ * diunduh, atau galat pada `mulai()` itu sendiri. Tanpa jaring ini, yang
+ * terjadi bukan pesan galat melainkan kerangka abu-abu di `index.html` yang
+ * berdenyut selamanya, dan yang melihatnya menyimpulkan sistemnya lambat lalu
+ * menunggu — kadang lama sekali.
+ *
+ * Sengaja tidak memakai satu pun modul: yang sedang ditangani di sini justru
+ * kemungkinan bahwa modul tidak bisa dimuat.
+ */
+function layarRuntuh(pesan) {
+  if (document.getElementById('runtuh')) return
+  const kotak = document.createElement('div')
+  kotak.id = 'runtuh'
+  kotak.setAttribute('role', 'alert')
+  kotak.style.cssText = 'position:fixed;inset:0;z-index:9999;display:grid;place-items:center;'
+    + 'padding:24px;background:#0B1220;color:#E8EDF7;font:15px/1.6 system-ui,sans-serif'
+  kotak.innerHTML = `<div style="max-width:46ch;text-align:left">
+    <div style="font-size:11px;letter-spacing:.16em;text-transform:uppercase;opacity:.6">Trans-Siber PAS</div>
+    <h1 style="font-size:1.25rem;margin:8px 0 10px">Aplikasi gagal dimuat</h1>
+    <p style="margin:0 0 6px">Sebagian berkas aplikasi tidak sampai ke peramban. Ini
+    hampir selalu berarti sambungan jaringan terputus di tengah pemuatan — bukan
+    data yang rusak.</p>
+    <p style="margin:0 0 16px;opacity:.7;font-size:13px">Rincian: ${String(pesan || 'tidak diketahui').slice(0, 200).replace(/[<&]/g, '')}</p>
+    <button id="runtuh-ulang" style="font:inherit;padding:9px 16px;border-radius:8px;border:0;
+      background:#2F6BD8;color:#fff;cursor:pointer">Muat ulang halaman</button>
+  </div>`
+  document.body.appendChild(kotak)
+  document.getElementById('runtuh-ulang').addEventListener('click', () => location.reload())
+}
+
+/*
+   Hanya kegagalan SEBELUM layar pertama berdiri yang memunculkan layar runtuh.
+
+   Sesudah itu, galat yang lewat ke sini datang dari sesuatu yang kecil — sebuah
+   bagan, sebuah unduhan yang gagal — dan menutupi seluruh layar yang sedang
+   dipakai analis karenanya jauh lebih merugikan daripada membiarkannya tercatat
+   di konsol saja.
+*/
+let layarPertamaBerdiri = false
+
+addEventListener('error', (ev) => {
+  if (layarPertamaBerdiri) return
+  layarRuntuh(ev.message || ev.error?.message)
+})
+
+addEventListener('unhandledrejection', (ev) => {
+  if (layarPertamaBerdiri) return
+  layarRuntuh(ev.reason?.message || ev.reason)
+})
+
+/* --------------------------------------------------- sambungan yang terputus */
+
+/**
+ * Bilah tetap ketika peramban menyatakan dirinya luring.
+ *
+ * Yang diperbaiki: sampai 3 September 2026, petugas yang kehilangan jaringan
+ * hanya melihat "Tidak dapat menghubungi peladen" sekali, sebagai roti yang
+ * hilang sesudah beberapa detik — lalu layar penuh angka yang masih terlihat
+ * benar. Angka itu memang benar; ia hanya bukan angka hari ini. Bilah ini
+ * bertahan selama sambungannya belum kembali, sebab keadaannya juga bertahan.
+ *
+ * `navigator.onLine` hanya tahu ada tidaknya sambungan ke jaringan lokal, bukan
+ * ada tidaknya jalan ke Supabase — jadi ia bisa berkata "daring" pada jaringan
+ * kantor yang memblokir. Karena itu bilah ini menyatakan yang memang
+ * diketahuinya, tidak lebih.
+ */
+function bilahLuring() {
+  const ada = document.getElementById('luring')
+  if (navigator.onLine) { ada?.remove(); return }
+  if (ada) return
+
+  const bilah = document.createElement('div')
+  bilah.id = 'luring'
+  bilah.className = 'bilah-luring'
+  bilah.setAttribute('role', 'status')
+  bilah.innerHTML = '<b>Perangkat sedang luring.</b> Angka di layar berasal dari '
+    + 'pemuatan terakhir dan tidak lagi diperbarui. Perubahan yang Anda simpan '
+    + 'sekarang tidak akan sampai ke peladen.'
+  document.body.appendChild(bilah)
+}
+
+addEventListener('online', () => {
+  bilahLuring()
+  if (keadaan.profil) roti('Sambungan kembali. Memuat ulang data…', 'positif')
+  if (keadaan.profil) segarkan()
+})
+addEventListener('offline', bilahLuring)
 
 /* ------------------------------------------------------------------ mulai */
 
@@ -657,6 +933,7 @@ async function mulai() {
   pasangTema(temaTersimpan())
 
   if (keadaan.demo) {
+    const { profilDemo } = await import('./lib/demo.js')
     const peran = new URLSearchParams(location.search).get('peran') || 'media_intelligence_analyst'
     await mulaiSesi(profilDemo(PERAN[peran] ? peran : 'media_intelligence_analyst'))
     return
@@ -677,3 +954,13 @@ async function mulai() {
 }
 
 mulai()
+  .then(() => {
+    // Sejak titik ini, galat yang lewat bukan lagi "aplikasi tidak bisa dimuat"
+    // melainkan "sesuatu di dalam aplikasi gagal", dan penanganannya berbeda.
+    layarPertamaBerdiri = true
+    bilahLuring()
+  })
+  .catch((galat) => {
+    console.error(galat)
+    layarRuntuh(galat?.message)
+  })

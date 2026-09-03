@@ -489,16 +489,72 @@ Deno.serve(async (permintaan) => {
         'telegram_targets?select=id,chat_id,label,is_active,message_thread_id,report_types,send_urgent_alert,min_classification&order=created_at',
       )
 
+      /*
+         Tiap grup tersimpan diperiksa sendiri lewat getChat.
+
+         Daftar di atasnya tidak cukup untuk menjawab "apakah laporan akan
+         sampai", dan ketidakcukupan itu tidak kelihatan: getUpdates hanya
+         menyimpan kabar 24 jam terakhir DAN mengosongkan kabar yang sudah
+         terbaca, sehingga diagnosa kedua pada hari yang sama selalu
+         mengembalikan daftar kosong meskipun botnya betul-betul ada di dalam
+         grup. Yang terbaca petugas adalah "belum ada grup terdeteksi" —
+         kalimat yang menyuruhnya mengulangi langkah yang sudah benar.
+
+         getChat menjawab pertanyaan yang sebenarnya, sekali untuk tiap grup
+         yang sudah didaftarkan, dan tidak mengirim apa pun ke grup mana pun.
+         Kegagalan satu grup tidak menjatuhkan diagnosa: alasannya dicatat di
+         barisnya sendiri, sebab justru grup yang gagal itulah yang sedang
+         dicari.
+      */
+      const diperiksa = await Promise.all(
+        ((tersimpan ?? []) as Array<Record<string, any>>).map(async (t) => {
+          try {
+            const obrolan = await telegram(
+              kunciBot,
+              `getChat?chat_id=${encodeURIComponent(String(t.chat_id))}`,
+            ) as Record<string, any>
+            return {
+              ...t,
+              terjangkau: true,
+              nama_di_telegram: obrolan?.title ?? obrolan?.username ?? obrolan?.first_name ?? null,
+              jenis: obrolan?.type ?? null,
+            }
+          } catch (galat) {
+            return {
+              ...t,
+              terjangkau: false,
+              sebab: sensor(String((galat as Error).message ?? galat), kunciBot),
+            }
+          }
+        }),
+      )
+
+      const tidakTerjangkau = diperiksa.filter((t) => !t.terjangkau)
+
       return jawab({
         terpasang: true,
         tersambung: true,
         bot: { nama: bot?.first_name, pengguna: bot?.username, id: bot?.id },
         pemeriksaan_kunci: bentuk,
         grup_terdeteksi: [...grup.values()],
-        grup_tersimpan: tersimpan ?? [],
-        catatan: grup.size === 0
-          ? 'Belum ada grup terdeteksi. Masukkan bot ke grup, lalu kirim satu pesan apa saja di grup itu, baru ulangi diagnosa.'
-          : 'Grup di atas sudah bisa dijangkau bot ini.',
+        grup_tersimpan: diperiksa,
+        /*
+           Satu kalimat yang menyebut keadaan yang paling menentukan lebih
+           dahulu. Grup tersimpan yang tidak terjangkau adalah kegagalan yang
+           sedang berlangsung — laporan hariannya gagal terkirim setiap pagi —
+           sedangkan daftar deteksi yang kosong belum tentu apa-apa.
+        */
+        catatan: tidakTerjangkau.length
+          ? `${tidakTerjangkau.length} dari ${diperiksa.length} grup tersimpan tidak bisa dijangkau bot ini. `
+            + 'Lihat sebabnya pada tiap barisnya. Yang paling sering: botnya belum dimasukkan ke '
+            + 'grup itu, sudah dikeluarkan, atau chat_id-nya keliru — grup yang sudah menjadi '
+            + 'supergrup berganti nomor, dari bentuk -123456789 menjadi -100123456789.'
+          : diperiksa.length
+            ? 'Seluruh grup tersimpan bisa dijangkau bot ini.'
+            : grup.size === 0
+              ? 'Belum ada grup terdeteksi dan belum ada grup tersimpan. Masukkan bot ke grup, '
+                + 'kirim satu pesan apa saja di grup itu, lalu ulangi diagnosa.'
+              : 'Grup di atas sudah bisa dijangkau bot ini.',
       })
     }
 

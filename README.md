@@ -42,7 +42,8 @@ ada.
 ```
 web/                     aplikasi peramban, disajikan apa adanya
   index.html
-  vercel.json            tajuk keamanan — HARUS di sini, bukan di akar repo
+  vercel.json            tajuk keamanan — HARUS di sini, bukan di akar repo;
+                           alasan tiap barisnya di docs/tajuk-keamanan.md
   manifes.webmanifest    nama dan ikon saat dipasang di layar utama telepon
   fonts/                 huruf, disimpan sendiri — dihasilkan tools/ambil-huruf.mjs
   ikon/                  ikon aplikasi — dihasilkan dari kanvas peramban
@@ -279,28 +280,25 @@ Vercel memasang HSTS dengan sendirinya, dan selebihnya kosong. Sekarang
 `nosniff`, `Referrer-Policy: no-referrer`, Permissions-Policy yang menutup
 seluruh izin perangkat, dan `X-Robots-Tag`.
 
-Dua hal tentang berkas itu yang mudah salah dan mahal:
+**Alasan tiap barisnya ada di [`docs/tajuk-keamanan.md`](docs/tajuk-keamanan.md)**,
+bukan di dalam `vercel.json` sendiri: JSON tidak mengenal komentar, dan skema
+Vercel memakai `additionalProperties: false` di setiap tingkat — kunci `"//"`
+yang biasa dipakai sebagai komentar bukan diabaikan melainkan menggagalkan
+seluruh penggelaran.
 
-1. **Ia harus berada di dalam `web/`, bukan di akar repositori.** Root Directory
-   proyek Vercel disetel ke `web/`, dan Vercel hanya membaca `vercel.json` dari
-   sana. Berkas yang sama di akar tidak akan pernah dibaca, dan tidak akan ada
-   satu pun pesan yang mengatakannya.
+Tiga hal yang paling mudah salah, selengkapnya di berkas itu:
+
+1. **`vercel.json` harus berada di dalam `web/`, bukan di akar repositori.**
+   Root Directory proyek Vercel disetel ke `web/`, dan Vercel hanya membaca
+   `vercel.json` dari sana. Berkas yang sama di akar tidak akan pernah dibaca,
+   dan tidak akan ada satu pun pesan yang mengatakannya.
 2. **`tools/server-lokal.mjs` membaca berkas yang sama** dan mengirimkan tajuk
-   yang sama. Itu bukan kemewahan: CSP yang memblokir sesuatu yang dipakai
-   aplikasi akan berjalan mulus di komputer pengembang dan baru gagal di layar
-   petugas. Sekarang ia gagal lebih dulu di komputer sendiri.
-
-`Referrer-Policy: no-referrer` dipilih dengan sengaja: halaman Verifikasi
-Lapangan membuka tautan berita ke situs luar, dan tanpa baris itu setiap situs
-yang dibuka petugas menerima catatan bahwa ia dibuka dari alamat sistem ini.
-
-`Cache-Control` untuk JS dan CSS sengaja dibiarkan pada bawaan Vercel
-(`must-revalidate`). Nama berkasnya tidak memuat sidik isi — tanpa langkah
-bangun, tidak ada yang bisa memberinya — sehingga menyimpan lama berarti sebuah
-peramban bisa menjalankan modul lama bersama modul baru, dan pada sistem yang
-seluruh angkanya diturunkan `lib/hitung.js`, campuran itu menampilkan angka yang
-salah tanpa satu pun pesan galat. Yang disimpan setahun hanya `web/fonts/`:
-isinya tidak pernah berubah, dan namanya menyebut versinya.
+   yang sama, sehingga CSP yang memblokir sesuatu gagal di komputer sendiri
+   lebih dulu — bukan di layar petugas.
+3. **`Cache-Control` JS dan CSS sengaja dibiarkan pada bawaan Vercel.** Tanpa
+   sidik isi di nama berkas, menyimpan lama berarti modul lama bisa berjalan
+   bersama modul baru — dan pada sistem yang seluruh angkanya diturunkan
+   `lib/hitung.js`, campuran itu menampilkan angka salah tanpa pesan galat.
 
 ## Menguji
 

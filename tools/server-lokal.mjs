@@ -30,10 +30,54 @@ const PORTA = Number(process.argv[2] || 4173)
  * Ditulis apa adanya: dua pola sumber yang benar-benar dipakai, bukan penafsir
  * pola Vercel yang utuh. Penafsir setengah jadi lebih berbahaya daripada tidak
  * ada — ia akan cocok pada sesuatu yang di penggelaran tidak cocok.
+ *
+ * **Alasan tiap tajuknya ada di `docs/tajuk-keamanan.md`, bukan di dalam
+ * berkasnya.** JSON tidak mengenal komentar, dan skema Vercel memakai
+ * `additionalProperties: false` di setiap tingkat — kunci `"//"` yang biasa
+ * dipakai sebagai komentar bukan diabaikan melainkan menggagalkan seluruh
+ * penggelaran. Berkas itu juga menjelaskan mengapa `vercel.json` harus berada
+ * di dalam `web/` dan bukan di akar repositori.
  */
+/**
+ * Kunci yang diterima skema Vercel, dan tidak satu pun lebih.
+ *
+ * Skemanya memakai `additionalProperties: false` di setiap tingkat: satu kunci
+ * asing membuat **seluruh penggelaran gagal dibangun**, dan pesan galatnya
+ * hanya muncul di log Vercel — situsnya sementara itu tetap menyajikan versi
+ * lama, sehingga dari luar tidak ada yang tampak berubah. Itu sudah terjadi
+ * sekali, pada 3 September 2026, karena kunci `"//"` yang dipakai sebagai
+ * komentar. Pemeriksaan di bawah menangkapnya di sini, sebelum didorong.
+ */
+const KUNCI_SAH = {
+  akar: new Set(['$schema', 'headers', 'redirects', 'rewrites', 'cleanUrls',
+    'trailingSlash', 'buildCommand', 'outputDirectory', 'framework', 'regions',
+    'installCommand', 'devCommand', 'ignoreCommand', 'public', 'functions', 'crons']),
+  aturan: new Set(['source', 'headers', 'has', 'missing']),
+  tajuk: new Set(['key', 'value']),
+}
+
+function periksaBentuk(berkas) {
+  const salah = []
+  for (const k of Object.keys(berkas)) if (!KUNCI_SAH.akar.has(k)) salah.push(k)
+  for (const aturan of berkas.headers || []) {
+    for (const k of Object.keys(aturan)) if (!KUNCI_SAH.aturan.has(k)) salah.push(`headers[].${k}`)
+    for (const tajuk of aturan.headers || []) {
+      for (const k of Object.keys(tajuk)) if (!KUNCI_SAH.tajuk.has(k)) salah.push(`headers[].headers[].${k}`)
+    }
+  }
+  if (salah.length) {
+    console.error('\n  BERHENTI: web/vercel.json memuat kunci yang ditolak Vercel:')
+    for (const k of [...new Set(salah)]) console.error(`    ${k}`)
+    console.error('  Skema Vercel memakai additionalProperties: false. Mendorong berkas ini')
+    console.error('  akan menggagalkan penggelaran. Penjelasan: docs/tajuk-keamanan.md\n')
+    process.exit(2)
+  }
+}
+
 function bacaTajukVercel() {
   try {
     const berkas = JSON.parse(readFileSync(join(AKAR, 'vercel.json'), 'utf8'))
+    periksaBentuk(berkas)
     return (berkas.headers || []).map((aturan) => ({
       cocok: aturan.source === '/(.*)'
         ? () => true

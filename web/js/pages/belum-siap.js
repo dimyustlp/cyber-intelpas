@@ -10,6 +10,7 @@
 import { kartu, tombol } from '../ui/komponen.js'
 import { amankan } from '../lib/format.js'
 import { ikon } from '../lib/ikon.js'
+import { halamanAwal, labelPeran } from '../lib/peran.js'
 
 /*
    Yang tersisa.
@@ -49,14 +50,71 @@ export function halamanBelumSiap({ keadaan, isi }) {
         </div>
 
         <div class="baris gap-6">
-          ${tombol({ label: 'Kembali ke dasbor', ikon: 'dasbor', gaya: 'utama', aksi: 'ke-dasbor' })}
+          ${/* Tujuannya diambil dari peran yang sedang masuk, bukan ditulis
+                "#dasbor". Halaman dasbor adalah milik ruang pusat: penelaah
+                unit yang menekan tombol ini akan mendarat di layar yang bukan
+                haknya — yaitu persis keadaan yang membuatnya berada di sini.
+                Yang membuat tombol darurat sendiri membutuhkan tombol darurat
+                adalah bug, bukan ketidaknyamanan. */''}
+          ${tombol({
+            label: 'Kembali ke halaman awal',
+            ikon: 'dasbor',
+            gaya: 'utama',
+            halaman: halamanAwal(keadaan.profil?.role),
+          })}
         </div>
       </div>`,
   })
 
-  isi.querySelector('[data-aksi="ke-dasbor"]')?.addEventListener('click', () => {
-    location.hash = '#dasbor'
+  return { judul: r.judul, sub: 'Modul ini belum tersedia' }
+}
+
+/**
+ * Layar bagi halaman yang ada, terdaftar, dan bukan hak pembukanya.
+ *
+ * Dipisahkan dari "halaman tidak dikenali" di atas karena keduanya menjawab
+ * pertanyaan yang berbeda. Yang satu berkata "alamat ini tidak ada"; yang ini
+ * berkata "alamat ini ada, dan bukan untuk peran Anda". Menyatukan keduanya
+ * akan membuat petugas yang salah menyalin tautan dari rekannya menyimpulkan
+ * halamannya sudah dihapus, lalu melaporkan kerusakan yang tidak pernah ada.
+ *
+ * Perlu ditegaskan apa yang BUKAN tugas layar ini: ia bukan pengaman. Yang
+ * menahan data tetap policy RLS di basis data, dan penolakannya berlaku
+ * sekalipun seseorang membongkar berkas ini. Guna layar ini hanya satu —
+ * menjelaskan, dengan kalimat yang bisa dibaca, mengapa sebuah tautan yang
+ * sah bagi pengirimnya tidak terbuka bagi penerimanya.
+ */
+export function halamanTanpaHak({ keadaan, isi }) {
+  const peran = keadaan.profil?.role
+  const awal = halamanAwal(peran)
+
+  isi.innerHTML = kartu({
+    isi: `
+      <div style="max-width:56ch;display:flex;flex-direction:column;gap:14px;padding:18px 4px">
+        <span class="keping" data-nada="sedang">Di luar hak akses</span>
+
+        <h2 style="font-size:1.25rem">Halaman ini bukan bagian dari peran Anda</h2>
+
+        <p style="color:var(--ink-2)">
+          Alamat yang Anda buka terdaftar dan berfungsi, tetapi tidak termasuk
+          dalam kewenangan
+          <b>${amankan(labelPeran(peran))}</b>.
+          Kemungkinan besar tautannya berasal dari rekan yang perannya berbeda.
+        </p>
+
+        <div class="pesan" data-nada="netral">
+          ${ikon('gembok')}
+          <div>
+            <b>Tidak ada yang rusak.</b> Menu di sebelah kiri sudah memuat
+            seluruh halaman yang menjadi hak Anda.
+          </div>
+        </div>
+
+        <div class="baris gap-6">
+          ${tombol({ label: 'Kembali ke halaman awal', ikon: 'dasbor', gaya: 'utama', halaman: awal })}
+        </div>
+      </div>`,
   })
 
-  return { judul: r.judul, sub: 'Modul ini belum tersedia' }
+  return { judul: 'Di luar hak akses', sub: 'Halaman ini bukan kewenangan peran Anda' }
 }

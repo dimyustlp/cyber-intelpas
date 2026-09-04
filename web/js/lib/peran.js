@@ -363,3 +363,78 @@ export function halamanAwal(peran) {
   if (adalahUnit(peran)) return 'upt-dasbor'
   return adalahEksternal(peran) ? 'kanwil-dasbor' : 'dasbor'
 }
+
+/* ------------------------------------------------- hak membuka halaman */
+
+/**
+ * Halaman mana menuntut izin apa — diturunkan dari ketiga susunan menu di
+ * atas, bukan ditulis ulang di sini.
+ *
+ * Alasannya sama dengan alasan `halamanAwal` mengambil tujuannya dari menu:
+ * daftar yang ditulis tangan akan benar pada hari ia ditulis dan salah pada
+ * hari sebuah halaman berganti syarat izinnya, tanpa satu pun tanda bahwa ia
+ * sudah salah.
+ *
+ * Satu halaman bisa punya lebih dari satu syarat, dan itu bukan kelonggaran
+ * yang tidak disengaja: `input` dituntut `buat_berita` di ruang pusat maupun
+ * di ruang wilayah, sedangkan `pengguna` dituntut `kelola_pengguna` di pusat
+ * tetapi `kelola_pengguna_wilayah` di wilayah. Memenuhi salah satunya cukup —
+ * yang menahan datanya tetap RLS, bukan daftar ini.
+ */
+const SYARAT_HALAMAN = (() => {
+  const peta = new Map()
+  for (const menu of [MENU, MENU_KANWIL, MENU_UPT]) {
+    for (const grup of menu) {
+      for (const b of grup.butir) {
+        if (!peta.has(b.id)) peta.set(b.id, new Set())
+        peta.get(b.id).add(b.izin)
+      }
+    }
+  }
+  return peta
+})()
+
+/**
+ * Halaman yang tidak punya butir menu, tetapi tetap sah dibuka.
+ *
+ * Ketiadaan butir menu bukan ketiadaan hak. Detail berita dibuka dari Pusat
+ * Data Berita dan dari palet perintah; halaman profil milik siapa pun yang
+ * punya sesi, termasuk petugas daerah — karena itu syaratnya `null`, bukan
+ * sebuah nama izin.
+ *
+ * `berita-detail` sengaja hanya menuntut izin berita PUSAT. Peran daerah tidak
+ * diberi jalan ke sini, dan itu keputusan yang sudah diambil: halaman ini
+ * menampilkan `review_note` serta `verified_by` dari pusat, dan membukanya
+ * bagi daerah berarti melepas catatan analis pusat ke wilayah tanpa seorang
+ * pun memutuskannya.
+ */
+const SYARAT_TAMBAHAN = {
+  'berita-detail': 'lihat_berita',
+  profil: null,
+  /* Nama lama halaman berita daerah, dipertahankan untuk tautan tersimpan. */
+  'kanwil-riwayat': 'lihat_berita_wilayah',
+}
+
+/**
+ * Benar bila peran ini berhak membuka halaman itu.
+ *
+ * Dipakai di tiga tempat, dan ketiganya perlu: penjaga rute di main.js (untuk
+ * alamat yang diketik atau disalin), penyaring tombol sesudah halaman
+ * digambar (untuk tombol yang menjanjikan halaman yang tidak akan terbuka),
+ * dan halaman yang ingin menyembunyikan tombolnya sendiri lebih awal.
+ *
+ * Halaman yang tidak dikenali menghasilkan `true`, bukan `false`. Yang berhak
+ * menolaknya adalah penunjuk halaman dengan layar "halaman tidak dikenali"
+ * miliknya sendiri — kalau ditolak di sini, alamat yang salah ketik akan
+ * terbaca sebagai penolakan hak, dan yang membacanya akan mengira ia kurang
+ * izin padahal ia hanya salah mengetik.
+ */
+export function bolehBuka(peran, halaman) {
+  if (Object.prototype.hasOwnProperty.call(SYARAT_TAMBAHAN, halaman)) {
+    const syarat = SYARAT_TAMBAHAN[halaman]
+    return syarat === null || punyaIzin(peran, syarat)
+  }
+  const syarat = SYARAT_HALAMAN.get(halaman)
+  if (!syarat) return true
+  return [...syarat].some((izin) => punyaIzin(peran, izin))
+}

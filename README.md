@@ -104,6 +104,7 @@ tools/
   uji-peristiwa.mjs      uji pengelompokan publikasi menjadi peristiwa
   uji-risiko.mjs         uji skor risiko — ketertutupan penjumlahan dan urutannya
   uji-laju.mjs           uji empat aturan peringatan: menyala dan diamnya
+  uji-tombol.mjs         uji integritas tombol antar fitur: tujuan, izin, penyimak
   periksa-lainnya.mjs    uji 62 kasus nyata yang dulu gagal dikelompokkan
   ringkas-fungsi.mjs     menyalin web/js/lib ke Edge Function dalam bentuk ringkas
   potret.mjs             memotret halaman pada lebar layar yang benar-benar diminta
@@ -307,8 +308,32 @@ node tools/uji-mesin.mjs        # 14 uji perilaku + 9 uji pencocokan UPT
 node tools/uji-hitung.mjs       # 37 uji ember sentimen dan penjumlahan angka
 node tools/uji-risiko.mjs       # 63 uji skor risiko
 node tools/uji-laju.mjs         # 26 uji aturan peringatan dini
+node tools/uji-tombol.mjs       # integritas tombol antar fitur
 node tools/periksa-lainnya.mjs  # 62 kasus nyata dari arsip
 ```
+
+### Uji integritas tombol
+
+`uji-tombol.mjs` memeriksa empat cara sebuah tombol berbohong, dan keempatnya
+pernah ada di sini: tujuan yang tidak terdaftar di penunjuk halaman, tujuan
+yang penekannya tidak berhak membukanya, aksi yang tidak pernah disimak
+siapa pun, dan saringan titipan yang tidak dikenali halaman tujuan.
+
+Yang ketiga adalah yang paling lama tidak terdeteksi. Tombol tanpa penyimak
+tetap tampil, tetap bisa ditekan, dan tidak meninggalkan satu pun galat di
+konsol — tidak ada yang terlihat rusak. Tiga di antaranya hidup berbulan-bulan
+di Dasbor Eksekutif dan Peringatan Dini sebelum alat ini menemukannya.
+
+Alat ini membaca berkas sebagai teks, bukan menjalankannya, dan itu memang
+batasnya: isi yang disusun saat program berjalan tidak terlihat dari sini.
+Yang menutup celah itu bukan alat ini melainkan `saringTombolTakBerhak()` di
+`main.js` — penyapu yang berjalan sesudah setiap halaman digambar, beserta
+pengamat yang menyusulnya untuk kartu yang mengisi dirinya belakangan.
+
+Keluarannya menyebut "tombol yang disapu penyaring". Itu bukan daftar cacat,
+melainkan daftar tempat yang tampil berbeda bagi peran yang berbeda — dan
+justru itu yang layak diperiksa dengan mata sebelum rilis: apakah halaman yang
+kehilangan tombolnya masih masuk akal tanpa tombol itu.
 
 Uji pencocokan UPT membaca data induk dari `data/master-upt.csv`. Berkas itu
 dihasilkan `tools/susun-master-upt.mjs`; bila hilang, jalankan alat itu lebih

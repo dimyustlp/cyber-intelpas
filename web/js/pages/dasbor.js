@@ -97,7 +97,12 @@ export function halamanDasbor({ keadaan, isi }) {
       isi: kosong(
         'Belum ada berita yang masuk',
         'Sinkronisasi sumber belum menghasilkan baris apa pun, dan belum ada masukan manual. Periksa halaman Sinkronisasi Sumber untuk memastikan penjadwal berjalan.',
-        tombol({ label: 'Buka Sinkronisasi Sumber', ikon: 'sinkron', gaya: 'utama', aksi: 'ke-sinkronisasi' }),
+        /* `halaman`, bukan `aksi`. Sebagai aksi, tombol ini menuntut penyimak
+           klik di berkas ini — dan berkas ini tidak punya satu pun penyimak,
+           sehingga tombolnya tertekan tanpa akibat sejak hari ia ditulis.
+           Lewat `halaman`, ia memakai jalur navigasi yang sama dengan menu
+           samping, yang tidak bisa lupa disimak. */
+        tombol({ label: 'Buka Sinkronisasi Sumber', ikon: 'sinkron', gaya: 'utama', halaman: 'sinkronisasi' }),
       ),
     })
     return { judul: 'Dasbor Eksekutif', sub: tanggalPanjang(new Date()) }
@@ -231,7 +236,7 @@ export function halamanDasbor({ keadaan, isi }) {
       ${kartu({
         judul: 'Daftar prioritas',
         ket: `${mendesak.length} berita berurgensi tinggi atau kritis yang belum ditutup`,
-        aksi: tombol({ label: 'Lihat semua', ikon: 'panahKanan', kecil: true, aksi: 'ke-peringatan' }),
+        aksi: tombol({ label: 'Lihat semua', ikon: 'panahKanan', kecil: true, halaman: 'peringatan' }),
         rapat: true,
         isi: mendesak.length
           ? daftarPrioritas(mendesak.slice(0, 7))

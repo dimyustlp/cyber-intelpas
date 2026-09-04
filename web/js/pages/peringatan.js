@@ -96,7 +96,28 @@ export function halamanPeringatan({ keadaan, isi }) {
               opsi: ['Semua keadaan', 'Peringatan awal', 'Sudah diverifikasi'] })}
             <div class="dorong baris gap-6">
               <span class="mini-teks samar-teks">${angka(daftar.length)} dari ${angka(semua.length)}</span>
-              ${tombol({ label: 'Kirim ke Telegram', ikon: 'kirim', kecil: true, gaya: 'utama', aksi: 'kirim-telegram', nonaktif: !daftar.length })}
+              ${/* Tombol ini pernah bernama aksi `kirim-telegram` dan tidak
+                    pernah disimak siapa pun — persis nasib tombol "Telaah" di
+                    halaman yang sama, yang diperbaiki lebih dulu dan catatannya
+                    ada di bawah. Dua kali cacat yang sama di satu berkas bukan
+                    kebetulan: aksi yang penyimaknya ditulis di tempat lain
+                    memang mudah tertinggal.
+
+                    Sekarang ia menempuh jalur navigasi menu, yang tidak bisa
+                    lupa disimak. Labelnya ikut berubah, sebab tombol ini tidak
+                    mengirim apa pun sendiri — ia membuka tempat pengiriman
+                    dilakukan, dan setiap kiriman di sana selalu didahului
+                    pratinjau. Menamainya "Kirim" akan menjanjikan sesuatu yang
+                    sengaja tidak dilakukan sekali tekan. */''}
+              ${tombol({
+                label: 'Buka Distribusi Telegram',
+                ikon: 'kirim',
+                kecil: true,
+                gaya: 'utama',
+                halaman: 'distribusi',
+                judul: 'Menyusun dan mengirim peringatan dini ke grup pimpinan',
+                nonaktif: !daftar.length,
+              })}
             </div>
           </div>
 

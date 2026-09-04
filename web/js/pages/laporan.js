@@ -214,8 +214,38 @@ export function halamanLaporan({ keadaan, isi }) {
       ${hasil ? kartu({
         judul: 'Laporan siap',
         ket: `${angka(hasil.olahan.peristiwa.length)} peristiwa · ${angka(hasil.olahan.publikasi.length)} publikasi · ${angka(hasil.olahan.daftarUnit.length)} UPT terdampak`,
+        /*
+           Tiga tombol, dan yang ketiga baru ada sejak 4 September 2026.
+
+           Sebelumnya laporan yang sudah tersusun hanya bisa dibuka dan diunduh.
+           Tidak ada satu pun jalan dari sini menuju Distribusi Telegram —
+           padahal mengirimkannya kepada pimpinan adalah alasan laporan itu
+           disusun, dan analis yang baru menyusunnya adalah satu-satunya peran
+           yang memegang izin `kirim_telegram`. Jalannya ada, dan ia harus
+           menemukannya sendiri lewat menu, sesudah menebak bahwa halaman
+           bernama "Distribusi Telegram" ada hubungannya dengan berkas yang
+           barusan ia buat.
+
+           Tombol ini membuka halaman pengiriman, bukan mengirim. Itu bukan
+           kekurangan yang belum sempat diperbaiki, melainkan aturan pertama
+           halaman tujuannya: tidak ada pengiriman tanpa pratinjau. Labelnya
+           dijaga agar tidak menjanjikan lebih dari itu.
+
+           Periodenya sengaja tidak dititipkan. Halaman ini menerima tanggal
+           mulai dan selesai yang bebas; halaman tujuan hanya mengenal harian,
+           mingguan, dan bulanan. Memetakan yang pertama ke yang kedua berarti
+           mengirim rentang yang BUKAN rentang yang barusan disusun, tanpa
+           seorang pun menyadari selisihnya.
+        */
         aksi: `${tombol({ label: 'Buka', ikon: 'tautan', aksi: 'buka-laporan' })}
-               ${tombol({ label: 'Unduh HTML', ikon: 'unduh', gaya: 'utama', aksi: 'unduh-laporan' })}`,
+               ${tombol({ label: 'Unduh HTML', ikon: 'unduh', aksi: 'unduh-laporan' })}
+               ${tombol({
+                 label: 'Kirim lewat Telegram',
+                 ikon: 'kirim',
+                 gaya: 'utama',
+                 halaman: 'distribusi',
+                 judul: 'Membuka Distribusi Telegram, tempat pesan disusun dan dipratinjau sebelum dikirim',
+               })}`,
         isi: `
           <p class="kecil-teks">
             Berkas dapat dibuka di peramban mana pun tanpa sambungan internet, dan dicetak menjadi

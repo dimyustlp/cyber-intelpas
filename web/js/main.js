@@ -7,7 +7,7 @@
 
 import { KONFIG } from './lib/konfig.js'
 import { muatSesi, profilSekarang, keluar, muatProfil, pesanRamah } from './lib/api.js'
-import { menuUntuk, halamanAwal, labelPeran, adalahEksternal, adalahUnit, peranBaku, PERAN } from './lib/peran.js'
+import { menuUntuk, halamanAwal, labelPeran, adalahEksternal, adalahUnit, peranBaku, bolehBuka, PERAN } from './lib/peran.js'
 import { lencana } from './lib/hitung.js'
 import { ikon } from './lib/ikon.js'
 import { amankan, tanggalPanjang, inisial } from './lib/format.js'
@@ -24,7 +24,7 @@ import { bukaPalet, paletTerbuka } from './ui/palet.js'
    sudah ada justru pada saat pemuatan sedang gagal.
 */
 import { halamanMasuk } from './pages/masuk.js'
-import { halamanBelumSiap } from './pages/belum-siap.js'
+import { halamanBelumSiap, halamanTanpaHak } from './pages/belum-siap.js'
 
 const akar = document.getElementById('akar')
 
@@ -427,11 +427,111 @@ function rangkaHalaman() {
  * langsung, dan yang lewat unduhan modul — dan dua jalan yang menyalin isi
  * yang sama akan berpisah pada perubahan berikutnya.
  */
+/**
+ * Membuang janji yang tidak bisa ditepati halaman tujuannya.
+ *
+ * Dijalankan sekali sesudah setiap halaman selesai digambar, dan justru itulah
+ * intinya. Sebelum ini setiap halaman harus mengingat sendiri untuk menyaring
+ * tombolnya — dan sebagian besar tidak: Dasbor Eksekutif menawarkan tujuh
+ * tombol menuju halaman yang sebagian perannya tidak berhak membukanya,
+ * Executive Brief empat, Tren dua. Ketiganya bahkan tidak mengimpor
+ * `punyaIzin`, sehingga tidak ada satu baris pun di sana yang bisa dibaca
+ * sebagai "di sini seharusnya ada saringan".
+ *
+ * Menaruhnya di sini, bukan di tiap halaman, adalah pilihan yang sama dengan
+ * pilihan `hidupkan()` beberapa baris di bawah: yang harus diingat di tiga
+ * puluh satu tempat cepat atau lambat terlupa di salah satunya, dan yang
+ * terlupa itu tidak akan terlihat rusak — tombolnya tetap tampil, tetap bisa
+ * ditekan, dan hanya menyesatkan penekannya.
+ *
+ * Dua perlakuan, sebab dua jenis kerugian:
+ *
+ *   Ubin angka kehilangan sifat tekannya, bukan angkanya. Angka pada ubin
+ *   tetap kabar yang sah bagi pembacanya; yang tidak sah hanyalah janji bahwa
+ *   ia bisa dibuka. Ubin yang dihapus akan meninggalkan lubang di kisi empat
+ *   kolom, dan pembacanya akan menghitung ada yang hilang.
+ *
+ *   Tombol navigasi biasa dibuang seluruhnya, mengikuti kalimat yang sudah
+ *   lama tertulis di lib/peran.js: jangan menampilkan tombol yang, kalau
+ *   ditekan, hanya akan berujung penolakan.
+ *
+ * Menu samping sengaja tidak ikut disapu. Ia dibangun dari `menuUntuk()` yang
+ * sudah menyaring menurut izin, dan menyapunya dua kali hanya menyembunyikan
+ * kekeliruan seandainya saringan pertama rusak.
+ */
+function saringTombolTakBerhak(akar_) {
+  const peran = keadaan.profil?.role
+  if (!peran) return
+
+  for (const el of akar_.querySelectorAll('[data-halaman]')) {
+    if (bolehBuka(peran, el.dataset.halaman)) continue
+
+    if (!el.classList.contains('ubin')) { el.remove(); continue }
+
+    /* Ubin diturunkan menjadi ubin biasa — persis bentuk yang dihasilkan
+       `ubin()` ketika ia dipanggil tanpa halaman tujuan. Elemennya ditukar,
+       bukan sekadar dilucuti atributnya: sebuah <button> tanpa tujuan tetap
+       menerima fokus papan tik dan tetap diumumkan pembaca layar sebagai
+       tombol, sehingga yang menjelajah dengan Tab tetap disesatkan. */
+    const diam = document.createElement('div')
+    diam.className = [...el.classList].filter((k) => k !== 'ubin-tekan').join(' ')
+    if (el.dataset.nada) diam.dataset.nada = el.dataset.nada
+    diam.innerHTML = el.innerHTML
+    /* Panah penunjuk ikut hilang. Ia adalah satu-satunya isyarat rupa bahwa
+       ubin ini bisa dibuka, dan membiarkannya berarti mengganti tombol yang
+       menyesatkan dengan gambar yang menyesatkan. */
+    diam.querySelector('.ubin-kaki svg:last-child')?.remove()
+    el.replaceWith(diam)
+  }
+}
+
+/**
+ * Pengamat yang menyapu isi yang datang terlambat.
+ *
+ * Menyapu sekali sesudah `bangun()` selesai ternyata tidak cukup, dan ini
+ * ketahuan hanya dengan membukanya di peramban — tidak ada pemeriksa statis
+ * yang bisa melihatnya.
+ *
+ * Sebagian kartu diisi setelah datanya tiba, bukan saat halaman digambar.
+ * Kartu "Siklus intelijen" di Dasbor Eksekutif adalah salah satunya: ia
+ * menarik empat tabel lebih dulu, lalu mengisi wadahnya sendiri beberapa ratus
+ * milidetik kemudian. Pada saat penyapu berjalan, wadah itu masih berisi
+ * rangka abu-abu — dan keempat ubinnya, yang menuju Kasus, Verifikasi
+ * Lapangan, Keputusan, dan Tindak Lanjut, lolos utuh kepada peran yang tidak
+ * berhak atas satu pun di antaranya.
+ *
+ * Pengamat ini menutup celah itu untuk SELURUH halaman yang mengisi dirinya
+ * belakangan, termasuk halaman yang belum ditulis hari ini. Alternatifnya —
+ * meminta setiap pengisi terlambat memanggil penyapunya sendiri — adalah
+ * kembali ke keadaan yang sedang diperbaiki: sesuatu yang harus diingat di
+ * banyak tempat, dan karena itu terlupa di salah satunya.
+ *
+ * Tidak ada bahaya berputar. Ubin yang sudah disapu kehilangan `data-halaman`,
+ * sehingga sapuan yang dipicu oleh sapuan sebelumnya tidak menemukan apa pun.
+ */
+let pengamatTombol = null
+
+function amatiTombol(isi) {
+  pengamatTombol?.disconnect()
+  pengamatTombol = new MutationObserver((perubahan) => {
+    for (const p of perubahan) {
+      for (const simpul of p.addedNodes) {
+        if (simpul.nodeType !== 1) continue
+        if (simpul.matches?.('[data-halaman]')) saringTombolTakBerhak(simpul.parentNode || isi)
+        else if (simpul.querySelector?.('[data-halaman]')) saringTombolTakBerhak(simpul)
+      }
+    }
+  })
+  pengamatTombol.observe(isi, { childList: true, subtree: true })
+}
+
 function gambarIsi(bangun, isi, ingatan) {
   try {
     const hasil = bangun({ keadaan, isi })
     document.getElementById('bilah-judul').textContent = hasil?.judul || KONFIG.nama
     document.getElementById('bilah-sub').textContent = hasil?.sub || tanggalPanjang(new Date())
+    saringTombolTakBerhak(isi)
+    amatiTombol(isi)
     // Gerak dipasang setelah isinya jadi, bukan sebelumnya. Kalau dipasang di
     // dalam tiap halaman, cepat atau lambat ada halaman yang lupa memasangnya.
     hidupkan(isi, { ruang: keadaan.halaman || 'umum' })
@@ -464,6 +564,31 @@ export function gambar() {
      sudah pernah diunduh digambar seketika, persis seperti sebelum pemuatan
      malas ada. Yang menunggu hanyalah kunjungan pertama ke sebuah halaman.
   */
+  /*
+     Penjaga rute.
+
+     Sampai 4 September 2026 penunjuk halaman menggambar apa pun yang namanya
+     terdaftar, tanpa sekali pun bertanya siapa yang sedang masuk. Menu memang
+     tidak menampilkan butirnya — tetapi menu bukan pengaman: alamat bisa
+     diketik, disalin dari rekan yang perannya lain, dan tersimpan di penanda
+     peramban sejak sebelum perannya diubah.
+
+     Akibatnya bukan kebocoran data — RLS tetap menahan barisnya — melainkan
+     sesuatu yang lebih sulit disadari. Penelaah unit yang membuka `#dasbor`
+     mendapat Dasbor Eksekutif nasional yang terisi HANYA oleh baris unitnya
+     sendiri, lengkap dengan judul "Dasbor Eksekutif" dan setiap angka nasional
+     di dalamnya. Layarnya benar menurut peladen, dan berbohong menurut
+     pembacanya: ia akan menyimpulkan seluruh Indonesia hanya punya berita
+     sebanyak unitnya.
+
+     Diletakkan sebelum pencarian modul, bukan sesudahnya, supaya halaman yang
+     bukan haknya tidak ikut diunduh sekalipun.
+  */
+  if (HALAMAN[id] && !bolehBuka(keadaan.profil.role, id)) {
+    gambarIsi(halamanTanpaHak, isi, ingatan)
+    return
+  }
+
   const bangun = HALAMAN[id] ? halamanTermuat.get(id) : halamanBelumSiap
   if (bangun) { gambarIsi(bangun, isi, ingatan); return }
 
@@ -658,7 +783,29 @@ document.addEventListener('gambar-ulang', () => gambar())
 // yang sama seperti di atas: halaman tidak boleh mengimpor balik berkas ini.
 document.addEventListener('buka-halaman', (ev) => {
   const { halaman, fokus } = ev.detail || {}
-  if (halaman) keHalaman(halaman, { fokus })
+  if (!halaman) return
+
+  /*
+     Jalur ini tidak tersapu `saringTombolTakBerhak`, dan tidak bisa.
+
+     Tombol yang memakainya menyebut tujuannya di dalam penyimak kliknya —
+     `data-aksi="telaah"` di Peringatan Dini, misalnya — bukan di atributnya.
+     Dari luar, tombol semacam itu tidak terbaca sebagai tombol navigasi sama
+     sekali, sehingga penyapu yang membaca `data-halaman` melewatinya begitu
+     saja.
+
+     Karena itu penolakannya di sini, di muara. Yang ditolak diberi tahu
+     alasannya di tempat ia berdiri, bukan dipindahkan ke layar penjelasan:
+     ia tidak sedang mengikuti tautan dari luar — ia sedang bekerja di sebuah
+     halaman, dan memindahkannya membuang apa pun yang sedang ia kerjakan di
+     sana.
+  */
+  if (!bolehBuka(keadaan.profil?.role, halaman)) {
+    roti('Halaman itu bukan kewenangan peran Anda.', 'sedang', 3600)
+    return
+  }
+
+  keHalaman(halaman, { fokus })
 })
 
 /*

@@ -73,22 +73,38 @@ export function pesanSistem(teks, nada = 'netral', ikonNama = 'info') {
   return `<div class="pesan" data-nada="${nada}">${ikon(ikonNama)}<div>${teks}</div></div>`
 }
 
+/**
+ * Penanda tambahan pada sebuah tombol: `{ id: 'x' }` menjadi `data-id="x"`.
+ *
+ * Ada supaya tombol beraksi yang membawa pengenal — hapus baris ini, tandai
+ * baris itu — tidak perlu ditulis sebagai HTML mentah di dalam halaman.
+ * Sebelum ini satu halaman menempelkan penandanya dengan `String.replace()`
+ * atas keluaran tombol, dan cara itu berhenti bekerja diam-diam pada hari
+ * bentuk keluarannya berubah satu spasi.
+ */
+function penanda(data) {
+  return Object.entries(data || {})
+    .filter(([, v]) => v !== undefined && v !== null && v !== '')
+    .map(([k, v]) => `data-${amankan(k)}="${amankan(v)}"`)
+    .join(' ')
+}
+
 export function tombol({
   label, ikon: ikonNama, gaya = '', aksi = '', kecil = false,
-  nonaktif = false, judul = '', halaman = '',
+  nonaktif = false, judul = '', halaman = '', data = null,
 }) {
   const kelas = ['tbl', gaya, kecil ? 'kecil' : ''].filter(Boolean).join(' ')
   // `halaman` memakai jalur navigasi yang sama dengan menu samping, sehingga
   // tombol "buka" di dalam kartu tidak perlu penanganan sendiri.
   return `<button class="${kelas}" ${aksi ? `data-aksi="${amankan(aksi)}"` : ''}
-    ${halaman ? `data-halaman="${amankan(halaman)}"` : ''}
+    ${halaman ? `data-halaman="${amankan(halaman)}"` : ''} ${penanda(data)}
     ${nonaktif ? 'disabled' : ''} ${judul ? `title="${amankan(judul)}"` : ''}>
     ${ikonNama ? ikon(ikonNama) : ''}${label ? amankan(label) : ''}</button>`
 }
 
-export function tombolIkon({ ikon: ikonNama, aksi, judul, gaya = 'samar', kecil = false }) {
+export function tombolIkon({ ikon: ikonNama, aksi, judul, gaya = 'samar', kecil = false, data = null }) {
   return `<button class="tbl ikon ${gaya}${kecil ? ' kecil' : ''}" data-aksi="${amankan(aksi)}"
-    title="${amankan(judul)}" aria-label="${amankan(judul)}">${ikon(ikonNama)}</button>`
+    ${penanda(data)} title="${amankan(judul)}" aria-label="${amankan(judul)}">${ikon(ikonNama)}</button>`
 }
 
 export function bidangCari(nilai = '', placeholder = 'Cari judul, UPT, atau media') {

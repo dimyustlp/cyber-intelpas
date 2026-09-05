@@ -73,6 +73,23 @@ export function buatBerita(jumlah = 96, acuan = new Date()) {
     const [judul, upt, media] = JUDUL_CONTOH[i % JUDUL_CONTOH.length]
     const geser = Math.floor(acak() * 14 * 24 * 60) * 60_000
     const waktu = new Date(acuan.getTime() - geser)
+
+    /*
+       Waktu masuk sengaja tertinggal beberapa saat dari waktu terbit.
+
+       Sampai 5 September 2026 keduanya diisi nilai yang sama persis, dan itu
+       menjadikan mode peragaan berbohong pada satu angka: ukuran "waktu
+       deteksi" di halaman Kesehatan Sistem — selisih antara terbit dan masuk —
+       selalu tepat nol menit. Nol menit berarti sistem menangkap setiap berita
+       pada detik ia terbit, dan angka sesempurna itu tidak pernah
+       dipertanyakan siapa pun; ia hanya membuat ukurannya tampak rusak ketika
+       data sungguhan menyebut enam jam.
+
+       Jedanya dijepit ke waktu acuan, supaya tidak ada baris peragaan yang
+       tercatat masuk di masa depan.
+    */
+    const jedaMasuk = Math.floor(acak() * 7 * 3_600_000) + 6 * 60_000
+    const masuk = new Date(Math.min(waktu.getTime() + jedaMasuk, acuan.getTime()))
     const hasil = klasifikasikan({ judul })
 
     daftar.push({
@@ -82,7 +99,7 @@ export function buatBerita(jumlah = 96, acuan = new Date()) {
       media,
       platform: PLATFORM[Math.floor(acak() * PLATFORM.length)],
       link: `https://contoh.id/berita/${i + 1}`,
-      created_at: waktu.toISOString(),
+      created_at: masuk.toISOString(),
       tanggal_publikasi: waktu.toISOString(),
       status_verifikasi: STATUS[Math.floor(acak() * STATUS.length)],
       source_type: acak() > 0.25 ? 'google_sheet' : 'manual',

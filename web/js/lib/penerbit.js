@@ -244,4 +244,133 @@ export function kenaliPenerbit(berita = {}, teksNormal = '') {
   return { jenis: 'tidak_dikenal', akun, resmi: false, alasan: 'Penerbit tidak dikenali.' }
 }
 
-export const META_PENERBIT = { versi: 'penerbit-v1.0' }
+/**
+ * Nama inang yang punya nama terbitan resmi.
+ *
+ * Panel "Top 5 Media" pada laporan berkala menuliskan apa yang ada di sini apa
+ * adanya, dan lembar itu dibaca di luar aplikasi. "rri.co.id" tercetak pada
+ * lembar resmi terbaca seperti kekeliruan penyusunnya, bukan seperti nama
+ * sebuah lembaga penyiaran negara.
+ *
+ * Daftarnya sengaja pendek dan hanya memuat yang benar-benar sering muncul.
+ * Inang yang tidak ada di sini dirapikan seadanya oleh `rapikanInang()` —
+ * lebih baik "kompas.com" daripada tidak ada nama sama sekali.
+ */
+const PADANAN_INANG = {
+  'rri.co.id': 'RRI.co.id',
+  'antaranews.com': 'ANTARA News',
+  'kemenimipas.go.id': 'Kemenimipas.go.id',
+  'ditjenpas.go.id': 'Ditjenpas.go.id',
+  'infopublik.id': 'InfoPublik',
+  'kompas.com': 'Kompas.com',
+  'detik.com': 'detikcom',
+  'news.detik.com': 'detikcom',
+  'tribunnews.com': 'Tribunnews',
+  'liputan6.com': 'Liputan6',
+  'kumparan.com': 'kumparan',
+  'cnnindonesia.com': 'CNN Indonesia',
+  'tempo.co': 'Tempo',
+  'republika.co.id': 'Republika',
+  'okezone.com': 'Okezone',
+  'sindonews.com': 'SINDOnews',
+  'viva.co.id': 'VIVA',
+  'jpnn.com': 'JPNN',
+  'suara.com': 'Suara.com',
+  'merdeka.com': 'Merdeka.com',
+  'metrotvnews.com': 'MetroTV',
+  'medcom.id': 'Medcom.id',
+  'beritasatu.com': 'BeritaSatu',
+  'inews.id': 'iNews',
+  'instagram.com': 'Instagram',
+  'facebook.com': 'Facebook',
+  'tiktok.com': 'TikTok',
+  'x.com': 'X',
+  'twitter.com': 'X',
+  'youtube.com': 'YouTube',
+  'youtu.be': 'YouTube',
+}
+
+/** "www.radarlampung.co.id" menjadi "radarlampung.co.id". */
+function rapikanInang(inang) {
+  return String(inang || '').replace(/^www\./i, '').toLowerCase()
+}
+
+/** Inang tautan sebuah berita, atau kosong bila tautannya tidak sah. */
+function inangTautan(berita) {
+  try {
+    return rapikanInang(new URL(berita?.link || berita?.url).hostname)
+  } catch {
+    return ''
+  }
+}
+
+/**
+ * Nama penerbit sebagaimana ditulis pada laporan.
+ *
+ * Berbeda dari `sumberAsli()` di lib/peristiwa.js, dan sengaja demikian.
+ * `sumberAsli()` menjawab "siapa yang menerbitkannya" untuk keperluan
+ * menghitung berapa media yang memberitakan satu peristiwa — di sana
+ * "instagram.com" adalah jawaban yang benar dan berguna. Fungsi ini menjawab
+ * pertanyaan yang lain: "apa yang harus tercetak di lembar laporan".
+ *
+ * Tiga hal yang diperbaiki di sini, dan ketiganya pernah tercetak salah:
+ *
+ *   Nama alat penyisiran. "Medsos Radar" dan "TikTok Radar" adalah nama alat
+ *   pengumpul, bukan nama penerbit. Keduanya sempat menempati peringkat satu
+ *   dan lima pada panel Top 5 Media — daftar media yang isinya bukan media.
+ *
+ *   Inang telanjang. Berita hasil penyisiran tidak menyimpan nama akunnya,
+ *   sehingga yang tersisa hanya "instagram.com". Yang benar tercetak di lembar
+ *   resmi adalah nama platformnya.
+ *
+ *   Nama terbitan. "rri.co.id" menjadi "RRI.co.id".
+ *
+ * @param {object} berita
+ * @param {string} [petunjuk] hasil `sumberAsli()` dari lib/peristiwa.js, bila
+ *   pemanggilnya sudah menghitungnya. Di sanalah nama penerbit digali kembali
+ *   dari ekor judul Google News — "Judul berita - Nama Media" — dan itu
+ *   satu-satunya tempat nama itu masih tersisa untuk 70 dari 130 baris sepekan.
+ *   Logikanya tidak disalin ke sini: satu-satunya hal yang lebih buruk
+ *   daripada penggalian yang rumit adalah dua penggalian rumit yang perlahan
+ *   berbeda hasilnya.
+ */
+export function namaPenerbitTampil(berita = {}, petunjuk = '') {
+  const mediaAsli = String(berita.media ?? '').trim()
+
+  // Nama kanal di dalam kurung siku selalu menang: ia satu-satunya nama
+  // penerbit yang benar-benar tercatat, bukan diterka.
+  const kanal = mediaAsli.match(/\[([^\]]+)\]/)
+  if (kanal) return kanal[1].trim()
+
+  const akun = namaAkun(mediaAsli)
+  const akunNormal = normal(akun)
+  const penyisiran = memuatPenanda(akunNormal, PENYISIRAN)
+    || /^(google news|medsos|rss|feed|crawler|scraper)/i.test(akun)
+
+  if (!penyisiran && akun) return akun
+
+  // Namanya bukan nama penerbit. Yang tersisa, berurut menurut kepercayaan:
+  // nama yang digali dari judul, inang tautannya, lalu platformnya.
+  const dariJudul = String(petunjuk || '').trim()
+  if (dariJudul && !/^(https?:)?\/\//.test(dariJudul)) {
+    const inangPetunjuk = rapikanInang(dariJudul)
+    if (PADANAN_INANG[inangPetunjuk]) return PADANAN_INANG[inangPetunjuk]
+    // Petunjuk yang ternyata hanya mengulang nama pengumpulnya tidak dipakai.
+    if (!/^(google news|medsos|rss|feed|crawler|scraper)/i.test(dariJudul)
+      && !memuatPenanda(normal(dariJudul), PENYISIRAN)
+      && !/^news\.google\.com$/i.test(dariJudul)
+      && dariJudul !== 'Sumber tidak tercatat') {
+      return dariJudul
+    }
+  }
+
+  const inang = inangTautan(berita)
+  if (inang && !/^news\.google\.com$/i.test(inang)) return PADANAN_INANG[inang] || inang
+
+  const platform = String(berita.platform ?? '').trim()
+  if (platform && !/^google news$/i.test(platform)) return platform
+
+  return 'Tidak tercatat'
+}
+
+export const META_PENERBIT = { versi: 'penerbit-v1.1' }

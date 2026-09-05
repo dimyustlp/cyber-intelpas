@@ -79,12 +79,19 @@ const HALAMAN = {
   negatif: () => import('./pages/kanal.js').then((m) => m.halamanKanalNegatif),
   positif: () => import('./pages/kanal.js').then((m) => m.halamanKanalPositif),
   laporan: () => import('./pages/laporan.js').then((m) => m.halamanLaporan),
+  infografis: () => import('./pages/infografis.js').then((m) => m.halamanInfografis),
   integrasi: () => import('./pages/integrasi.js').then((m) => m.halamanIntegrasi),
   distribusi: () => import('./pages/distribusi.js').then((m) => m.halamanDistribusi),
   telaah: () => import('./pages/telaah.js').then((m) => m.halamanTelaah),
   pemetaan: () => import('./pages/pemetaan.js').then((m) => m.halamanPemetaan),
   peta: () => import('./pages/peta.js').then((m) => m.halamanPeta),
   tren: () => import('./pages/tren.js').then((m) => m.halamanTren),
+  narasi: () => import('./pages/narasi.js').then((m) => m.halamanNarasi),
+  jaringan: () => import('./pages/jaringan.js').then((m) => m.halamanJaringan),
+  komando: () => import('./pages/komando.js').then((m) => m.halamanKomando),
+  ruang: () => import('./pages/ruang.js').then((m) => m.halamanRuang),
+  cari: () => import('./pages/cari.js').then((m) => m.halamanCari),
+  aturan: () => import('./pages/aturan.js').then((m) => m.halamanAturan),
   kasus: () => import('./pages/kasus.js').then((m) => m.halamanKasus),
   lapangan: () => import('./pages/lapangan.js').then((m) => m.halamanLapangan),
   evaluasi: () => import('./pages/evaluasi.js').then((m) => m.halamanEvaluasi),
@@ -782,7 +789,7 @@ document.addEventListener('gambar-ulang', () => gambar())
 // Perpindahan halaman yang membawa berita tertentu. Lewat acara, dengan alasan
 // yang sama seperti di atas: halaman tidak boleh mengimpor balik berkas ini.
 document.addEventListener('buka-halaman', (ev) => {
-  const { halaman, fokus } = ev.detail || {}
+  const { halaman, fokus, saring } = ev.detail || {}
   if (!halaman) return
 
   /*
@@ -805,7 +812,17 @@ document.addEventListener('buka-halaman', (ev) => {
     return
   }
 
-  keHalaman(halaman, { fokus })
+  /*
+     `saring` ikut diteruskan, dan sempat tidak.
+
+     Jalur `data-halaman` sudah membawa saringan titipannya sejak lama; jalur
+     acara ini hanya membawa `fokus`, sehingga tombol yang menyebut tujuannya
+     di dalam penyimak kliknya — satu-satunya bentuk yang bisa dipakai kartu
+     yang disusun saat program berjalan — mendarat di halaman tujuan tanpa
+     saringan apa pun. Halamannya terbuka, isinya seluruh arsip, dan tidak ada
+     satu pun tanda bahwa saringannya hilang di jalan.
+  */
+  keHalaman(halaman, { fokus, saring })
 })
 
 /*

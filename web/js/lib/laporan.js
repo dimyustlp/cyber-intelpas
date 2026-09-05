@@ -1074,10 +1074,31 @@ export function susunLaporan(snapshot, opsi = {}) {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${esc(judul)}</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
-<style>${GAYA}${GAYA_NAIK}</style>
+${/*
+   Berkas ini TIDAK menarik huruf dari Google, dan itu diperbaiki 4 September
+   2026. Sebelumnya kepala berkas memuat tiga tag <link> ke fonts.googleapis.com
+   dan fonts.gstatic.com. Tiga akibatnya, dan ketiganya buruk:
+
+   Pertama, laporan ini memuat nama unit, judul berita negatif, dan rekomendasi
+   tindakan. Setiap kali seseorang membukanya — di rumah, di ponsel, berbulan-
+   bulan kemudian — peramban memberi tahu peladen pihak ketiga bahwa berkas itu
+   sedang dibuka, dari alamat IP mana. Isi laporannya memang tidak ikut
+   terkirim, tetapi pola siapa-membuka-kapan adalah keterangan tersendiri.
+
+   Kedua, laporan yang dibuka tanpa jaringan — di ruang rapat tanpa Wi-Fi,
+   persis tempat laporan dibaca — menunggu permintaan itu gagal lebih dulu.
+
+   Ketiga, aturan repositori ini melarang aset pihak ketiga ditarik saat halaman
+   dibuka, dan larangan itu berlaku untuk berkas yang KITA hasilkan juga.
+   Sementara aplikasinya menyimpan hurufnya sendiri di web/fonts/, berkas
+   laporannya justru mengambil dari luar.
+
+   Tumpukan huruf di dalam GAYA sudah menyebut cadangan sistem yang sungguhan
+   (Segoe UI, sistem-ui), jadi yang hilang hanya perbedaan bentuk huruf yang
+   halus — bukan tata letaknya. Menanamkan woff2 sebagai data URI sempat
+   dipertimbangkan dan ditolak: ia menambah 71 KiB pada tiap berkas laporan
+   demi perbedaan yang tidak pernah dikeluhkan siapa pun.
+*/''}<style>${GAYA}${GAYA_NAIK}</style>
 </head>
 <body>
 <div class="lembar">

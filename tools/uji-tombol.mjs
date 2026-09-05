@@ -366,17 +366,88 @@ const NILAI_BAKU_BERITA = (() => {
   return kunci
 })()
 
+/**
+ * Nama halaman → berkas yang membangunnya.
+ *
+ * Kebalikan `BERKAS_HALAMAN`, dipakai untuk menemukan berkas tujuan sebuah
+ * saringan titipan.
+ */
+const HALAMAN_KE_BERKAS = (() => {
+  const peta = new Map()
+  for (const [berkas, daftar] of Object.entries(BERKAS_HALAMAN)) {
+    for (const id of daftar) peta.set(id, berkas)
+  }
+  return peta
+})()
+
+const ISI_BERKAS = new Map(semua.map((b) => [b.nama, b.isi]))
+
+/**
+ * Halaman tujuan sebuah saringan titipan.
+ *
+ * Dicari pada potongan teks di sekitar `saring: { ... }` — bentuk yang dipakai
+ * seluruh aplikasi menaruh keduanya di dalam satu objek yang sama, entah
+ * sebagai `{ halaman: 'x', saring: {...} }` pada ubin, entah sebagai
+ * `detail: { halaman: 'x', saring: {...} }` pada acara.
+ *
+ * Sampai 5 September 2026 alat ini tidak mencarinya sama sekali: ia
+ * membandingkan SETIAP kunci saringan dengan daftar kunci Pusat Data Berita,
+ * sebab dulu memang hanya halaman itu yang membaca `saringMasuk`. Begitu
+ * halaman kedua ikut membacanya, ketiga tombol yang menuju ke sana dituduh
+ * membawa kunci asing — tuduhan yang benar menurut daftar lama dan keliru
+ * menurut aplikasinya.
+ */
+function tujuanSaring(isi, indeks) {
+  const awal = Math.max(0, indeks - 220)
+  const jendela = isi.slice(awal, indeks + 220)
+  const kedudukanSaring = indeks - awal
+
+  /*
+     Yang diambil adalah `halaman:` yang PALING DEKAT, bukan yang terakhir.
+
+     Penyimak klik sebuah halaman menaruh beberapa cabang berdampingan, dan
+     cabang berikutnya sering menyebut tujuan lain hanya beberapa baris di
+     bawahnya. Mengambil yang terakhir di dalam jendela berarti membaca tujuan
+     milik cabang tetangga — dan menuduh sebuah saringan salah alamat justru
+     ketika alamatnya benar.
+  */
+  let terdekat = null
+  let jarak = Infinity
+  for (const c of jendela.matchAll(/halaman:\s*'([a-z][a-z0-9-]*)'/g)) {
+    const d = Math.abs(c.index - kedudukanSaring)
+    if (d < jarak) { jarak = d; terdekat = c[1] }
+  }
+  return terdekat
+}
+
 for (const { nama, isi } of semua) {
   for (const c of isi.matchAll(/saring:\s*\{([^}]*)\}/g)) {
     const kunci = [...c[1].matchAll(/([a-zA-Z][a-zA-Z0-9]*)\s*:/g)].map((m) => m[1])
     const baris = barisDi(isi, c.index)
-    /* Tujuan saringan hampir selalu Pusat Data Berita; itu satu-satunya
-       halaman yang membaca `saringMasuk`. */
+
+    const tujuan = tujuanSaring(isi, c.index)
+    const berkasTujuan = tujuan ? HALAMAN_KE_BERKAS.get(tujuan) : null
+    const isiTujuan = berkasTujuan ? ISI_BERKAS.get(berkasTujuan) : null
+
     for (const k of kunci) {
+      /* Halaman tujuan dianggap mengenali sebuah kunci bila nama kunci itu
+         muncul di berkasnya. Longgar dengan sengaja: yang dicari di sini
+         adalah kunci yang sama sekali tidak dikenal siapa pun, bukan salah
+         eja yang kebetulan mirip. */
+      if (isiTujuan) {
+        if (new RegExp(`\\b${k}\\b`).test(isiTujuan)) continue
+        catat('saring-asing', nama, baris,
+          `Saringan titipan memakai kunci "${k}", yang tidak disebut di mana pun pada `
+          + `halaman tujuan "${tujuan}" (${berkasTujuan}). Halamannya terbuka tanpa tersaring.`)
+        continue
+      }
+
+      // Tujuan tidak terbaca dari teksnya — kembali ke anggapan lama, yaitu
+      // Pusat Data Berita, satu-satunya halaman yang dulu membaca saringMasuk.
       if (NILAI_BAKU_BERITA.has(k)) continue
       catat('saring-asing', nama, baris,
-        `Saringan titipan memakai kunci "${k}", yang tidak ada di NILAI_BAKU `
-        + 'halaman Pusat Data Berita. Daftar yang terbuka tidak akan tersaring.')
+        `Saringan titipan memakai kunci "${k}", dan halaman tujuannya tidak terbaca `
+        + 'dari teks. Kunci itu juga tidak ada pada saringan Pusat Data Berita.')
     }
   }
 }

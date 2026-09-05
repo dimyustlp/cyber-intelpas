@@ -63,6 +63,14 @@ web/                     aplikasi peramban, disajikan apa adanya
       hitung.js          satu himpunan dasar untuk seluruh angka di layar
       risiko.js          skor risiko 0–100 beserta rincian penyumbangnya
       peringatan-laju.js empat aturan peringatan dini berbasis pola
+      kueri.js           bahasa kueri Boolean — DAN/ATAU/TIDAK, frasa, bidang, jokar
+      pantauan.js        pencarian tersimpan dan daftar pantau, satu mekanisme
+      aturan.js          mesin aturan peringatan yang disusun petugas sendiri
+      narasi.js          peristiwa dikelompokkan menjadi cerita yang berjalan
+      jaringan.js        kaitan antara unit, media, tema, wilayah, dan platform
+      kpi.js             ukuran kecepatan dan kelengkapan sistem itu sendiri
+      klasifikasi-informasi.js  lima tingkat: sejauh mana sebuah berkas boleh berjalan
+      ekspor.js          satu jalan keluar berkas, lengkap dengan kepala keterangan
       api.js             pemanggil PostgREST dan GoTrue tanpa SDK
       format.js          tanggal, angka, dan warna semantik
       konfig.js          alamat peladen dan kunci publik
@@ -82,6 +90,12 @@ web/                     aplikasi peramban, disajikan apa adanya
                            peta.js        peta sebaran kerawanan 531 unit
                            pengguna.js    peran, wilayah penugasan, dan keaktifan akun
                            sinkronisasi.js  keadaan tiap sumber spreadsheet
+                           cari.js        Pencarian Lanjutan — satu kotak berbahasa kueri
+                           ruang.js       Ruang Analis — antrean, pantauan, temuan aturan
+                           aturan.js      penyusun aturan, dengan jangkauan yang terlihat
+                           narasi.js      cerita yang sedang berjalan, bukan daftar berita
+                           jaringan.js    gambar kaitan, berpusat pada satu simpul
+                           komando.js     Pusat Komando — satu layar untuk dinding piket
     main.js              sesi, kerangka layar, penunjuk halaman
 
 data/
@@ -264,6 +278,164 @@ apakah seseorang sudah membacanya. Itu disebutkan di layar, dan itu pula yang
 membedakannya dari peringatan yang lengkap: nomor, status, dan pemilik menuntut
 tabel `alerts` yang belum ada.
 
+## Bahasa kueri
+
+Sejak 5 September 2026 satu kotak menjawab pertanyaan berlapis, dan bahasanya
+tinggal di `web/js/lib/kueri.js` seorang diri:
+
+```text
+(narkoba ATAU sabu) DAN upt:Cilegon TIDAK status:"Tidak Valid"
+"warga binaan"          frasa utuh, harus berurutan
+"sipir narkoba"~6       dua kata dalam jarak enam kata
+selundup*               jokar; mematikan pencocokan imbuhan
+sejak:2026-09-01        rentang tanggal terbit
+```
+
+Kata biasa dicocokkan dengan kesadaran imbuhan — `selundup` menemukan
+`penyelundupan` — lewat pengakar yang sama yang dipakai mesin klasifikasi.
+Bidang berkosakata tertutup (`upt:`, `status:`, `sentimen:`) dicocokkan
+harfiah, sebab yang mengetiknya sedang menyalin tulisan yang barusan ia lihat.
+
+Tiga hal yang mengikat berkas itu:
+
+1. **Kueri yang belum selesai diketik bukan galat.** Kurung yang belum ditutup
+   dan kutip yang baru dibuka adalah keadaan normal sebuah kotak pencarian.
+   `uraiKueri()` tidak pernah melempar; ia mengembalikan pohon terbaik beserta
+   catatan, dan halaman menampilkan catatannya sebagai keterangan.
+2. **Kueri bisa dibaca ulang sebagai kalimat.** `jelaskan()` menerjemahkan
+   pohonnya kembali ke bahasa Indonesia, dan kalimat itu tampil di bawah
+   kotaknya. Kueri berkurung tiga lapis tidak pernah salah menurut mesin; yang
+   keliru adalah anggapan penulisnya, dan hanya kalimat biasa yang bisa
+   menunjukkannya.
+3. **Saringan yang dipasang lewat tombol ditulis ke dalam kotaknya.** Menekan
+   "Negatif" pada panel Persempit menambahkan `sentimen:Negatif` ke teks yang
+   terbaca — tidak ada keadaan tersembunyi. Akibatnya kotak itu selalu menjadi
+   keterangan lengkap tentang apa yang sedang ditampilkan: bisa disalin ke
+   rekan, disimpan sebagai pantauan, dan dibaca ulang tiga bulan kemudian.
+
+## Pantauan, dan mengapa ia bukan dua fitur
+
+Daftar periksa memisahkan "pencarian tersimpan" dari "daftar pantau".
+`web/js/lib/pantauan.js` menyatukannya: **sebuah daftar pantau unit adalah
+pencarian tersimpan yang kuerinya `upt:"…"`**, dan yang membedakan keduanya di
+layar tinggal satu bidang `jenis` yang menentukan ikon.
+
+Kalau keduanya dibangun sebagai dua mekanisme, keduanya akan menyaring dengan
+aturan yang perlahan berbeda — dan petugas yang memantau Cilegon lewat daftar
+pantau akan melihat angka yang berbeda dari yang memantaunya lewat pencarian
+tersimpan, tanpa satu pun cara menjelaskan selisihnya. Ujinya memeriksa persis
+itu.
+
+Setiap pantauan boleh diberi **ambang**: berapa publikasi baru sebelum ia
+disebut menyala. Yang dihitung terhadap ambang adalah yang BARU, bukan
+seluruhnya — pantauan yang menyala karena arsip lamanya besar akan menyala
+selamanya, dan itu sama tidak berartinya dengan yang tidak pernah menyala.
+
+**Pantauan tinggal di peramban, bukan di basis data.** Ia tidak berpindah ke
+komputer lain dan tidak dibagi ke rekan setim. Batas itu disebutkan di layar,
+bukan disembunyikan. Ketika tabelnya kelak dibuat, yang perlu berubah hanya dua
+fungsi `baca()` dan `tulis()`.
+
+## Aturan peringatan yang disusun sendiri
+
+Empat aturan pola di `peringatan-laju.js` menjawab pertanyaan yang sama bagi
+seluruh Indonesia dan tetap di sana. `web/js/lib/aturan.js` menambahkan yang
+menjawab pertanyaan satu kantor: *bila peristiwa di wilayah saya berskor di atas
+65 dan diangkat tiga media, kabari saya.*
+
+Aturan disusun dari **daftar sinyal tertutup** — skor risiko, jumlah media,
+jumlah platform, usia, sunyi sejak terbitan terakhir, urgensi, sentimen,
+kategori, unit, wilayah, sudah ditanggapi, sudah ditelaah. Kotak isian bebas
+akan menghasilkan aturan yang menyebut nama kolom salah ketik: tersimpan,
+tampil di daftar, tidak pernah menyala, dan tidak pernah mengeluh.
+
+Tiga hal yang membedakannya dari borang biasa:
+
+- **Jangkauan tampil sebelum disimpan.** Setiap perubahan syarat menghitung
+  ulang berapa peristiwa akan dinyalakannya, sekarang juga. Aturan yang
+  menghasilkan empat ratus temuan tidak dimatikan orang, melainkan diabaikan —
+  beserta seluruh aturan lain di sebelahnya.
+- **Bekerja pada peristiwa, bukan publikasi.** Sebelas peringatan tentang satu
+  pelarian adalah cara tercepat membuat orang berhenti membaca peringatan.
+- **Tidak ada eskalasi otomatis.** Bidang eskalasi dan saluran adalah
+  keterangan bagi manusia yang menekan kirim di halaman Distribusi. Sistem
+  intelijen yang mengirim sendiri ke grup pimpinan atas dasar ambang angka akan
+  salah kirim pada hari pertama ambangnya keliru, dan pesan yang sudah terkirim
+  tidak bisa ditarik.
+
+Lima aturan bawaan dikirim bersama sistem. Keduanya bisa dimatikan dan
+ambangnya bisa disunting; yang tidak bisa adalah menghapusnya — tombolnya
+karena itu berbunyi "Pulihkan", bukan "Hapus".
+
+## Narasi dan kaitan
+
+`lib/peristiwa.js` menjawab "berapa kejadian di balik seratus artikel ini".
+`lib/narasi.js` menjawab pertanyaan berikutnya: **cerita apa yang sedang
+berjalan.** Tiga pelarian di tiga lapas dalam dua pekan adalah tiga peristiwa
+terpisah dan satu narasi — dan narasi itulah yang dibaca publik.
+
+Lima bentuk narasi, dan urutan pemeriksaannya disengaja: **berulang diperiksa
+lebih dulu daripada menanjak dan mereda**, sebab dua letupan yang dipisahkan
+sepekan sunyi tampak seperti dua kejadian yang sudah selesai. Setiap narasi
+negatif juga diperiksa apakah ia **berjalan sendirian** — tanpa satu pun
+publikasi penyeimbang maupun sikap resmi pada tema dan unit yang sama.
+
+`lib/jaringan.js` menyusun kaitan antara unit, media, tema, wilayah, dan
+platform dari data yang sudah ada, tanpa satu kolom baru. **Tidak ada simpul
+orang di dalamnya**, dan penambahannya menuntut dasar kewenangan, bukan
+menuntut kode. Tata letaknya melingkar dan deterministik: masukan yang sama
+selalu menghasilkan gambar yang sama, supaya yang terlihat berubah adalah
+datanya.
+
+## Klasifikasi informasi pada berkas keluaran
+
+Seluruh isi sistem ini internal; yang belum ada sampai sekarang adalah
+pembedaan di dalam "internal" itu. `lib/klasifikasi-informasi.js` menurunkan
+lima tingkat dari dua hal yang sudah tercatat pada tiap baris — seberapa
+merugikan isinya, dan apakah sudah pernah diperiksa manusia:
+
+| Keadaan baris | Tingkat |
+| --- | --- |
+| sudah diperiksa, tidak merugikan | Internal |
+| sudah diperiksa, merugikan | Terbatas |
+| belum diperiksa, merugikan | Rahasia |
+| mendesak (Tinggi/Kritis) | Rahasia |
+| bahan siklus intelijen | Sangat Terbatas |
+
+Urutan ketiga dan keempat yang paling mudah dibalik dan paling mahal bila
+terbalik: **tuduhan yang belum diperiksa berjalan lebih sempit daripada tuduhan
+yang sudah terbukti.** Berkas yang beredar berisi dugaan yang kemudian ternyata
+keliru tidak bisa ditarik kembali dari percakapan yang sudah membacanya.
+
+Tingkat sebuah kumpulan adalah yang TERTINGGI di antara isinya, tidak pernah
+rata-rata: satu baris rahasia di dalam seribu baris internal menjadikan seluruh
+berkas rahasia, sebab berkas itu berpindah tangan sebagai satu benda.
+
+`lib/ekspor.js` adalah satu-satunya jalan keluar berkas. Setiap keluaran diawali
+blok keterangan — klasifikasi, kalimat perlakuannya, nomor berkas, nama dan
+peran pengunduh, waktu, saringan yang menghasilkannya, dan jumlah baris — dan
+haknya diperiksa sebelum berkasnya disusun.
+
+## KPI sistem
+
+`lib/kpi.js` mengukur sistemnya sendiri, dan hasilnya tampil di Kesehatan
+Sistem: waktu deteksi, waktu telaah pusat dan daerah, waktu sikap resmi, usia
+antrean, kesegaran data, liputan unit, bagian yang belum terpetakan, dan bagian
+yang dinyatakan tidak valid.
+
+Dua aturan yang mengikat berkas itu:
+
+- **Median dan persentil, tidak pernah rata-rata.** Satu berita lama yang baru
+  masuk hari ini menghasilkan selisih empat puluh hari, dan satu angka semacam
+  itu menggeser rata-rata jauh dari apa pun yang benar-benar terjadi.
+- **"Belum terukur" bukan nol.** Ukuran tanpa satu pun data berkata belum
+  terukur; nol pada ukuran waktu berarti sempurna.
+
+Bagian yang dinyatakan tidak valid **bukan ukuran ketepatan mesin**, dan
+disebutkan begitu di layar: sebuah baris dinyatakan tidak valid karena mesinnya
+keliru, karena medianya menarik beritanya, atau karena unitnya sudah
+mengklarifikasi — ketiganya terhitung sama.
+
 ## Keamanan
 
 - Kunci yang tertanam di `konfig.js` adalah publishable key. Kunci itu tidak
@@ -308,6 +480,14 @@ node tools/uji-mesin.mjs        # 14 uji perilaku + 9 uji pencocokan UPT
 node tools/uji-hitung.mjs       # 37 uji ember sentimen dan penjumlahan angka
 node tools/uji-risiko.mjs       # 63 uji skor risiko
 node tools/uji-laju.mjs         # 26 uji aturan peringatan dini
+node tools/uji-infografis.mjs   # 38 uji lembar infografis
+node tools/uji-kueri.mjs        # 103 uji bahasa kueri
+node tools/uji-pantauan.mjs     # 59 uji pencarian tersimpan dan daftar pantau
+node tools/uji-ekspor.mjs       # 69 uji klasifikasi informasi dan ekspor
+node tools/uji-narasi.mjs       # 57 uji pengelompokan narasi
+node tools/uji-jaringan.mjs     # 49 uji jaringan kaitan
+node tools/uji-aturan.mjs       # 61 uji mesin aturan peringatan
+node tools/uji-kpi.mjs          # 60 uji ukuran kinerja
 node tools/uji-tombol.mjs       # integritas tombol antar fitur
 node tools/periksa-lainnya.mjs  # 62 kasus nyata dari arsip
 ```

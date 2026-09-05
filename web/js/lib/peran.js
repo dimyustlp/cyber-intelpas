@@ -131,12 +131,13 @@ export const IZIN = {
     'lihat_laporan', 'unduh_laporan', 'kirim_telegram', 'lihat_peringatan',
     'lihat_tindak_lanjut', 'unggah_lampiran', 'tugaskan_lapangan', 'lihat_penugasan',
     'lihat_laporan_lapangan', 'lihat_sinkronisasi',
+    'lihat_ruang_analis', 'kelola_aturan',
   ],
 
   news_data_operator: [
     'lihat_dasbor', 'lihat_briefing', 'lihat_berita', 'buat_berita', 'sunting_berita_sendiri',
     'validasi_metadata', 'lihat_sinkronisasi', 'jalankan_sinkronisasi', 'lihat_duplikat',
-    'unggah_lampiran',
+    'unggah_lampiran', 'lihat_ruang_analis',
   ],
 
   field_verification_officer: [
@@ -151,6 +152,7 @@ export const IZIN = {
     'nilai_tindak_lanjut', 'buat_laporan',
     'sunting_draf_laporan', 'lihat_laporan', 'unduh_laporan', 'lihat_tren',
     'lihat_tindak_lanjut', 'kelola_tindak_lanjut', 'perbarui_tindak_lanjut',
+    'lihat_ruang_analis', 'kelola_aturan',
   ],
 
   /*
@@ -248,6 +250,32 @@ export const MENU = [
       { id: 'peringatan', label: 'Peringatan Dini', ikon: 'peringatan', izin: 'lihat_peringatan', lencana: 'peringatan' },
       { id: 'peta', label: 'Peta Sebaran', ikon: 'peta', izin: 'lihat_peta' },
       { id: 'tren', label: 'Tren Pemberitaan', ikon: 'tren', izin: 'lihat_tren' },
+      /*
+         Narasi dan kaitan berdiri berdampingan dengan Tren, bukan di dalamnya.
+
+         Ketiganya membaca arsip yang sama dari tiga sudut yang tidak saling
+         menggantikan: Tren menjawab "berapa banyak, naik atau turun", Narasi
+         menjawab "cerita apa yang sedang berjalan", dan Kaitan menjawab "siapa
+         bertemu apa". Menumpuk ketiganya di dalam satu halaman bertab berarti
+         dua di antaranya tidak pernah dibuka.
+      */
+      { id: 'narasi', label: 'Narasi Berjalan', ikon: 'tren', izin: 'lihat_tren' },
+      { id: 'jaringan', label: 'Analisis Kaitan', ikon: 'kasus', izin: 'lihat_tren' },
+      /*
+         Pusat Komando memakai izin dasbor yang sama, sebab isinya memang isi
+         dasbor yang sama — disusun untuk dibaca dari jarak tiga meter. Hak
+         yang berbeda untuk data yang sama hanya akan menghasilkan dua daftar
+         izin yang perlahan berselisih.
+      */
+      { id: 'komando', label: 'Pusat Komando', ikon: 'dasbor', izin: 'lihat_dasbor' },
+    ],
+  },
+  {
+    grup: 'Ruang Analis',
+    butir: [
+      { id: 'ruang', label: 'Ruang Analis', ikon: 'pengguna', izin: 'lihat_ruang_analis' },
+      { id: 'cari', label: 'Pencarian Lanjutan', ikon: 'cari', izin: 'lihat_berita' },
+      { id: 'aturan', label: 'Aturan Peringatan', ikon: 'gembok', izin: 'kelola_aturan' },
     ],
   },
   {
@@ -278,6 +306,7 @@ export const MENU = [
     grup: 'Pelaporan',
     butir: [
       { id: 'laporan', label: 'Laporan Berkala', ikon: 'laporan', izin: 'lihat_laporan' },
+      { id: 'infografis', label: 'Lembar Infografis', ikon: 'tren', izin: 'lihat_laporan' },
       { id: 'distribusi', label: 'Distribusi Telegram', ikon: 'kirim', izin: 'kirim_telegram' },
     ],
   },

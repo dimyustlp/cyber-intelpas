@@ -50,6 +50,8 @@ import { kelompokkanPeristiwa, sumberAsli } from './peristiwa.js'
 // @ts-ignore modul JavaScript murni tanpa tipe
 import { bersihkanTeks } from './teks.js'
 
+import { gambarSvg } from './svg-ke-pdf.ts'
+
 // ------------------------------------------------------------------- ukuran
 
 const A4 = { lebar: 595.28, tinggi: 841.89 }
@@ -396,11 +398,16 @@ function bagianUraian(k: Kanvas, rincian: any): number {
   return peristiwa.length
 }
 
-function bagianKaki(k: Kanvas, dibuat: string) {
-  const jumlah = k.halaman.length
+/**
+ * @param geser  berapa halaman yang mendahului halaman uraian. Lembar
+ *   infografis adalah halaman 1 ketika ia ikut, dan penomoran yang
+ *   mengabaikannya membuat lampiran berisi dua "halaman 1".
+ */
+function bagianKaki(k: Kanvas, dibuat: string, geser = 0) {
+  const jumlah = k.halaman.length + geser
   k.halaman.forEach((hal, i) => {
     const teks = amankanTeks(
-      `Trans-Siber PAS - disusun otomatis ${dibuat} WIB - halaman ${i + 1} dari ${jumlah}`,
+      `Trans-Siber PAS - disusun otomatis ${dibuat} WIB - halaman ${i + 1 + geser} dari ${jumlah}`,
     )
     hal.drawLine({
       start: { x: TEPI, y: TEPI + 16 }, end: { x: A4.lebar - TEPI, y: TEPI + 16 },
@@ -419,10 +426,12 @@ export type BahanLaporan = {
   ikhtisar: Ikhtisar
   pembanding: Ikhtisar
   rincian: unknown
+  /** Lembar infografis sebagai SVG. Bila kosong, laporan disusun tanpa halaman lembar. */
+  svgLembar?: string
 }
 
 /** Menyusun seluruh laporan dan mengembalikannya sebagai base64. */
-export async function susunPdf(bahan: BahanLaporan): Promise<{ base64: string, halaman: number, bita: number, peristiwa: number }> {
+export async function susunPdf(bahan: BahanLaporan): Promise<{ base64: string, halaman: number, bita: number, peristiwa: number, lembar: boolean }> {
   const doc = await PDFDocument.create()
   doc.setTitle(`Laporan Harian Pemberitaan Negatif ${bahan.hari}`)
   doc.setAuthor('Trans-Siber PAS - Direktorat Pengamanan dan Intelijen')
@@ -431,6 +440,28 @@ export async function susunPdf(bahan: BahanLaporan): Promise<{ base64: string, h
 
   const reguler = await doc.embedFont(StandardFonts.Helvetica)
   const tebal = await doc.embedFont(StandardFonts.HelveticaBold)
+
+  /*
+     Lembar infografis mendahului uraian, dan urutannya bukan selera.
+
+     Yang membuka lampiran di telepon melihat halaman pertama, dan sebagian
+     besar berhenti di sana. Kalau halaman pertama adalah daftar peristiwa
+     negatif, yang tertinggal di kepala pembaca adalah daftar masalah tanpa
+     ukuran — tidak ada yang memberi tahu bahwa 76 berita negatif itu dari 130,
+     atau bahwa dua puluh di antaranya satu peristiwa yang sama. Lembar
+     memberikan ukurannya lebih dulu; uraiannya menunggu bagi yang meneruskan.
+
+     Halamannya melintang, sedangkan uraian tegak. Satu berkas boleh memuat
+     keduanya, dan memaksa lembar menjadi tegak akan menyusutkannya sampai
+     angka pada peta tidak terbaca.
+  */
+  let halamanLembar = 0
+  if (bahan.svgLembar) {
+    const lembar = doc.addPage([A4.tinggi, A4.lebar])
+    gambarSvg(lembar, bahan.svgLembar, { biasa: reguler, tebal }, amankanTeks)
+    halamanLembar = 1
+  }
+
   const k = new Kanvas(doc, reguler, tebal)
 
   const ikh = bahan.ikhtisar ?? {}
@@ -443,10 +474,16 @@ export async function susunPdf(bahan: BahanLaporan): Promise<{ base64: string, h
   bagianKop(k, bahan.hari, bahan.nomor, keadaan)
   bagianIkhtisar(k, ikh, bahan.pembanding ?? {})
   const nPeristiwa = bagianUraian(k, bahan.rincian)
-  bagianKaki(k, bahan.dibuat)
+  bagianKaki(k, bahan.dibuat, halamanLembar)
 
   const bita = await doc.save()
   let biner = ''
   for (const b of bita) biner += String.fromCharCode(b)
-  return { base64: btoa(biner), halaman: k.halaman.length, bita: bita.length, peristiwa: nPeristiwa }
+  return {
+    base64: btoa(biner),
+    halaman: k.halaman.length + halamanLembar,
+    bita: bita.length,
+    peristiwa: nPeristiwa,
+    lembar: halamanLembar === 1,
+  }
 }

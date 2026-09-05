@@ -33,6 +33,7 @@ import { kartu, keping, kosong, tombol, roti } from '../ui/komponen.js'
 import { amankan, angka, tanggalJam, jarakWaktu } from '../lib/format.js'
 import { ikon } from '../lib/ikon.js'
 import { ambil, perbarui, pesanRamah, profilSekarang } from '../lib/api.js'
+import { hitungKpi, rekapKpi, nilaiTampil } from '../lib/kpi.js'
 
 /**
  * Ambang diam tiap komponen, dalam jam.
@@ -194,6 +195,49 @@ function kartuKomponen(kunci, nilai, angkaTambahan = '') {
     </div>`
 }
 
+/* ------------------------------------------------------------------ kinerja */
+
+/**
+ * Ukuran kinerja sistem, dari arsip yang sudah termuat di layar.
+ *
+ * Diletakkan di halaman ini, bukan di halaman tersendiri, karena keduanya
+ * menjawab pertanyaan yang sama dari dua sisi: apakah komponennya berjalan,
+ * dan apakah pekerjaannya selesai tepat waktu. Sebuah penyalin yang menyala
+ * tetapi meninggalkan seratus baris menunggu telaah selama empat hari adalah
+ * sistem yang sehat menurut lampunya dan tidak sehat menurut pemakainya.
+ *
+ * Seluruh ukuran waktu memakai median dan ekornya, tidak satu pun memakai
+ * rata-rata; alasannya ada di lib/kpi.js.
+ */
+function kartuKinerja(keadaan) {
+  const daftar = hitungKpi(keadaan.berita || [])
+  const rekap = rekapKpi(daftar)
+
+  return kartu({
+    judul: 'Kinerja',
+    ket: `${angka(rekap.tercapai)} dari ${angka(rekap.terukur)} ukuran memenuhi sasaran`
+      + (rekap.belumTerukur ? ` · ${angka(rekap.belumTerukur)} belum bisa diukur` : ''),
+    isi: `
+      <div class="kisi kisi-4">
+        ${daftar.map((k) => `
+          <div class="ubin" data-nada="${k.nada}">
+            <span class="ubin-label" title="${amankan(k.ket)}">${amankan(k.label)}</span>
+            <span class="ubin-nilai" style="font-size:20px">${amankan(nilaiTampil(k))}</span>
+            <span class="ubin-kaki">
+              ${amankan(k.ringkas)}
+              ${k.ekor !== null && k.ekor !== undefined && k.nilai !== null
+                ? ` · ekor ${amankan(nilaiTampil({ ...k, nilai: k.ekor }))}` : ''}
+            </span>
+          </div>`).join('')}
+      </div>
+      <div class="mini-teks samar-teks" style="margin-top:10px">
+        Dihitung dari arsip yang sedang termuat di peramban ini, bukan dari seluruh riwayat.
+        Angka "belum terukur" berarti tidak ada satu pun baris yang bisa dipakai menghitungnya —
+        bukan berarti nol.
+      </div>`,
+  })
+}
+
 /* ------------------------------------------------------------------ halaman */
 
 export function halamanKesehatan({ keadaan, isi }) {
@@ -258,6 +302,8 @@ export function halamanKesehatan({ keadaan, isi }) {
           ${kartuKomponen('telegram', nilaiKirim,
             kiriman.length ? `${angka(kiriman.filter((k) => k.status === 'terkirim').length)} dari ${angka(kiriman.length)} pengiriman terakhir berhasil.` : '')}
         </div>
+
+        ${kartuKinerja(keadaan)}
 
         ${kartu({
           judul: 'Gangguan tercatat',

@@ -583,73 +583,84 @@ export const KATEGORI = [
       },
       {
         kode: '8.2',
-        nama: 'Pembinaan dan Kemandirian',
+        nama: 'Pembinaan, Pendidikan, dan Keagamaan',
         aktor: 'sistem',
         urgensi: 'Rendah',
+        // Dipersempit 4 September 2026. Sebelumnya subkategori ini bernama
+        // "Pembinaan dan Kemandirian" dan menampung dua hal yang sebenarnya
+        // berbeda: pembinaan kepribadian (pelatihan, sekolah, ibadah) dan
+        // pemberdayaan ekonomi (panen, budidaya, UMKM). Keduanya sama-sama
+        // positif, sehingga tidak ada yang keliru selama laporan hanya
+        // menghitung positif-negatif. Begitu laporan mulai menguraikan isu
+        // per tema, gabungan itu menjadi satu batang raksasa tanpa arti.
+        // Yang berhubungan dengan pangan dan usaha pindah ke 8.6.
         kunci: [
           ['pelatihan kerja', 3], ['bimbingan kerja', 3], ['bimker', 3],
-          ['keterampilan', 3], ['kemandirian', 3], ['umkm', 3],
-          ['produksi warga binaan', 3], ['karya warga binaan', 3],
-          ['bengkel kerja', 3], ['pesantren', 3], ['kegiatan keagamaan', 3],
+          ['keterampilan', 3], ['bekal keterampilan', 3],
+          ['pesantren', 3], ['kegiatan keagamaan', 3],
           ['pembinaan rohani', 3], ['kerohanian', 3], ['pembinaan agama', 3],
           ['pendidikan kesetaraan', 3], ['belajar paket', 3], ['sertifikasi', 2],
-          ['panen', 3], ['budidaya', 3], ['ketahanan pangan', 3],
-          ['pembuatan tempe', 3], ['pembuatan sabun', 3], ['sabut kelapa', 3],
-          ['diekspor', 3], ['magang', 3], ['maganghub', 3], ['peserta magang', 3],
+          ['magang', 3], ['maganghub', 3], ['peserta magang', 3],
           ['program pemagangan', 3], ['kemnaker', 3], ['pelatihan vokasi', 3],
-          ['kelas menjahit', 3], ['perikanan', 2], ['peternakan', 2],
-          ['pertanian', 2], ['hidroponik', 3], ['pembinaan kepribadian', 3],
+          ['kelas menjahit', 3], ['pembinaan kepribadian', 3],
           ['literasi', 2], ['perpustakaan', 2], ['penyuluhan hukum', 3],
           ['kesadaran hukum', 3], ['kuliah teologi', 3], ['berdakwah', 3],
           ['berdzikir', 3], ['pengajian', 3], ['ibadah bersama', 3],
           ['batik', 3], ['menjahit', 3], ['las', 2], ['barbershop', 3],
           ['cukur rambut', 3], ['probation officer', 3], ['pembimbing kemasyarakatan', 3],
           ['asesmen', 2], ['kurikulum', 2], ['beasiswa', 3], ['ujian kesetaraan', 3],
-          [['karya', 'warga binaan'], 3], [['karya', 'lapas'], 2],
-          [['produk', 'warga binaan'], 3], [['pelatihan', 'warga binaan'], 3],
-          ['memasak', 3], ['dapur', 2], ['sayur', 2], ['berkebun', 3],
-          ['modal hidup', 3], ['bekal keterampilan', 3], ['wirausaha', 3],
+          [['pelatihan', 'warga binaan'], 3],
           // Ibadah rutin adalah pembinaan kepribadian, dan ia salah satu isi
           // unggahan humas yang paling sering muncul.
           ['ibadah', 3], ['kebaktian', 3], ['misa', 3], ['salat berjamaah', 3],
           ['sholat berjamaah', 3], ['tadarus', 3], ['khotbah', 3], ['jemaat', 3],
           ['rohani', 3], ['siraman rohani', 3], ['bimbingan rohani', 3],
+          // Hari besar keagamaan adalah pemicu paling sering bagi kegiatan
+          // keagamaan di UPT, dan judulnya kerap hanya menyebut nama harinya.
+          ['maulid nabi', 3], ['isra mikraj', 3], ['isra miraj', 3],
+          ['nuzulul quran', 3], ['tahun baru islam', 3], ['idul fitri', 2],
+          ['idul adha', 2], ['natal', 2], ['paskah', 2], ['nyepi', 2],
+          ['waisak', 2], ['doa bersama', 3], ['istighosah', 3], ['kajian', 2],
+          ['ceramah agama', 3], ['khataman', 3], ['santri', 2],
         ],
       },
       {
         kode: '8.3',
-        nama: 'Layanan, Kesehatan, dan Bakti Sosial',
+        nama: 'Layanan Dasar, Hak, dan Bakti Sosial',
         aktor: 'sistem',
         urgensi: 'Rendah',
+        // Dipersempit 4 September 2026 bersama 8.2. Yang berhubungan dengan
+        // kesehatan pindah ke 8.7; alasannya sama, dan kesehatan adalah tema
+        // yang paling sering ditanyakan tersendiri oleh pimpinan.
         kunci: [
-          ['donor darah', 3], ['setetes darah', 3], ['kantong darah', 3],
-          ['pmi', 2], ['bakti sosial', 3], ['baksos', 3],
-          ['cek kesehatan gratis', 3], ['ckg', 3], ['pemeriksaan kesehatan gratis', 3],
-          ['pemeriksaan gratis', 3], ['pengobatan gratis', 3], ['layanan kesehatan', 3],
-          ['skrining', 3], ['skrining tbc', 3], ['posyandu', 3], ['klinik', 3],
-          ['vitamin', 2], ['bansos', 3], ['sembako', 3], ['santunan', 3],
-          ['berbagi', 2], ['peduli kesehatan', 3], ['layanan prima', 3],
-          ['pelayanan publik', 3], ['digitalisasi layanan', 3], ['maklumat pelayanan', 3],
-          ['layanan kunjungan', 3], ['alur pelayanan', 3], ['aplikasi layanan', 3],
-          ['tidak dipungut biaya', 3], ['bebas pungli', 3], ['zona integritas', 3],
-          ['wbk', 3], ['wbbm', 3], ['penghargaan', 3], ['raih predikat', 3],
-          ['meraih penghargaan', 3], ['prestasi', 2], ['inovasi', 3],
-          ['juara', 3], ['peringkat terbaik', 3], ['sabet juara', 3],
-          ['kolaborasi', 2], ['sinergi', 3], ['kerja sama', 2],
+          ['bakti sosial', 3], ['baksos', 3],
+          ['bansos', 3], ['sembako', 3], ['santunan', 3],
+          ['berbagi', 2], ['bantuan sosial', 3], ['santunan anak yatim', 3],
           ['baznas', 3], ['rumah layak huni', 3], ['bedah rumah', 3],
+          ['layanan prima', 3], ['pelayanan publik', 3], ['digitalisasi layanan', 3],
+          ['maklumat pelayanan', 3], ['layanan kunjungan', 3], ['alur pelayanan', 3],
+          ['aplikasi layanan', 3], ['tidak dipungut biaya', 3], ['bebas pungli', 3],
+          ['zona integritas', 3], ['wbk', 3], ['wbbm', 3],
+          ['penghargaan', 3], ['raih predikat', 3], ['meraih penghargaan', 3],
+          ['prestasi', 2], ['inovasi', 3], ['juara', 3], ['peringkat terbaik', 3],
+          ['sabet juara', 3], ['kolaborasi', 2], ['sinergi', 3], ['kerja sama', 2],
           ['wartelsuspas', 3], ['layanan komunikasi', 3], ['video call', 3],
           ['kunjungan keluarga', 3], ['layanan pengaduan', 3], ['sampaikan keluhan', 3],
           ['transaksi non tunai', 3], ['brizzi', 3], ['perbankan', 2],
           ['duta layanan', 3], ['duta', 2], ['kesempatan kedua', 3],
-          ['peduli sesama', 3], ['bantuan sosial', 3], ['santunan anak yatim', 3],
-          ['pemeriksaan kesehatan', 3], ['imunisasi', 3], ['vaksinasi', 3],
-          ['rehabilitasi medis', 3], ['gizi seimbang', 3],
+          ['peduli sesama', 3],
           ['ada keluhan', 3], ['kotak saran', 3], ['survei kepuasan', 3],
           ['jejak kasih', 3], ['rindu keluarga', 3], ['kasih sayang keluarga', 3],
           ['pertemuan keluarga', 3], ['temu keluarga', 3], ['berbagi senyum', 3],
           ['kebahagiaan bersama warga binaan', 3],
           ['kesejahteraan keluarga', 3], [['kesejahteraan', 'warga binaan'], 3],
           ['kesejahteraan warga binaan', 3], ['perhatian pemerintah daerah', 3],
+          // Hak dasar warga binaan yang bukan remisi. Tanpa penyebutan ini,
+          // berita bantuan hukum dan perlengkapan dasar jatuh ke "Lainnya".
+          ['bantuan hukum', 3], ['posbakum', 3], ['penyuluh hukum', 3],
+          ['hak warga binaan', 3], ['perlengkapan dasar', 3], ['kasur', 2],
+          ['air bersih', 3], ['sanitasi', 3], ['makanan layak', 3],
+          ['dapur higienis', 3], ['menu makanan', 3], ['bahan makanan', 2],
         ],
       },
       {
@@ -743,6 +754,72 @@ export const KATEGORI = [
           [/\brazia\b/, 1],
           [/\bpemindahan\s+\d{1,4}\s*(orang\s*)?(narapidana|napi|warga binaan|tahanan)/, 3],
           [/\b\d{2,4}\s+(narapidana|warga binaan|tahanan)\b[^.]{0,30}\bdipindahkan\b/, 3],
+        ],
+      },
+      {
+        kode: '8.6',
+        nama: 'Ketahanan Pangan dan Pemberdayaan Ekonomi',
+        aktor: 'sistem',
+        urgensi: 'Rendah',
+        // Dipisahkan dari 8.2 pada 4 September 2026. Panen, budidaya, dan
+        // produksi warga binaan adalah program nasional tersendiri dengan
+        // target dan pelaporannya sendiri; menyatukannya dengan pelatihan dan
+        // ibadah membuat capaiannya tidak pernah bisa dibaca sebagai angka.
+        kunci: [
+          ['ketahanan pangan', 3], ['panen', 3], ['panen raya', 3],
+          ['budidaya', 3], ['hidroponik', 3], ['berkebun', 3],
+          ['pertanian', 2], ['peternakan', 2], ['perikanan', 2],
+          ['pembibitan', 3], ['bibit', 2], ['pupuk', 2], ['lahan', 2],
+          ['sayur', 2], ['sayuran', 3], ['pakcoy', 3], ['terong', 3],
+          ['sawi', 3], ['cabai', 3], ['jagung', 3], ['padi', 3],
+          ['kolam ikan', 3], ['lele', 3], ['nila', 3], ['ayam petelur', 3],
+          ['kambing', 2], ['sapi', 2], ['maggot', 3],
+          ['kemandirian', 3], ['umkm', 3], ['wirausaha', 3], ['modal hidup', 3],
+          ['produksi warga binaan', 3], ['karya warga binaan', 3],
+          ['bengkel kerja', 3], ['pembuatan tempe', 3], ['pembuatan sabun', 3],
+          ['sabut kelapa', 3], ['diekspor', 3], ['ekspor', 2],
+          ['memasak', 3], ['dapur', 2],
+          ['pendapatan negara bukan pajak', 3], ['pnbp', 3],
+          ['hasil produksi', 3], ['omzet', 3], ['pemasaran produk', 3],
+          [['karya', 'warga binaan'], 3], [['karya', 'lapas'], 2],
+          [['produk', 'warga binaan'], 3], [['panen', 'lapas'], 3],
+          [['panen', 'rutan'], 3],
+        ],
+        pola: [
+          [/\bpanen\s+\d{1,4}\s*(kg|kilogram|ton|kwintal)/, 3],
+          [/\bmendukung\s+(program\s+)?ketahanan pangan\b/, 3],
+        ],
+      },
+      {
+        kode: '8.7',
+        nama: 'Kesehatan dan Layanan Medis',
+        aktor: 'sistem',
+        urgensi: 'Rendah',
+        // Dipisahkan dari 8.3 pada 4 September 2026. Kesehatan warga binaan
+        // adalah tema yang ditanyakan tersendiri — kapasitas klinik, rujukan,
+        // wabah — dan selama ia menumpang di keranjang layanan umum, tidak ada
+        // satu pun angka yang bisa menjawab pertanyaan itu.
+        kunci: [
+          ['donor darah', 3], ['setetes darah', 3], ['kantong darah', 3],
+          ['pmi', 2], ['cek kesehatan gratis', 3], ['ckg', 3],
+          ['pemeriksaan kesehatan gratis', 3], ['pemeriksaan gratis', 3],
+          ['pengobatan gratis', 3], ['layanan kesehatan', 3],
+          ['pemeriksaan kesehatan', 3], ['skrining', 3], ['skrining tbc', 3],
+          ['posyandu', 3], ['klinik', 3], ['vitamin', 2], ['peduli kesehatan', 3],
+          ['imunisasi', 3], ['vaksinasi', 3], ['rehabilitasi medis', 3],
+          ['gizi seimbang', 3], ['tenaga medis', 3], ['dokter', 2],
+          ['perawat', 2], ['puskesmas', 3], ['rumah sakit', 2], ['rujukan', 2],
+          ['rujuk ke rumah sakit', 3], ['bpjs', 3], ['jaminan kesehatan', 3],
+          ['jkn', 3], ['tuberkulosis', 3], ['tbc', 3], ['hiv', 3],
+          ['scabies', 3], ['kudis', 3], ['wabah', 3], ['penyakit menular', 3],
+          ['kesehatan warga binaan', 3], ['kesehatan wbp', 3],
+          ['rehabilitasi narkoba', 3], ['rehabilitasi sosial', 2],
+          ['kesehatan jiwa', 3], ['psikolog', 3], ['konseling', 2],
+          ['obat', 2], ['apotek', 3], ['poliklinik', 3],
+          [['layanan', 'kesehatan'], 3], [['pemeriksaan', 'warga binaan'], 2],
+        ],
+        pola: [
+          [/\b(dirujuk|dilarikan)\s+ke\s+(rs|rumah sakit|puskesmas)/, 3],
         ],
       },
     ],
@@ -990,3 +1067,152 @@ export function daftarNamaKategori() {
 
 /** Kategori yang tidak ikut dihitung sebagai publikasi terpantau. */
 export const KATEGORI_TAK_DIHITUNG = new Set([KATEGORI_LUAR_LINGKUP.nama])
+
+/**
+ * Tema laporan — proyeksi taksonomi intelijen ke bahasa laporan pimpinan.
+ *
+ * KENAPA LAPISAN INI ADA, DAN KENAPA IA BUKAN TAKSONOMI KEDUA
+ *
+ * Taksonomi di atas disusun untuk pekerjaan intelijen: ia bertanya "ancaman
+ * apa ini, siapa pelakunya, seberapa mendesak". Itu pertanyaan yang benar untuk
+ * halaman Kanal Negatif, Kasus, dan Risiko — dan sembilan kategorinya memang
+ * dipakai untuk itu setiap hari.
+ *
+ * Laporan berkala menjawab pertanyaan yang lain: "sepekan ini Pemasyarakatan
+ * ramai soal apa". Pertanyaan itu tidak terjawab oleh kategori ancaman, sebab
+ * mayoritas pemberitaan justru bukan ancaman — dan bila seluruhnya dijejalkan
+ * ke satu keranjang "Narasi Positif", grafiknya menjadi satu batang raksasa
+ * yang tidak memberi tahu apa pun.
+ *
+ * Maka tema di bawah ini BUKAN daftar kategori kedua yang harus dijaga tetap
+ * sama. Ia peta: satu arah, dari subkategori ke tema, tanpa kata kunci sendiri
+ * dan tanpa mesin klasifikasi sendiri. Sebuah berita tidak pernah "diberi
+ * tema"; temanya dibaca dari subkategori yang sudah ditetapkan mesin. Dengan
+ * begitu tidak mungkin ada berita yang bertema A tetapi berkategori B —
+ * kelas kekeliruan yang sama yang dihapus lib/hitung.js untuk angka.
+ *
+ * Urutan larik ini adalah urutan tampil pada laporan bila jumlahnya sama.
+ * Warna mengikuti palet laporan, bukan palet aplikasi: laporan dicetak dan
+ * dibagikan di luar aplikasi, sehingga ia tidak boleh ikut berubah ketika
+ * seseorang menukar tema gelap.
+ */
+export const TEMA_LAPORAN = [
+  {
+    kode: 'pembinaan',
+    nama: 'Pembinaan, Pendidikan & Keagamaan',
+    warna: '#1f9d55',
+    ikon: 'pembinaan',
+    subkategori: ['8.2'],
+    ringkasBaku: [
+      'Kegiatan keagamaan, pembinaan rohani, dan kajian',
+      'Pendidikan formal, kesetaraan, dan pelatihan keterampilan',
+    ],
+  },
+  {
+    kode: 'keamanan',
+    nama: 'Keamanan & Ketertiban',
+    warna: '#0f6b5c',
+    ikon: 'perisai',
+    subkategori: ['1.2', '1.3', '2.1', '2.2', '2.3', '4.3', '5.1', '5.2', '6.1', '6.2', '8.5'],
+    ringkasBaku: [
+      'Razia, penggeledahan, dan sidak blok hunian',
+      'Penguatan pengamanan, deteksi dini, sinergi TNI/Polri',
+    ],
+  },
+  {
+    kode: 'kesehatan',
+    nama: 'Kesehatan',
+    warna: '#1d6fd0',
+    ikon: 'medis',
+    subkategori: ['8.7'],
+    ringkasBaku: [
+      'Layanan kesehatan dan rujukan warga binaan',
+      'Jaminan kesehatan (BPJS) dan edukasi kesehatan',
+    ],
+  },
+  {
+    kode: 'tata-kelola',
+    nama: 'Tata Kelola, Integritas & Pungli',
+    warna: '#7c4dbd',
+    ikon: 'dokumen',
+    subkategori: ['3.1', '3.2', '3.3', '3.4', '3.5', '3.6', '7.1'],
+    ringkasBaku: [
+      'Bebas pungli, penguatan integritas, evaluasi layanan',
+      'Pemeriksaan dugaan penyimpangan dan pelanggaran etik',
+    ],
+  },
+  {
+    kode: 'pangan',
+    nama: 'Ketahanan Pangan & Pemberdayaan',
+    warna: '#e2711d',
+    ikon: 'tanaman',
+    subkategori: ['8.6'],
+    ringkasBaku: [
+      'Panen sayur, budidaya hortikultura, peternakan',
+      'Kerja sama pelatihan dan kemandirian ekonomi',
+    ],
+  },
+  {
+    kode: 'hak-layanan',
+    nama: 'Hak, Layanan Dasar & Integrasi',
+    warna: '#d4a017',
+    ikon: 'timbangan',
+    subkategori: ['8.1', '8.3', '4.1', '7.2'],
+    ringkasBaku: [
+      'Hak integrasi: remisi, asimilasi, pembebasan bersyarat',
+      'Layanan hukum, perlengkapan dasar, dan bakti sosial',
+    ],
+  },
+  {
+    kode: 'kapasitas',
+    nama: 'Over Kapasitas, Overstay, Pelarian',
+    warna: '#c62828',
+    ikon: 'awas',
+    subkategori: ['1.1', '4.2'],
+    ringkasBaku: [
+      'Over kapasitas hunian dan overstay tahanan',
+      'Pelarian warga binaan dan upaya penindakannya',
+    ],
+  },
+  {
+    kode: 'kelembagaan',
+    nama: 'Kelembagaan & Seremonial',
+    warna: '#5a6b7d',
+    ikon: 'lembaga',
+    subkategori: ['8.4'],
+    ringkasBaku: [
+      'Upacara, pelantikan, dan rapat koordinasi',
+      'Peringatan hari besar, lomba, dan kunjungan kerja',
+    ],
+  },
+]
+
+/**
+ * Peta cepat kode subkategori ke tema. Dibangun sekali saat modul dimuat,
+ * sebab laporan mingguan memanggilnya sekali per berita — ratusan kali — dan
+ * pencarian linier di dalam larik tema akan terasa pada berkas besar.
+ */
+const TEMA_MENURUT_SUBKATEGORI = new Map()
+for (const t of TEMA_LAPORAN) {
+  for (const kode of t.subkategori) TEMA_MENURUT_SUBKATEGORI.set(kode, t)
+}
+
+/**
+ * Tema laporan untuk satu berita.
+ *
+ * Dua hal sengaja mengembalikan null, bukan sebuah tema cadangan. Berita di
+ * luar lingkup memang tidak boleh muncul pada laporan sama sekali; berita yang
+ * belum dikelompokkan mesin (kategori "Lainnya") juga tidak, sebab menempatkan
+ * yang belum dinilai ke dalam sebuah tema berarti melaporkannya sebagai sudah
+ * dinilai. Keduanya dihitung terpisah oleh penyusun laporan.
+ */
+export function temaLaporan(berita) {
+  const kode = String(berita?.subkategori_kode || '').trim()
+  if (kode) return TEMA_MENURUT_SUBKATEGORI.get(kode) || null
+  // Baris lama menyimpan nama subkategori tanpa kodenya. Dicocokkan lewat nama
+  // supaya arsip sebelum 4 September 2026 tetap masuk laporan.
+  const nama = String(berita?.subkategori || '').trim()
+  if (!nama) return null
+  const sub = SEMUA_SUBKATEGORI.find((s) => s.nama === nama)
+  return sub ? TEMA_MENURUT_SUBKATEGORI.get(sub.kode) || null : null
+}

@@ -21,8 +21,26 @@ import { readFileSync, writeFileSync } from 'node:fs'
  */
 const KEBUTUHAN = {
   klasifikasi: ['unit-terpetakan.js', 'teks.js', 'taksonomi.js', 'penerbit.js', 'klasifikasi.js', 'pencocokan-upt.js'],
-  // peristiwa.js mengimpor teks.js dan unit-terpetakan.js; keduanya ikut.
-  'laporan-harian': ['unit-terpetakan.js', 'teks.js', 'pencocokan-upt.js', 'peristiwa.js'],
+  /*
+     laporan-harian menyusun DUA hal dari modul yang sama dengan layar:
+     uraian peristiwa (peristiwa.js) dan lembar infografis (infografis.js
+     beserta penggambarnya di ui/).
+
+     Daftarnya panjang, dan panjangnya disengaja. Setiap modul di sini adalah
+     modul yang angkanya muncul juga di layar; menyalin salah satunya berarti
+     lembar yang dikirim ke grup pimpinan pukul setengah enam pagi menyebut
+     angka yang tidak sama dengan yang dilihat analis siang harinya.
+
+     Awalan `ui/` menunjuk web/js/ui/. Berkasnya disalin RATA ke dalam folder
+     fungsi — tanpa membuat subfolder — sehingga impor './infografis-tata.js'
+     di dalam infografis-svg.js tetap benar tanpa satu pun penyesuaian.
+  */
+  'laporan-harian': [
+    'unit-terpetakan.js', 'teks.js', 'pencocokan-upt.js', 'peristiwa.js',
+    'format.js', 'sentimen.js', 'hitung.js', 'taksonomi.js', 'penerbit.js',
+    'infografis.js', 'peta-indonesia.js', 'peta-provinsi.js',
+    'ui/infografis-tata.js', 'ui/infografis-svg.js',
+  ],
 }
 
 function buangKomentar(kode) {
@@ -74,8 +92,12 @@ function buangKomentar(kode) {
 
 for (const [fungsi, berkas] of Object.entries(KEBUTUHAN)) {
   console.log(`\n  supabase/functions/${fungsi}/`)
-  for (const nama of berkas) {
-    const sumber = readFileSync(`web/js/lib/${nama}`, 'utf8')
+  for (const jalur of berkas) {
+    // 'ui/x.js' dibaca dari web/js/ui/, sisanya dari web/js/lib/ — tetapi
+    // KEDUANYA ditulis rata di folder fungsi, tanpa subfolder.
+    const nama = jalur.includes('/') ? jalur.slice(jalur.lastIndexOf('/') + 1) : jalur
+    const asal = jalur.includes('/') ? `web/js/${jalur}` : `web/js/lib/${jalur}`
+    const sumber = readFileSync(asal, 'utf8')
     // Lekukan ikut dibuang. Nomor baris tetap utuh — dan nomor baris itulah yang
     // dipakai jejak galat Deno; kolomnya tidak pernah dibaca siapa pun. Pada
     // taksonomi yang isinya ribuan baris larik berlekuk sepuluh spasi, potongan

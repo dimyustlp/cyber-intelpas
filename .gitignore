@@ -21,3 +21,10 @@ sumber-lama/
 # yang ikut dibagikan lewat repositori.
 .claude/settings.json
 .claude/settings.local.json
+
+# Sisa pemeriksaan setempat. tools/potret.mjs dan pemeriksaan PDF menaruh
+# keluarannya di sini; berkasnya dibuat ulang kapan saja dan tidak pernah
+# dirujuk satu pun alat di repositori ini. Sebelum baris ini ada, folder itu
+# muncul sebagai berkas liar pada setiap `git status` — dan berkas liar yang
+# selalu ada membuat berkas liar yang sungguhan tidak lagi terbaca.
+.periksa/

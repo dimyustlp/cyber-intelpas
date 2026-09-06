@@ -2,9 +2,9 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "cyber-intelpas",
+      "name": "trans-siberpas",
       "runtimeExecutable": "node",
-      "runtimeArgs": ["tools/server-lokal.mjs"],
+      "runtimeArgs": ["tools/server-lokal.mjs", "4173"],
       "port": 4173
     }
   ]

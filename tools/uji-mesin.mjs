@@ -200,6 +200,48 @@ for (const c of contohKlas) {
 judul('3. UJI PERILAKU WAJIB (matriks panduan Dirpamintel)')
 
 const kasus = [
+  /*
+     Enam kasus di bawah ini lahir dari pemberitahuan Telegram yang
+     SUNGGUH-SUNGGUH TERKIRIM ke grup pimpinan pada 6 September 2026, jam
+     pertama perayap baru menyala. Lima pesan berlabel "BERITA NEGATIF MASUK",
+     empat di antaranya kegiatan positif — dan satu di antaranya sebuah grup
+     band binaan yang menghibur PELARI lomba lari, tercatat 1.1 Pelarian WBP
+     dengan urgensi Tinggi.
+
+     Ditaruh paling atas dengan sengaja: inilah kelas kekeliruan yang paling
+     mahal pada sistem ini, sebab akibatnya bukan angka yang meleset melainkan
+     orang yang dipanggil tengah malam untuk peristiwa yang tidak pernah ada.
+  */
+  {
+    nama: "Kegiatan tentang bencana bukan bencana",
+    judul: "Upaya Peningkatan Kesiapsiagaan Mitigasi Bencana Gempa Bumi bagi Warga Binaan di Lapas Kelas IIA Cilegon",
+    harap: { sentimen: "Positif" },
+  },
+  {
+    nama: "Simulasi kebakaran bukan kebakaran",
+    judul: "Simulasi Pemadaman Kebakaran Digelar di Lapas Narkotika Jakarta",
+    harap: { sentimen: "Positif" },
+  },
+  {
+    nama: "Bencana sungguhan tetap bencana meski disusul kegiatan",
+    judul: "Gempa Guncang Lapas Ruteng, Napi Dievakuasi dan Kanwil Kirim Bantuan",
+    harap: { subkategori_kode: "4.3", sentimen: "Negatif" },
+  },
+  {
+    nama: "Pelari lomba lari bukan pelarian warga binaan",
+    judul: "Bernyanyi Bersama, Grub Band Binaan Rutan Tanah Grogot Hibur Pelari Kideco Run 2026",
+    harap: { sentimen: "Positif" },
+  },
+  {
+    nama: "Razia yang menemukan barang terlarang bukan kegiatan rutin",
+    judul: "Razia di Lapas Kelas IIA Ambon, Ditemukan 20 Ponsel dan Sabu di Blok Hunian",
+    harap: { sentimen: "Negatif" },
+  },
+  {
+    nama: "Razia yang tidak menemukan apa-apa tetap kegiatan rutin",
+    judul: "Razia Rutin Digelar di Lapas Kelas IIA Ambon, Situasi Kondusif",
+    harap: { subkategori_kode: "8.5", sentimen: "Positif" },
+  },
   {
     nama: 'Narkoba dikendalikan WBP, bukan petugas',
     judul: 'Sindikat Narkoba Internasional Dikendalikan dari Balik Jeruji Besi Lapas Kelas I Cipinang',

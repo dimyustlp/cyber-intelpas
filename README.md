@@ -105,8 +105,14 @@ data/
 
 supabase/
   migrations/            berkas migrasi, sudah diuji di PostgreSQL 16
-  functions/             Edge Function (klasifikasi, sheet-sync, telegram-kirim,
-                           kelola-pengguna — penerbitan akun berjenjang)
+  functions/             Edge Function:
+                           penjaring     perayap berita — RSS portal + Google News
+                           notifikasi    antrean pemberitahuan Telegram per berita
+                           klasifikasi   mesin aturan dijalankan atas tabel berita
+                           sheet-sync    penyalin sumber spreadsheet
+                           telegram-kirim jembatan tunggal ke Telegram
+                           laporan-harian laporan + lembar infografis terjadwal
+                           kelola-pengguna penerbitan akun berjenjang
 
 tools/
   server-lokal.mjs       peladen statis untuk pengembangan
@@ -119,9 +125,110 @@ tools/
   uji-risiko.mjs         uji skor risiko — ketertutupan penjumlahan dan urutannya
   uji-laju.mjs           uji empat aturan peringatan: menyala dan diamnya
   uji-tombol.mjs         uji integritas tombol antar fitur: tujuan, izin, penyimak
+  uji-jangkar.mjs        uji saringan relevansi penjaring — sadar imbuhan
   periksa-lainnya.mjs    uji 62 kasus nyata yang dulu gagal dikelompokkan
   ringkas-fungsi.mjs     menyalin web/js/lib ke Edge Function dalam bentuk ringkas
   potret.mjs             memotret halaman pada lebar layar yang benar-benar diminta
+```
+
+## Dari mana beritanya datang
+
+Sampai 6 September 2026 seluruh berita masuk lewat satu jalan: **spreadsheet**.
+Sebuah skrip Apps Script menjaring, menuliskannya ke lembar, dan `sheet-sync`
+menyalin lembar itu ke basis data tiap lima menit.
+
+Jalan itu punya satu kelemahan yang tidak terlihat dari dalam sistem. Yang bisa
+disalin hanyalah yang sudah tertulis di lembar; kalau lembarnya bertambah empat
+baris sehari, empat baris itulah seluruh berita hari itu — dan penyalinnya tetap
+melaporkan **Berhasil**, karena ia memang berhasil menyalin keempatnya. Diukur
+hari itu: 3 baris pada 5 September, 4 pada 6 September, sementara satu kueri RSS
+atas kata "napi kabur" mengembalikan 100 butir.
+
+Sejak itu perayapan berjalan di dalam sistem, lewat Edge Function `penjaring`,
+dalam **empat mode**:
+
+| mode | sumber | perlu Google? |
+|---|---|---|
+| `umpan` | RSS milik portalnya sendiri — ANTARA pusat, 34 kantor daerahnya, CNN, Medcom, VIVA, iNews, RRI, Tempo, SINDO, Republika | tidak |
+| `umum` | pencarian Google News, kata kunci luas | ya |
+| `isu` | pencarian Google News mengikuti taksonomi negatif | ya |
+| `unit` | pencarian per nama unit, dimulai dari yang paling lama sunyi | ya |
+
+Sasarannya baris tabel, bukan konstanta di dalam kode: `penjaring_kueri`,
+`penjaring_umpan`, dan `penjaring_sasaran`. Menambah kueri atau portal tidak
+menuntut penggelaran ulang.
+
+### Tiga hal yang mudah salah dan sudah dibayar mahal
+
+**Google menolak Edge Function, tetapi tidak menolak basis data.** Diukur dengan
+permintaan yang sama pada menit yang sama: dari Edge Function `503`, dari basis
+data `200`. Alamat IP Deno Deploy dipakai bersama ribuan proyek lain. Karena itu
+seluruh permintaan ke Google dititipkan lewat `pg_net` (`public.jaring_minta` dan
+`public.jaring_hasil`). Umpan portal tidak — portalnya menjawab Edge Function
+dengan baik.
+
+**Alamat Google News harus diuraikan, dan penguraiannya mahal.** RSS-nya tidak
+pernah memberi alamat artikel, hanya alamat pengalihan miliknya sendiri. Alamat
+itu berbeda untuk artikel yang sama dilihat dari sumber lain, sehingga menembus
+seluruh lapis penyaringan kembar. Menguraikannya menuntut satu unduhan halaman
+±600 KB ditambah satu POST ke `batchexecute`; hasilnya disimpan di
+`penjaring_alamat` supaya tidak dibayar dua kali. Butir yang gagal diuraikan
+**dibuang**, tidak ditanam apa adanya.
+
+**Pekerjaannya dilepas ke latar.** Penjadwal memanggil fungsi ini lewat `pg_net`,
+dan permintaan Google-nya juga lewat `pg_net` — antrean yang sama. Selama
+panggilan penjadwal menunggu, yang ditunggunya berada di belakangnya. Terukur:
+permintaan yang biasanya dijawab beberapa detik baru dijawab 110 detik kemudian.
+Fungsi menjawab seketika lalu bekerja lewat `EdgeRuntime.waitUntil`; hasilnya
+dibaca dari **`penjaring_log`**, bukan dari jawaban panggilannya.
+
+### Membaca jurnalnya
+
+```sql
+select mulai_at, mode, status, kueri_diperiksa, butir_terlihat, diterima,
+       tolak_tak_relevan, tolak_alamat, tolak_kembar, pesan
+from penjaring_log order by mulai_at desc limit 10;
+```
+
+Angka `tolak_tak_relevan` yang besar pada mode `umpan` menandakan **sehat**, bukan
+gagal: umpan portal memuat seluruh berita portalnya, dan yang menyaringnya cuma
+jangkar kata. Yang menandakan rusak adalah `butir_terlihat` nol disertai `pesan`
+yang menyebut angka status Google.
+
+Memeriksa jalan keluarnya tanpa efek samping apa pun:
+
+```json
+{ "aksi": "diagnosa" }
+```
+
+Ia membandingkan langsung-dari-fungsi melawan lewat-basis-data dan menyebut
+angka statusnya apa adanya — satu-satunya cara membedakan "tidak ada beritanya"
+dari "kita sedang ditolak".
+
+## Pemberitahuan berita masuk
+
+Tiap berita yang masuk — dari jalan mana pun — diantrekan pemicu
+`berita_antrekan_notifikasi` ke tabel `notifikasi_berita`. Edge Function
+`notifikasi` mengurasnya tiap lima menit:
+
+- **Negatif** dikirim satu per satu, lengkap dengan unit, kanwil, golongan,
+  urgensi, dan tautannya. Paling banyak delapan per jalan; sisanya tetap
+  mengantre sebagai pesan utuh, **tidak** diturunkan menjadi baris ringkasan.
+- **Selebihnya** dikumpulkan menjadi satu ringkasan berkala.
+
+Pemicunya dipasang pada tabel `berita`, bukan di dalam salah satu penyalin —
+supaya jalan masuk yang ditambahkan nanti ikut terpantau dengan sendirinya.
+
+Baris yang belum dinilai mesin klasifikasi **ditahan** sampai dinilai, sebab
+tanpa sentimen tidak ada yang bisa disebut "utamakan yang negatif". Penahanan
+itu ada batasnya (`tunggu_klasifikasi_menit`): mesin klasifikasi yang berhenti
+tidak boleh membungkam seluruh pemberitahuan tanpa satu pun tanda.
+
+Seluruh setelannya satu baris di `notifikasi_setelan` — termasuk sakelar
+induknya. Melihat bentuk pesannya tanpa mengirim apa pun ke siapa pun:
+
+```json
+{ "aksi": "kirim", "kering": true }
 ```
 
 ## Data induk UPT

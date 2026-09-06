@@ -884,6 +884,23 @@ export const FRASA_BANTAHAN = [
 'meluruskan', 'diluruskan', 'ternyata kasus lama', 'ternyata video lama',
 'tidak benar', 'isu tersebut tidak', 'terpatahkan', 'hoaks', 'hoax',
 ]
+export const FRASA_KEGIATAN = [
+'simulasi', 'mitigasi', 'kesiapsiagaan', 'sosialisasi', 'penyuluhan',
+'pelatihan', 'bimbingan teknis', 'bimtek', 'workshop', 'seminar', 'lokakarya',
+'edukasi', 'penguatan', 'pembekalan', 'apel siaga', 'gladi', 'latihan',
+'penandatanganan', 'nota kesepahaman', 'kerja sama', 'audiensi', 'koordinasi',
+'peringatan hut', 'upacara', 'senam', 'olahraga', 'lomba', 'turnamen',
+'donor darah', 'bakti sosial', 'santunan', 'meninjau', 'kunjungan kerja',
+'mendukung', 'dukung', 'mengapresiasi', 'apresiasi', 'meresmikan', 'peresmian',
+'menyalurkan', 'penyaluran', 'menyerahkan bantuan', 'bantuan kemanusiaan',
+'cegah', 'mencegah', 'pencegahan', 'memastikan', 'pastikan',
+'ikrar', 'ikrar setia', 'deklarasi', 'komitmen', 'penandatanganan pakta',
+]
+export const FRASA_TEMUAN = [
+'ditemukan', 'temukan', 'menemukan', 'ditemui', 'didapati', 'kedapatan',
+'disita', 'menyita', 'diamankan', 'mengamankan barang', 'berhasil menyita',
+'terjaring', 'terungkap', 'hasil razia', 'hasil penggeledahan',
+]
 export const PEMICU_KRITIS = [
 'kerusuhan', 'pemberontakan', 'penyanderaan', 'sandera petugas',
 'membakar lapas', 'membakar rutan', 'lapas terbakar', 'rutan terbakar',

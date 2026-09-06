@@ -53,6 +53,7 @@ const AKAR_TERLARANG = new Set([
 'kata', 'ikut', 'bagi', 'tinggal', 'lihat', 'datang', 'kena', 'isi', 'ada',
 'guna', 'tuju', 'satu', 'baik', 'besar', 'jadi', 'kali', 'lalu', 'oleh',
 'patah', 'jaya', 'putra', 'putri', 'agung', 'mulia', 'indah', 'terang',
+'pelari', 'pelar', 'larian', 'sehat',
 ])
 const simpananAkar = new Map()
 export function akarKata(kata) {

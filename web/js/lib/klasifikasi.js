@@ -85,6 +85,8 @@ import {
   KATA_FUNGSI_INDONESIA,
   FRASA_PEMBALIK,
   FRASA_BANTAHAN,
+  FRASA_KEGIATAN,
+  FRASA_TEMUAN,
   PEMICU_KRITIS,
   PERINGKAT_URGENSI,
 } from './taksonomi.js'
@@ -105,12 +107,28 @@ import { kenaliPenerbit } from './penerbit.js'
    perbandingan skor; pola kata kerja ditambahkan pada 3.3, 3.4, 4.3, dan 6.2;
    4.2 mengenali "berkapasitas"; 8.1 menolak remisi yang diperjualbelikan.
 
+   v4.2 (6 September 2026, malam) — kegiatan tentang sebuah isu tidak lagi
+   tercatat sebagai isunya. Kaidahnya sama dengan bantahan: urutan kata.
+   Ditambah dua penutup jembatan imbuhan di teks.js ('pelari'/'pelar'/'larian'
+   dan 'sehat').
+
+   v4.2 lahir dari pemberitahuan yang SUNGGUH-SUNGGUH TERKIRIM ke grup
+   pimpinan pada jam pertama perayap baru menyala. Lima pesan berlabel "BERITA
+   NEGATIF MASUK", dan empat di antaranya kegiatan positif: simulasi mitigasi
+   gempa, dukungan kanwil atas penanganan gempa, senam pagi, dan sebuah grup
+   band binaan yang menghibur PELARI lomba lari — yang terakhir tercatat
+   sebagai 1.1 Pelarian WBP dengan urgensi Tinggi.
+
+   Pelajarannya melampaui kedua kaidah itu: cacat yang tidak pernah terlihat
+   selama sebulan langsung terlihat pada hari sumber beritanya diperluas.
+   Mesin yang benar atas seratus berita sehari belum tentu benar atas seribu.
+
    Perlu diketahui saat menggelar: Edge Function dengan hanya_belum: true
    menyaring baris yang ai_classified_at-nya masih kosong, BUKAN yang versi
-   mesinnya lama. Arsip yang sudah dinilai v4.0 tidak akan ikut diperbaiki
+   mesinnya lama. Arsip yang sudah dinilai v4.1 tidak akan ikut diperbaiki
    sampai fungsinya dipanggil sekali dengan hanya_belum: false.
 */
-const VERSI_MESIN = 'aturan-v4.1'
+const VERSI_MESIN = 'aturan-v4.2'
 
 /** Ambang skor minimum sebelum sebuah berita boleh keluar dari "Lainnya". */
 const AMBANG_SKOR = 3.0
@@ -161,6 +179,23 @@ export function adaFrasaPembalik(konteks) {
 /** Benar bila teks berisi bantahan atau klarifikasi atas sebuah isu. */
 export function adaBantahan(konteks) {
   for (const f of FRASA_BANTAHAN) if (hitungFrasa(konteks, f, 1)) return true
+  return false
+}
+
+/**
+ * Benar bila teks memuat penanda kegiatan kelembagaan.
+ *
+ * Sengaja dipisah dari pemakaiannya, sama seperti adaBantahan(), supaya
+ * pemeriksaannya bisa diuji sendiri tanpa menjalankan seluruh mesin.
+ */
+export function adaKegiatan(konteks) {
+  for (const f of FRASA_KEGIATAN) if (hitungFrasa(konteks, f, 1)) return true
+  return false
+}
+
+/** Benar bila teks menyebut sesuatu yang sudah ditemukan atau disita. */
+export function adaTemuan(konteks) {
+  for (const f of FRASA_TEMUAN) if (hitungFrasa(konteks, f, 1)) return true
   return false
 }
 
@@ -615,6 +650,74 @@ export function klasifikasikan(berita = {}) {
     }
   }
 
+  /*
+     Kegiatan tentang sebuah isu mengalahkan isunya, dengan syarat yang sama
+     dengan bantahan: LETAK, bukan skor.
+
+     Bentuk kekeliruannya identik. Untuk membicarakan mitigasi gempa, teksnya
+     harus menyebut gempa; makin lengkap uraian kegiatannya, makin tinggi skor
+     peristiwa yang tidak pernah terjadi itu. Terukur 6 September 2026, dari
+     pemberitahuan yang sungguh-sungguh terkirim ke grup pimpinan: "Upaya
+     Peningkatan Kesiapsiagaan Mitigasi Bencana Gempa Bumi bagi Warga Binaan di
+     Lapas Kelas IIA Cilegon" tercatat 4.3 Bencana, Negatif, urgensi Tinggi.
+
+     Yang dipromosikan adalah kandidat 8.x TERBAIK yang sudah ada di peringkat,
+     bukan satu kode tetap. Mesin sudah menimbang kegiatan apa itu — senam,
+     kerja sama, layanan kesehatan — dan menimpanya dengan tebakan tetap akan
+     membuang penilaian yang lebih baik daripada tebakan itu.
+
+     Dua penjagaan, dan keduanya perlu:
+
+       1. Hanya berlaku bila juaranya NEGATIF. Kegiatan yang mengalahkan
+          kegiatan lain tidak menerangkan apa pun.
+       2. Kejadian yang letaknya di depan tetap menang. "Gempa Guncang Lapas,
+          Napi Dievakuasi, Kanwil Kirim Bantuan" adalah kabar bencana yang
+          diikuti kegiatan — bukan kegiatan yang kebetulan menyebut bencana.
+  */
+  if (peringkat[0] && peringkat[0].sub.sifat !== 'positif' && adaKegiatan(konteks)) {
+    const positif = peringkat.find((p) => p.sub.kategoriKode === '8')
+    if (positif) {
+      const letakKegiatan = letakTerawal(konteks, FRASA_KEGIATAN)
+      const letakKejadian = letakPeristiwa(konteks, peringkat[0].sub)
+      if (letakKegiatan < letakKejadian) {
+        skorTergeser = Math.max(skorTergeser, peringkat[0].skor)
+        peringkat = [positif, ...peringkat.filter((p) => p !== positif)]
+      }
+    }
+  }
+
+  /*
+     Kegiatan pengamanan yang MENEMUKAN sesuatu bukan kegiatan rutin.
+
+     Ini kebalikan arah dari kaidah di atas, dan justru yang paling penting.
+     Kaidah kegiatan memindahkan berita dari negatif ke positif — kekeliruannya
+     berisik dan cepat ketahuan. Kaidah ini memindahkannya kembali ke negatif,
+     dan kekeliruan yang diperbaikinya SUNYI: temuan sungguhan yang tercatat
+     sebagai catatan kegiatan, yakni berita negatif yang hilang dari hitungan
+     tanpa seorang pun tahu ia pernah ada.
+
+     Tiga baris nyata di arsip 6 September 2026, semuanya 8.5 dan POSITIF:
+
+       "Geledah Kamar Hunian, Temukan Barang Terlarang di Lapas Probolinggo"
+       "Sidak Malam Lapas Ciamis: ... Puluhan Benda Berbahaya Disita"
+       "Sajam dan Sejumlah Barang Terlarang Ditemukan Saat Razia Lapas"
+
+     Senjata tajam di dalam blok hunian adalah temuan intelijen. Bahwa petugas
+     yang menemukannya memang patut dicatat, dan itu sudah dikerjakan
+     FRASA_PEMBALIK yang menurunkan urgensinya — tetapi peristiwanya tetap
+     masuknya barang terlarang.
+
+     TIDAK dipakai urutan kata di sini, berbeda dengan dua kaidah sebelumnya.
+     Sebabnya letak temuan tidak menerangkan apa pun: "Razia Digelar, Sajam
+     Ditemukan" dan "Sajam Ditemukan Saat Razia" adalah berita yang sama.
+  */
+  if (peringkat[0] && peringkat[0].sub.kategoriKode === '8' && adaTemuan(konteks)) {
+    const temuan = peringkat.find((p) => p.sub.sifat !== 'positif')
+    if (temuan) {
+      peringkat = [temuan, ...peringkat.filter((p) => p !== temuan)]
+    }
+  }
+
   const juara = peringkat[0]
 
   // Ambang turun ketika penerbitnya sudah pasti institusi, bukan hanya ketika
@@ -626,7 +729,12 @@ export function klasifikasikan(berita = {}) {
   // Bantahan yang menggeser kandidat yang sudah lolos ambang mewarisi kelolosan
   // itu. Yang diperiksa ambang adalah "apakah teks ini bermuatan", dan
   // pertanyaan itu sudah dijawab oleh kandidat yang digeser.
-  if (skorTergeser >= AMBANG_SKOR && juara?.sub.kode === '7.1') ambang = 0
+  /* Berlaku untuk kedua penggeseran — bantahan maupun kegiatan. Keduanya
+     menggantikan kandidat yang sudah membuktikan teksnya bermuatan; menuntut
+     penggantinya membuktikannya lagi sendiri akan membuang beritanya ke
+     "Lainnya", yaitu akibat yang justru dihindari kedua aturan itu. */
+  if (skorTergeser >= AMBANG_SKOR
+    && (juara?.sub.kode === '7.1' || juara?.sub.kategoriKode === '8')) ambang = 0
 
   if (!juara || juara.skor < ambang) {
     // Pemeriksaan kebisingan hanya berlaku untuk publikasi yang penerbitnya

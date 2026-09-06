@@ -11,12 +11,14 @@ JANGKAR_KUAT,
 KATA_FUNGSI_INDONESIA,
 FRASA_PEMBALIK,
 FRASA_BANTAHAN,
+FRASA_KEGIATAN,
+FRASA_TEMUAN,
 PEMICU_KRITIS,
 PERINGKAT_URGENSI,
 } from './taksonomi.js'
 import { bersihkanTeks, normalkan, siapkanKonteks, hitungFrasa, yangMuncul, letakTerawal, letakFrasa } from './teks.js'
 import { kenaliPenerbit } from './penerbit.js'
-const VERSI_MESIN = 'aturan-v4.1'
+const VERSI_MESIN = 'aturan-v4.2'
 const AMBANG_SKOR = 3.0
 const AMBANG_HUMAS = 2.0
 const PANJANG_MINIMUM = 8
@@ -41,6 +43,14 @@ return false
 }
 export function adaBantahan(konteks) {
 for (const f of FRASA_BANTAHAN) if (hitungFrasa(konteks, f, 1)) return true
+return false
+}
+export function adaKegiatan(konteks) {
+for (const f of FRASA_KEGIATAN) if (hitungFrasa(konteks, f, 1)) return true
+return false
+}
+export function adaTemuan(konteks) {
+for (const f of FRASA_TEMUAN) if (hitungFrasa(konteks, f, 1)) return true
 return false
 }
 export function adaKonteksHumas(konteks) {
@@ -250,10 +260,28 @@ peringkat = [hoaks, ...peringkat.filter((p) => p !== hoaks)]
 }
 }
 }
+if (peringkat[0] && peringkat[0].sub.sifat !== 'positif' && adaKegiatan(konteks)) {
+const positif = peringkat.find((p) => p.sub.kategoriKode === '8')
+if (positif) {
+const letakKegiatan = letakTerawal(konteks, FRASA_KEGIATAN)
+const letakKejadian = letakPeristiwa(konteks, peringkat[0].sub)
+if (letakKegiatan < letakKejadian) {
+skorTergeser = Math.max(skorTergeser, peringkat[0].skor)
+peringkat = [positif, ...peringkat.filter((p) => p !== positif)]
+}
+}
+}
+if (peringkat[0] && peringkat[0].sub.kategoriKode === '8' && adaTemuan(konteks)) {
+const temuan = peringkat.find((p) => p.sub.sifat !== 'positif')
+if (temuan) {
+peringkat = [temuan, ...peringkat.filter((p) => p !== temuan)]
+}
+}
 const juara = peringkat[0]
 const humasKuat = konteksHumas || penerbit.resmi
 let ambang = juara && juara.sub.sifat === 'positif' && humasKuat ? AMBANG_HUMAS : AMBANG_SKOR
-if (skorTergeser >= AMBANG_SKOR && juara?.sub.kode === '7.1') ambang = 0
+if (skorTergeser >= AMBANG_SKOR
+&& (juara?.sub.kode === '7.1' || juara?.sub.kategoriKode === '8')) ambang = 0
 if (!juara || juara.skor < ambang) {
 if (!penerbit.resmi) {
 const bising = periksaKebisingan(konteks)

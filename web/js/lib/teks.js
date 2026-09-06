@@ -151,6 +151,35 @@ const AKAR_TERLARANG = new Set([
   // tentang pelariannya dibaca mesin sebagai berita bantahan. Nama diri memang
   // tidak boleh ikut dipenggal imbuhannya.
   'patah', 'jaya', 'putra', 'putri', 'agung', 'mulia', 'indah', 'terang',
+
+  /*
+     Dua bentuk yang lolos justru KARENA daftar ini bekerja setingkat terlalu
+     dalam, ditemukan 6 September 2026 dari pemberitahuan Telegram yang
+     sungguh-sungguh terkirim ke grup pimpinan.
+
+     "pelari" — 'lari' sudah ada di atas, dan tetap saja "Grub Band Binaan Rutan
+     Tanah Grogot Hibur PELARI Kideco Run 2026" tercatat sebagai 1.1 Pelarian
+     WBP dengan urgensi Tinggi. Sebabnya tabrakannya tidak terjadi di 'lari'
+     melainkan satu tingkat di atasnya: "pelarian" dikupas akhiran -an menjadi
+     "pelari", dan "pelari" adalah kata yang sudah berdiri sendiri dengan arti
+     yang sama sekali lain. Penjagaan pada akarnya tidak menolong bila
+     tabrakannya di bentuk antaranya.
+
+     "sehat" — "kesehatan warga binaan" (kata kunci 4.2 Overkapasitas dan
+     Kelayakan Hidup) cocok pada "Sabtu SEHAT, WARGA BINAAN dan Petugas Lapas
+     Kotabaru Lakukan Olahraga". Tiga kata berurutan, dan kegiatan senam pagi
+     tercatat sebagai persoalan kelayakan hidup. "Kesehatan" adalah keadaan
+     yang dibicarakan; "sehat" adalah sifat. Keduanya tidak boleh dipertemukan
+     lewat akar.
+
+     Jembatannya ternyata ada DUA tingkat, dan itu pelajaran tersendiri:
+     memblokir 'pelari' saja tidak cukup, sebab "pelarian" dan "pelari"
+     bertemu lagi di 'pelar' — potongan yang bukan kata apa pun dalam bahasa
+     Indonesia. Potongan tak bermakna sepanjang lima huruf semacam itu adalah
+     jembatan yang paling berbahaya justru karena ia tidak terbaca sebagai
+     kata oleh siapa pun yang memeriksanya.
+  */
+  'pelari', 'pelar', 'larian', 'sehat',
 ])
 
 const simpananAkar = new Map()

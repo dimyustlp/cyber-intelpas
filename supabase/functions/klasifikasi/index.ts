@@ -107,7 +107,21 @@ Deno.serve(async (permintaan: Request) => {
       .select('id,judul,ringkasan,raw_analysis,caption_manual,media,nama_upt,urgensi,catatan,status_verifikasi')
       .is('deleted_at', null)
       .neq('status_verifikasi', 'Terverifikasi')
-      .order('created_at', { ascending: false })
+      /*
+         Urut menurut YANG PALING LAMA DINILAI, bukan menurut yang terbaru.
+
+         Sampai 6 September 2026 urutannya `created_at desc`, dan itu membuat
+         penilaian ulang seluruh arsip mustahil diselesaikan: PostgREST membatasi
+         satu permintaan pada 1.000 baris, sehingga tiap panggilan mengambil
+         seribu baris TERBARU yang sama — dan 46 baris tertua tidak pernah
+         tersentuh berapa kali pun fungsinya dipanggil. Terukur langsung: dua
+         panggilan berturut-turut meninggalkan 46 baris yang sama di versi lama.
+
+         Dengan urutan ini tiap panggilan mengambil yang paling tertinggal,
+         sehingga panggilan berulang menyapu seluruh arsip sampai habis. Baris
+         yang belum pernah dinilai tetap didahulukan — nilainya NULL.
+      */
+      .order('ai_classified_at', { ascending: true, nullsFirst: true })
       .limit(batas)
 
     if (hanyaBelum) kueri = kueri.is('ai_classified_at', null)

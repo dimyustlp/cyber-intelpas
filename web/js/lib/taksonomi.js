@@ -1158,6 +1158,103 @@ export const FRASA_BANTAHAN = [
 ]
 
 /**
+ * Penanda bahwa yang diberitakan adalah KEGIATAN tentang sebuah isu, bukan
+ * peristiwanya.
+ *
+ * ---------------------------------------------------------------------------
+ * KENAPA DAFTAR INI ADA
+ * ---------------------------------------------------------------------------
+ *
+ * Ditemukan 6 September 2026, dari pemberitahuan yang benar-benar terkirim ke
+ * grup pimpinan pada jam pertama perayap baru menyala:
+ *
+ *   "Upaya Peningkatan Kesiapsiagaan Mitigasi Bencana Gempa Bumi bagi Warga
+ *    Binaan di Lapas Kelas IIA Cilegon"
+ *      -> 4.3 Bencana dan Insiden Alam, Negatif, urgensi Tinggi
+ *
+ *   "Kanwil Ditjenpas Sulteng Dukung Soliditas Kemenimipas Tangani Dampak
+ *    Gempa"
+ *      -> 4.3 Bencana dan Insiden Alam, Negatif, urgensi Tinggi
+ *
+ * Keduanya kegiatan kelembagaan yang justru memperlihatkan unit bekerja. Yang
+ * membuat mesin salah bukan kekurangan kata kunci melainkan kelebihannya:
+ * untuk membicarakan mitigasi gempa, teksnya HARUS menyebut gempa. Ini
+ * kekeliruan yang bentuknya persis sama dengan bantahan, dan obatnya pun sama:
+ * URUTAN KATA, bukan perbandingan skor.
+ *
+ *   "Simulasi Mitigasi Gempa di Lapas"   kegiatan (0) < gempa (3) -> kegiatan
+ *   "Gempa Guncang Lapas, Napi Dievakuasi" gempa (0) < kegiatan (—) -> peristiwa
+ *
+ * Daftar ini sengaja TIDAK memuat kata yang bisa menjadi bagian peristiwanya
+ * sendiri. "Evakuasi" tidak ada di sini: evakuasi memang kegiatan, tetapi ia
+ * kegiatan YANG TERJADI KARENA peristiwanya — memasukkannya akan membuang
+ * kabar bencana yang sungguhan.
+ */
+export const FRASA_KEGIATAN = [
+  'simulasi', 'mitigasi', 'kesiapsiagaan', 'sosialisasi', 'penyuluhan',
+  'pelatihan', 'bimbingan teknis', 'bimtek', 'workshop', 'seminar', 'lokakarya',
+  'edukasi', 'penguatan', 'pembekalan', 'apel siaga', 'gladi', 'latihan',
+  'penandatanganan', 'nota kesepahaman', 'kerja sama', 'audiensi', 'koordinasi',
+  'peringatan hut', 'upacara', 'senam', 'olahraga', 'lomba', 'turnamen',
+  'donor darah', 'bakti sosial', 'santunan', 'meninjau', 'kunjungan kerja',
+  'mendukung', 'dukung', 'mengapresiasi', 'apresiasi', 'meresmikan', 'peresmian',
+  'menyalurkan', 'penyaluran', 'menyerahkan bantuan', 'bantuan kemanusiaan',
+
+  /*
+     Gelombang kedua, dari pemberitahuan jam berikutnya. Bentuknya sama:
+     berita tentang MENCEGAH sesuatu tercatat sebagai sesuatu itu.
+
+       "Pastikan Integritas Terjaga, Handphone Jajaran Lapas Wahai Diperiksa"
+          -> 6.1 Penyelundupan
+       "Dua Napiter Lapas Pati Ikrar Setia NKRI"
+          -> 5.2 Radikalisme
+
+     Yang TIDAK ditambahkan, dan sengaja: 'razia', 'sidak', 'penggeledahan',
+     'penemuan'. Ketiganya memang kegiatan, tetapi kegiatan yang beritanya
+     hampir selalu memuat hasilnya — "Razia di Lapas X, Ditemukan 20 Ponsel".
+     Memasukkannya berarti temuan sungguhan berubah menjadi kabar kegiatan
+     rutin, dan itu kekeliruan yang jauh lebih mahal daripada yang sedang
+     diperbaiki di sini.
+  */
+  'cegah', 'mencegah', 'pencegahan', 'memastikan', 'pastikan',
+  'ikrar', 'ikrar setia', 'deklarasi', 'komitmen', 'penandatanganan pakta',
+]
+
+/**
+ * Penanda bahwa sebuah kegiatan pengamanan MENEMUKAN sesuatu.
+ *
+ * ---------------------------------------------------------------------------
+ * ARAH KEKELIRUAN YANG PALING MAHAL
+ * ---------------------------------------------------------------------------
+ *
+ * Kaidah kegiatan di atas memindahkan berita dari negatif ke positif. Kaidah
+ * ini kebalikannya, dan ia jauh lebih penting: yang dibetulkannya adalah
+ * temuan sungguhan yang tercatat sebagai kegiatan rutin — yakni berita negatif
+ * yang HILANG dari hitungan tanpa seorang pun tahu.
+ *
+ * Ditemukan di arsip 6 September 2026, tiga baris dan semuanya nyata:
+ *
+ *   "Geledah Kamar Hunian, Temukan Barang Terlarang di Lapas Probolinggo"
+ *   "Sidak Malam Lapas Ciamis: ... Puluhan Benda Berbahaya Disita"
+ *   "Sajam dan Sejumlah Barang Terlarang Ditemukan Saat Razia Lapas"
+ *      -> ketiganya 8.5 Operasional dan Pengamanan Rutin, sentimen POSITIF
+ *
+ * Senjata tajam di dalam blok hunian adalah temuan intelijen, bukan catatan
+ * kegiatan. Bahwa petugas yang menemukannya memang patut dicatat — dan itulah
+ * tugas FRASA_PEMBALIK, yang menurunkan urgensinya — tetapi peristiwanya tetap
+ * masuknya barang terlarang.
+ *
+ * Kata kerjanya saja tidak cukup: "razia digelar untuk menemukan" bukan temuan.
+ * Karena itu daftar ini berisi kata kerja yang sudah TERJADI — bentuk pasif dan
+ * bentuk lampau — bukan bentuk niat.
+ */
+export const FRASA_TEMUAN = [
+  'ditemukan', 'temukan', 'menemukan', 'ditemui', 'didapati', 'kedapatan',
+  'disita', 'menyita', 'diamankan', 'mengamankan barang', 'berhasil menyita',
+  'terjaring', 'terungkap', 'hasil razia', 'hasil penggeledahan',
+]
+
+/**
  * Pemicu eskalasi ke urgensi tertinggi. Sesuai rumusan Dirpamintel, urgensi
  * "Kritis" hanya diberikan pada kejadian yang mengancam nyawa atau stabilitas
  * secara massal. Mesin aturan versi lama tidak pernah menghasilkan nilai ini

@@ -1,6 +1,6 @@
 /**
  * ============================================================================
- * PENJARING CELAH — Trans-Siber PAS, sumber ketiga
+ * PENJARING CELAH v2.0 — Trans-Siber PAS, sumber ketiga
  * ============================================================================
  *
  * Ditempelkan ke Apps Script milik spreadsheet
@@ -11,62 +11,93 @@
  * KENAPA SUMBER KETIGA INI ADA
  * ----------------------------------------------------------------------------
  *
- * Diukur pada 6 September 2026: dari 531 unit pelaksana teknis yang aktif,
- * **343 belum pernah muncul satu kali pun** dalam 858 publikasi yang terkumpul.
- * Enam puluh empat persen. Kantor Wilayah Maluku Utara nol dari sepuluh unit;
+ * Diukur 6 September 2026: dari 531 unit pelaksana teknis yang aktif,
+ * **343 belum pernah muncul satu kali pun** dalam 858 publikasi terkumpul.
+ * Enam puluh empat persen. Kanwil Maluku Utara nol dari sepuluh unit;
  * Sulawesi Utara satu dari empat belas.
  *
  * Itu bukan berarti tidak ada beritanya. Dua sumber yang sudah ada bekerja
- * dengan cara yang sama-sama pasif: keduanya menyapu kata kunci umum
- * ("lapas", "rutan", "pemasyarakatan") dan memungut apa pun yang lewat.
- * Penyapuan semacam itu selalu menemukan yang paling ramai, dan yang paling
- * ramai selalu unit besar di pulau yang sama. Unit kecil di Halmahera tidak
- * pernah kalah beritanya — ia tidak pernah dicari.
+ * sama-sama pasif: keduanya menyapu kata kunci umum ("lapas", "rutan") lalu
+ * memungut apa pun yang lewat. Penyapuan semacam itu selalu menemukan yang
+ * paling ramai, dan yang paling ramai selalu unit besar di pulau yang sama.
+ * Unit kecil di Halmahera tidak pernah kalah beritanya — ia tidak pernah
+ * dicari.
  *
- * Penjaring ini bekerja terbalik: ia berangkat dari DAFTAR UNIT, bukan dari
- * kata kunci. Setiap unit yang sunyi dicari namanya satu per satu. Yang
- * ditemukan mungkin sedikit, dan memang seharusnya sedikit — tetapi yang
- * sedikit itu berasal dari tempat yang selama ini tidak terlihat sama sekali.
+ * ----------------------------------------------------------------------------
+ * DUA CARA MENJARING, DAN KENAPA DUA
+ * ----------------------------------------------------------------------------
+ *
+ *   jaringCelah()  berangkat dari DAFTAR UNIT. Tiap unit sunyi dicari namanya
+ *                  sendiri. Menjawab: "apa yang terjadi di tempat yang tidak
+ *                  pernah kita lihat?"
+ *
+ *   jaringIsu()    berangkat dari DAFTAR ISU, mengikuti taksonomi negatif
+ *                  sistem — pelarian, kerusuhan, pungli, kematian tidak wajar,
+ *                  penyelundupan. Menjawab: "apa yang berat, di mana pun ia
+ *                  terjadi?"
+ *
+ * Keduanya perlu, dan keduanya menutupi kelemahan yang berbeda. Penjaringan
+ * per unit tidak akan pernah menemukan peristiwa berat di unit yang SUDAH
+ * sering diberitakan — ia tidak ada di daftar sasaran. Penjaringan per isu
+ * tidak akan pernah menemukan kegiatan biasa di unit yang sunyi — kegiatan
+ * biasa tidak memakai kata kunci berat.
  *
  * ----------------------------------------------------------------------------
  * BERITA KEMBAR
  * ----------------------------------------------------------------------------
  *
  * Penjaring ini SENGAJA mencari di wilayah yang bertumpang tindih dengan dua
- * sumber lain. Karena itu berita kembar bukan kemungkinan, melainkan kepastian.
- *
- * Ada tiga lapis yang menahannya, dan hanya lapis pertama ada di berkas ini:
+ * sumber lain. Berita kembar karena itu kepastian, bukan kemungkinan.
  *
  *   1. Di sini      — alamat yang sudah ada di lembar ini tidak ditulis lagi
  *   2. Penyalin     — baris yang tautannya sudah ada di basis data dilewati
- *   3. Basis data   — pemicu + indeks unik pada link_normalized; tidak bisa
- *                     ditembus siapa pun, termasuk oleh berkas ini
+ *   3. Basis data   — pemicu + indeks unik pada link_normalized
  *
- * Aturan penyeragaman di bawah (normalkanTautan) adalah salinan keempat dari
- * aturan yang sama. Ia boleh meleset tanpa menimbulkan berita kembar — yang
- * terjadi hanya pekerjaan sia-sia, sebab lapis ketiga tetap menolak. Aturan
- * yang berwenang ada di `public.normalkan_tautan()`.
+ * Dua lapis pertama menghemat pekerjaan. **Hanya lapis ketiga yang menolak.**
+ * Aturan yang berwenang ada di `public.normalkan_tautan()`; salinan di berkas
+ * ini boleh meleset tanpa menimbulkan berita kembar.
  *
  * ----------------------------------------------------------------------------
- * ALAMAT GOOGLE NEWS, DAN KENAPA IA HARUS DIURAIKAN
+ * ALAMAT GOOGLE NEWS HARUS DIURAIKAN
  * ----------------------------------------------------------------------------
  *
- * RSS Google News tidak memberikan alamat artikelnya, melainkan alamat
- * pengalihan miliknya sendiri:
+ * RSS Google News memberi alamat pengalihan miliknya sendiri
+ * (`news.google.com/rss/articles/CBMi...`), bukan alamat artikelnya. Kalau itu
+ * yang ditulis, SELURUH penyaringan kembar lolos: satu artikel tersimpan dua
+ * kali karena keduanya memang alamat yang berbeda.
  *
- *   https://news.google.com/rss/articles/CBMiK2h0dHBzOi8vd3d3...
+ * Setiap alamat karena itu diuraikan lebih dulu, dan yang gagal diuraikan
+ * DIBUANG. Lebih baik kehilangan satu berita daripada menanam satu kembaran
+ * yang tidak bisa dikenali lapis mana pun sesudahnya.
  *
- * Kalau alamat itu yang ditulis, seluruh penyaringan kembar akan LOLOS: satu
- * artikel yang sama akan tersimpan dua kali — sekali sebagai alamat portalnya
- * dari sumber lain, sekali sebagai alamat pengalihan dari sini. Ketiga lapis
- * di atas tidak akan menangkapnya, sebab keduanya memang alamat yang berbeda.
+ * ----------------------------------------------------------------------------
+ * YANG DITAMBAHKAN DI v2.0
+ * ----------------------------------------------------------------------------
  *
- * Karena itu setiap alamat diuraikan lebih dulu, dengan tiga cara berurutan
- * dari yang termurah: dari isi <description>, dari <source url>, lalu — kalau
- * keduanya gagal — dengan benar-benar membuka alamatnya dan membaca alamat
- * kanoniknya. Yang tidak berhasil diuraikan TIDAK DITULIS sama sekali. Lebih
- * baik kehilangan satu berita daripada menanam satu kembaran yang tidak bisa
- * dikenali siapa pun sesudahnya.
+ *   Ragam nama.   "Lapas Kelas IIB Tobello" hampir tidak pernah ditulis
+ *                 lengkap oleh wartawan. Yang ditulis "Lapas Tobello", atau
+ *                 nama kabupatennya. v1.0 hanya mencari bentuk resminya dan
+ *                 karena itu melewatkan sebagian besar beritanya.
+ *
+ *   Saringan relevansi. Kueri "Lapas Kelas IIB Ende" mengembalikan berita
+ *                 tentang KOTA Ende. v1.0 menulisnya apa adanya, dan hasilnya
+ *                 mengotori arsip dengan berita yang bukan urusan
+ *                 Pemasyarakatan.
+ *
+ *   Jurnal.       Setiap jalan mencatat: berapa diperiksa, berapa diterima,
+ *                 berapa ditolak dan KARENA APA. Tanpa itu, penjaring yang
+ *                 berhenti bekerja terlihat persis sama dengan penjaring yang
+ *                 memang tidak menemukan apa-apa — pelajaran yang baru saja
+ *                 dibayar mahal di tempat lain pada sistem ini.
+ *
+ *   Penjaga kuota. UrlFetchApp dibatasi per hari. Tanpa penghitung, satu
+ *                 daftar sasaran yang membengkak akan menghabiskannya diam-diam
+ *                 dan yang berhenti bukan hanya penjaring ini.
+ *
+ *   Urut menurut kesunyian. Sasaran dipilih dari yang PALING LAMA tidak
+ *                 diperiksa, bukan urutan tetap. Daftar yang disunting di
+ *                 tengah jalan tidak lagi membuat sebagian unit terlewat
+ *                 selamanya.
  *
  * ----------------------------------------------------------------------------
  * CARA MEMASANG
@@ -78,138 +109,289 @@
  *   4. Kembali ke spreadsheet → Bagikan → "Siapa saja yang memiliki link"
  *      sebagai **Pelihat**
  *
- * Langkah 4 wajib: penyalin membacanya tanpa akun Google, persis seperti dua
- * sumber lainnya. Tanpa itu halaman Sinkronisasi Sumber akan menampilkannya
- * berstatus Gagal — dan itu benar, bukan kekeliruan yang perlu diperbaiki.
+ * Langkah 4 wajib: penyalin membacanya tanpa akun Google. Tanpa itu halaman
+ * Sinkronisasi Sumber menampilkannya berstatus Gagal — dan itu benar, bukan
+ * kekeliruan yang perlu diperbaiki.
  *
- * Sesudah langkah 4 tidak ada lagi yang perlu ditekan. pg_cron memanggil
- * penyalin tiap lima menit.
+ * Sesudah langkah 4 tidak ada lagi yang perlu ditekan.
  */
 
 /* ========================================================== setelan */
 
-const PENJARING_VERSI = 'penjaring-celah-v1.0';
+var PENJARING_VERSI = 'penjaring-celah-v2.0';
+
+var NAMA_LEMBAR = 'Sheet1';
+var LEMBAR_TARGET = 'Target';
+var LEMBAR_JURNAL = 'Jurnal';
 
 /**
  * Berapa unit dicari sekali jalan.
  *
- * Dua belas, bukan seluruhnya. Apps Script membatasi satu jalan pada enam menit
- * dan UrlFetchApp pada 20.000 panggilan sehari; 343 unit sekali jalan pasti
- * terpotong di tengah, dan yang terpotong di tengah selalu unit yang sama —
- * yang di ujung daftar tidak akan pernah tersentuh. Dengan penunjuk berputar,
- * seluruh 343 unit selesai dalam sekitar 29 hari lalu mengulang dari awal.
+ * Sepuluh, bukan seluruhnya. Apps Script membatasi satu jalan pada enam menit;
+ * 343 unit sekali jalan pasti terpotong di tengah, dan yang terpotong selalu
+ * unit yang sama — yang di ujung daftar tidak akan pernah tersentuh.
  */
-const PER_JALAN = 12;
+var UNIT_PER_JALAN = 10;
 
 /** Berapa berita teratas diambil per unit. Lebih dari ini hampir selalu berulang. */
-const PER_UNIT = 4;
+var BERITA_PER_UNIT = 5;
 
-/** Berita yang lebih tua dari ini dilewati; arsip lama bukan tugas penjaring. */
-const UMUR_MAKS_HARI = 45;
+/** Berita lebih tua dari ini dilewati; arsip lama bukan tugas penjaring. */
+var UMUR_MAKS_HARI = 45;
 
-const NAMA_LEMBAR = 'Sheet1';
-const NAMA_LEMBAR_TARGET = 'Target';
+/**
+ * Batas panggilan jaringan sekali jalan.
+ *
+ * UrlFetchApp dibatasi 20.000 panggilan sehari untuk akun biasa. Angka ini
+ * jauh di bawahnya dengan sengaja: yang dijaga bukan batas hariannya melainkan
+ * batas WAKTU jalannya (enam menit), dan pengurai alamat bisa memakan beberapa
+ * detik per berita ketika portalnya lambat.
+ */
+var BATAS_AMBIL = 120;
 
-/* ========================================================== pemicu */
+/** Jeda antar-permintaan, milidetik. Menjaga agar tidak dianggap serangan. */
+var JEDA_MS = 220;
 
-/** Dijalankan SEKALI dengan tangan. Memasang jadwal harian pukul 03.00 WIB. */
+/* ========================================================== menu & pemicu */
+
+function onOpen() {
+  SpreadsheetApp.getUi()
+    .createMenu('Penjaring Celah')
+    .addItem('Jaring per unit (sekarang)', 'jaringCelah')
+    .addItem('Jaring per isu (sekarang)', 'jaringIsu')
+    .addSeparator()
+    .addItem('Pasang / perbarui pemicu harian', 'pasangPemicu')
+    .addItem('Siapkan ulang lembar Target', 'siapkanUlangTarget')
+    .addToUi();
+}
+
+/**
+ * Dijalankan SEKALI dengan tangan.
+ *
+ * Dua pemicu pada jam yang berbeda, bukan satu yang mengerjakan keduanya.
+ * Alasannya batas waktu: satu jalan Apps Script dipotong pada enam menit, dan
+ * jalan yang dipotong di tengah meninggalkan penunjuknya pada keadaan yang
+ * tidak jelas sudah maju atau belum.
+ */
 function pasangPemicu() {
   ScriptApp.getProjectTriggers().forEach(function (p) {
-    if (p.getHandlerFunction() === 'jaringCelah') ScriptApp.deleteTrigger(p);
+    var f = p.getHandlerFunction();
+    if (f === 'jaringCelah' || f === 'jaringIsu') ScriptApp.deleteTrigger(p);
   });
 
   ScriptApp.newTrigger('jaringCelah').timeBased().atHour(3).everyDays(1).create();
+  ScriptApp.newTrigger('jaringIsu').timeBased().atHour(5).everyDays(1).create();
 
   siapkanLembarTarget();
-  SpreadsheetApp.getActive().toast('Pemicu harian terpasang (03.00). Lembar Target disiapkan.');
+  siapkanLembarJurnal();
+
+  SpreadsheetApp.getActive().toast(
+    'Pemicu terpasang: per unit 03.00, per isu 05.00. Lembar Target dan Jurnal siap.',
+    PENJARING_VERSI, 10);
 }
 
-/* ========================================================== inti */
+/* ========================================================== jaring per unit */
 
 function jaringCelah() {
+  var mulai = new Date();
+  var kuota = { ambil: 0 };
+  var tolak = petaTolak();
+
   var berkas = SpreadsheetApp.getActive();
   var lembar = berkas.getSheetByName(NAMA_LEMBAR) || berkas.getSheets()[0];
   var target = bacaTarget();
 
-  if (!target.length) {
-    Logger.log('Lembar Target kosong. Jalankan pasangPemicu() lebih dulu.');
+  if (!target.baris.length) {
+    catatJurnal('unit', 0, 0, tolak, kuota, mulai, 'Lembar Target kosong. Jalankan pasangPemicu().');
     return;
   }
 
-  var simpanan = PropertiesService.getScriptProperties();
-  var mulai = Number(simpanan.getProperty('penunjuk') || 0) % target.length;
+  var sudahAda = alamatYangSudahAda(lembar);
+  var barisBaru = [];
+  var dipilih = pilihSasaran(target, UNIT_PER_JALAN);
 
+  for (var i = 0; i < dipilih.length; i++) {
+    if (kuota.ambil >= BATAS_AMBIL) { tolak.kuota++; break; }
+
+    var unit = dipilih[i].nama;
+    var temuan = cariRss(kueriUnit(unit), kuota);
+
+    for (var j = 0; j < temuan.length && j < BERITA_PER_UNIT; j++) {
+      var t = temuan[j];
+
+      if (!relevanUntukUnit(t, unit)) { tolak.takRelevan++; continue; }
+
+      var url = uraikanAlamat(t, kuota);
+      if (!url) { tolak.alamat++; continue; }
+
+      var kunci = normalkanTautan(url);
+      if (!kunci) { tolak.alamat++; continue; }
+      if (sudahAda[kunci]) { tolak.kembar++; continue; }
+      sudahAda[kunci] = true;
+
+      barisBaru.push(susunBaris(t, kunci, unit, 'unit'));
+    }
+
+    tandaiDiperiksa(target, dipilih[i].baris);
+  }
+
+  tulisBaris(lembar, barisBaru);
+  catatJurnal('unit', dipilih.length, barisBaru.length, tolak, kuota, mulai, '');
+}
+
+/* =========================================================== jaring per isu */
+
+/**
+ * Isu yang dicari, mengikuti taksonomi negatif sistem.
+ *
+ * Setiap kueri sengaja MENGIKAT kata isunya pada kata Pemasyarakatan. Tanpa
+ * ikatan itu, "pungli" mengembalikan seluruh pungli di republik ini, dan yang
+ * masuk ke arsip intelijen pemasyarakatan adalah berita dinas perhubungan.
+ *
+ * Urutannya menurut berat akibatnya bila terlewat, bukan menurut seberapa
+ * sering ia muncul — pada jalan yang terpotong kuota, yang di atas tetap
+ * terperiksa.
+ */
+var ISU = [
+  { kode: '4.1', kueri: '("lapas" OR "rutan") ("tewas" OR "meninggal di sel" OR "gantung diri")' },
+  { kode: '1.1', kueri: '("lapas" OR "rutan") ("napi kabur" OR "melarikan diri" OR "pelarian")' },
+  { kode: '1.2', kueri: '("lapas" OR "rutan") ("kerusuhan" OR "ricuh" OR "pemberontakan")' },
+  { kode: '3.3', kueri: '("sipir" OR "petugas lapas") ("menganiaya" OR "memukuli" OR "penganiayaan")' },
+  { kode: '3.5', kueri: '("kalapas" OR "karutan" OR "kepala lapas") ("korupsi" OR "tersangka" OR "OTT")' },
+  { kode: '4.3', kueri: '("lapas" OR "rutan") ("kebakaran" OR "terbakar" OR "banjir" OR "dievakuasi")' },
+  { kode: '2.1', kueri: '("lapas" OR "rutan") ("narkoba" OR "sabu") ("dikendalikan" OR "peredaran")' },
+  { kode: '6.1', kueri: '("lapas" OR "rutan") ("penyelundupan" OR "diselundupkan" OR "gagalkan")' },
+  { kode: '3.1', kueri: '("lapas" OR "rutan") ("pungli" OR "pungutan liar" OR "dimintai uang")' },
+  { kode: '5.1', kueri: '("napiter" OR "narapidana terorisme" OR "pembaiatan") ("lapas" OR "rutan")' },
+  { kode: '4.2', kueri: '("lapas" OR "rutan") ("overkapasitas" OR "melebihi kapasitas" OR "kelebihan penghuni")' },
+  { kode: '6.2', kueri: '("lapas" OR "rutan") ("unjuk rasa" OR "demo" OR "penyerangan")' },
+  { kode: '3.6', kueri: '("oknum petugas lapas" OR "kepala lapas") ("asusila" OR "digerebek" OR "pelecehan")' },
+  { kode: '7.2', kueri: '("residivis" OR "baru bebas") ("kembali ditangkap" OR "berulah")' },
+];
+
+function jaringIsu() {
+  var mulai = new Date();
+  var kuota = { ambil: 0 };
+  var tolak = petaTolak();
+
+  var berkas = SpreadsheetApp.getActive();
+  var lembar = berkas.getSheetByName(NAMA_LEMBAR) || berkas.getSheets()[0];
   var sudahAda = alamatYangSudahAda(lembar);
   var barisBaru = [];
   var diperiksa = 0;
 
-  for (var i = 0; i < PER_JALAN; i++) {
-    var unit = target[(mulai + i) % target.length];
-    if (!unit) continue;
+  for (var i = 0; i < ISU.length; i++) {
+    if (kuota.ambil >= BATAS_AMBIL) { tolak.kuota++; break; }
     diperiksa++;
 
-    var temuan = cariBerita(unit);
-    for (var j = 0; j < temuan.length; j++) {
-      var t = temuan[j];
-      var kunci = normalkanTautan(t.url);
-      if (!kunci) continue;
+    var temuan = cariRss(ISU[i].kueri, kuota);
 
-      // Lapis pertama: jangan tulis dua kali di lembar ini sendiri. Termasuk
-      // terhadap baris yang baru saja ditambahkan pada jalan yang sama — dua
-      // unit yang bertetangga sering muncul dalam satu berita.
-      if (sudahAda[kunci]) continue;
+    for (var j = 0; j < temuan.length && j < BERITA_PER_UNIT; j++) {
+      var t = temuan[j];
+
+      if (!berjangkarPemasyarakatan(t)) { tolak.takRelevan++; continue; }
+
+      var url = uraikanAlamat(t, kuota);
+      if (!url) { tolak.alamat++; continue; }
+
+      var kunci = normalkanTautan(url);
+      if (!kunci) { tolak.alamat++; continue; }
+      if (sudahAda[kunci]) { tolak.kembar++; continue; }
       sudahAda[kunci] = true;
 
-      barisBaru.push([
-        t.tanggal,          // Waktu Terdeteksi
-        t.judul,            // Judul Berita
-        t.portal,           // Sumber / Portal
-        kunci,              // URL / Link Artikel — sudah seragam
-        unit,               // Nama UPT
-        '',                 // Kanwil — dibiarkan kosong, mesin yang memetakan
-        '',                 // Tingkat Risiko — dibiarkan kosong, mesin yang menilai
-        'Ditemukan penjaring celah ' + PENJARING_VERSI
-          + ' saat mencari unit yang belum pernah diberitakan.',
-      ]);
+      // Nama UPT dibiarkan KOSONG dengan sengaja. Mesin pencocokan UPT di
+      // sistem jauh lebih baik menebaknya daripada kueri ini — ia membaca
+      // seluruh teks, mengenal 531 nama beserta sebutan sehari-harinya, dan
+      // tahu kapan harus menyerah. Menebak di sini berarti menanam tebakan
+      // buruk yang tidak bisa dibedakan dari keterangan yang sungguhan.
+      barisBaru.push(susunBaris(t, kunci, '', 'isu:' + ISU[i].kode));
     }
   }
 
-  if (barisBaru.length) {
-    lembar.getRange(lembar.getLastRow() + 1, 1, barisBaru.length, barisBaru[0].length)
-      .setValues(barisBaru);
-  }
-
-  simpanan.setProperty('penunjuk', String((mulai + PER_JALAN) % target.length));
-  simpanan.setProperty('terakhir', new Date().toISOString());
-
-  Logger.log('Penjaring celah: ' + diperiksa + ' unit diperiksa, '
-    + barisBaru.length + ' berita baru ditulis. Penunjuk berikutnya: '
-    + ((mulai + PER_JALAN) % target.length));
+  tulisBaris(lembar, barisBaru);
+  catatJurnal('isu', diperiksa, barisBaru.length, tolak, kuota, mulai, '');
 }
 
-/* ========================================================== pencarian */
+/* ========================================================== penyusun kueri */
 
 /**
- * Mencari berita untuk satu unit lewat RSS Google News.
+ * Membangun kueri untuk satu unit, dengan ragam namanya.
  *
- * Nama unitnya dikutip penuh. Tanpa kutip, "Lapas Kelas IIB Tobello" akan
- * cocok pada berita lapas mana pun yang kebetulan memuat kata "kelas" —
- * dan yang kembali adalah kebisingan dari unit yang justru sudah terliput.
+ * "Lapas Kelas IIB Tobello" hampir tidak pernah ditulis lengkap oleh wartawan.
+ * Yang ditulis "Lapas Tobello", kadang "Lapas Tobelo". v1.0 hanya mencari
+ * bentuk resminya dan karena itu melewatkan sebagian besar beritanya — bentuk
+ * resmi hanya dipakai oleh siaran pers unit itu sendiri, yang justru sudah
+ * tertangkap sumber lain.
+ *
+ * Nama dikutip penuh. Tanpa kutip, "Lapas Kelas IIB Tobello" cocok pada berita
+ * lapas mana pun yang kebetulan memuat kata "kelas".
  */
-function cariBerita(namaUnit) {
-  var kueri = '"' + namaUnit + '"';
+function kueriUnit(namaLengkap) {
+  var ragam = {};
+  ragam[namaLengkap] = true;
+
+  var pendek = namaLengkap
+    .replace(/\s+Kelas\s+(I{1,3}|IV)[AB]?\b/i, '')
+    .replace(/\s+Kelas\s+\d+[AB]?\b/i, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+  if (pendek && pendek !== namaLengkap) ragam[pendek] = true;
+
+  // Bentuk paling ringkas yang masih dipakai media daerah: kata jenisnya saja
+  // ditambah nama tempatnya, tanpa keterangan Perempuan/Narkotika/Terbuka.
+  //
+  // TIDAK dipakai untuk unit berketerangan. "Lapas Perempuan Kelas IIA
+  // Semarang" yang diringkas menjadi "Lapas Semarang" akan menarik berita
+  // Lapas Kelas I Semarang — unit yang berbeda, di kota yang sama. Ringkasan
+  // yang menabrak unit lain lebih buruk daripada tidak meringkas sama sekali.
+  var cocok = namaLengkap.match(/^(Lapas|Rutan|Bapas|LPKA)\s+Kelas\s+\S+\s+(.+)$/);
+  if (cocok) {
+    var ringkas = cocok[1] + ' ' + cocok[2];
+    if (ringkas.length > 6) ragam[ringkas] = true;
+  }
+
+  var bagian = [];
+  for (var k in ragam) {
+    if (!ragam.hasOwnProperty(k)) continue;
+    /*
+       Sisa penanda kelas dibuang.
+
+       Ditemukan uji tools/uji-penjaring.mjs pada 6 September 2026: penyusun
+       ragam sempat menghasilkan "Lapas IIB Tobello" — bentuk yang tidak pernah
+       ditulis satu wartawan pun, dan yang memakan satu dari tiga slot kueri
+       yang tersedia. Kerugiannya bukan hasil yang salah melainkan hasil yang
+       HILANG: slot yang terpakai bentuk mati adalah slot yang tidak dipakai
+       bentuk yang hidup.
+    */
+    if (/\b(I{1,3}|IV)[AB]?\b/.test(k.replace(namaLengkap, ''))) continue;
+    bagian.push('"' + k + '"');
+  }
+
+  // Google News membatasi panjang kueri; tiga ragam sudah cukup dan lebih dari
+  // itu mulai mengembalikan hasil yang sama berulang-ulang.
+  return bagian.slice(0, 3).join(' OR ');
+}
+
+/* ========================================================== pengambil RSS */
+
+function cariRss(kueri, kuota) {
+  if (!kueri) return [];
+  if (kuota.ambil >= BATAS_AMBIL) return [];
+
   var alamat = 'https://news.google.com/rss/search?q=' + encodeURIComponent(kueri)
     + '&hl=id&gl=ID&ceid=ID:id';
 
   var xml;
   try {
+    kuota.ambil++;
     var jawaban = UrlFetchApp.fetch(alamat, { muteHttpExceptions: true, followRedirects: true });
     if (jawaban.getResponseCode() !== 200) return [];
     xml = XmlService.parse(jawaban.getContentText());
   } catch (e) {
-    Logger.log('Gagal mengambil RSS untuk ' + namaUnit + ': ' + e);
+    Logger.log('RSS gagal (' + kueri.slice(0, 60) + '): ' + e);
     return [];
   }
+  Utilities.sleep(JEDA_MS);
 
   var butir;
   try {
@@ -221,9 +403,8 @@ function cariBerita(namaUnit) {
   var batasWaktu = new Date().getTime() - UMUR_MAKS_HARI * 24 * 60 * 60 * 1000;
   var hasil = [];
 
-  for (var i = 0; i < butir.length && hasil.length < PER_UNIT; i++) {
+  for (var i = 0; i < butir.length; i++) {
     var b = butir[i];
-
     var judulPenuh = teksAnak(b, 'title');
     var tautanRss = teksAnak(b, 'link');
     var tanggalTeks = teksAnak(b, 'pubDate');
@@ -236,110 +417,173 @@ function cariBerita(namaUnit) {
 
     // Judul Google News selalu berbentuk "Judul berita - Nama Portal".
     var portal = '';
-    var pisah = judulPenuh.lastIndexOf(' - ');
     var judul = judulPenuh;
+    var pisah = judulPenuh.lastIndexOf(' - ');
     if (pisah > 20) {
       judul = judulPenuh.substring(0, pisah).trim();
       portal = judulPenuh.substring(pisah + 3).trim();
     }
     if (!portal) portal = teksAnak(b, 'source') || 'Google News';
 
-    var urlAsli = uraikanAlamat(tautanRss, keterangan, b);
-    if (!urlAsli) continue;   // lihat catatan di kepala berkas: lebih baik hilang
-
     hasil.push({
       judul: judul,
       portal: portal,
-      url: urlAsli,
-      tanggal: Utilities.formatDate(tanggal, 'Asia/Jakarta', 'yyyy-MM-dd HH:mm'),
+      tautanRss: tautanRss,
+      keterangan: keterangan,
+      tanggal: tanggal,
     });
   }
 
   return hasil;
 }
 
+/* ========================================================= saringan relevansi */
+
+var JANGKAR = [
+  'lapas', 'rutan', 'lembaga pemasyarakatan', 'rumah tahanan', 'bapas', 'lpka',
+  'pemasyarakatan', 'warga binaan', 'narapidana', 'napi', 'tahanan', 'sipir',
+  'ditjenpas', 'kemenimipas', 'imigrasi dan pemasyarakatan',
+];
+
+/** Benar bila teksnya benar-benar berbicara tentang Pemasyarakatan. */
+function berjangkarPemasyarakatan(t) {
+  var teks = (t.judul + ' ' + (t.keterangan || '')).toLowerCase();
+  for (var i = 0; i < JANGKAR.length; i++) {
+    if (teks.indexOf(JANGKAR[i]) !== -1) return true;
+  }
+  return false;
+}
+
 /**
- * Mengubah alamat pengalihan Google News menjadi alamat artikel yang sebenarnya.
+ * Benar bila berita itu memang tentang unit yang sedang dicari.
  *
- * Tiga cara, dicoba berurutan dari yang termurah. Yang ketiga membuka
- * alamatnya sungguhan dan karena itu dibatasi — ia satu-satunya yang memakan
- * kuota UrlFetchApp dan waktu jalan.
+ * Dua syarat, dan keduanya perlu. Kueri "Lapas Kelas IIB Ende" mengembalikan
+ * berita tentang KOTA Ende yang tidak ada urusannya dengan Pemasyarakatan —
+ * itu ditolak syarat pertama. Kueri yang sama juga mengembalikan berita lapas
+ * lain yang kebetulan memuat kata "kelas" dan "ende" di kalimat berbeda —
+ * itu ditolak syarat kedua, yang menuntut penanda tempat unitnya muncul.
  *
- * Mengembalikan '' bila ketiganya gagal. Pemanggilnya membuang butir itu, dan
- * itu memang yang dikehendaki: alamat pengalihan yang tersimpan adalah
- * kembaran yang tidak bisa dikenali oleh lapis penyaringan mana pun.
+ * v1.0 tidak punya keduanya, dan menulis apa pun yang dikembalikan Google.
  */
-function uraikanAlamat(tautanRss, keterangan, butir) {
+function relevanUntukUnit(t, namaUnit) {
+  if (!berjangkarPemasyarakatan(t)) return false;
+
+  var teks = (t.judul + ' ' + (t.keterangan || '')).toLowerCase();
+
+  // Penanda tempat: kata terakhir nama unit yang bukan kata jenis atau kelas.
+  var kata = namaUnit.split(/\s+/);
+  var penanda = [];
+  for (var i = kata.length - 1; i >= 0 && penanda.length < 2; i--) {
+    var k = kata[i].toLowerCase();
+    if (/^(lapas|rutan|bapas|lpka|kelas|perempuan|narkotika|terbuka|khusus|pemuda|i{1,3}|iv|ia|ib|iia|iib|iiia|iiib)$/.test(k)) continue;
+    if (k.length < 4) continue;
+    penanda.push(k);
+  }
+
+  if (!penanda.length) return true;   // nama tanpa penanda tempat; serahkan ke mesin
+
+  for (var j = 0; j < penanda.length; j++) {
+    if (teks.indexOf(penanda[j]) !== -1) return true;
+  }
+  return false;
+}
+
+/* ====================================================== pengurai alamat */
+
+/**
+ * Mengubah alamat pengalihan Google News menjadi alamat artikel sebenarnya.
+ *
+ * Tiga cara berurutan dari yang termurah. Yang ketiga membuka alamatnya
+ * sungguhan dan karena itu dihitung terhadap kuota.
+ *
+ * Mengembalikan '' bila ketiganya gagal, dan pemanggilnya membuang butir itu.
+ * Itu memang yang dikehendaki: alamat pengalihan yang tersimpan adalah
+ * kembaran yang tidak bisa dikenali lapis penyaringan mana pun.
+ */
+function uraikanAlamat(t, kuota) {
+  var tautan = t.tautanRss;
+
   // Cara 1 — jangkar di dalam <description>. Tanpa permintaan jaringan.
-  if (keterangan) {
-    var cocok = keterangan.match(/href="(https?:\/\/[^"]+)"/i);
+  if (t.keterangan) {
+    var cocok = t.keterangan.match(/href="(https?:\/\/[^"]+)"/i);
     if (cocok && cocok[1].indexOf('news.google.com') === -1) return cocok[1];
   }
 
-  // Cara 2 — alamat portal pada <source>. Hanya berguna bila artikelnya
-  // kebetulan di akar; jarang, tetapi gratis.
-  try {
-    var sumber = butir.getChild('source');
-    if (sumber) {
-      var alamatSumber = sumber.getAttribute('url');
-      if (alamatSumber) {
-        var nilai = alamatSumber.getValue();
-        // Hanya dipakai bila alamat RSS-nya sendiri sudah menunjuk portal itu.
-        if (tautanRss.indexOf('news.google.com') === -1) return tautanRss;
-        // Alamat akar portal bukan alamat artikel; jangan dipakai sendirian.
-        void nilai;
-      }
-    }
-  } catch (e) { /* tidak apa-apa, lanjut ke cara ketiga */ }
+  // Cara 2 — alamatnya memang sudah bukan Google News.
+  if (tautan.indexOf('news.google.com') === -1) return tautan;
 
-  // Alamat yang memang sudah bukan Google News.
-  if (tautanRss.indexOf('news.google.com') === -1) return tautanRss;
+  // Simpanan: alamat yang sama muncul di beberapa kueri sekaligus, dan
+  // menguraikannya dua kali membayar kuota dua kali untuk jawaban yang sama.
+  var simpanan = CacheService.getScriptCache();
+  var kunciSimpan = 'u' + Utilities.base64EncodeWebSafe(
+    Utilities.computeDigest(Utilities.DigestAlgorithm.MD5, tautan));
+  var tersimpan = simpanan.get(kunciSimpan);
+  if (tersimpan) return tersimpan === '-' ? '' : tersimpan;
+
+  if (kuota.ambil >= BATAS_AMBIL) return '';
 
   // Cara 3 — buka alamatnya, baca alamat kanoniknya.
+  var hasil = '';
   try {
-    var jawaban = UrlFetchApp.fetch(tautanRss, {
+    kuota.ambil++;
+    var jawaban = UrlFetchApp.fetch(tautan, {
       muteHttpExceptions: true,
       followRedirects: true,
-      validateHttpsCertificates: true,
     });
-    if (jawaban.getResponseCode() !== 200) return '';
+    Utilities.sleep(JEDA_MS);
 
-    var isi = jawaban.getContentText();
+    if (jawaban.getResponseCode() === 200) {
+      var isi = jawaban.getContentText();
 
-    var kanonik = isi.match(/<link[^>]+rel=["']canonical["'][^>]+href=["']([^"']+)["']/i)
-      || isi.match(/<link[^>]+href=["']([^"']+)["'][^>]+rel=["']canonical["']/i);
-    if (kanonik && kanonik[1].indexOf('news.google.com') === -1) return kanonik[1];
+      var kanonik = isi.match(/<link[^>]+rel=["']canonical["'][^>]+href=["']([^"']+)["']/i)
+        || isi.match(/<link[^>]+href=["']([^"']+)["'][^>]+rel=["']canonical["']/i);
+      if (kanonik && kanonik[1].indexOf('news.google.com') === -1) hasil = kanonik[1];
 
-    // Halaman antara milik Google News menaruh alamat tujuannya di sini.
-    var nAu = isi.match(/data-n-au=["']([^"']+)["']/i);
-    if (nAu && nAu[1].indexOf('news.google.com') === -1) return nAu[1];
-
-    var ogUrl = isi.match(/<meta[^>]+property=["']og:url["'][^>]+content=["']([^"']+)["']/i);
-    if (ogUrl && ogUrl[1].indexOf('news.google.com') === -1) return ogUrl[1];
+      if (!hasil) {
+        var nAu = isi.match(/data-n-au=["']([^"']+)["']/i);
+        if (nAu && nAu[1].indexOf('news.google.com') === -1) hasil = nAu[1];
+      }
+      if (!hasil) {
+        var og = isi.match(/<meta[^>]+property=["']og:url["'][^>]+content=["']([^"']+)["']/i);
+        if (og && og[1].indexOf('news.google.com') === -1) hasil = og[1];
+      }
+    }
   } catch (e) {
     Logger.log('Gagal menguraikan alamat: ' + e);
   }
 
-  return '';
+  // Kegagalan ikut disimpan, dengan umur yang sama. Alamat yang tidak bisa
+  // diuraikan hari ini hampir selalu tetap begitu satu jam kemudian, dan
+  // mencobanya lagi hanya membayar kuota untuk jawaban yang sudah diketahui.
+  try { simpanan.put(kunciSimpan, hasil || '-', 21600); } catch (e) { /* penuh */ }
+  return hasil;
 }
 
-/* ========================================================== pembantu */
+/* ========================================================== penulis baris */
 
-function teksAnak(elemen, nama) {
-  try {
-    var anak = elemen.getChild(nama);
-    return anak ? String(anak.getText() || '').trim() : '';
-  } catch (e) {
-    return '';
-  }
+function susunBaris(t, url, namaUpt, asal) {
+  return [
+    Utilities.formatDate(t.tanggal, 'Asia/Jakarta', 'yyyy-MM-dd HH:mm'),
+    t.judul,
+    t.portal,
+    url,
+    namaUpt,
+    '',   // Kanwil — mesin yang memetakan
+    '',   // Tingkat Risiko — mesin yang menilai
+    'Ditemukan ' + PENJARING_VERSI + ' (' + asal + ').',
+  ];
+}
+
+function tulisBaris(lembar, baris) {
+  if (!baris.length) return;
+  lembar.getRange(lembar.getLastRow() + 1, 1, baris.length, baris[0].length).setValues(baris);
 }
 
 /**
  * Alamat yang sudah tertulis di lembar ini, dalam bentuk seragam.
  *
  * Dibaca sekali di awal, bukan diperiksa baris per baris ke lembar. Lembar
- * yang sudah berisi ribuan baris akan membuat cara kedua memakan seluruh
- * jatah waktu jalan.
+ * berisi ribuan baris akan membuat cara kedua memakan seluruh jatah waktu.
  */
 function alamatYangSudahAda(lembar) {
   var jumlah = lembar.getLastRow();
@@ -354,13 +598,156 @@ function alamatYangSudahAda(lembar) {
   return peta;
 }
 
+/* ========================================================== jurnal */
+
+function petaTolak() {
+  return { takRelevan: 0, alamat: 0, kembar: 0, kuota: 0 };
+}
+
+/**
+ * Mencatat setiap jalan.
+ *
+ * Ini bukan kerapian. Penjaring yang berhenti bekerja — kuota habis, Google
+ * mengubah bentuk RSS-nya, pemicunya terhapus — menghasilkan NOL BARIS BARU,
+ * dan nol baris baru terlihat persis sama dengan "memang tidak ada berita baru
+ * hari ini". Tanpa jurnal, kerusakan itu bisa berbulan-bulan tidak terlihat.
+ *
+ * Yang dicatat karena itu bukan hanya berapa yang ditemukan, melainkan berapa
+ * yang DIPERIKSA dan berapa yang ditolak beserta sebabnya. Baris yang berbunyi
+ * "60 diperiksa, 0 diterima, 60 ditolak: tak relevan" menerangkan keadaan yang
+ * sama sekali berbeda dari "0 diperiksa".
+ */
+function catatJurnal(mode, diperiksa, diterima, tolak, kuota, mulai, catatan) {
+  var lembar = siapkanLembarJurnal();
+  var durasi = Math.round((new Date().getTime() - mulai.getTime()) / 1000);
+
+  lembar.insertRowAfter(1);
+  lembar.getRange(2, 1, 1, 9).setValues([[
+    Utilities.formatDate(new Date(), 'Asia/Jakarta', 'yyyy-MM-dd HH:mm:ss'),
+    mode,
+    diperiksa,
+    diterima,
+    tolak.takRelevan,
+    tolak.alamat,
+    tolak.kembar,
+    kuota.ambil,
+    (durasi + ' dtk') + (tolak.kuota ? ' — TERPOTONG KUOTA' : '') + (catatan ? ' — ' + catatan : ''),
+  ]]);
+
+  // Jurnal dipangkas supaya tidak tumbuh selamanya. Enam puluh baris cukup
+  // untuk satu bulan dua pemicu — cukup jauh untuk melihat pola, cukup pendek
+  // untuk dibaca sekali pandang.
+  var akhir = lembar.getLastRow();
+  if (akhir > 61) lembar.deleteRows(62, akhir - 61);
+}
+
+function siapkanLembarJurnal() {
+  var berkas = SpreadsheetApp.getActive();
+  var lembar = berkas.getSheetByName(LEMBAR_JURNAL);
+  if (lembar) return lembar;
+
+  lembar = berkas.insertSheet(LEMBAR_JURNAL);
+  lembar.getRange(1, 1, 1, 9).setValues([[
+    'Waktu', 'Mode', 'Diperiksa', 'Diterima',
+    'Tolak: tak relevan', 'Tolak: alamat', 'Tolak: kembar',
+    'Panggilan jaringan', 'Keterangan',
+  ]]);
+  lembar.getRange(1, 1, 1, 9).setFontWeight('bold');
+  lembar.setFrozenRows(1);
+  lembar.setColumnWidth(1, 150);
+  lembar.setColumnWidth(9, 260);
+  return lembar;
+}
+
+/* ========================================================== daftar sasaran */
+
+/**
+ * Membaca sasaran beserta kapan terakhir diperiksa.
+ *
+ * Kolom kedua ("terakhir diperiksa") membuat pemilihan sasaran tidak lagi
+ * bergantung pada penunjuk yang disimpan terpisah. Penunjuk semacam itu
+ * menjadi salah begitu daftarnya disunting — menghapus satu baris di tengah
+ * menggeser seluruh sisanya, dan sebagian unit terlewat selamanya tanpa ada
+ * yang menyadarinya.
+ */
+function bacaTarget() {
+  var berkas = SpreadsheetApp.getActive();
+  var lembar = berkas.getSheetByName(LEMBAR_TARGET) || siapkanLembarTarget();
+
+  var jumlah = lembar.getLastRow();
+  if (jumlah < 2) return { lembar: lembar, baris: [] };
+
+  var nilai = lembar.getRange(2, 1, jumlah - 1, 2).getValues();
+  var baris = [];
+  for (var i = 0; i < nilai.length; i++) {
+    var nama = String(nilai[i][0] || '').trim();
+    if (!nama) continue;
+    var waktu = nilai[i][1] instanceof Date ? nilai[i][1].getTime() : 0;
+    baris.push({ nama: nama, waktu: waktu, baris: i + 2 });
+  }
+  return { lembar: lembar, baris: baris };
+}
+
+/** Yang PALING LAMA tidak diperiksa didahulukan. */
+function pilihSasaran(target, berapa) {
+  var urut = target.baris.slice().sort(function (a, b) { return a.waktu - b.waktu; });
+  return urut.slice(0, berapa);
+}
+
+function tandaiDiperiksa(target, nomorBaris) {
+  target.lembar.getRange(nomorBaris, 2).setValue(new Date());
+}
+
+function siapkanUlangTarget() {
+  var berkas = SpreadsheetApp.getActive();
+  var lama = berkas.getSheetByName(LEMBAR_TARGET);
+  if (lama) berkas.deleteSheet(lama);
+  siapkanLembarTarget();
+  SpreadsheetApp.getActive().toast('Lembar Target disusun ulang dari daftar bawaan.', PENJARING_VERSI, 8);
+}
+
+/**
+ * Menulis daftar sasaran ke lembar tersendiri.
+ *
+ * Ditaruh di lembar, bukan hanya di dalam skrip, supaya bisa disunting tanpa
+ * menyentuh kode: unit yang sudah ramai diberitakan bisa dicoret, unit baru
+ * bisa ditambahkan. Skrip hanya membacanya.
+ */
+function siapkanLembarTarget() {
+  var berkas = SpreadsheetApp.getActive();
+  var lembar = berkas.getSheetByName(LEMBAR_TARGET);
+  if (lembar) return lembar;
+
+  lembar = berkas.insertSheet(LEMBAR_TARGET);
+  lembar.getRange(1, 1, 1, 2).setValues([['Nama UPT (belum pernah diberitakan per 6 Sep 2026)', 'Terakhir diperiksa']]);
+  lembar.getRange(1, 1, 1, 2).setFontWeight('bold');
+
+  var baris = TARGET_AWAL.map(function (n) { return [n, '']; });
+  lembar.getRange(2, 1, baris.length, 2).setValues(baris);
+  lembar.setColumnWidth(1, 380);
+  lembar.setColumnWidth(2, 150);
+  lembar.setFrozenRows(1);
+  return lembar;
+}
+
+/* ========================================================== pembantu */
+
+function teksAnak(elemen, nama) {
+  try {
+    var anak = elemen.getChild(nama);
+    return anak ? String(anak.getText() || '').trim() : '';
+  } catch (e) {
+    return '';
+  }
+}
+
 /**
  * Penyeragaman tautan — salinan keempat, dan yang paling tidak berwenang.
  *
  * Ditulis ulang di sini karena Apps Script tidak bisa mengimpor apa pun dari
  * repositori. Aturannya disamakan dengan `public.normalkan_tautan()` di basis
  * data; kalau suatu saat berbeda, akibatnya hanya pekerjaan sia-sia — bukan
- * berita kembar. Yang menolak kembaran adalah basis data, bukan berkas ini.
+ * berita kembar. Yang menolak kembaran adalah basis data.
  */
 function normalkanTautan(nilai) {
   var t = String(nilai == null ? '' : nilai).replace(/\s+/g, ' ').trim();
@@ -373,9 +760,7 @@ function normalkanTautan(nilai) {
   if (!pecah) return t.replace(/\/+$/, '');
 
   var inang = pecah[1].toLowerCase().replace(/^www\./, '');
-  var sisa = pecah[2] || '';
-
-  t = 'https://' + inang + sisa;
+  t = 'https://' + inang + (pecah[2] || '');
 
   t = t.replace(
     /([?&])(utm_[^=&]*|fbclid|gclid|dclid|msclkid|igsh|igshid|mibextid|ref|ref_src|refsrc|source|src|spm|scm|mc_cid|mc_eid|_ga|_gl|ncid|cmpid|campaign_id|at_medium|at_campaign|share_id|si)=[^&]*/gi,
@@ -386,61 +771,14 @@ function normalkanTautan(nilai) {
   return t.replace(/\/+$/, '');
 }
 
-/* ========================================================== daftar sasaran */
-
-/** Membaca sasaran dari lembar Target; menyiapkannya bila belum ada. */
-function bacaTarget() {
-  var berkas = SpreadsheetApp.getActive();
-  var lembar = berkas.getSheetByName(NAMA_LEMBAR_TARGET);
-  if (!lembar) lembar = siapkanLembarTarget();
-
-  var jumlah = lembar.getLastRow();
-  if (jumlah < 2) return [];
-
-  var nilai = lembar.getRange(2, 1, jumlah - 1, 1).getValues();
-  var keluar = [];
-  for (var i = 0; i < nilai.length; i++) {
-    var nama = String(nilai[i][0] || '').trim();
-    if (nama) keluar.push(nama);
-  }
-  return keluar;
-}
-
-/**
- * Menulis daftar sasaran ke lembar tersendiri.
- *
- * Ditaruh di lembar, bukan disimpan di dalam skrip saja, supaya bisa disunting
- * tanpa menyentuh kode: unit yang sudah ramai diberitakan bisa dicoret, unit
- * baru bisa ditambahkan, dan urutannya bisa diubah sesuai perhatian pimpinan
- * pekan itu. Skrip hanya membacanya.
- *
- * Urutannya BUKAN abjad melainkan menurut beratnya celah — kantor wilayah
- * dengan unit sunyi terbanyak lebih dulu. Dengan penunjuk berputar, urutan itu
- * menentukan siapa yang tersentuh pada hari-hari pertama.
- */
-function siapkanLembarTarget() {
-  var berkas = SpreadsheetApp.getActive();
-  var lembar = berkas.getSheetByName(NAMA_LEMBAR_TARGET);
-  if (lembar) return lembar;
-
-  lembar = berkas.insertSheet(NAMA_LEMBAR_TARGET);
-  lembar.getRange(1, 1).setValue('Nama UPT yang belum pernah diberitakan (per 6 September 2026)');
-  lembar.getRange(1, 1).setFontWeight('bold');
-
-  var baris = TARGET_AWAL.map(function (n) { return [n]; });
-  lembar.getRange(2, 1, baris.length, 1).setValues(baris);
-  lembar.setColumnWidth(1, 380);
-  lembar.setFrozenRows(1);
-  return lembar;
-}
+/* ========================================================== daftar bawaan */
 
 /**
  * 343 unit yang belum pernah muncul sekali pun dalam 858 publikasi terkumpul,
  * dihitung 6 September 2026 dari tabel `upt` dan `berita`.
  *
- * Daftar ini hanya dipakai SEKALI, saat lembar Target dibuat. Sesudah itu yang
- * dibaca adalah lembarnya. Untuk menyusun ulang daftar ini kelak, jalankan
- * kueri yang tertulis di `docs/penjaring-celah.md`.
+ * Dipakai SEKALI, saat lembar Target dibuat. Kueri untuk menyusunnya ulang ada
+ * di `docs/penjaring-celah.md`.
  */
 var TARGET_AWAL = [
   'Lapas Kelas I Batu High Risk Narkotika Nusakambangan', 'Lapas Kelas IIA Besi Nusakambangan',

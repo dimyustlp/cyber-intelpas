@@ -14,9 +14,9 @@ FRASA_BANTAHAN,
 PEMICU_KRITIS,
 PERINGKAT_URGENSI,
 } from './taksonomi.js'
-import { bersihkanTeks, normalkan, siapkanKonteks, hitungFrasa, yangMuncul } from './teks.js'
+import { bersihkanTeks, normalkan, siapkanKonteks, hitungFrasa, yangMuncul, letakTerawal, letakFrasa } from './teks.js'
 import { kenaliPenerbit } from './penerbit.js'
-const VERSI_MESIN = 'aturan-v4.0'
+const VERSI_MESIN = 'aturan-v4.1'
 const AMBANG_SKOR = 3.0
 const AMBANG_HUMAS = 2.0
 const PANJANG_MINIMUM = 8
@@ -101,6 +101,24 @@ if (aktor.eksternal > 0) return 1.5
 return 0.9
 }
 return 1
+}
+function letakPeristiwa(konteks, sub) {
+let awal = Infinity
+for (const [kata, bobot] of sub.kunci) {
+if (!bobot || bobot < 0) continue
+let letak
+if (Array.isArray(kata)) {
+letak = 0
+for (const bagian of kata) {
+const l = letakFrasa(konteks, bagian)
+if (l > letak) letak = l
+}
+} else {
+letak = letakFrasa(konteks, kata)
+}
+if (letak < awal) awal = letak
+}
+return awal
 }
 function labelKunci(kunci) {
 return Array.isArray(kunci) ? kunci.join(' + ') : kunci
@@ -224,7 +242,9 @@ if (bantahan) {
 const hoaks = peringkat.find((p) => p.sub.kode === '7.1')
 if (hoaks && peringkat[0] && peringkat[0].sub.kode !== '7.1') {
 const juaraLain = peringkat[0].skor
-if (hoaks.skor >= juaraLain * 0.5) {
+const letakBantahan = letakTerawal(konteks, FRASA_BANTAHAN)
+const letakKejadian = letakPeristiwa(konteks, peringkat[0].sub)
+if (letakBantahan < letakKejadian) {
 skorTergeser = juaraLain
 peringkat = [hoaks, ...peringkat.filter((p) => p !== hoaks)]
 }

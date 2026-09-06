@@ -28,6 +28,7 @@ import { klasifikasikan } from '../lib/klasifikasi.js'
 import { bangunIndeks, cocokkanUpt } from '../lib/pencocokan-upt.js'
 import { KATEGORI, SEMUA_SUBKATEGORI } from '../lib/taksonomi.js'
 import { EMBER, ember, nilaiSimpan } from '../lib/sentimen.js'
+import { normalkanTautan } from '../lib/tautan.js'
 import { KONFIG } from '../lib/konfig.js'
 import { adalahEksternal, punyaIzin } from '../lib/peran.js'
 
@@ -48,30 +49,19 @@ const keadaanInput = {
   terakhir: null,
 }
 
-/**
- * Menyeragamkan tautan sebelum disimpan dan sebelum diperiksa kembarannya.
- *
- * Aturannya sama persis dengan yang dipakai penyalin spreadsheet. Kalau
- * keduanya berbeda, satu berita yang sama akan tersimpan dua kali: sekali
- * dengan penanda iklan di ekor alamatnya, sekali tanpa.
- */
-export function normalkanTautan(nilai) {
-  let url = String(nilai || '').trim()
-  if (!url) return ''
-  if (!/^https?:\/\//i.test(url)) url = `https://${url}`
+/*
+   Aturan penyeragaman tautan sudah pindah ke lib/tautan.js, dan wewenangnya
+   pindah lebih jauh lagi — ke fungsi public.normalkan_tautan() di basis data,
+   yang menimpa apa pun yang dikirim halaman ini.
 
-  try {
-    const alamat = new URL(url)
-    const buang = [...alamat.searchParams.keys()].filter((k) =>
-      k.toLowerCase().startsWith('utm_')
-      || ['fbclid', 'gclid', 'igsh', 'igshid'].includes(k.toLowerCase()))
-    for (const k of buang) alamat.searchParams.delete(k)
-    alamat.hash = ''
-    return alamat.toString().replace(/\/$/, '')
-  } catch {
-    return url.replace(/\/$/, '')
-  }
-}
+   Yang dulu berdiri di tempat ini adalah salinan kedua dari aturan yang sama,
+   ditulis ulang dengan tangan, dengan komentar yang menyebut bahayanya sendiri:
+   "Kalau keduanya berbeda, satu berita yang sama akan tersimpan dua kali."
+   Peringatan itu benar, dan peringatan tidak menahan apa pun. Sekarang yang
+   menahannya pemicu basis data, dan tools/uji-tautan.mjs menjaga salinan ini
+   tetap sepaham supaya peringatan kembar di layar tidak meleset.
+*/
+export { normalkanTautan }
 
 /** Platform ditebak dari alamatnya, sama seperti yang dilakukan penyalin. */
 function kenaliPlatform(url) {

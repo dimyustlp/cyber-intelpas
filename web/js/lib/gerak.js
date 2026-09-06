@@ -19,6 +19,8 @@
  * Modul ES murni, tanpa pustaka luar.
  */
 
+import { ungkapSaatGulir, lepasUngkap } from '../ui/ambien.js'
+
 export const kurangiGerak = () => {
   try {
     return window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -214,6 +216,12 @@ export function hidupkan(akar, opsi = {}) {
   if (!akar) return
   const ruang = opsi.ruang || 'umum'
 
+  // Pengamat halaman sebelumnya dilepas lebih dulu. Tanpa ini, ia terus
+  // memegang seluruh elemen halaman lama — yang sudah dibuang dari dokumen —
+  // dan halaman yang dibuka bergantian sepanjang hari kerja tidak pernah
+  // melepaskan satu pun di antaranya.
+  lepasUngkap()
+
   if (kurangiGerak()) {
     // Gerak dimatikan, tetapi angka tetap dicatat supaya perbandingan pada
     // gambar ulang berikutnya tidak melompat dari nol.
@@ -225,7 +233,34 @@ export function hidupkan(akar, opsi = {}) {
   }
 
   bertahap([...akar.querySelectorAll(':scope > .baris-ubin > .ubin, :scope > .ubin')], 40, 240)
-  bertahap([...akar.querySelectorAll('.kartu')], 55, 330)
+  /*
+     Kartu dipisah dua menurut letaknya, bukan digerakkan seluruhnya.
+
+     Sebelum ini setiap kartu di halaman mendapat animasi kedatangan pada saat
+     yang sama — termasuk kartu yang berada dua layar di bawah dan tidak dilihat
+     siapa pun. Dua kerugiannya berbeda sifat: yang pertama sia-sia (gerak yang
+     sudah selesai sebelum ada yang menggulir ke sana), yang kedua merugikan
+     (dua puluh animasi berjalan pada detik yang sama dengan detik ketika
+     halamannya sedang menyusun tabel dan bagannya).
+
+     Batasnya 1,15 layar, bukan tepat satu layar: kartu yang tepinya baru
+     menyembul di bawah lipatan sudah terlihat, dan menahannya sampai digulir
+     satu piksel akan terbaca sebagai kedipan.
+
+     Seluruh pembacaan letak di bawah berturut-turut,
+     tanpa satu pun penulisan di antaranya, jadi peramban menghitung tata
+     letaknya sekali saja untuk semuanya.
+  */
+  const kartu = [...akar.querySelectorAll('.kartu')]
+  const batasLayar = (window.innerHeight || 800) * 1.15
+  const kartuDekat = []
+  const kartuJauh = []
+  for (const el of kartu) {
+    if (el.getBoundingClientRect().top < batasLayar) kartuDekat.push(el)
+    else kartuJauh.push(el)
+  }
+  bertahap(kartuDekat, 55, 330)
+  ungkapSaatGulir(kartuJauh)
 
   akar.querySelectorAll('.ubin-nilai').forEach((el, i) => angkaNaik(el, `${ruang}:${i}`))
 

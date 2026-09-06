@@ -14,6 +14,8 @@ import { amankan, tanggalPanjang, inisial } from './lib/format.js'
 import { roti, tombolIkon } from './ui/komponen.js'
 import { hidupkan, denganPeralihan, lupakanNilai } from './lib/gerak.js'
 import { bukaPalet, paletTerbuka } from './ui/palet.js'
+import { langkahNyala, padamkanNyala } from './ui/nyala.js'
+import { pasangSorot, pitaMulai, pitaSelesai } from './ui/ambien.js'
 
 /*
    Dua halaman diimpor tetap, dan hanya dua.
@@ -269,7 +271,7 @@ function daftarMenu(peran) {
         return `<button class="nav-butir" data-halaman="${b.id}"
           ${b.id === aktif ? 'aria-current="page"' : ''}>
           ${ikon(b.ikon)}<span>${amankan(b.label)}</span>
-          ${jumlah > 0 ? `<span class="lencana">${jumlah > 99 ? '99+' : jumlah}</span>` : ''}
+          ${jumlah > 0 ? `<span class="lencana" data-lencana="${b.lencana}">${jumlah > 99 ? '99+' : jumlah}</span>` : ''}
         </button>`
       }).join('')}
     </div>`).join('')
@@ -603,7 +605,17 @@ export function gambar() {
   document.getElementById('bilah-judul').textContent = KONFIG.nama
   document.getElementById('bilah-sub').textContent = 'Memuat halaman…'
 
-  muatHalaman(id).then(() => {
+  /*
+     Pita muat dinyalakan DI SINI, bukan di dalam muatHalaman().
+
+     Fungsi itu juga dipanggil siapkanHalaman() ketika tetikus sekadar
+     menyentuh butir menu, dan garis yang berkelap-kelip di puncak layar
+     setiap kali kursor melintasi menu adalah gangguan yang tidak menjawab
+     pertanyaan siapa pun. Yang ditandai pita ini hanya satu keadaan:
+     ada orang yang sedang menunggu layar kosong terisi.
+  */
+  pitaMulai()
+  muatHalaman(id).finally(pitaSelesai).then(() => {
     // Petugas yang tidak sabar sudah menekan menu lain sementara ini berjalan.
     // Menggambar hasil unduhan ini sekarang akan melemparkannya kembali ke
     // halaman yang sudah ia tinggalkan.
@@ -833,9 +845,30 @@ document.addEventListener('buka-halaman', (ev) => {
    berisi puluhan. Yang digambar ulang hanya menunya, bukan seluruh layar.
 */
 document.addEventListener('hitung-ulang', () => {
+  /*
+     Angka SEBELUM dihitung ulang disimpan lebih dulu, dan itu keseluruhan
+     gunanya.
+
+     Menu yang digambar ulang diam-diam menyembunyikan satu kabar yang
+     justru paling ingin diketahui analis: mana yang BERTAMBAH sementara ia
+     sedang mengerjakan sesuatu di layar lain. Angka baru yang muncul tanpa
+     tanda apa pun terbaca sebagai angka lama yang salah diingat.
+
+     Yang berdenyut hanya yang naik. Antrean yang berkurang karena analis
+     sendiri yang mengosongkannya bukan kabar — ia sudah tahu, ia yang
+     melakukannya.
+  */
+  const sebelum = { ...keadaan.hitungan }
+
   hitungUlang()
   const nav = document.querySelector('.nav')
-  if (nav && keadaan.profil) nav.innerHTML = daftarMenu(keadaan.profil.role)
+  if (!nav || !keadaan.profil) return
+  nav.innerHTML = daftarMenu(keadaan.profil.role)
+
+  nav.querySelectorAll('[data-lencana]').forEach((el) => {
+    const jenis = el.dataset.lencana
+    if ((keadaan.hitungan[jenis] || 0) > (sebelum[jenis] || 0)) el.classList.add('bertambah')
+  })
 })
 
 /* ------------------------------------------------------------------ data */
@@ -979,7 +1012,9 @@ async function mulaiSesi(profil) {
      galatnya beserta tombol coba lagi.
   */
   const modul = muatHalaman(keadaan.halaman).catch(() => { /* ditangani gambar() */ })
+  langkahNyala('arsip')
   await Promise.all([segarkan(), modul])
+  langkahNyala('layar')
 
   /*
      Sesudah layar pertama berdiri, sisa menu peran ini diunduh saat peramban
@@ -1095,6 +1130,7 @@ addEventListener('offline', bilahLuring)
 
 async function mulai() {
   pasangTema(temaTersimpan())
+  langkahNyala('sesi')
 
   if (keadaan.demo) {
     const { profilDemo } = await import('./lib/demo.js')
@@ -1122,6 +1158,12 @@ mulai()
     // Sejak titik ini, galat yang lewat bukan lagi "aplikasi tidak bisa dimuat"
     // melainkan "sesuatu di dalam aplikasi gagal", dan penanganannya berbeda.
     layarPertamaBerdiri = true
+    // Layar nyala dipadamkan di sini, bukan di dalam gambar(), sebab
+    // gambar() berjalan berkali-kali sepanjang hari; yang boleh
+    // memadamkannya hanya yang PERTAMA, dan hanya titik ini yang tahu
+    // bedanya.
+    padamkanNyala()
+    pasangSorot()
     bilahLuring()
   })
   .catch((galat) => {

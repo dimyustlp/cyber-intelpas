@@ -89,10 +89,28 @@ import {
   PERINGKAT_URGENSI,
 } from './taksonomi.js'
 
-import { bersihkanTeks, normalkan, siapkanKonteks, hitungFrasa, yangMuncul } from './teks.js'
+import { bersihkanTeks, normalkan, siapkanKonteks, hitungFrasa, yangMuncul, letakTerawal, letakFrasa } from './teks.js'
 import { kenaliPenerbit } from './penerbit.js'
 
-const VERSI_MESIN = 'aturan-v4.0'
+/*
+   Versi mesin, dan ia BUKAN sekadar catatan.
+
+   Nilainya ikut tersimpan pada tiap baris sebagai ai_provider, sehingga analis
+   yang membuka sebuah berita bisa tahu mesin keberapa yang menilainya. Tanpa
+   angka yang berubah, arsip yang dinilai sebelum dan sesudah perbaikan terbaca
+   sebagai satu himpunan yang seragam, dan penilaian yang sudah diperbaiki
+   tidak bisa dibedakan dari yang belum.
+
+   v4.1 (6 September 2026) — bantahan diputuskan menurut URUTAN kata, bukan
+   perbandingan skor; pola kata kerja ditambahkan pada 3.3, 3.4, 4.3, dan 6.2;
+   4.2 mengenali "berkapasitas"; 8.1 menolak remisi yang diperjualbelikan.
+
+   Perlu diketahui saat menggelar: Edge Function dengan hanya_belum: true
+   menyaring baris yang ai_classified_at-nya masih kosong, BUKAN yang versi
+   mesinnya lama. Arsip yang sudah dinilai v4.0 tidak akan ikut diperbaiki
+   sampai fungsinya dipanggil sekali dengan hanya_belum: false.
+*/
+const VERSI_MESIN = 'aturan-v4.1'
 
 /** Ambang skor minimum sebelum sebuah berita boleh keluar dari "Lainnya". */
 const AMBANG_SKOR = 3.0
@@ -268,6 +286,48 @@ function pengaliAktor(sub, aktor) {
   }
 
   return 1
+}
+
+/**
+ * Di kata keberapa peristiwa milik sebuah subkategori pertama kali disebut.
+ *
+ * Frasa MAJEMUK ditangani berbeda dari frasa tunggal, dan perbedaannya
+ * menentukan. Kunci ['kabur', 'lapas'] baru berarti "pelarian" ketika KEDUA
+ * katanya sudah muncul; kedudukannya karena itu adalah kata terakhir yang
+ * melengkapinya, bukan kata pertama yang kebetulan lebih dulu ada.
+ *
+ * Meratakan majemuk menjadi anggota-anggotanya — yang dicoba lebih dulu pada
+ * 6 September 2026 — memberi jawaban yang salah dengan cara yang halus: kata
+ * "lapas" pada ['kabur','lapas'] berdiri di kata ke-0 pada judul "Lapas
+ * Kuningan Bantah Kabar Napi Kabur", sehingga peristiwanya seolah disebut
+ * SEBELUM bantahannya, dan bantahan yang jelas-jelas mendahului tetap kalah.
+ * Kata umum seperti "lapas", "napi", dan "rutan" muncul di hampir setiap
+ * judul; kedudukannya tidak menerangkan apa pun.
+ *
+ * Frasa berbobot negatif ditinggalkan dengan sengaja: ia justru penanda bahwa
+ * subkategori ini BUKAN yang dimaksud.
+ */
+function letakPeristiwa(konteks, sub) {
+  let awal = Infinity
+
+  for (const [kata, bobot] of sub.kunci) {
+    if (!bobot || bobot < 0) continue
+
+    let letak
+    if (Array.isArray(kata)) {
+      letak = 0
+      for (const bagian of kata) {
+        const l = letakFrasa(konteks, bagian)
+        if (l > letak) letak = l
+      }
+    } else {
+      letak = letakFrasa(konteks, kata)
+    }
+
+    if (letak < awal) awal = letak
+  }
+
+  return awal
 }
 
 function labelKunci(kunci) {
@@ -502,7 +562,53 @@ export function klasifikasikan(berita = {}) {
     const hoaks = peringkat.find((p) => p.sub.kode === '7.1')
     if (hoaks && peringkat[0] && peringkat[0].sub.kode !== '7.1') {
       const juaraLain = peringkat[0].skor
-      if (hoaks.skor >= juaraLain * 0.5) {
+
+      /*
+         Yang menentukan adalah URUTAN, bukan perbandingan skor.
+
+         Sampai 6 September 2026 syaratnya hanya "skor bantahan minimal separuh
+         skor juara". Syarat itu bekerja terbalik dari maksudnya, dan sebabnya
+         ada pada sifat bantahan itu sendiri: untuk membantah sebuah peristiwa,
+         teksnya HARUS menyebut peristiwa itu. Semakin tegas bantahannya,
+         semakin lengkap kosakata peristiwa yang ia muat, semakin tinggi skor
+         peristiwanya, dan semakin kecil peluang bantahannya menang. Syaratnya
+         justru paling sering gagal pada bantahan yang paling jelas.
+
+         Terukur: "Lapas Kuningan Bantah Kabar Napi Kabur, Yang Bersangkutan
+         Sedang Berobat" memberi 17,92 pada 1.1 Pelarian dan 3,65 pada 7.1.
+         Separuh dari 17,92 adalah 8,96, jadi bantahannya kalah — dan sebuah
+         berita klarifikasi tercatat sebagai satu peristiwa pelarian, persis
+         angka yang paling sering ditanyakan pimpinan.
+
+         Yang dipakai sekarang: letak. Dalam kalimat berita berbahasa
+         Indonesia, kata kerja bantahan MENGUASAI apa yang ditulis sesudahnya.
+
+           "Lapas Bantah Kabar Napi Kabur"   bantahan (2) < peristiwa (4) -> klarifikasi
+           "Napi Kabur, Lapas Membantah"     peristiwa (0) < bantahan (3) -> peristiwa
+
+         Kalimat kedua itulah yang harus tetap tercatat sebagai pelarian: yang
+         dibantah di sana bukan kejadiannya, melainkan sesuatu tentangnya.
+
+         Ujian perbandingan skor yang lama DIBUANG seluruhnya, bukan disimpan
+         sebagai jalan kedua. Alasannya bukan kerapian: ia salah, dan ia salah
+         pada kasus yang paling merugikan. "Kerusuhan Pecah di Lapas Ambon,
+         Petugas Membantah Ada Korban Jiwa" memberi 6,08 pada 1.2 dan 3,65 pada
+         7.1; separuh dari 6,08 adalah 3,04, jadi ujian lama meloloskannya dan
+         sebuah kerusuhan yang benar-benar terjadi tercatat sebagai hoaks.
+
+         Yang dibantah di kalimat itu memang ada — korban jiwanya — dan bukan
+         kerusuhannya. Ujian urutan membacanya dengan benar tanpa tambahan
+         aturan apa pun.
+
+         Ujian urutan juga sudah mencakup satu-satunya perkara yang dulu
+         menjadi alasan ujian rasio ada, yaitu bantahan yang tidak menyebut
+         peristiwanya sama sekali: pada teks semacam itu letak peristiwanya
+         Infinity, dan apa pun lebih kecil daripada Infinity.
+      */
+      const letakBantahan = letakTerawal(konteks, FRASA_BANTAHAN)
+      const letakKejadian = letakPeristiwa(konteks, peringkat[0].sub)
+
+      if (letakBantahan < letakKejadian) {
         skorTergeser = juaraLain
         peringkat = [hoaks, ...peringkat.filter((p) => p !== hoaks)]
       }

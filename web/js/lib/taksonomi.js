@@ -65,6 +65,21 @@ export const KATEGORI = [
           ['napi kabur', 3], ['tahanan kabur', 3], ['narapidana kabur', 3],
           ['warga binaan kabur', 3], ['kabur dari lapas', 3], ['kabur dari rutan', 3],
           ['kabur saat asimilasi', 3], ['melarikan diri', 3], ['pelarian', 3],
+          /*
+             DPO dan buronan — ditambahkan 6 September 2026 dari arsip.
+
+             Judul "Sembunyi di Lintas Negara, DPO Narkoba Lapas Sukadana
+             Akhirnya Dipulangkan ke Tanah Air" berskor NOL pada mesin v4.0.
+             Sebabnya satu kebiasaan bahasa: berita PELARIAN memakai kata
+             "kabur", tetapi berita PENANGKAPAN KEMBALI menyebut orangnya
+             sebagai DPO atau buronan dan tidak pernah mengulang bagaimana ia
+             keluar. Seluruh daftar di atas ditulis untuk kabar yang pertama,
+             sehingga kabar kedua — yang justru penutup perkaranya — tidak
+             pernah tercatat sebagai pelarian sama sekali.
+          */
+          ['dpo', 3], ['buronan', 3], ['daftar pencarian orang', 3],
+          [['dpo', 'lapas'], 3], [['dpo', 'rutan'], 3],
+          [['buronan', 'lapas'], 3], [['buronan', 'rutan'], 3],
           ['lari dari lapas', 3], ['lari dari rutan', 3], ['pelarian wbp', 3],
           ['gergaji teralis', 3], ['jebol tembok', 3], ['bobol tembok', 3],
           ['panjat tembok', 3], ['lubang di dinding', 2], ['jebol plafon', 3],
@@ -146,6 +161,19 @@ export const KATEGORI = [
         ],
         pola: [
           [/\b(bisnis|transaksi|peredaran|pengendali|sarang)\s+narkoba\b[^.]{0,40}\b(lapas|rutan)\b/, 3],
+          /*
+             Bentuk kata kerja — ditambahkan 6 September 2026 dari arsip.
+
+             Pola di atas hanya mengenal narkoba sebagai KATA BENDA berimbuhan
+             ("peredaran narkoba", "transaksi narkoba"). Unggahan sungguhan
+             menulisnya sebagai perbuatan: "Amar Zoni diduga jual narkoba di
+             lapas". Frasa ['narkoba','lapas'] memang ada di daftar, tetapi
+             bernilai 1 — sengaja rendah, supaya berita hukum di luar
+             Pemasyarakatan tidak tertarik masuk — sehingga judul itu berhenti
+             di 1,8 dan tidak pernah melewati ambang 3,0.
+          */
+          [/\b(jual|menjual|edar|mengedarkan|memasok|menyuplai|selundup)\w*\b[^.]{0,25}\b(narkoba|narkotika|sabu|ganja|ekstasi)\b[^.]{0,35}\b(lapas|rutan|sel|jeruji)\b/, 3],
+          [/\b(narkoba|narkotika|sabu|ganja)\b[^.]{0,30}\b(dari dalam|di dalam)\s+(lapas|rutan|sel)\b/, 3],
           [/\b(lapas|rutan)\b[^.]{0,40}\b(bisnis|transaksi|peredaran|sarang)\s+narkoba\b/, 3],
         ],
       },
@@ -275,6 +303,20 @@ export const KATEGORI = [
           ['diperiksa propam', 3], ['diperiksa inspektorat', 3],
           ['pemeriksaan internal', 2], ['diperiksa atasan', 2],
         ],
+        pola: [
+          /*
+             Kekerasan hampir selalu ditulis sebagai kata kerja, bukan kata
+             benda. Daftar di atas mengenal "dipukuli petugas" dan "penganiayaan
+             oleh petugas" — dua bentuk yang dipakai siaran pers, bukan yang
+             dipakai judul berita. Judul menulis "Oknum Sipir Memukuli Warga
+             Binaan", dan sampai 6 September 2026 kalimat itu berskor NOL: tidak
+             satu pun frasa cocok, sehingga kekerasan oleh petugas — subkategori
+             berurgensi Tinggi — jatuh ke "Belum Dikelompokkan" dan tidak pernah
+             ikut dihitung sebagai publikasi negatif.
+          */
+          [/\b(oknum\s+)?(sipir|petugas|pegawai|kalapas|karutan)\b[^.]{0,45}\b(memukul|memukuli|menganiaya|menendang|menyiksa|menampar|menyeret)\b/, 3],
+          [/\b(dipukul|dianiaya|ditendang|disiksa|ditampar)\b[^.]{0,40}\b(oknum|sipir|petugas|pegawai)\b/, 3],
+        ],
       },
       {
         kode: '3.4',
@@ -287,6 +329,18 @@ export const KATEGORI = [
           ['suap pembebasan bersyarat', 3], ['calo remisi', 3],
           ['memperjualbelikan hak', 3], ['bayar untuk asimilasi', 3],
           ['plesiran napi', 3], ['napi keluar lapas tanpa izin', 3],
+        ],
+        pola: [
+          /*
+             Frasa 'napi keluar lapas tanpa izin' menuntut lima kata berurutan
+             persis. Judul sungguhan menyisipkan apa pun di antaranya — "Napi
+             Bekasi Diduga Bisa Keluar Lapas Tanpa Izin dengan Membayar Oknum
+             Petugas" — dan tidak cocok sama sekali. Yang ditangkap pola ini
+             gagasannya, bukan susunan katanya.
+          */
+          [/\bkeluar\s+(dari\s+)?(lapas|rutan|penjara)\b[^.]{0,35}\btanpa izin\b/, 3],
+          [/\btanpa izin\b[^.]{0,35}\bkeluar\s+(dari\s+)?(lapas|rutan|penjara)\b/, 3],
+          [/\b(membayar|menyuap|menyetor)\b[^.]{0,40}\boknum\b/, 3],
         ],
       },
       {
@@ -392,7 +446,16 @@ export const KATEGORI = [
         ],
         pola: [
           [/\bkapasitas\s+\d{1,4}\b[^.]{0,50}\b(dihuni|penghuni|diisi|berisi)\b/, 3],
-          [/\b(dihuni|penghuni|diisi)\b[^.]{0,40}\bkapasitas\s+\d{1,4}\b/, 3],
+          /*
+             Awalan "ber-" menghapus batas kata di depan "kapasitas".
+
+             Pola ini menuntut \b tepat sebelum "kapasitas", dan pada kata
+             "berkapasitas" batas itu tidak ada — r dan k sama-sama huruf. Judul
+             "Dihuni 1.900 Orang, Lapas Kupang Berkapasitas 600 Orang" karena itu
+             berskor nol, padahal ia persis kalimat yang pola ini ada untuk
+             menangkapnya.
+          */
+          [/\b(dihuni|penghuni|diisi|berisi)\b[^.]{0,70}\b(ber)?kapasitas\s+[\d\s]{1,9}/, 3],
           [/\bhuni(an)?\s+\d{2,3}\s*persen\b/, 2],
           [/\bkapasitas\s+\d{1,4}\b[^.]{0,60}\b\d{2,4}\s+(warga binaan|napi|narapidana|tahanan|orang)\b/, 3],
         ],
@@ -408,6 +471,26 @@ export const KATEGORI = [
           ['rutan banjir', 3], ['gempa', 2], ['evakuasi warga binaan', 3],
           ['kebakaran aula', 3], ['dievakuasi', 3], ['api membakar', 3],
           ['pemadam kebakaran', 3], ['tanah longsor', 3], ['pohon tumbang', 2],
+        ],
+        pola: [
+          /*
+             Judul berita menempatkan bencananya lebih dulu, lalu unitnya:
+             "Banjir Rendam Rutan Sinjai". Daftar di atas hanya mengenal urutan
+             sebaliknya ("rutan banjir"), sehingga bentuk yang paling lazim
+             justru yang tidak tertangkap.
+
+             Bobotnya 6, jauh di atas bobot frasa biasa, dan itu disengaja.
+             Berita bencana selalu ikut menyebut pemindahan atau evakuasi warga
+             binaan, dan kosakata itu milik 8.5 Operasional Rutin. Pada judul
+             Rutan Sinjai, 8.5 menang 5,4 lawan 3 — sehingga banjir yang
+             merendam sebuah unit tercatat sebagai kegiatan rutin berurgensi
+             Rendah. Ongkos salahnya tidak setara: 4.3 berurgensi Tinggi dan
+             menuntut tindakan hari itu juga, sedangkan 8.5 tidak menuntut apa
+             pun. Ketika keduanya menyala, bencananya yang harus menang.
+          */
+          [/\b(banjir|air|lumpur|api)\b[^.]{0,25}\b(rendam|merendam|menggenangi|melanda|membakar|menghanguskan)\b[^.]{0,30}\b(lapas|rutan|bapas|lpka)\b/, 6],
+          [/\b(kebakaran|kebanjiran|gempa|longsor|puting beliung)\b[^.]{0,35}\b(lapas|rutan|bapas|lpka)\b/, 6],
+          [/\b(lapas|rutan|bapas|lpka)\b[^.]{0,25}\b(terendam|kebanjiran|terbakar|roboh|ambruk)\b/, 6],
         ],
       },
     ],
@@ -500,6 +583,26 @@ export const KATEGORI = [
           ['orasi', 3], ['spanduk protes', 3],
           [['aksi', 'rutan'], 2], [['aksi', 'lapas'], 2], [['demo', 'lapas'], 3],
         ],
+        pola: [
+          /*
+             Dua bentuk yang tidak pernah tertangkap daftar frasa di atas.
+
+             Pertama, unjuk rasa dengan sisipan. Daftar mengenal "unjuk rasa di
+             gerbang"; judul menulis "Berunjuk Rasa di Depan Gerbang Lapas". Dua
+             kata sisipan, dan skornya nol.
+
+             Kedua, penyerangan sebagai kata kerja. "Sekelompok Orang Tak
+             Dikenal Menyerang Pos Jaga Rutan" tidak memuat satu pun frasa 6.2,
+             tetapi memuat 'orang tak dikenal' yang bernilai 3 di 6.1
+             Penyelundupan — sehingga penyerangan fisik tercatat sebagai
+             penyelundupan. Bobot 5 dipilih supaya pola ini MENGALAHKAN sinyal
+             OTK yang umum itu (6,08 sesudah pengali pelaku eksternal), bukan
+             sekadar menyamainya.
+          */
+          [/\b(ber)?(unjuk rasa|demo|demonstrasi|orasi|aksi massa)\b[^.]{0,45}\b(gerbang|depan|halaman|kantor|pintu)\b[^.]{0,30}\b(lapas|rutan|bapas|kanwil)\b/, 3],
+          [/\bmenyerang\b[^.]{0,40}\b(lapas|rutan|bapas|pos jaga|pos penjagaan|gerbang|petugas)\b/, 5],
+          [/\b(lapas|rutan|bapas|pos jaga)\b[^.]{0,30}\bdiserang\b/, 5],
+        ],
       },
     ],
   },
@@ -578,6 +681,20 @@ export const KATEGORI = [
           ['langsung bebas', 3], ['menerima remisi', 3], ['diusulkan dapat remisi', 3],
           ['usulan remisi', 3], ['program asimilasi', 2], ['integrasi sosial', 3],
           ['pengurangan masa pidana', 3], ['bebas murni', 3],
+          /*
+             Frasa berbobot negatif: remisi yang DIPERJUALBELIKAN bukan kabar
+             baik melainkan dugaan korupsi, dan tempatnya di 3.4.
+
+             Sampai 6 September 2026 judul "Dugaan Jual Beli Remisi di Lapas
+             Cipinang Diselidiki Inspektorat Jenderal" menang di sini dengan
+             4,05 melawan 3,44 di 3.4 — semata karena kata "remisi" bernilai 3.
+             Akibatnya bukan salah kelompok belaka: subkategori ini bersifat
+             POSITIF, sehingga dugaan korupsi ikut masuk hitungan narasi positif
+             dan menjadi bahan counter-narrative dalam laporan pimpinan.
+          */
+          ['jual beli remisi', -5], ['suap remisi', -5], ['calo remisi', -5],
+          ['memperjualbelikan', -4], ['jual beli cuti bersyarat', -5],
+          ['suap pembebasan bersyarat', -5], ['suap asimilasi', -5],
         ],
         pola: [[/\b\d{2,4}\s+(napi|narapidana|warga binaan|tahanan)\b[^.]{0,40}\bremisi\b/, 3]],
       },
@@ -673,6 +790,18 @@ export const KATEGORI = [
           ['apel pagi', 3], ['apel', 2], ['pelantikan', 3],
           ['serah terima jabatan', 3], ['sertijab', 3], ['pelepasan pejabat', 3],
           ['kenaikan pangkat', 3], ['rapat koordinasi', 3], ['rapat tusi', 3],
+          /*
+             Pergantian pejabat yang diberitakan tanpa kata upacara — ditambahkan
+             6 September 2026 dari arsip. Unggahan "Fajar Teguh Wibowo mengakhiri
+             kepemimpinannya sebagai Kepala Rutan Batam, mendapat tugas baru, dan
+             posisinya digantikan Bambang Febriansyah" adalah kabar kelembagaan
+             yang paling khas, dan berskor nol: daftar lama hanya mengenal
+             seremoninya ("pelantikan", "sertijab"), bukan kabar perpindahannya.
+          */
+          ['mutasi pejabat', 3], ['pisah sambut', 3], ['dilantik', 3],
+          ['digantikan', 2], ['tugas baru', 2], ['jabatan baru', 2],
+          [['kepala', 'digantikan'], 3], [['tugas baru', 'kepala'], 3],
+          [['mengakhiri', 'kepemimpinan'], 3],
           ['penandatanganan', 3], ['nota kesepahaman', 3], ['peresmian', 3],
           ['peninjauan', 2], ['audiensi', 3], ['kunjungan kerja', 3],
           ['menerima kunjungan', 3], ['silaturahmi', 3], ['halalbihalal', 3],
@@ -722,6 +851,19 @@ export const KATEGORI = [
         aktor: 'sistem',
         urgensi: 'Rendah',
         kunci: [
+          /*
+             "Mutasi warga binaan" — ditambahkan 6 September 2026 dari arsip.
+
+             Daftar lama mengenal "pemindahan" dan "dipindahkan". Unggahan resmi
+             Rutan Cipinang menulisnya "MUTASI WARGA BINAAN" — kata yang dipakai
+             sehari-hari di lingkungan Pemasyarakatan, dan yang tidak pernah ada
+             di daftar mana pun. Kegiatan operasional yang paling rutin karena
+             itu justru yang paling sering tidak tercatat.
+          */
+          ['mutasi warga binaan', 3], ['mutasi napi', 3],
+          [['mutasi', 'warga binaan'], 3], [['mutasi', 'rutan'], 2],
+          [['mutasi', 'lapas'], 2],
+          ['keamanan dan ketertiban', 2], ['kamtib', 2],
           ['razia', 3], ['razia insidentil', 3], ['razia blok hunian', 3],
           ['razia kamar hunian', 3], ['penggeledahan', 3], ['penggeledahan kamar', 3],
           ['penggeledahan badan', 3], ['sidak', 3], ['inspeksi mendadak', 3],

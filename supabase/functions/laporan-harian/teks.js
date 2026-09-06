@@ -154,6 +154,40 @@ if (jumlah >= maksimum) break
 }
 return jumlah
 }
+export function letakFrasa(konteks, frasa) {
+const kunci = siapkanKunci(frasa)
+if (!kunci.panjang || !konteks.jumlahToken) return Infinity
+const awal = []
+for (const calon of kunci.akar[0]) {
+const daftar = konteks.indeks.get(calon)
+if (daftar) awal.push(...daftar)
+}
+if (!awal.length) return Infinity
+awal.sort((a, b) => a - b)
+if (kunci.panjang === 1) return awal[0]
+for (const mulai of awal) {
+if (mulai + kunci.panjang > konteks.jumlahToken) break
+let cocok = true
+for (let j = 1; j < kunci.panjang; j += 1) {
+const akarToken = konteks.akar[mulai + j]
+let ketemu = false
+for (const calon of kunci.akar[j]) {
+if (akarToken.has(calon)) { ketemu = true; break }
+}
+if (!ketemu) { cocok = false; break }
+}
+if (cocok) return mulai
+}
+return Infinity
+}
+export function letakTerawal(konteks, daftarFrasa) {
+let awal = Infinity
+for (const f of daftarFrasa) {
+const i = letakFrasa(konteks, f)
+if (i < awal) awal = i
+}
+return awal
+}
 export function adaSalahSatu(konteks, daftarFrasa) {
 for (const frasa of daftarFrasa) if (hitungFrasa(konteks, frasa, 1)) return true
 return false

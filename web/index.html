@@ -52,19 +52,84 @@
 <link rel="stylesheet" href="css/huruf.css">
 <link rel="stylesheet" href="css/app.css">
 
+<!--
+   Lapisan nyala, ambien, dan gerak — dimuat PALING AKHIR, dan urutannya adalah
+   keseluruhan alasan berkas itu terpisah.
+
+   app.css membuka bagian "6b. Gerak" dengan janji bahwa gerak diletakkan paling
+   akhir supaya tidak ada aturan lain yang menimpanya. Janji itu sudah lama tidak
+   ditepati: ada lebih dari 4.600 baris yang ditulis sesudahnya. Janji yang
+   dijaga disiplin kalah oleh berkas yang bertambah panjang; janji yang dijaga
+   urutan muat tidak bisa kalah begitu.
+-->
+<link rel="stylesheet" href="css/gerak.css">
+
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230F2C55'/%3E%3Ctext x='16' y='22' font-family='Plus Jakarta Sans,sans-serif' font-size='15' font-weight='700' fill='white' text-anchor='middle'%3ETS%3C/text%3E%3C/svg%3E">
 </head>
 <body>
 
-<div id="akar" role="application" aria-label="Trans-Siber PAS">
-  <div class="masuk-latar" aria-busy="true">
-    <div class="masuk-kiri"></div>
-    <div class="masuk-kanan">
-      <div class="rangka" style="height:26px;width:60%"></div>
-      <div class="rangka" style="height:14px;width:85%"></div>
-      <div class="rangka" style="height:34px"></div>
-      <div class="rangka" style="height:34px"></div>
+<!--
+   Latar ambien.
+
+   Ditulis di sini, di luar #akar, dan bukan disusun JavaScript. Dua akibatnya
+   yang dituju: ia sudah ada pada cat pertama, sebelum satu modul pun diunduh,
+   sehingga layar nyala berdiri di atas latar yang sama dengan latar aplikasi;
+   dan setiap penggambaran ulang halaman — yang mengganti seluruh isi #akar —
+   tidak menyentuhnya sama sekali, sehingga noda cahayanya tidak pernah melompat
+   kembali ke awal ketika petugas berpindah menu.
+
+   aria-hidden: tidak ada satu pun keterangan di dalamnya. Pembaca layar yang
+   membacakan empat div kosong hanya kehilangan waktu.
+-->
+<div class="ambien" aria-hidden="true">
+  <div class="ambien-noda ambien-noda-1"></div>
+  <div class="ambien-noda ambien-noda-2"></div>
+  <div class="ambien-kisi"></div>
+  <div class="ambien-butir"></div>
+</div>
+
+<div id="akar" role="application" aria-label="Trans-Siber PAS"></div>
+
+<!--
+   Layar nyala.
+
+   Sebelumnya di tempat ini ada empat batang abu-abu berdenyut yang meniru
+   susunan halaman masuk. Itu menjawab satu hal saja — sedang memuat — dan
+   membuat pemuatan tiga detik terlihat persis sama dengan pemuatan yang tidak
+   akan pernah selesai.
+
+   Markahnya di HTML, bukan disusun JavaScript, dan itu wajib: layar ini harus
+   tergambar pada cat pertama. Layar nyala yang menunggu modul selesai diunduh
+   tidak menyelesaikan masalah yang ia ada untuk menyelesaikannya.
+
+   Nama sistem tertulis dua kali di berkas ini — di <title> dan di sini — dan itu
+   memang duplikasi. Sumber kebenarannya tetap KONFIG.nama di js/lib/konfig.js;
+   keduanya di sini ada karena harus terbaca sebelum satu baris JavaScript pun
+   berjalan, alasan yang sama dengan alasan <title>.
+
+   Ia memadamkan dirinya sendiri sesudah 15 detik meski JavaScript tidak pernah
+   berjalan — lihat `.nyala` di css/gerak.css. Tanpa itu, modul inti yang gagal
+   diunduh meninggalkan layar ini menutupi aplikasi selamanya.
+-->
+<div class="nyala" id="nyala" role="status" aria-label="Memuat sistem">
+  <div class="nyala-isi">
+    <svg class="nyala-lambang" viewBox="0 0 96 96" aria-hidden="true">
+      <!-- Segi delapan, bukan lingkaran: bentuk lencana kedinasan, dan bentuk
+           yang tidak dipakai lingkaran pemuat yang sama di mana-mana. -->
+      <path class="nyala-cincin"
+            d="M34 6 L62 6 L90 34 L90 62 L62 90 L34 90 L6 62 L6 34 Z"></path>
+      <path class="nyala-busur" d="M48 12 A36 36 0 0 1 84 48"></path>
+      <text x="48" y="57" text-anchor="middle">TS</text>
+    </svg>
+
+    <div>
+      <p class="nyala-nama">Trans-Siber PAS</p>
+      <p class="nyala-instansi">Direktorat Pengamanan dan Intelijen<br>Direktorat Jenderal Pemasyarakatan</p>
     </div>
+
+    <div class="nyala-rel"><div class="nyala-laju" id="nyala-laju"></div></div>
+
+    <p class="nyala-keadaan" id="nyala-keadaan">Menyalakan sistem</p>
   </div>
 </div>
 

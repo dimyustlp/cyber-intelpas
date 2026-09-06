@@ -1,0 +1,981 @@
+/* =============================================================================
+   Trans-Siber PAS — Lapisan Nyala, Ambien, dan Gerak
+   =============================================================================
+
+   Berkas terpisah, dan alasannya bukan kerapian.
+
+   `app.css` bagian "6b. Gerak" dibuka dengan janji: gerak diletakkan paling
+   akhir supaya tidak ada aturan lain yang menimpanya secara tidak sengaja, dan
+   supaya seluruh gerak aplikasi terbaca di satu tempat. Janji itu sudah tidak
+   ditepati — sejak 2 September 2026 ada lebih dari 4.600 baris yang ditulis
+   SESUDAH bagian itu, dan sebagian di antaranya memang menimpanya. Janji yang
+   dijaga oleh disiplin akan selalu kalah oleh berkas yang bertambah panjang.
+
+   Yang dijaga oleh posisi berkas tidak bisa kalah begitu. Berkas ini dimuat
+   paling akhir di index.html, jadi ia menang tanpa satu pun `!important`, dan
+   akan tetap menang berapa pun panjang app.css nanti.
+
+   Empat hal yang ditangani di sini, dan tidak ada yang lain:
+
+     1. Layar nyala   — apa yang dilihat orang sebelum aplikasinya ada
+     2. Ambien        — kedalaman latar yang bergerak sangat lambat
+     3. Kedatangan    — bagaimana isi masuk ke layar
+     4. Sentuhan      — apa yang terjadi ketika sesuatu disentuh penunjuk
+
+   Aturan yang dipegang seluruh berkas ini sama dengan aturan lama: gerak
+   menjelaskan perubahan. Yang ditambahkan hanya satu kalimat — permukaan yang
+   tidak pernah dibaca angkanya (layar nyala, latar, halaman masuk) boleh
+   bergerak untuk dirinya sendiri, sebab tidak ada yang bisa salah dibaca di
+   sana. Permukaan kerja tetap tunduk pada aturan lama.
+
+   Seluruhnya padam pada perangkat yang meminta gerak dikurangi. Itu bukan
+   kesopanan tambahan: aplikasi ini dibuka berjam-jam setiap hari kerja.
+
+   Urutan berkas:
+     1. Kurva          2. Ambien         3. Layar nyala
+     4. Pita muat      5. Rangka         6. Kedatangan
+     7. Sorot          8. Sentuhan       9. Halaman masuk
+    10. Gerak dikurangi & cetak
+   ========================================================================== */
+
+/* ------------------------------------------------------------------ 1. Kurva */
+/*
+   Tiga kurva, dan hanya tiga. Setiap gerak di aplikasi ini memakai salah
+   satunya, sebab kurva yang berbeda-beda membuat dua benda yang bergerak
+   berbarengan terasa berasal dari dua aplikasi yang berbeda.
+
+   `ease-in-out` dan `linear` sengaja tidak ada di sini. Yang pertama membuat
+   segala sesuatu terasa mengambang tanpa massa; yang kedua hanya benar untuk
+   sesuatu yang memang berputar tanpa henti, dan itu satu-satunya tempat ia
+   dipakai (koridor halaman masuk).
+*/
+:root {
+  /* Keluar-cepat: benda yang datang dan berhenti. Dipakai untuk kedatangan. */
+  --k-datang: cubic-bezier(0.16, 1, 0.3, 1);
+  /* Tegas: perpindahan keadaan yang harus terasa pasti, bukan lembut. */
+  --k-tegas: cubic-bezier(0.32, 0.72, 0, 1);
+  /* Pegas: benda kecil yang muncul — titik, lencana, ikon. Melewati sasaran
+     sedikit lalu kembali, seperti benda yang punya berat. */
+  --k-pegas: cubic-bezier(0.34, 1.42, 0.64, 1);
+
+  /* Ambien — dua noda cahaya di latar. Nadanya diambil dari warna dinas, bukan
+     dari ungu-biru yang menjadi tanda tangan tampilan buatan mesin.
+     Di tampilan terang kekuatannya jauh lebih rendah: cahaya di atas permukaan
+     terang cepat sekali menjadi keruh, dan layar kerja yang keruh melelahkan
+     mata jauh sebelum ia terlihat mahal. */
+  --ambien-a: #1D4E8F;
+  --ambien-b: #A9791C;
+  --ambien-kuat: 0.14;
+  --ambien-kisi: rgba(15, 44, 85, 0.07);
+  --ambien-butir: 0.03;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-tema="terang"]) {
+    --ambien-a: #2E6BC4;
+    --ambien-b: #C89A34;
+    --ambien-kuat: 0.30;
+    --ambien-kisi: rgba(150, 185, 235, 0.085);
+    --ambien-butir: 0.045;
+  }
+}
+:root[data-tema="gelap"] {
+  --ambien-a: #2E6BC4;
+  --ambien-b: #C89A34;
+  --ambien-kuat: 0.30;
+  --ambien-kisi: rgba(150, 185, 235, 0.085);
+  --ambien-butir: 0.045;
+}
+
+/* ----------------------------------------------------------------- 2. Ambien */
+/*
+   Latar yang bergerak, di belakang segalanya.
+
+   Kenapa ada: aplikasi ini datar. Setiap layar adalah kotak-kotak putih atau
+   navy di atas satu bidang warna, dan setelah beberapa jam mata kehilangan rasa
+   ruang — semuanya sebidang, tidak ada yang di depan atau di belakang. Noda
+   cahaya yang bergerak sangat lambat mengembalikan rasa itu tanpa menambah satu
+   pun benda yang harus dibaca.
+
+   Kenapa selambat ini: siklusnya 70 sampai 110 detik. Gerak yang bisa
+   ditangkap mata pada pandangan pertama akan mengganggu orang yang sedang
+   membaca tabel; gerak yang hanya terasa ketika seseorang menatap layar tanpa
+   membaca adalah kedalaman, bukan hiasan. Kalau Anda melihatnya bergerak,
+   ia terlalu cepat.
+
+   Kenapa aman: seluruhnya `transform` dan `opacity` pada elemen `fixed` —
+   dikerjakan penyusun gambar, tidak pernah memaksa tata letak dihitung ulang.
+   Tidak ada `backdrop-filter` di sini; itu hanya dipakai bilah atas yang memang
+   melekat dan kecil. Elemen ini juga tidak pernah digambar ulang oleh
+   aplikasi: ia hidup di `index.html`, di luar `#akar`, sehingga setiap
+   penggambaran ulang halaman tidak menyentuhnya sama sekali.
+*/
+
+.ambien {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  overflow: hidden;
+  contain: strict;
+}
+
+.ambien-noda {
+  position: absolute;
+  width: 78vmax;
+  height: 78vmax;
+  border-radius: 50%;
+  opacity: var(--ambien-kuat);
+  /* Radial, bukan linear. Gradien linear 45 derajat adalah bentuk latar yang
+     paling sering dihasilkan mesin, dan mata sudah mengenalinya. */
+  background: radial-gradient(circle at 50% 50%,
+    var(--noda, var(--ambien-a)) 0%,
+    color-mix(in srgb, var(--noda, var(--ambien-a)) 45%, transparent) 34%,
+    transparent 68%);
+  filter: blur(38px);
+  will-change: transform;
+}
+
+/*
+   Kedua noda sengaja menjauhi tepi KIRI layar.
+
+   Di sana berdiri menu samping selebar 254px dengan gradien navy yang pekat
+   dan tidak tembus pandang sama sekali. Noda cahaya yang diletakkan di
+   belakangnya membayar seluruh ongkos gambarnya tanpa satu piksel pun sampai
+   ke mata siapa pun.
+*/
+.ambien-noda-1 {
+  --noda: var(--ambien-a);
+  top: -32vmax;
+  right: -12vmax;
+  animation: ambien-hanyut-1 96s var(--k-tegas) infinite alternate;
+}
+
+.ambien-noda-2 {
+  --noda: var(--ambien-b);
+  bottom: -38vmax;
+  left: 4vmax;
+  width: 62vmax;
+  height: 62vmax;
+  opacity: calc(var(--ambien-kuat) * 0.62);
+  animation: ambien-hanyut-2 118s var(--k-tegas) infinite alternate;
+}
+
+@keyframes ambien-hanyut-1 {
+  from { transform: translate3d(0, 0, 0) scale(1); }
+  to   { transform: translate3d(16vmax, 11vmax, 0) scale(1.22); }
+}
+@keyframes ambien-hanyut-2 {
+  from { transform: translate3d(0, 0, 0) scale(1.1); }
+  to   { transform: translate3d(-13vmax, -9vmax, 0) scale(0.9); }
+}
+
+/*
+   Kisi ukur. Garis setiap 46px, hanya terbaca di sudut mata.
+
+   Bukan hiasan grafis: kisi adalah bahasa peta dan bahasa lembar ukur, dan
+   aplikasi ini keduanya. Ia diberi topeng radial supaya memudar di tepi layar
+   — kisi yang tajam sampai ke pinggir membuat layar terbaca seperti kertas
+   milimeter, bukan seperti ruang.
+*/
+.ambien-kisi {
+  position: absolute;
+  inset: -46px;
+  background-image:
+    linear-gradient(var(--ambien-kisi) 1px, transparent 1px),
+    linear-gradient(90deg, var(--ambien-kisi) 1px, transparent 1px);
+  background-size: 46px 46px;
+  mask-image: radial-gradient(ellipse 78% 66% at 50% 34%, #000 12%, transparent 76%);
+  -webkit-mask-image: radial-gradient(ellipse 78% 66% at 50% 34%, #000 12%, transparent 76%);
+  animation: ambien-kisi-geser 46s linear infinite;
+  will-change: transform;
+}
+
+/* Bergeser tepat satu petak, lalu mengulang. Karena jarak gesernya sama persis
+   dengan ukuran petaknya, ulangannya tidak pernah terlihat melompat. */
+@keyframes ambien-kisi-geser {
+  from { transform: translate3d(0, 0, 0); }
+  to   { transform: translate3d(46px, 46px, 0); }
+}
+
+/*
+   Butir. Bidang datar sempurna adalah tanda paling jelas bahwa sesuatu digambar
+   mesin — tidak ada benda nyata yang permukaannya rata sempurna. Satu lapis
+   derau yang nyaris tak terlihat memberi permukaan itu tekstur.
+
+   Dihasilkan feTurbulence di dalam data URI, bukan berkas gambar: tidak ada
+   permintaan jaringan tambahan, dan tidak ada aset yang bisa hilang. Diizinkan
+   CSP lewat `img-src 'self' data: blob:` di web/vercel.json.
+*/
+.ambien-butir {
+  position: absolute;
+  inset: -100%;
+  width: 300%;
+  height: 300%;
+  opacity: var(--ambien-butir);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+  /* Delapan langkah, bukan gerak halus. Butir film memang berganti utuh tiap
+     bingkai, tidak menggeser; gerak halus di sini akan terbaca sebagai kotoran
+     yang merayap. */
+  animation: ambien-butir-getar 700ms steps(8) infinite;
+  will-change: transform;
+}
+
+@keyframes ambien-butir-getar {
+  0%   { transform: translate3d(0, 0, 0); }
+  12%  { transform: translate3d(-2%, -3%, 0); }
+  25%  { transform: translate3d(-4%, 2%, 0); }
+  37%  { transform: translate3d(2%, -4%, 0); }
+  50%  { transform: translate3d(-1%, 3%, 0); }
+  62%  { transform: translate3d(3%, 1%, 0); }
+  75%  { transform: translate3d(-3%, -1%, 0); }
+  87%  { transform: translate3d(1%, 4%, 0); }
+  100% { transform: translate3d(0, 0, 0); }
+}
+
+/* ------------------------------------------------------------ 3. Layar nyala */
+/*
+   Yang dilihat orang selama aplikasinya belum ada.
+
+   Sebelumnya di tempat ini ada empat batang abu-abu yang berdenyut. Itu
+   menjawab "sedang memuat", dan tidak menjawab apa pun lagi — tidak ada tanda
+   ini sistem yang mana, tidak ada tanda sudah sampai mana, dan tidak ada beda
+   antara pemuatan tiga detik dan pemuatan yang tidak akan pernah selesai.
+
+   Yang menggantikannya menjawab tiga pertanyaan sekaligus: sistem apa ini
+   (lambang dan nama), sedang mengerjakan apa (baris keadaan yang berganti
+   mengikuti langkah sungguhan di main.js), dan seberapa jauh (rel yang maju
+   pada langkah yang benar-benar selesai, bukan yang berjalan sendiri menurut
+   jam).
+
+   Markahnya ada di index.html, bukan disusun JavaScript. Itu wajib: layar ini
+   harus tergambar pada cat pertama, sebelum satu modul pun diunduh. Layar
+   nyala yang menunggu JavaScript tidak menyelesaikan masalah yang ia ada untuk
+   menyelesaikannya.
+*/
+
+.nyala {
+  position: fixed;
+  inset: 0;
+  z-index: 900;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: var(--ground);
+  /*
+     Jaring pengaman, dan bukan hiasan.
+
+     Kalau `main.js` gagal sebelum sempat memanggil `padamkanNyala()` — modul
+     inti tidak sampai, galat sintaksis sesudah penggelaran yang buruk — layar
+     ini akan menutupi seluruh aplikasi selamanya, dan yang melihatnya
+     menyimpulkan sistemnya lambat lalu menunggu. Persis kegagalan yang
+     `layarRuntuh()` di main.js ada untuk mencegahnya, hanya satu lapis lebih
+     luar.
+
+     Animasi 0 detik dengan tunda 15 detik memadamkannya tanpa JavaScript sama
+     sekali. Lima belas detik dipilih supaya jauh lebih lama daripada pemuatan
+     terlambat yang wajar di jaringan kantor, dan jauh lebih singkat daripada
+     kesabaran seseorang di depan layar diam.
+  */
+  animation: nyala-batas 1ms linear 15s forwards;
+}
+
+@keyframes nyala-batas {
+  to { opacity: 0; visibility: hidden; pointer-events: none; }
+}
+
+/* Dipasang JavaScript ketika layar pertama benar-benar berdiri. Layar nyala
+   tidak menghilang begitu saja — ia melebur, dan aplikasi di belakangnya
+   muncul sedikit lebih besar, seolah kamera maju satu langkah. */
+.nyala.padam {
+  animation: nyala-lebur 620ms var(--k-datang) forwards;
+}
+
+@keyframes nyala-lebur {
+  from { opacity: 1; transform: scale(1); }
+  to   { opacity: 0; transform: scale(1.06); visibility: hidden; }
+}
+
+.nyala-isi {
+  display: grid;
+  justify-items: center;
+  gap: 20px;
+  text-align: center;
+  max-width: 34ch;
+}
+
+.nyala-lambang {
+  width: 92px;
+  height: 92px;
+  overflow: visible;
+}
+
+/*
+   Cincin luar menggambar dirinya sendiri, sekali, searah jarum jam.
+
+   Garis yang menggambar diri adalah kosakata alat ukur dan alat pantau — layar
+   radar, osiloskop, monitor jantung. Itu kosakata yang benar untuk sistem ini,
+   dan bukan kosakata yang dipakai lingkaran berputar yang sama di setiap
+   aplikasi lain di dunia.
+*/
+.nyala-cincin {
+  fill: none;
+  stroke: var(--accent-3);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-dasharray: 276;
+  stroke-dashoffset: 276;
+  opacity: 0.55;
+  /* Seribu milidetik, bukan seribu empat ratus. Pada pemuatan yang cepat —
+     dan di jaringan kantor yang sehat sebagian besar pemuatan memang cepat —
+     layar ini hanya berdiri sekitar satu detik, dan cincin yang butuh lebih
+     lama dari itu selalu terlihat separuh jadi tepat ketika layarnya melebur. */
+  animation: nyala-gambar 1000ms var(--k-datang) 60ms forwards;
+}
+
+@keyframes nyala-gambar {
+  to { stroke-dashoffset: 0; }
+}
+
+/* Busur dalam berputar terus selama pemuatan berlangsung. Inilah satu-satunya
+   bagian yang benar-benar berputar tanpa henti, dan ia berputar karena memang
+   belum ada yang bisa dilaporkan selain "masih berjalan". */
+.nyala-busur {
+  fill: none;
+  stroke: var(--brass-2);
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  transform-origin: 48px 48px;
+  animation: nyala-putar 1150ms linear infinite;
+}
+
+@keyframes nyala-putar {
+  to { transform: rotate(360deg); }
+}
+
+.nyala-lambang text {
+  font-family: var(--disp);
+  font-weight: 800;
+  font-size: 25px;
+  letter-spacing: -0.03em;
+  fill: var(--ink);
+  animation: nyala-terbit 700ms var(--k-datang) 260ms backwards;
+}
+
+@keyframes nyala-terbit {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.nyala-nama {
+  font-family: var(--disp);
+  font-weight: 700;
+  font-size: 1.42rem;
+  letter-spacing: -0.035em;
+  color: var(--ink);
+  margin: 0;
+  animation: nyala-terbit 760ms var(--k-datang) 380ms backwards;
+}
+
+.nyala-instansi {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--ink-4);
+  margin: 5px 0 0;
+  line-height: 1.7;
+  animation: nyala-terbit 760ms var(--k-datang) 460ms backwards;
+}
+
+.nyala-rel {
+  width: min(268px, 72vw);
+  height: 2px;
+  border-radius: 2px;
+  background: var(--line-2);
+  overflow: hidden;
+  animation: nyala-terbit 700ms var(--k-datang) 560ms backwards;
+}
+
+/*
+   Rel maju pada langkah yang benar-benar selesai.
+
+   Lebarnya diatur `main.js` lewat `--laju`, bukan oleh animasi yang berjalan
+   sendiri. Bedanya penting: bilah palsu yang penuh dalam dua detik lalu
+   menggantung di 100% sementara layarnya masih kosong adalah kebohongan yang
+   membuat orang berhenti mempercayai bilah mana pun sesudahnya.
+*/
+.nyala-laju {
+  height: 100%;
+  width: var(--laju, 6%);
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--accent-2), var(--brass-2));
+  transition: width 520ms var(--k-datang);
+  position: relative;
+}
+
+/* Kilau yang menyapu ujung rel. Ia menandakan pekerjaan masih berjalan
+   meskipun relnya sedang tidak maju — langkah panjang, misalnya menarik arsip
+   berita, bisa memakan beberapa detik tanpa perubahan angka sama sekali. */
+.nyala-laju::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.55), transparent);
+  animation: nyala-sapu 1500ms var(--k-tegas) infinite;
+}
+
+@keyframes nyala-sapu {
+  from { transform: translateX(-100%); }
+  to   { transform: translateX(100%); }
+}
+
+.nyala-keadaan {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.03em;
+  color: var(--ink-3);
+  margin: 0;
+  min-height: 1.5em;
+  animation: nyala-terbit 700ms var(--k-datang) 640ms backwards;
+}
+
+/* Baris keadaan berganti tanpa melompat: yang lama memudar ke atas, yang baru
+   naik dari bawah. Dipasang ulang oleh JavaScript setiap kali teksnya diganti. */
+.nyala-keadaan.ganti {
+  animation: nyala-ganti 420ms var(--k-datang);
+}
+
+@keyframes nyala-ganti {
+  0%   { opacity: 0; transform: translateY(5px); }
+  100% { opacity: 1; transform: none; }
+}
+
+/* ---------------------------------------------------------------- 4. Pita muat */
+/*
+   Garis tipis di puncak layar selama modul sebuah halaman diunduh.
+
+   Kerangka abu-abu sudah menjawab "isinya belum ada". Yang belum dijawab
+   adalah "apakah ada yang sedang berjalan" — dan itu pertanyaan yang berbeda,
+   sebab kerangka yang membeku karena unduhan gagal terlihat persis sama dengan
+   kerangka yang sedang menunggu.
+
+   Pita ini hanya ada selama benar-benar ada unduhan. Ia tidak pernah tampil
+   untuk halaman yang modulnya sudah di tangan, dan itu memang keadaan yang
+   paling sering terjadi.
+*/
+
+.pita-muat {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  z-index: 200;
+  pointer-events: none;
+  background: transparent;
+  overflow: hidden;
+}
+
+.pita-muat::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  width: 42%;
+  border-radius: 0 2px 2px 0;
+  background: linear-gradient(90deg, transparent, var(--accent-2) 34%, var(--brass-2));
+  animation: pita-lari 1080ms var(--k-tegas) infinite;
+}
+
+@keyframes pita-lari {
+  from { transform: translateX(-100%); }
+  to   { transform: translateX(340%); }
+}
+
+/* -------------------------------------------------------------- 5. Rangka */
+/*
+   Kerangka abu-abu, diperbaiki.
+
+   Yang lama menganimasikan `background-position`. Itu memaksa peramban
+   mengecat ulang seluruh kotaknya enam puluh kali sedetik — untuk satu kotak
+   tidak terasa, tetapi kerangka halaman memasang enam sekaligus, tepat pada
+   detik-detik ketika peramban sedang mengurai modul halaman yang baru diunduh.
+   Kilaunya justru memperlambat hal yang sedang ia tunggui.
+
+   Yang ini menyapu sebuah lapisan anak dengan `transform`. Penyusun gambar
+   yang mengerjakannya; utas utama tidak tersentuh sama sekali.
+*/
+
+.rangka {
+  position: relative;
+  overflow: hidden;
+  /* Menimpa gradien bergerak yang lama dengan satu warna diam. */
+  background: var(--surface-3) !important;
+  animation: none !important;
+}
+
+.rangka::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg,
+    transparent,
+    color-mix(in srgb, var(--surface-2) 88%, transparent) 46%,
+    transparent);
+  animation: rangka-sapu 1450ms var(--k-tegas) infinite;
+}
+
+@keyframes rangka-sapu {
+  to { transform: translateX(100%); }
+}
+
+/* Kerangka datang bertahap seperti isi sungguhan. Kerangka yang muncul
+   sekaligus lalu diganti isi yang datang bertahap membuat pergantiannya terasa
+   sebagai dua peristiwa yang berbeda. */
+.rangka-halaman > * { animation: datang 420ms var(--k-datang) backwards; }
+.rangka-halaman > :nth-child(1) { animation-delay: 0ms; }
+.rangka-halaman > :nth-child(2) { animation-delay: 45ms; }
+.rangka-halaman > :nth-child(3) { animation-delay: 90ms; }
+.rangka-halaman > :nth-child(4) { animation-delay: 135ms; }
+
+/* ---------------------------------------------------------- 6. Kedatangan */
+/*
+   Bagaimana isi masuk ke layar.
+
+   Yang lama: naik 10px sambil memudar masuk. Benar, tetapi datar — dua puluh
+   kartu yang datang dengan gerak yang persis sama terbaca sebagai satu bidang
+   yang berkedip, bukan sebagai dua puluh benda.
+
+   Yang ini menambahkan satu hal: kabur. Benda yang datang dari luar fokus lalu
+   menajam terbaca sebagai benda yang benar-benar mendekat, bukan sebagai
+   gambar yang kadar tembusnya berubah. Kaburnya kecil (7px) dan singkat,
+   sebab `filter: blur` mahal — pada kartu yang lebar ia bisa menghabiskan satu
+   bingkai penuh. Karena itu ia hanya dipakai pada kedatangan, tidak pernah
+   pada gerak yang berulang, dan tidak pernah pada tabel yang barisnya banyak.
+*/
+
+@keyframes datang {
+  from { opacity: 0; transform: translate3d(0, 14px, 0); }
+  to   { opacity: 1; transform: none; }
+}
+
+@keyframes datang-dalam {
+  from { opacity: 0; transform: translate3d(0, 22px, 0) scale(0.985); filter: blur(7px); }
+  to   { opacity: 1; transform: none; filter: blur(0); }
+}
+
+@keyframes datang-samping {
+  from { opacity: 0; transform: translate3d(-14px, 0, 0); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* Menimpa `.gerak-masuk` lama dengan kurva dan kedalaman yang baru. Nama
+   kelasnya sengaja dipertahankan: ia dipakai di tiga puluh satu halaman, dan
+   mengganti nama kelas demi tampilan adalah cara termahal memperbaiki
+   tampilan. */
+.gerak-masuk {
+  animation: datang-dalam 560ms var(--k-datang) backwards;
+  animation-delay: var(--tunda, 0ms);
+}
+
+/*
+   Kedatangan yang menunggu digulir sampai ke sana.
+
+   Sebelum ini seluruh isi halaman datang sekaligus pada saat digambar,
+   termasuk yang berada dua layar di bawah dan belum dilihat siapa pun.
+   Akibatnya bukan hanya gerak yang terbuang: pada halaman panjang, dua puluh
+   animasi berjalan berbarengan pada detik yang sama dengan detik ketika
+   halamannya sedang menyusun tabel.
+
+   `.ungkap` HANYA dipasang oleh JavaScript, tidak pernah ditulis di markah.
+   Alasannya satu kelas kegagalan yang tidak meninggalkan pesan galat: kalau
+   kelas ini ada di markah dan pengamatnya gagal berjalan — peramban lama,
+   galat pada modul lain — isinya tidak pernah terlihat, halamannya tampak
+   kosong, dan tidak ada satu pun galat di konsol yang menjelaskannya. Dengan
+   dipasang JavaScript, kegagalan JavaScript berarti isinya tampil apa adanya
+   tanpa animasi. Itu arah kegagalan yang benar.
+*/
+.ungkap {
+  opacity: 0;
+  transform: translate3d(0, 26px, 0);
+  transition:
+    opacity 700ms var(--k-datang),
+    transform 700ms var(--k-datang);
+  transition-delay: var(--tunda, 0ms);
+}
+
+.ungkap.tampak {
+  opacity: 1;
+  transform: none;
+}
+
+/*
+   Permukaan kartu ditembuskan empat belas persen.
+
+   Tanpa ini seluruh bagian sebelumnya sia-sia pada halaman yang padat.
+   Dasbor Eksekutif memasang lebih dari dua puluh kartu tak tembus pandang
+   yang bersama-sama menutupi hampir seluruh bidang isi, sehingga latar yang
+   bergerak hanya terlihat di sela-sela selebar dua belas piksel — ongkos
+   penuh, hasil nyaris nol.
+
+   Empat belas persen, bukan lebih. Angkanya dipilih di peramban, bukan
+   dikira-kira: pada kadar itu pergeseran warna permukaannya beberapa satuan
+   RGB — cukup untuk membuat kartunya terbaca sebagai benda yang berdiri DI
+   ATAS sesuatu, dan jauh dari cukup untuk mengurangi keterbacaan angka di
+   dalamnya. Nada latarnya pun sengaja sewarna dengan permukaannya sendiri,
+   sehingga yang berubah kecerahannya, bukan warnanya.
+
+   Tidak ada `backdrop-filter` di sini, dan itu penting. Kekaburan latar pada
+   dua puluh kartu yang ikut bergulir memaksa penyusun gambar mengecat ulang
+   seluruhnya pada setiap bingkai gulir; kadar tembus biasa tidak.
+*/
+.kartu, .ubin {
+  background: color-mix(in srgb, var(--surface-2) 86%, transparent);
+}
+
+/* --------------------------------------------------------------- 7. Sorot */
+/*
+   Kartu yang menyala di bawah kursor.
+
+   Bukan sekadar hiasan: pada halaman yang berisi dua belas kartu seragam,
+   sorot yang mengikuti kursor menjawab "yang mana yang akan saya kenai kalau
+   saya menekan sekarang" jauh lebih cepat daripada perubahan bayangan. Pada
+   layar sentuh ia tidak pernah muncul sama sekali, dan memang tidak
+   diperlukan di sana.
+
+   Titik pusatnya datang dari `--sx`/`--sy` yang dipasang ui/ambien.js. Selama
+   penunjuk tidak pernah menyentuh kartunya, kedua nilai itu tidak ada dan
+   sorotnya tidak digambar.
+*/
+
+@media (hover: hover) and (pointer: fine) {
+  .kartu, .ubin {
+    position: relative;
+  }
+
+  .kartu::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 320ms var(--k-tegas);
+    background: radial-gradient(
+      420px circle at var(--sx, 50%) var(--sy, 50%),
+      color-mix(in srgb, var(--accent) 13%, transparent),
+      transparent 62%);
+  }
+
+  .kartu[data-sorot]::after { opacity: 1; }
+
+  /* Tepi ikut menyala, bukan hanya bidangnya. Tepi yang tetap redup sementara
+     bidangnya terang membuat kartunya terlihat seperti ditempeli cahaya, bukan
+     seperti terkena cahaya. */
+  .kartu[data-sorot] {
+    border-color: color-mix(in srgb, var(--accent) 34%, var(--line-2));
+    box-shadow: var(--bayang-2);
+  }
+
+  /* Ubin tidak mendapat sorot radial: kedua unsur semunya sudah terpakai —
+     ::before untuk pita tepi kiri, ::after untuk semburat sudut. Yang tersisa
+     baginya adalah tepi dan bayangan, dan itu sudah cukup menjawab pertanyaan
+     yang sama. */
+  .ubin[data-sorot] {
+    border-color: color-mix(in srgb, var(--nada, var(--accent)) 40%, var(--line-2));
+    box-shadow: var(--bayang-2);
+  }
+}
+
+/* ------------------------------------------------------------ 8. Sentuhan */
+
+/*
+   Ubin angka yang bisa ditekan terangkat sedikit, dan panah di kakinya maju.
+
+   Dua gerak yang berbeda pada satu benda, dan itu disengaja: yang pertama
+   mengatakan "benda ini hidup", yang kedua mengatakan "menekan ini membawa
+   Anda ke suatu tempat". Ubin yang hanya menampilkan angka tanpa tujuan tidak
+   mendapat keduanya, sehingga bedanya terbaca sebelum ditekan.
+*/
+.ubin[data-halaman] {
+  cursor: pointer;
+  transition:
+    transform 320ms var(--k-datang),
+    box-shadow 320ms var(--k-tegas),
+    border-color 320ms var(--k-tegas);
+}
+
+@media (hover: hover) {
+  .ubin[data-halaman]:hover { transform: translateY(-2px); }
+  .ubin[data-halaman]:active { transform: translateY(0); transition-duration: 90ms; }
+  .ubin[data-halaman]:hover .ubin-kaki svg:last-child { transform: translateX(3px); }
+}
+
+.ubin-kaki svg:last-child { transition: transform 320ms var(--k-pegas); }
+
+/* Semburat sudut ubin bernapas sangat pelan. Amplitudonya 0,04 pada kadar
+   tembus yang sudah 0,07 — di bawah ambang sadar, tetapi cukup untuk membuat
+   ubinnya tidak pernah terbaca sebagai gambar diam. */
+.ubin::after {
+  animation: ubin-napas 7.5s var(--k-tegas) infinite alternate;
+}
+
+@keyframes ubin-napas {
+  from { opacity: 0.055; transform: scale(1); }
+  to   { opacity: 0.105; transform: scale(1.12); }
+}
+
+/*
+   Tombol utama disapu kilau sekali ketika disentuh.
+
+   `filter: brightness()` yang lama mencerahkan seluruh tombol secara merata,
+   dan itu terbaca sebagai warna yang berubah, bukan sebagai permukaan yang
+   terkena cahaya. Sapuan sekali-jalan terbaca sebagai yang kedua.
+*/
+.tbl.utama {
+  position: relative;
+  overflow: hidden;
+  transition:
+    filter 220ms var(--k-tegas),
+    box-shadow 220ms var(--k-tegas),
+    transform 90ms var(--k-tegas);
+}
+
+.tbl.utama::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-130%) skewX(-18deg);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.28), transparent);
+  pointer-events: none;
+}
+
+@media (hover: hover) {
+  .tbl.utama:hover::after { animation: tbl-kilau 760ms var(--k-tegas); }
+  .tbl.utama:hover { box-shadow: var(--bayang-2), inset 0 1px 0 rgba(255, 255, 255, 0.22); }
+}
+
+@keyframes tbl-kilau {
+  to { transform: translateX(130%) skewX(-18deg); }
+}
+
+/*
+   Penanda halaman aktif di menu samping.
+
+   Yang lama tumbuh dari tinggi 0 ke 62% setiap kali halaman berganti — dua
+   penanda yang tidak berhubungan, satu menyusut dan satu tumbuh. Yang ini
+   ditambah cahaya yang menyapu butir yang baru menjadi aktif sekali saja,
+   sehingga mata mengikuti perpindahannya alih-alih mencarinya lagi dari atas.
+*/
+.nav-butir[aria-current="page"] {
+  animation: nav-tandai 620ms var(--k-datang);
+}
+
+@keyframes nav-tandai {
+  0%   { background-position: -120% 0; }
+  100% { background-position: 120% 0; }
+}
+
+.nav-butir::before {
+  transition: height 320ms var(--k-pegas), background 320ms var(--k-tegas);
+}
+.nav-butir[aria-current="page"]::before {
+  background: var(--brass-2);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--brass-2) 60%, transparent);
+}
+
+@media (hover: hover) {
+  .nav-butir:hover { transform: translateX(2px); }
+}
+.nav-butir { transition: background 160ms var(--k-tegas), color 160ms var(--k-tegas), transform 220ms var(--k-datang); }
+
+/*
+   Baris tabel yang disentuh mendapat pita aksen di tepi kiri.
+
+   Latar yang berubah warna saja mudah hilang di tabel yang barisnya sudah
+   berselang-seling warnanya. Pita tegak di tepi kiri tidak pernah hilang,
+   dan ia juga menandai baris mana yang sedang dibaca ketika mata bergerak
+   jauh ke kolom kanan.
+*/
+table.tabel tbody tr { position: relative; }
+table.tabel tbody tr td:first-child { position: relative; }
+table.tabel tbody tr td:first-child::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 6%;
+  bottom: 6%;
+  width: 2px;
+  border-radius: 0 2px 2px 0;
+  background: var(--accent-2);
+  transform: scaleY(0);
+  transform-origin: center;
+  transition: transform 260ms var(--k-pegas);
+}
+@media (hover: hover) {
+  table.tabel tbody tr:hover td:first-child::before { transform: scaleY(1); }
+}
+
+/* Lencana angka pada menu: mengembang sekali ketika angkanya bertambah. */
+.lencana.bertambah {
+  animation: lencana-denyut 620ms var(--k-pegas);
+}
+
+@keyframes lencana-denyut {
+  0%   { transform: scale(1); }
+  38%  { transform: scale(1.28); }
+  100% { transform: scale(1); }
+}
+
+/* ------------------------------------------------------- 9. Halaman masuk */
+/*
+   Panel kanan halaman masuk — satu-satunya bidang di aplikasi ini yang
+   benar-benar kosong, dan karena itu satu-satunya yang boleh diberi ambiennya
+   sendiri.
+
+   Isinya datang bertahap dari bawah, sebaliknya dari panel kiri yang koridornya
+   sudah berjalan sejak bingkai pertama. Urutannya disengaja: mata masuk dari
+   kiri yang bergerak, lalu turun ke kanan yang sedang menyusun dirinya.
+*/
+
+.masuk-kanan {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+}
+
+.masuk-kanan::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  top: -30%;
+  right: -34%;
+  width: 74%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle,
+    color-mix(in srgb, var(--accent) 30%, transparent),
+    transparent 66%);
+  filter: blur(30px);
+  opacity: 0.5;
+  animation: masuk-hanyut 34s var(--k-tegas) infinite alternate;
+}
+
+@keyframes masuk-hanyut {
+  from { transform: translate3d(0, 0, 0) scale(1); }
+  to   { transform: translate3d(-9%, 13%, 0) scale(1.24); }
+}
+
+.masuk-kanan > * {
+  animation: datang 620ms var(--k-datang) backwards;
+}
+.masuk-kanan > :nth-child(1) { animation-delay: 180ms; }
+.masuk-kanan > :nth-child(2) { animation-delay: 280ms; }
+.masuk-kanan > :nth-child(3) { animation-delay: 380ms; }
+.masuk-kanan > :nth-child(4) { animation-delay: 460ms; }
+
+/* Judul dan angka di panel kiri ikut datang, sesudah koridornya sudah terbaca
+   sebagai gerak — bukan berbarengan dengannya. */
+.masuk-kiri-isi > * { animation: datang-samping 760ms var(--k-datang) backwards; }
+.masuk-kiri-isi > :nth-child(1) { animation-delay: 140ms; }
+.masuk-kiri-isi > :nth-child(2) { animation-delay: 260ms; }
+.masuk-kiri-isi > :nth-child(3) { animation-delay: 400ms; }
+
+/* Tiap angka cakupan datang sendiri-sendiri, supaya ketiganya terbaca sebagai
+   tiga keterangan, bukan satu blok. */
+.masuk-statistik div { animation: datang 620ms var(--k-datang) backwards; }
+.masuk-statistik div:nth-child(1) { animation-delay: 520ms; }
+.masuk-statistik div:nth-child(2) { animation-delay: 600ms; }
+.masuk-statistik div:nth-child(3) { animation-delay: 680ms; }
+
+/* Kolom isian menyala tepinya saat difokus, bukan sekadar berubah warna
+   garisnya. Pada layar yang gelap, tepi yang menyala jauh lebih cepat
+   ditemukan mata daripada garis yang berganti warna. */
+.masukan {
+  transition:
+    border-color 220ms var(--k-tegas),
+    box-shadow 220ms var(--k-tegas),
+    background 220ms var(--k-tegas);
+}
+.masukan:focus {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent);
+}
+
+/* ------------------------------------------- 10. Gerak dikurangi & cetak */
+/*
+   Satu tempat, dan seluruh gerak berkas ini padam.
+
+   Ditulis sebagai daftar nama, bukan `*`, supaya jelas apa saja yang sedang
+   dipadamkan — dan supaya penambahan gerak baru yang lupa didaftarkan di sini
+   ketahuan saat diperiksa, bukan saat dipakai orang yang memintanya padam.
+*/
+@media (prefers-reduced-motion: reduce) {
+  .ambien-noda,
+  .ambien-kisi,
+  .ambien-butir,
+  .nyala-cincin,
+  .nyala-busur,
+  .nyala-lambang text,
+  .nyala-nama,
+  .nyala-instansi,
+  .nyala-rel,
+  .nyala-keadaan,
+  .nyala-laju::after,
+  .pita-muat::before,
+  .rangka::after,
+  .rangka-halaman > *,
+  .gerak-masuk,
+  .ubin::after,
+  .tbl.utama::after,
+  .nav-butir[aria-current="page"],
+  .masuk-kanan::before,
+  .masuk-kanan > *,
+  .masuk-kiri-isi > *,
+  .masuk-statistik div,
+  .lencana.bertambah {
+    animation: none !important;
+  }
+
+  /* Ambien tetap ada, hanya diam. Menghapusnya sama sekali akan mengubah warna
+     latar bagi sebagian orang saja, dan tampilan yang berbeda-beda antar
+     perangkat lebih membingungkan daripada latar yang tidak bergerak. */
+  .ambien-noda { transform: none !important; }
+  .ambien-kisi { transform: none !important; }
+  .ambien-butir { transform: none !important; }
+
+  /* Cincin layar nyala tetap tergambar penuh, hanya tidak menggambar dirinya. */
+  .nyala-cincin { stroke-dashoffset: 0 !important; }
+
+  /* Yang diungkap saat digulir tampil apa adanya. Pengamatnya tetap berjalan
+     dan tetap memasang `.tampak`; yang hilang hanya peralihannya. */
+  .ungkap { opacity: 1 !important; transform: none !important; transition: none !important; }
+
+  .ubin[data-halaman]:hover { transform: none !important; }
+  .nav-butir:hover { transform: none !important; }
+  table.tabel tbody tr:hover td:first-child::before { transform: scaleY(1) !important; transition: none !important; }
+  .nyala-laju { transition: none !important; }
+
+  /* Sorot penunjuk tetap ada — ia penunjuk sasaran, bukan hiasan, dan
+     justru paling menolong orang yang sudah menyatakan kesulitan
+     mengikuti gerak. Yang dipadamkan hanya peralihannya, sehingga ia
+     berpindah seketika alih-alih meluncur. */
+  .kartu::after { transition: none !important; }
+}
+
+@media print {
+  .ambien, .pita-muat, .nyala { display: none !important; }
+  .kartu::after { display: none !important; }
+
+  /*
+     Yang belum digulir sampai ke sana TETAP tercetak.
+
+     Tanpa baris ini, mencetak halaman panjang menghasilkan kertas yang
+     separuhnya kosong — kartu yang belum pernah terlihat masih tembus
+     pandang, dan kadar tembus itu ikut ke printer. Kegagalan yang tidak
+     meninggalkan galat apa pun, dan baru ketahuan sesudah kertasnya
+     keluar. Aplikasi ini menghasilkan laporan berkala; halamannya memang
+     dicetak.
+  */
+  .ungkap { opacity: 1 !important; transform: none !important; }
+}

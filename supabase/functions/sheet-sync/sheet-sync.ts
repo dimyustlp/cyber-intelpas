@@ -363,6 +363,35 @@ function normalizeRisk(value: unknown): string {
   return "Rendah";
 }
 
+/**
+ * Penanda yang hanya menerangkan DARI MANA pembaca datang, bukan artikel apa
+ * yang dibukanya. Diperluas dari empat menjadi dua puluh empat pada
+ * 6 September 2026, bersamaan dengan hadirnya sumber ketiga: perayap yang
+ * berbeda menempelkan penanda yang berbeda pada alamat artikel yang sama
+ * persis, dan dengan tiga perayap yang saling bertumpang tindih, perbedaan itu
+ * berhenti menjadi perkara tampilan.
+ */
+const PENANDA_PELACAK = new Set([
+  "fbclid", "gclid", "dclid", "msclkid", "igsh", "igshid", "mibextid",
+  "ref", "ref_src", "refsrc", "source", "src", "spm", "scm",
+  "mc_cid", "mc_eid", "_ga", "_gl", "ncid", "cmpid", "campaign_id",
+  "at_medium", "at_campaign", "share_id", "si",
+]);
+
+/**
+ * Menyeragamkan tautan.
+ *
+ * PERHATIAN: yang berwenang bukan fungsi ini. Sejak 6 September 2026 bentuk
+ * tersimpan sebuah tautan ditentukan public.normalkan_tautan() di basis data,
+ * dipanggil pemicu berita_seragamkan_tautan, dan apa pun yang dikirim dari
+ * sini akan ditimpa di sana.
+ *
+ * Fungsi ini tetap ada karena penyalin memakainya untuk MENYARING lebih dulu —
+ * mengenali baris yang tautannya sudah ada tanpa mengirim satu pun permintaan
+ * yang pasti ditolak. Kalau ia berbeda dari aturan basis data, yang terjadi
+ * bukan berita kembar melainkan pekerjaan sia-sia; tools/uji-tautan.mjs
+ * menahan keduanya tetap sepaham.
+ */
 function normalizeUrl(value: unknown): string {
   let url = clean(value);
   if (!url) return "";
@@ -370,16 +399,25 @@ function normalizeUrl(value: unknown): string {
 
   try {
     const parsed = new URL(url);
-    const remove = [...parsed.searchParams.keys()].filter((key) =>
-      key.toLowerCase().startsWith("utm_") ||
-      ["fbclid", "gclid", "igsh", "igshid"].includes(key.toLowerCase())
-    );
 
-    for (const key of remove) parsed.searchParams.delete(key);
     parsed.hash = "";
-    return parsed.toString().replace(/\/$/, "");
+    parsed.protocol = "https:";
+    // Inang dikecilkan hurufnya, jalurnya TIDAK: pengenal video YouTube dan
+    // sebagian jalur peladen peka besar-kecil huruf.
+    parsed.hostname = parsed.hostname.toLowerCase().replace(/^www\./, "");
+
+    for (const key of [...parsed.searchParams.keys()]) {
+      const k = key.toLowerCase();
+      if (k.startsWith("utm_") || PENANDA_PELACAK.has(k)) parsed.searchParams.delete(key);
+    }
+
+    let hasil = parsed.toString();
+    hasil = hasil.replace(/\?$/, "");
+    hasil = hasil.replace(/\/amp\/?$/i, "");
+    hasil = hasil.replace(/\?outputType=amp$/i, "");
+    return hasil.replace(/\/+$/, "");
   } catch {
-    return url.replace(/\/$/, "");
+    return url.replace(/\/+$/, "");
   }
 }
 

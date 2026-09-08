@@ -164,6 +164,31 @@ Sasarannya baris tabel, bukan konstanta di dalam kode: `penjaring_kueri`,
 `penjaring_umpan`, dan `penjaring_sasaran`. Menambah kueri atau portal tidak
 menuntut penggelaran ulang.
 
+### Jalan ketiga — lembar kanwil
+
+Sejak 8 September 2026 ada jalan ketiga: **satu spreadsheet per kanwil**, 38
+buah, masing-masing menjaring wilayahnya sendiri lewat empat kaki. Tiga kaki
+bertanya kepada Google News; kaki keempat membaca **RSS portal hiperlokal
+langsung**, dan hanya kaki itu yang menembus Tier 4 — portal kabupaten yang
+tidak terindeks Google sama sekali tidak akan pernah ditemukan oleh kaki yang
+bertanya kepada Google.
+
+Lembar kanwil adalah **kaki, bukan otak**: ia menjaring dan menyetor lewat
+`sheet-sync`, lalu penilaian sentimen, kategori, urgensi, dan tier tetap
+dikerjakan sekali di pusat. Cetak birunya semula merancang mesin sentimen dan
+bot Telegram di tiap kanwil; itu tidak diikuti, dan alasannya ada di dokumen
+di bawah.
+
+```bash
+node tools/susun-lembar-kanwil.mjs --kanwil "Jawa Timur"   # satu wilayah
+node tools/susun-lembar-kanwil.mjs --semua                 # 38 wilayah
+node tools/uji-lembar-kanwil.mjs                           # 53 pemeriksaan
+```
+
+**Selengkapnya di [`docs/lembar-kanwil.md`](docs/lembar-kanwil.md)** — termasuk
+tabel keputusan arsitektur, cara mendaftarkan lembar ke pusat, dan matriks
+eskalasi SOP yang modelnya sudah ada tetapi sengaja belum dinyalakan.
+
 ### Tiga hal yang mudah salah dan sudah dibayar mahal
 
 **Google menolak Edge Function, tetapi tidak menolak basis data.** Diukur dengan

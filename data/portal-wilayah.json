@@ -1,0 +1,171 @@
+{
+  "_catatan": [
+    "Benih daftar portal wilayah untuk kaki keempat (jaringPortal) pada lembar kanwil.",
+    "",
+    "Sebagian besar isinya DITURUNKAN dari arsip berita yang sudah ada, bukan dikarang:",
+    "domain yang benar-benar pernah memuat berita unit di wilayah itu, minimal dua kali.",
+    "Portal nasional (Tier 1) sengaja TIDAK dimasukkan — tiga kaki lain yang bertanya",
+    "kepada Google sudah menjangkaunya, dan umpan portal nasional besar sekali sehingga",
+    "hanya memboroskan kuota.",
+    "",
+    "Yang ditandai 'panduan' berasal dari Buku Panduan Emas dan belum terbukti di arsip;",
+    "kalau alamatnya keliru, Jurnal akan menunjukkannya sebagai 'Butir Terlihat = 0'",
+    "tanpa merusak apa pun.",
+    "",
+    "Daftar ini hanya BENIH. Yang berwenang adalah lembar 'Portal Wilayah' di tiap",
+    "spreadsheet kanwil — petugas daerah yang paling tahu portal kabupatennya."
+  ],
+
+  "Kantor Wilayah Ditjenpas Jawa Timur": [
+    { "nama": "Harian Bangsa", "alamat": "https://harianbangsa.net", "tier": 2, "catatan": "Dari arsip: 9 berita wilayah ini." },
+    { "nama": "Beritajatim.com", "alamat": "https://beritajatim.com", "tier": 2, "catatan": "Dari arsip: 4 berita wilayah ini." },
+    { "nama": "Suara Surabaya", "alamat": "https://suarasurabaya.net", "tier": 2, "catatan": "panduan — jagoan regional Jatim." },
+    { "nama": "TIMES Indonesia", "alamat": "https://timesindonesia.co.id", "tier": 2, "catatan": "panduan — jagoan regional Jatim." },
+    { "nama": "Harian Bhirawa", "alamat": "https://harianbhirawa.co.id", "tier": 2, "catatan": "panduan — jagoan regional Jatim." },
+    { "nama": "Memorandum", "alamat": "https://memorandum.co.id", "tier": 2, "catatan": "panduan — jagoan regional Jatim." },
+    { "nama": "BangsaOnline", "alamat": "https://bangsaonline.com", "tier": 2, "catatan": "panduan — penguasa karesidenan." },
+    { "nama": "JatimNow", "alamat": "https://jatimnow.com", "tier": 2, "catatan": "panduan." },
+    { "nama": "Tugu Jatim", "alamat": "https://tugujatim.id", "tier": 2, "catatan": "panduan." },
+    { "nama": "FaktualNews", "alamat": "https://faktualnews.co", "tier": 2, "catatan": "panduan." },
+    { "nama": "Ngopibareng.id", "alamat": "https://ngopibareng.id", "tier": 2, "catatan": "panduan." },
+    { "nama": "Mojokerto Disway", "alamat": "https://mojokerto.disway.id", "tier": 3, "catatan": "Dari arsip: 4 berita wilayah ini." },
+    { "nama": "Radar Gresik", "alamat": "https://radargresik.jawapos.com", "tier": 3, "catatan": "Dari arsip: 3 berita wilayah ini." },
+    { "nama": "Radar Kediri", "alamat": "https://radarkediri.jawapos.com", "tier": 3, "catatan": "panduan — titik pantau Lapas Kediri." },
+    { "nama": "Surya Malang", "alamat": "https://suryamalang.com", "tier": 3, "catatan": "panduan — penguasa karesidenan Malang." },
+    { "nama": "Brilian News", "alamat": "https://brilian-news.id", "tier": 4, "catatan": "Dari arsip: 4 berita wilayah ini." },
+    { "nama": "Garda Jatim", "alamat": "https://gardajatim.com", "tier": 4, "catatan": "Dari arsip: 3 berita wilayah ini." },
+    { "nama": "Sekilas Media", "alamat": "https://sekilasmedia.com", "tier": 4, "catatan": "Dari arsip: 2 berita wilayah ini." },
+    { "nama": "Informasi Realita", "alamat": "https://informasi-realita.net", "tier": 4, "catatan": "Dari arsip: 2 berita wilayah ini." },
+    { "nama": "Wartanesia", "alamat": "https://wartanesia.com", "tier": 4, "catatan": "Dari arsip: 2 berita wilayah ini." },
+    { "nama": "blokBojonegoro", "alamat": "https://blokbojonegoro.com", "tier": 4, "catatan": "panduan — hiperlokal Bojonegoro, sensor peringatan dini." },
+    { "nama": "Suara Banyu Urip", "alamat": "https://suarabanyuurip.com", "tier": 4, "catatan": "panduan — hiperlokal Bojonegoro." },
+    { "nama": "KabarPas", "alamat": "https://kabarpas.com", "tier": 4, "catatan": "panduan — hiperlokal Pasuruan." },
+    { "nama": "Kabar Jawa Timur", "alamat": "https://kabarjawatimur.com", "tier": 4, "catatan": "panduan." }
+  ],
+
+  "Kantor Wilayah Ditjenpas Aceh": [
+    { "nama": "Metro Nusantara News", "alamat": "https://metronusantaranews.com", "tier": 4, "catatan": "Dari arsip: 7 berita wilayah ini." },
+    { "nama": "Modus Aceh", "alamat": "https://modusaceh.co", "tier": 4, "catatan": "Dari arsip: 2 berita wilayah ini." },
+    { "nama": "Liputan7", "alamat": "https://liputan7.id", "tier": 4, "catatan": "Dari arsip: 2 berita wilayah ini." },
+    { "nama": "Media Transparancy", "alamat": "https://mediatransparancy.com", "tier": 4, "catatan": "Dari arsip: 2 berita wilayah ini." },
+    { "nama": "Tribun Aceh", "alamat": "https://aceh.tribunnews.com", "tier": 2, "catatan": "Dari arsip: 2 berita wilayah ini." }
+  ],
+
+  "Kantor Wilayah Ditjenpas Bali": [
+    { "nama": "Bali Jani", "alamat": "https://balijani.id", "tier": 4, "catatan": "Dari arsip: 5 berita wilayah ini." },
+    { "nama": "Bali Post", "alamat": "https://balipost.com", "tier": 3, "catatan": "Dari arsip: 4 berita wilayah ini." },
+    { "nama": "Nusa Bali", "alamat": "https://nusabali.com", "tier": 3, "catatan": "Dari arsip: 2 berita wilayah ini." },
+    { "nama": "IDN Times Bali", "alamat": "https://bali.idntimes.com", "tier": 2, "catatan": "Dari arsip: 2 berita wilayah ini." },
+    { "nama": "Radar Nusantara", "alamat": "https://radarnusantara.com", "tier": 4, "catatan": "Dari arsip: 2 berita wilayah ini." },
+    { "nama": "Surya Indonesia", "alamat": "https://suryaindonesia.net", "tier": 4, "catatan": "Dari arsip: 2 berita wilayah ini." }
+  ],
+
+  "Kantor Wilayah Ditjenpas Banten": [
+    { "nama": "IndoSatuNews", "alamat": "https://indosatunews.com", "tier": 4, "catatan": "Dari arsip: 8 berita wilayah ini." },
+    { "nama": "Bidik Indonesia News", "alamat": "https://bidikindonesianews.co.id", "tier": 4, "catatan": "Dari arsip: 3 berita wilayah ini." }
+  ],
+
+  "Kantor Wilayah Ditjenpas Bengkulu": [
+    { "nama": "Bengkulu Today", "alamat": "https://bengkulutoday.com", "tier": 4, "catatan": "Dari arsip: 36 berita wilayah ini — penyumbang terbesar wilayah ini." },
+    { "nama": "IndoSatuNews", "alamat": "https://indosatunews.com", "tier": 4, "catatan": "Dari arsip: 7 berita wilayah ini." }
+  ],
+
+  "Kantor Wilayah Ditjenpas DKI Jakarta": [
+    { "nama": "IndoSatuNews", "alamat": "https://indosatunews.com", "tier": 4, "catatan": "Dari arsip: 12 berita wilayah ini." },
+    { "nama": "VOI", "alamat": "https://voi.id", "tier": 3, "catatan": "Dari arsip: 2 berita wilayah ini." },
+    { "nama": "Target Berita", "alamat": "https://targetberita.co.id", "tier": 4, "catatan": "Dari arsip: 2 berita wilayah ini." },
+    { "nama": "Lampu Hijau", "alamat": "https://lampuhijau.co.id", "tier": 4, "catatan": "Dari arsip: 2 berita wilayah ini." }
+  ],
+
+  "Kantor Wilayah Ditjenpas Jambi": [
+    { "nama": "Tribun Jambi", "alamat": "https://jambi.tribunnews.com", "tier": 2, "catatan": "Dari arsip: 7 berita wilayah ini." },
+    { "nama": "Sekato Jambi", "alamat": "https://sekatojambi.com", "tier": 4, "catatan": "Dari arsip: 3 berita wilayah ini." },
+    { "nama": "Suara Utama", "alamat": "https://suarautama.id", "tier": 4, "catatan": "Dari arsip: 3 berita wilayah ini." },
+    { "nama": "JEK TV News", "alamat": "https://jektvnews.disway.id", "tier": 3, "catatan": "Dari arsip: 2 berita wilayah ini." }
+  ],
+
+  "Kantor Wilayah Ditjenpas Jawa Barat": [
+    { "nama": "IndoSatuNews", "alamat": "https://indosatunews.com", "tier": 4, "catatan": "Dari arsip: 17 berita wilayah ini." },
+    { "nama": "Zona Bandung", "alamat": "https://zonabandung.com", "tier": 4, "catatan": "Dari arsip: 4 berita wilayah ini." },
+    { "nama": "Pikiran Rakyat Jabar", "alamat": "https://jabar.pikiran-rakyat.com", "tier": 2, "catatan": "Dari arsip: 3 berita wilayah ini." },
+    { "nama": "Harian Pelita News", "alamat": "https://harianpelitanews.id", "tier": 4, "catatan": "Dari arsip: 3 berita wilayah ini." },
+    { "nama": "News Tasikmalaya", "alamat": "https://newstasikmalaya.com", "tier": 4, "catatan": "Dari arsip: 2 berita wilayah ini." },
+    { "nama": "Priangan Timur News", "alamat": "https://priangantimurnews.pikiran-rakyat.com", "tier": 3, "catatan": "Dari arsip: 2 berita wilayah ini." }
+  ],
+
+  "Kantor Wilayah Ditjenpas Jawa Tengah": [
+    { "nama": "IndoSatuNews", "alamat": "https://indosatunews.com", "tier": 4, "catatan": "Dari arsip: 8 berita wilayah ini." },
+    { "nama": "Media Massa", "alamat": "https://mediamassa.co.id", "tier": 4, "catatan": "Dari arsip: 7 berita wilayah ini." },
+    { "nama": "Radar Pekalongan", "alamat": "https://radarpekalongan.disway.id", "tier": 3, "catatan": "Dari arsip: 4 berita wilayah ini." },
+    { "nama": "Joglosemar News", "alamat": "https://joglosemarnews.com", "tier": 4, "catatan": "Dari arsip: 3 berita wilayah ini." },
+    { "nama": "Brata Pos Jateng", "alamat": "https://jateng.bratapos.com", "tier": 4, "catatan": "Dari arsip: 2 berita wilayah ini." }
+  ],
+
+  "Kantor Wilayah Ditjenpas Kalimantan Selatan": [
+    { "nama": "Wartanesia", "alamat": "https://wartanesia.com", "tier": 4, "catatan": "Dari arsip: 32 berita wilayah ini — penyumbang terbesar wilayah ini." },
+    { "nama": "IndoSatuNews", "alamat": "https://indosatunews.com", "tier": 4, "catatan": "Dari arsip: 11 berita wilayah ini." },
+    { "nama": "Gerbang Kaltim", "alamat": "https://gerbangkaltim.com", "tier": 4, "catatan": "Dari arsip: 3 berita wilayah ini." }
+  ],
+
+  "Kantor Wilayah Ditjenpas Kalimantan Tengah": [
+    { "nama": "Seputar Borneo", "alamat": "https://seputarborneo.com", "tier": 4, "catatan": "Dari arsip: 2 berita wilayah ini." }
+  ],
+
+  "Kantor Wilayah Ditjenpas Kalimantan Timur": [
+    { "nama": "Kutai Raya", "alamat": "https://kutairaya.com", "tier": 4, "catatan": "Dari arsip: 3 berita wilayah ini." }
+  ],
+
+  "Kantor Wilayah Ditjenpas Lampung": [
+    { "nama": "Betik Lampung", "alamat": "https://betiklampung.com", "tier": 4, "catatan": "Dari arsip: 5 berita wilayah ini." },
+    { "nama": "Pewarta Indonesia", "alamat": "https://pewarta-indonesia.com", "tier": 4, "catatan": "Dari arsip: 3 berita wilayah ini." }
+  ],
+
+  "Kantor Wilayah Ditjenpas Maluku": [
+    { "nama": "ANTARA Ambon", "alamat": "https://ambon.antaranews.com", "tier": 2, "catatan": "Dari arsip: 2 berita wilayah ini." },
+    { "nama": "Teras Maluku", "alamat": "https://terasmaluku.com", "tier": 4, "catatan": "Dari arsip: 2 berita wilayah ini." }
+  ],
+
+  "Kantor Wilayah Ditjenpas Riau": [
+    { "nama": "Seribu Parit News", "alamat": "https://seribuparitnews.com", "tier": 4, "catatan": "Dari arsip: 6 berita wilayah ini." },
+    { "nama": "Liputan Today", "alamat": "https://liputantoday.com", "tier": 4, "catatan": "Dari arsip: 5 berita wilayah ini." },
+    { "nama": "Pelita Riau", "alamat": "https://pelitariau.com", "tier": 4, "catatan": "Dari arsip: 3 berita wilayah ini." },
+    { "nama": "Suara Riau", "alamat": "https://riau.suara.com", "tier": 2, "catatan": "Dari arsip: 2 berita wilayah ini." },
+    { "nama": "Derak Post", "alamat": "https://derakpost.com", "tier": 4, "catatan": "Dari arsip: 2 berita wilayah ini." },
+    { "nama": "Liputan Oke", "alamat": "https://liputanoke.com", "tier": 4, "catatan": "Dari arsip: 2 berita wilayah ini." },
+    { "nama": "PAB Indonesia", "alamat": "https://pab-indonesia.co.id", "tier": 4, "catatan": "Dari arsip: 2 berita wilayah ini." }
+  ],
+
+  "Kantor Wilayah Ditjenpas Sulawesi Barat": [
+    { "nama": "Kabar Sulbar", "alamat": "https://kabarsulbar.com", "tier": 4, "catatan": "Dari arsip: 3 berita wilayah ini." }
+  ],
+
+  "Kantor Wilayah Ditjenpas Sulawesi Selatan": [
+    { "nama": "Berita News", "alamat": "https://berita.news", "tier": 4, "catatan": "Dari arsip: 2 berita wilayah ini." }
+  ],
+
+  "Kantor Wilayah Ditjenpas Sulawesi Utara": [
+    { "nama": "Komunika Sulut", "alamat": "https://komunikasulut.com", "tier": 4, "catatan": "Dari arsip: 3 berita wilayah ini." }
+  ],
+
+  "Kantor Wilayah Ditjenpas Sumatera Barat": [
+    { "nama": "Jurnal Terkini", "alamat": "https://jurnalterkini.id", "tier": 4, "catatan": "Dari arsip: 2 berita wilayah ini." },
+    { "nama": "Valora News", "alamat": "https://valoranews.com", "tier": 4, "catatan": "Dari arsip: 2 berita wilayah ini." }
+  ],
+
+  "Kantor Wilayah Ditjenpas Sumatera Selatan": [
+    { "nama": "Sumeks Disway", "alamat": "https://sumeks.disway.id", "tier": 3, "catatan": "Dari arsip: 4 berita wilayah ini." },
+    { "nama": "Indo Daily", "alamat": "https://indodaily.co", "tier": 4, "catatan": "Dari arsip: 2 berita wilayah ini." }
+  ],
+
+  "Kantor Wilayah Ditjenpas Sumatera Utara": [
+    { "nama": "Media 24 Jam", "alamat": "https://media24jam.com", "tier": 4, "catatan": "Dari arsip: 6 berita wilayah ini." },
+    { "nama": "Pewarta", "alamat": "https://pewarta.co", "tier": 4, "catatan": "Dari arsip: 4 berita wilayah ini." },
+    { "nama": "Posmetro Medan", "alamat": "https://posmetromedan.id", "tier": 4, "catatan": "Dari arsip: 3 berita wilayah ini." },
+    { "nama": "Bara News Sumut", "alamat": "https://baranewssumut.com", "tier": 4, "catatan": "Dari arsip: 2 berita wilayah ini." },
+    { "nama": "Mata Telinga", "alamat": "https://matatelinga.com", "tier": 4, "catatan": "Dari arsip: 2 berita wilayah ini." }
+  ],
+
+  "Kantor Wilayah Ditjenpas Papua Barat": [
+    { "nama": "Top B News", "alamat": "https://topbnews.com", "tier": 4, "catatan": "Dari arsip: 2 berita wilayah ini." }
+  ]
+}

@@ -28,3 +28,10 @@ sumber-lama/
 # muncul sebagai berkas liar pada setiap `git status` — dan berkas liar yang
 # selalu ada membuat berkas liar yang sungguhan tidak lagi terbaca.
 .periksa/
+
+# Berkas Apps Script per kanwil: hasil tools/susun-lembar-kanwil.mjs. Tiga puluh
+# delapan berkas yang isinya sama persis kecuali daftar unitnya, 2 MB, dan
+# dibuat ulang dengan satu perintah. Kalau ikut dilacak, satu perubahan kecil
+# pada templat muncul sebagai 38 berkas berubah dan perubahan yang sungguhan
+# tidak lagi terbaca di diff. Yang ditinjau adalah templatnya.
+gas/kanwil-*.gs

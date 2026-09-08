@@ -81,12 +81,18 @@ Kembali ke editor Apps Script. Pilih fungsi **`pasangPemicu`** → **Jalankan**.
 
 Ini menjadwalkan penjaringan otomatis tiap hari:
 
-| Jam | Kaki | Yang dicari |
-| --- | --- | --- |
-| 02.00 | portal | RSS portal hiperlokal — **jalan ke Tier 4** |
-| 04.00 | unit | nama 39 unit beserta ragam namanya |
-| 06.00 | kota | 30 kabupaten/kota |
-| 08.00 | isu | 9 isu berat (pelarian, pungli, kematian, dll.) |
+| Jam | Yang dicari |
+| --- | --- |
+| 06.00 | RSS portal hiperlokal wilayah |
+| 18.00 | RSS portal hiperlokal wilayah |
+
+Dua kali sehari, bukan sekali: portal hiperlokal menerbitkan sepanjang hari dan
+umpannya pendek — yang terbit pagi sudah tergeser keluar menjelang malam.
+
+Pencarian per unit, per kota, dan per isu **tidak lagi dikerjakan lembar ini**.
+Ketiganya bertanya kepada Google News, dan dari Apps Script penguraian
+alamatnya gagal 115 dari 115 — sementara dari basis data pusat berhasil 100%.
+Pusat yang mengerjakannya sekarang, memakai Ragam Nama yang Anda kurasi.
 
 > Jamnya sengaja direnggangkan. Apps Script memotong satu jalan pada enam menit,
 > dan dua jalan yang berebut kuota akan saling memotong.
@@ -119,12 +125,12 @@ pusat. Setelah itu berita mulai mengalir sendiri ke
 
 ## BAGIAN B — Menguji sekarang juga (opsional, 2 menit)
 
-Tidak perlu menunggu sampai jam 02.00 dini hari.
+Tidak perlu menunggu sampai jam 06.00.
 
 1. **Tutup lalu buka lagi** spreadsheet-nya (menu baru hanya muncul setelah
    dimuat ulang)
 2. Akan ada menu baru: **Trans-Siber PAS**
-3. Pilih **Jaring per unit** — tunggu 1–3 menit
+3. Pilih **Jaring portal wilayah (sekarang)** — tunggu 3–5 menit
 
 Lalu buka tab **Berita**. Kalau ada baris masuk, berwarna sesuai tier:
 
@@ -185,7 +191,7 @@ tetap terisi, jurnalnya tetap hijau, tanpa ada yang tahu.
 
 ### C2. Portal Wilayah — tab **Portal Wilayah**
 
-**Di sinilah Tier 4 bertambah.** Portal kabupaten kecil sering tidak terindeks
+**Di sinilah lapisan terbawah bertambah.** Portal kabupaten kecil sering tidak terindeks
 Google sama sekali; selama ia tidak ada di daftar ini, ia tidak akan pernah
 tertangkap oleh cara apa pun.
 

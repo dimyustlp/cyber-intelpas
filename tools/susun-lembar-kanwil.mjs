@@ -138,29 +138,6 @@ function ragamNama(u) {
   return [...set].filter((s) => s && s.length > 5);
 }
 
-/* ─────────────────────────────────────────────────────────── ikatan kata ── */
-
-/** Singkatan provinsi yang lazim dipakai judul berita. */
-const SINGKATAN = {
-  'Jawa Timur': 'Jatim', 'Jawa Tengah': 'Jateng', 'Jawa Barat': 'Jabar',
-  'Sumatera Utara': 'Sumut', 'Sumatera Barat': 'Sumbar', 'Sumatera Selatan': 'Sumsel',
-  'Kalimantan Timur': 'Kaltim', 'Kalimantan Barat': 'Kalbar',
-  'Kalimantan Selatan': 'Kalsel', 'Kalimantan Tengah': 'Kalteng',
-  'Kalimantan Utara': 'Kaltara', 'Sulawesi Selatan': 'Sulsel',
-  'Sulawesi Utara': 'Sulut', 'Sulawesi Tengah': 'Sulteng',
-  'Sulawesi Tenggara': 'Sultra', 'Sulawesi Barat': 'Sulbar',
-  'Nusa Tenggara Barat': 'NTB', 'Nusa Tenggara Timur': 'NTT',
-  'D.I. Yogyakarta': 'Yogyakarta', 'DKI Jakarta': 'Jakarta',
-  'Kepulauan Riau': 'Kepri', 'Kepulauan Bangka Belitung': 'Babel',
-  'Maluku Utara': 'Malut', 'Papua Barat': 'Papua Barat',
-};
-
-function ikatanWilayah(provinsi) {
-  const bagian = [provinsi];
-  if (SINGKATAN[provinsi] && SINGKATAN[provinsi] !== provinsi) bagian.push(SINGKATAN[provinsi]);
-  return `(${bagian.map((b) => `"${b}"`).join(' OR ')})`;
-}
-
 /* ────────────────────────────────────────────────────────────── penyusun ── */
 
 const slug = (s) => s.replace(/^Kantor Wilayah Ditjenpas\s+/i, '')
@@ -176,13 +153,9 @@ function susun(kanwil, semuaUpt, portal, tier, templat) {
     nama: u.nama, jenis: u.jenis, kota: u.kota, alias: ragamNama(u),
   }));
 
-  const kota = [...new Set(unit.map((u) =>
-    rapi(String(u.kota).replace(/^(Kota Administrasi|Kota|Kabupaten|Kab\.?)\s+/i, ''))
-  ))].filter(Boolean).sort();
-
-  // Portal Tier 1 dibuang: tiga kaki lain yang bertanya kepada Google sudah
-  // menjangkaunya, dan umpan portal nasional besar sekali sehingga hanya
-  // memboroskan kuota yang seharusnya dipakai portal kabupaten.
+  // Portal Tier 1 dibuang: pencarian pusat sudah menjangkaunya, dan umpan
+  // portal nasional besar sekali sehingga hanya memboroskan kuota yang
+  // seharusnya dipakai portal kabupaten.
   const daftarPortal = (portal[kanwil] || []).filter((p) => Number(p.tier) > 1);
 
   const konfig = [
@@ -194,14 +167,11 @@ function susun(kanwil, semuaUpt, portal, tier, templat) {
     '',
     `var PROVINSI = ${JSON.stringify(provinsi)};`,
     '',
-    '/** Pengikat kueri isu supaya tidak menyapu seluruh Indonesia. */',
-    `var IKATAN_WILAYAH = ${JSON.stringify(ikatanWilayah(provinsi))};`,
-    '',
-    `/** ${daftarUnit.length} unit aktif. Ragam nama boleh disunting di lembar Target Unit. */`,
+    `/** ${daftarUnit.length} unit aktif. Ragam nama BOLEH dan SEBAIKNYA disunting`,
+    ' *  petugas daerah di lembar Target Unit: nama panggilan setempat seperti',
+    ' *  "Medaeng" tidak ada pada data induk mana pun, dan pusat mencari dengan',
+    ' *  nama yang dituliskan di sana. */',
     `var UNIT = ${JSON.stringify(daftarUnit, null, 1)};`,
-    '',
-    `/** ${kota.length} kabupaten/kota. Dipakai kaki kedua, selalu diikat kata Pemasyarakatan. */`,
-    `var KOTA = ${JSON.stringify(kota)};`,
     '',
     `/** ${daftarPortal.length} portal benih. Petugas daerah menambah sendiri di lembar Portal Wilayah. */`,
     `var PORTAL = ${JSON.stringify(daftarPortal, null, 1)};`,
@@ -216,7 +186,7 @@ function susun(kanwil, semuaUpt, portal, tier, templat) {
   return {
     isi,
     berkas: join(JALUR.keluar, `kanwil-${slug(kanwil)}.gs`),
-    ringkas: { kanwil, provinsi, unit: daftarUnit.length, kota: kota.length, portal: daftarPortal.length },
+    ringkas: { kanwil, provinsi, unit: daftarUnit.length, portal: daftarPortal.length },
   };
 }
 

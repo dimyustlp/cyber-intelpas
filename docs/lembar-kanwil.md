@@ -36,28 +36,72 @@ berpengaruh dari seluruh pekerjaan ini.
 
 ---
 
-## 2. Empat kaki penjaring
+## 2. Satu kaki di daerah, sisanya di pusat (v2.0)
 
 343 dari 531 unit tidak pernah sekali pun muncul di arsip (diukur 6 September
-2026). Sebabnya bukan unitnya pasif melainkan tidak pernah dicari: penyapuan
-kata kunci umum selalu menemukan yang paling ramai.
+2026). Sebabnya bukan unitnya pasif melainkan tidak pernah dicari dengan nama
+yang sungguh dipakai orang.
 
-| Kaki | Berangkat dari | Menutup kebutaan |
-| --- | --- | --- |
-| `jaringUnit()` | nama unit + ragam namanya | unit sunyi yang tidak pernah dicari |
-| `jaringKota()` | nama kabupaten/kota | judul yang menulis "penjara Kediri", bukan nama resmi |
-| `jaringIsu()` | taksonomi negatif | peristiwa berat di unit yang sudah ramai |
-| `jaringPortal()` | **RSS portal langsung** | **portal hiperlokal yang tidak terindeks Google sama sekali** |
+Versi 1.x menjawabnya dengan **empat kaki** di lembar kanwil: per unit, per
+kota, per isu, dan portal. Tiga yang pertama dicabut di v2.0, dan sebabnya
+terukur:
 
-Kaki keempat satu-satunya yang benar-benar menembus Tier 4. Tiga kaki lain
-bertanya kepada Google; selama pertanyaannya diajukan ke Google, portal yang
-tidak diindeks Google tidak ada. Kaki ini membaca terbitan portalnya sendiri
-lalu menyaring dengan jangkar kata.
+| Menguraikan alamat Google News | Hasil |
+| --- | --- |
+| dari basis data (Edge Function `penjaring`) | **100% berhasil**, tiap jam |
+| dari Apps Script (lembar kanwil) | **0% berhasil**, 115 dari 115 |
 
-Konsekuensinya: **angka "Tolak: Tak Relevan" yang besar pada kaki portal
-menandakan SEHAT**, bukan rusak. Umpan portal memuat seluruh terbitannya —
-olahraga, pilkada, kuliner. Yang menandakan rusak justru sebaliknya: "Sasaran
-Diperiksa" terisi tapi "Panggilan Jaringan" nol.
+RSS Google News tidak memberi alamat artikel — ia memberi alamat pengalihan
+yang harus ditukar lewat dua langkah ke `batchexecute`. Dari Apps Script,
+pertukaran itu selalu gagal. Jurnalnya tetap hijau, "Baris Baru" tetap nol,
+tanpa satu pun galat: bentuk kegagalan yang terlihat persis seperti "memang
+tidak ada beritanya".
+
+Ini bayangan cermin temuan 6 September, ketika Google menolak Edge Function
+tetapi menerima basis data. Pelajarannya sama: **yang menentukan bukan kodenya,
+melainkan dari mana permintaannya berangkat.**
+
+### Pembagian kerja yang sekarang
+
+| Di lembar kanwil (daerah) | Di pusat |
+| --- | --- |
+| kurasi **Ragam Nama** unit | pencarian per unit — mode `ragam` |
+| kurasi **Portal Wilayah** | pencarian kata kunci & isu |
+| jaring **RSS portal hiperlokal** | penguraian alamat Google News |
+| — | sentimen, kategori, urgensi (v4.5) |
+| — | tier media, dedup, Telegram |
+
+Kaki portal tetap di daerah karena ia satu-satunya yang **tidak** bertanya
+kepada Google: portal memberi alamat aslinya langsung di RSS-nya. Terukur pada
+jalan pertama Jatim — nol gagal alamat, dan satu-satunya kaki yang berhasil
+memasukkan berita.
+
+Konsekuensinya: **angka "Tolak: Tak Relevan" yang besar menandakan SEHAT**,
+bukan rusak. Umpan portal memuat seluruh terbitannya — olahraga, pilkada,
+kuliner. Yang menandakan rusak justru sebaliknya: "Portal Diperiksa" terisi
+tapi "Panggilan Jaringan" nol.
+
+### Mode `ragam` di pusat
+
+Pencarian per unit kini memakai sebutan yang dikurasi, bukan nama resmi saja:
+
+```
+"Lapas Kelas IIA Kediri" OR "Lapas Kediri" OR "Penjara Kediri" when:5d
+```
+
+531 baris di `penjaring_kueri` bermode `ragam`, disusun
+`susun_kueri_ragam()` dari `penjaring_sasaran.alias`. Tidak ada satu baris kode
+pun yang digelar untuk ini — `penjaring` sudah membaca mode apa pun dari tabel,
+persis prinsip yang tertulis di README: *"menambah kueri atau portal tidak
+menuntut penggelaran ulang"*.
+
+Keuntungan sampingannya besar: kuerinya **terlihat dan bisa disunting analis**.
+Satu unit yang tidak pernah tertangkap bisa diperbaiki tanpa menyentuh kode.
+
+Operator `when:5d` juga ditambahkan ke seluruh kueri `umum` dan `isu`. Google
+News mengurutkan menurut relevansi, bukan tanggal; tanpa operator itu berita
+bertahun lalu diunduh dan diurai lebih dulu sebelum dibuang — terukur 1.075
+butir terbuang dalam satu jalan, menjadi nol sesudahnya.
 
 ---
 
@@ -279,13 +323,18 @@ ditautkan ke artikel aslinya lewat `induk_id`.
 
 ## 8. Yang belum dikerjakan
 
-- **Menyalakan `peristiwa_perlu_diberitahukan()` di `notifikasi`.** Fungsinya
-  ada dan terbukti benar, tetapi `notifikasi/index.ts` belum memanggilnya —
-  jadi kembaran masih bisa mengirim pesan kedua. Ini pekerjaan berikutnya yang
-  paling berdampak.
+- **Kurasi Ragam Nama belum mengalir sendiri ke pusat.** Petugas menyuntingnya
+  di lembar; admin memasukkannya ke `penjaring_sasaran.alias` lalu menjalankan
+  `susun_kueri_ragam()`. Otomatisasinya tertahan sifat pg_net yang asinkron —
+  satu fungsi SQL tidak bisa meminta dan membaca jawabannya sekaligus, sehingga
+  penariknya perlu dua fase berjadwal. Sengaja ditunda: alur bertahap yang
+  bekerja lebih baik daripada alur otomatis yang gagal diam-diam.
 - **Cermin pusat di lembar kanwil.** Lembar masih satu arah: menyetor, belum
   membaca balik hasil penilaian mesin. Menutupnya menuntut Edge Function
   `ruang-kanwil` beserta token per wilayah.
+- **Perutean tier ke Telegram belum menyala.** `notifikasi_rute` sudah memuat
+  Kanwil Jatim tetapi `aktif = false`, menunggu token bot pengganti. Dan
+  `notifikasi/index.ts` belum memanggil `rute_notifikasi()`.
 - **Tier di layar website.** Kolomnya sudah mengalir ke peramban (`api.js`
   memilih `*`), tetapi belum ditampilkan atau dijadikan penyaring.
 - **Penyalaan eskalasi rute** — lihat bagian 6; menunggu ID grup Telegram.

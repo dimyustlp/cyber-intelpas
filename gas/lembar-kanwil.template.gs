@@ -75,6 +75,32 @@
  * Seluruh pencocokan jangkar di berkas ini memakai batas kata.
  *
  * ----------------------------------------------------------------------------
+ * ALAMAT GOOGLE NEWS: DUA LANGKAH, DAN TIDAK ADA JALAN PINTASNYA
+ * ----------------------------------------------------------------------------
+ *
+ * RSS Google News memberi alamat pengalihan miliknya sendiri. Sejak pengenal
+ * bentuk baru (`AU_yqL...`), alamat aslinya TIDAK ADA di dalam pengenal itu —
+ * base64-nya hanya protobuf. Membaca `<link rel=canonical>` dari halamannya,
+ * yang dulu berhasil, kini selalu gagal.
+ *
+ * Terukur pada jalan pertama Kanwil Jawa Timur, 8 September 2026: 115 berita
+ * lolos seluruh saringan lalu **seluruh 115-nya** gagal diuraikan. Nol baris
+ * masuk, tanpa satu pun galat — jurnalnya hijau dan kolom "Baris Baru" nol,
+ * bentuk kegagalan yang persis sama dengan "memang tidak ada beritanya".
+ *
+ * Jalannya dua langkah, sama dengan yang dipakai Edge Function `penjaring`:
+ *
+ *   1. Unduh halaman artikelnya, ambil `data-n-a-sg` (tanda tangan) dan
+ *      `data-n-a-ts` (cap waktu)
+ *   2. POST keduanya ke `batchexecute`, yang membalas alamat aslinya
+ *
+ * Tanda tangannya terikat pada artikelnya: dicoba dengan tanda tangan artikel
+ * lain atau dikosongkan, Google membalas kosong.
+ *
+ * Karena satu berita berharga DUA permintaan, hasilnya — termasuk
+ * kegagalannya — disimpan di CacheService selama enam jam.
+ *
+ * ----------------------------------------------------------------------------
  * CARA MEMASANG (sekali saja, sekitar tiga menit)
  * ----------------------------------------------------------------------------
  *
@@ -101,7 +127,7 @@
 
 /* ═══════════════════════════════════════════════════════════ setelan ══ */
 
-var VERSI = 'lembar-kanwil-v1.0';
+var VERSI = 'lembar-kanwil-v1.1';
 
 var L_BERITA = 'Berita';
 var L_UNIT   = 'Target Unit';
@@ -124,6 +150,20 @@ var PORTAL_PER_JALAN = 10;
 
 var BERITA_PER_SASARAN = 6;
 var UMUR_MAKS_HARI     = 30;
+
+/**
+ * Berapa butir teratas diperiksa per sasaran.
+ *
+ * Penjaga ini ada karena gelanggangnya asimetris: selama ADA yang diterima,
+ * `BERITA_PER_SASARAN` menghentikan pemeriksaan lebih awal. Begitu TIDAK ADA
+ * yang diterima — persis keadaan saat penjaringnya rusak — tidak ada yang
+ * menghentikannya, dan ia memeriksa seluruh hasil pencarian. Jalan pertama
+ * Kanwil Jawa Timur memeriksa 1.200 butir untuk menerima nol.
+ *
+ * Jadi batas ini menjaga justru pada saat yang paling dibutuhkan: ketika ada
+ * yang salah.
+ */
+var SCAN_MAKS = 30;
 
 /** Batas panggilan jaringan sekali jalan. Yang dijaga batas WAKTU, bukan kuota harian. */
 var BATAS_AMBIL = 130;
@@ -537,7 +577,7 @@ function jaringUnit() {
     var temuan = cariGoogleNews(kueri, kuota);
     var diterima = 0;
 
-    for (var j = 0; j < temuan.length && diterima < BERITA_PER_SASARAN; j++) {
+    for (var j = 0; j < temuan.length && j < SCAN_MAKS && diterima < BERITA_PER_SASARAN; j++) {
       var hasil = olahTemuan(temuan[j], sudahAda, tolak, kuota, ragam, nama, 'unit');
       if (hasil) { baru.push(hasil); diterima++; }
     }
@@ -586,7 +626,7 @@ function jaringKota() {
     var temuan = cariGoogleNews(kueri, kuota);
     var diterima = 0;
 
-    for (var j = 0; j < temuan.length && diterima < BERITA_PER_SASARAN; j++) {
+    for (var j = 0; j < temuan.length && j < SCAN_MAKS && diterima < BERITA_PER_SASARAN; j++) {
       var hasil = olahTemuan(temuan[j], sudahAda, tolak, kuota, null, '', 'kota');
       if (hasil) { baru.push(hasil); diterima++; }
     }
@@ -622,7 +662,7 @@ function jaringIsu() {
     var temuan = cariGoogleNews(kueri, kuota);
     var diterima = 0;
 
-    for (var j = 0; j < temuan.length && diterima < BERITA_PER_SASARAN; j++) {
+    for (var j = 0; j < temuan.length && j < SCAN_MAKS && diterima < BERITA_PER_SASARAN; j++) {
       var hasil = olahTemuan(temuan[j], sudahAda, tolak, kuota, null, '', 'isu:' + ISU[i].kode);
       if (hasil) { baru.push(hasil); diterima++; }
     }
@@ -796,10 +836,23 @@ function olahTemuan(t, sudahAda, tolak, kuota, ragam, namaUnit, cara) {
 
 /* ══════════════════════════════════════════════════ pencarian & umpan ══ */
 
+/**
+ * Batas umur DITITIPKAN KE KUERI, bukan disaring sesudah diunduh.
+ *
+ * Diukur pada jalan pertama Kanwil Jawa Timur, 8 September 2026: dari 1.200
+ * butir yang diperiksa kaki unit, **1.075 ditolak karena terlalu lama** — dan
+ * seluruhnya sudah terlanjur diunduh, diurai, dan dibandingkan lebih dulu.
+ *
+ * Sebabnya: pencarian Google News mengurutkan menurut RELEVANSI, bukan tanggal.
+ * Kueri "Lapas Kediri" mengembalikan berita bertahun-tahun lalu di halaman
+ * pertama. Operator `when:` menyaringnya di sisi Google, sehingga yang tiba
+ * memang sudah yang dicari.
+ */
 function cariGoogleNews(kueri, kuota) {
   if (kuota.ambil >= BATAS_AMBIL) return [];
 
-  var alamat = 'https://news.google.com/rss/search?q=' + encodeURIComponent(kueri)
+  var alamat = 'https://news.google.com/rss/search?q='
+    + encodeURIComponent(kueri + ' when:' + UMUR_MAKS_HARI + 'd')
     + '&hl=id&gl=ID&ceid=ID:id';
 
   try {
@@ -940,37 +993,73 @@ function uraikanAlamat(t, kuota) {
   // Cara 2 — alamatnya memang sudah bukan Google News.
   if (tautan.indexOf('news.google.com') === -1) return tautan;
 
+  var id = (tautan.match(/news\.google\.com\/(?:rss\/)?(?:articles|read)\/([^?#\/]+)/i) || [])[1];
+  if (!id) return '';
+
   // Simpanan: alamat yang sama muncul di beberapa kueri sekaligus, dan
   // menguraikannya dua kali membayar kuota dua kali untuk jawaban yang sama.
   var simpanan = CacheService.getScriptCache();
-  var kunciSimpan = 'u' + Utilities.base64EncodeWebSafe(
-    Utilities.computeDigest(Utilities.DigestAlgorithm.MD5, tautan));
+  var kunciSimpan = 'g' + Utilities.base64EncodeWebSafe(
+    Utilities.computeDigest(Utilities.DigestAlgorithm.MD5, id));
   var tersimpan = simpanan.get(kunciSimpan);
   if (tersimpan) return tersimpan === '-' ? '' : tersimpan;
 
-  if (kuota.ambil >= BATAS_AMBIL) return '';
+  // Dua permintaan, bukan satu. Jangan mulai kalau jatahnya tidak cukup untuk
+  // keduanya — langkah pertama tanpa langkah kedua hanya membuang kuota.
+  if (kuota.ambil + 2 > BATAS_AMBIL) return '';
 
-  // Cara 3 — buka alamatnya, baca alamat kanoniknya.
   var hasil = '';
   try {
+    /* Langkah 1 — unduh halaman artikelnya, ambil tanda tangannya. */
     kuota.ambil++;
-    var jawaban = UrlFetchApp.fetch(tautan, { muteHttpExceptions: true, followRedirects: true });
+    var hal = UrlFetchApp.fetch(
+      'https://news.google.com/rss/articles/' + id + '?hl=id&gl=ID&ceid=ID:id',
+      { muteHttpExceptions: true, followRedirects: true });
     Utilities.sleep(JEDA_MS);
 
-    if (jawaban.getResponseCode() === 200) {
-      var isi = jawaban.getContentText();
+    if (hal.getResponseCode() === 200) {
+      var isi = hal.getContentText();
+      var sg = (isi.match(/data-n-a-sg="([^"]+)"/) || [])[1];
+      var ts = (isi.match(/data-n-a-ts="([^"]+)"/) || [])[1];
+      var aid = (isi.match(/data-n-a-id="([^"]+)"/) || [])[1] || id;
 
-      var kanonik = isi.match(/<link[^>]+rel=["']canonical["'][^>]+href=["']([^"']+)["']/i)
-        || isi.match(/<link[^>]+href=["']([^"']+)["'][^>]+rel=["']canonical["']/i);
-      if (kanonik && kanonik[1].indexOf('news.google.com') === -1) hasil = kanonik[1];
+      /* Langkah 2 — tukar tanda tangan itu dengan alamat aslinya. */
+      if (sg && ts) {
+        var dalam = JSON.stringify([
+          'garturlreq',
+          [['X', 'X', ['X', 'X'], null, null, 1, 1, 'US:en', null, 1, null, null, null, null, null, 0, 1],
+            'X', 'X', 1, [1, 1, 1], 1, 1, null, 0, 0, null, 0],
+          aid, Number(ts), sg
+        ]);
+        var freq = JSON.stringify([[['Fbv4je', dalam, null, 'generic']]]);
 
-      if (!hasil) {
-        var nAu = isi.match(/data-n-au=["']([^"']+)["']/i);
-        if (nAu && nAu[1].indexOf('news.google.com') === -1) hasil = nAu[1];
-      }
-      if (!hasil) {
-        var og = isi.match(/<meta[^>]+property=["']og:url["'][^>]+content=["']([^"']+)["']/i);
-        if (og && og[1].indexOf('news.google.com') === -1) hasil = og[1];
+        kuota.ambil++;
+        var jwb = UrlFetchApp.fetch(
+          'https://news.google.com/_/DotsSplashUi/data/batchexecute'
+            + '?rpcids=Fbv4je&f.req=' + encodeURIComponent(freq),
+          {
+            method: 'post',
+            payload: '',
+            contentType: 'application/x-www-form-urlencoded',
+            muteHttpExceptions: true
+          });
+        Utilities.sleep(JEDA_MS);
+
+        if (jwb.getResponseCode() === 200) {
+          // Jawabannya diawali ")]}'" yang sengaja membuat JSON.parse gagal bila
+          // seseorang memuatnya sebagai skrip. Dibuang dulu, lalu diurai.
+          var luar = JSON.parse(jwb.getContentText().replace(/^\)\]\}'\s*/, ''));
+
+          for (var i = 0; i < luar.length; i++) {
+            var baris = luar[i];
+            if (!baris || typeof baris[2] !== 'string') continue;
+            if (baris[2].indexOf('garturlres') === -1) continue;
+
+            var jadi = JSON.parse(baris[2]);
+            var url = String(jadi[1] || '');
+            if (url && url.indexOf('news.google.com') === -1) { hasil = url; break; }
+          }
+        }
       }
     }
   } catch (e) {
@@ -978,7 +1067,8 @@ function uraikanAlamat(t, kuota) {
   }
 
   // Kegagalan ikut disimpan. Alamat yang tidak bisa diuraikan hari ini hampir
-  // selalu tetap begitu satu jam kemudian.
+  // selalu tetap begitu satu jam kemudian, dan mencobanya lagi hanya membayar
+  // dua permintaan untuk jawaban yang sudah diketahui.
   try { simpanan.put(kunciSimpan, hasil || '-', 21600); } catch (e) { /* penuh */ }
   return hasil;
 }

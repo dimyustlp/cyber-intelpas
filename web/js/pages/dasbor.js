@@ -200,7 +200,7 @@ export function halamanDasbor({ keadaan, isi }) {
       <div class="kisi kisi-utama-samping">
         ${kartu({
           judul: 'Isu yang paling banyak muncul',
-          ket: 'Delapan kategori teratas menurut taksonomi Dirpamintel',
+          ket: 'Delapan kategori teratas menurut taksonomi Ditpamintel',
           isi: '<div id="bagan-kategori"></div>',
         })}
         ${kartu({
@@ -317,7 +317,7 @@ function garisKeadaan(mendesak, belumTelaah, takTerpetakan) {
   if (kritis.length) {
     return pesanSistem(
       `<b>${kritis.length} berita berstatus kritis menunggu penanganan.</b>
-       Menurut panduan Dirpamintel, tingkat ini berarti kejadian sedang berlangsung dan menyangkut keselamatan.
+       Menurut panduan Ditpamintel, tingkat ini berarti kejadian sedang berlangsung dan menyangkut keselamatan.
        UPT terdampak: ${amankan([...new Set(kritis.map((b) => b.nama_upt))].slice(0, 3).join(', '))}.`,
       'kritis', 'peringatan',
     )
@@ -518,10 +518,10 @@ function blokKanal(peristiwaNegatif, peristiwaPositif, negatif, positif, netral,
   })}
 
   <div class="kanal">
-    ${sisi('Kanal Negatif', 'negatif', peristiwaNegatif, negatif, 'peringatan', 'negatif',
+    ${sisi('Berita Negatif', 'negatif', peristiwaNegatif, negatif, 'peringatan', 'negatif',
            'Peristiwa yang merugikan institusi')}
-    ${sisi('Kanal Positif', 'positif', peristiwaPositif, positif, 'centang', 'positif',
-           'Narasi yang menguatkan institusi')}
+    ${sisi('Berita Positif', 'positif', peristiwaPositif, positif, 'centang', 'positif',
+           'Pemberitaan yang menguatkan institusi')}
   </div>`
 }
 

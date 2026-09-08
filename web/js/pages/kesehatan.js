@@ -372,7 +372,7 @@ export function halamanKesehatan({ keadaan, isi }) {
               </table>
             </div>`
             : `<div style="padding:18px">${kosong('Belum ada catatan penarikan',
-              'Penyalin belum pernah berjalan, atau catatannya belum sampai ke tabel ini.')}</div>`,
+              'Penarikan data belum pernah berjalan, atau catatannya belum sampai ke tabel ini.')}</div>`,
         })}
 
         <div class="kisi kisi-2">
@@ -490,6 +490,6 @@ export function halamanKesehatan({ keadaan, isi }) {
 
   return {
     judul: 'Kesehatan Sistem',
-    sub: 'Penyalin, penjadwal, dan pengiriman — dinilai dari kegiatan terakhirnya',
+    sub: 'Penarikan data, penjadwal, dan pengiriman — dinilai dari kegiatan terakhirnya',
   }
 }

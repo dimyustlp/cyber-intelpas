@@ -13,12 +13,18 @@ FRASA_PEMBALIK,
 FRASA_BANTAHAN,
 FRASA_KEGIATAN,
 FRASA_TEMUAN,
+OBJEK_TEMUAN,
+KEGIATAN_KE_SUBKATEGORI,
+POLA_YURISDIKSI_ASING,
+PENANDA_ASING_TEGAS,
+JANGKAR_INDONESIA,
+SAMARAN_FRASA,
 PEMICU_KRITIS,
 PERINGKAT_URGENSI,
 } from './taksonomi.js'
 import { bersihkanTeks, normalkan, siapkanKonteks, hitungFrasa, yangMuncul, letakTerawal, letakFrasa } from './teks.js'
 import { kenaliPenerbit } from './penerbit.js'
-const VERSI_MESIN = 'aturan-v4.2'
+const VERSI_MESIN = 'aturan-v4.5'
 const AMBANG_SKOR = 3.0
 const AMBANG_HUMAS = 2.0
 const PANJANG_MINIMUM = 8
@@ -50,8 +56,33 @@ for (const f of FRASA_KEGIATAN) if (hitungFrasa(konteks, f, 1)) return true
 return false
 }
 export function adaTemuan(konteks) {
-for (const f of FRASA_TEMUAN) if (hitungFrasa(konteks, f, 1)) return true
+let adaKerja = false
+for (const f of FRASA_TEMUAN) {
+if (hitungFrasa(konteks, f, 1)) { adaKerja = true; break }
+}
+if (!adaKerja) return false
+for (const b of OBJEK_TEMUAN) if (hitungFrasa(konteks, b, 1)) return true
 return false
+}
+export function kegiatanTerawal(konteks) {
+let letak = Infinity
+let frasa = null
+for (const f of FRASA_KEGIATAN) {
+const i = letakFrasa(konteks, f)
+if (i < letak) { letak = i; frasa = f }
+}
+return { letak, frasa }
+}
+export function subkategoriKegiatan(frasa) {
+for (const kelompok of KEGIATAN_KE_SUBKATEGORI) {
+if (kelompok.frasa.includes(frasa)) return kelompok.kode
+}
+return '8.4'
+}
+export function samarkanFrasa(teks) {
+let hasil = teks
+for (const [pola, ganti] of SAMARAN_FRASA) hasil = hasil.replace(pola, ganti)
+return hasil
 }
 export function adaKonteksHumas(konteks) {
 let nilai = 0
@@ -68,6 +99,21 @@ return {
 lolos: false,
 kode: '9.1',
 alasan: `Teks menyebut ${lembagaLain[0]}, yaitu fasilitas penahanan milik lembaga di luar Ditjen Pemasyarakatan.`,
+}
+}
+if (!yangMuncul(konteks, JANGKAR_INDONESIA).length) {
+const asing = yangMuncul(konteks, PENANDA_ASING_TEGAS)
+const yurisdiksi = POLA_YURISDIKSI_ASING.some((p) => p.test(konteks.teks))
+if (asing.length || yurisdiksi) {
+return {
+lolos: false,
+kode: '9.1',
+alasan: asing.length
+? `Teks menyebut ${asing[0]} tanpa satu pun penyebutan lembaga Pemasyarakatan Indonesia, `
++ 'sehingga yang diberitakan adalah penahanan di luar yurisdiksi Ditjen Pemasyarakatan.'
+: 'Nama negara asing berdiri langsung sesudah kata lembaga penahanan, dan tidak ada satu pun '
++ 'penyebutan Ditjenpas, Kemenimipas, kanwil, atau nama unit Pemasyarakatan Indonesia.',
+}
 }
 }
 const jangkar = yangMuncul(konteks, JANGKAR_PEMASYARAKATAN)
@@ -112,8 +158,21 @@ return 0.9
 }
 return 1
 }
+function letakAksara(konteks, indeksAksara) {
+if (!(indeksAksara >= 0)) return Infinity
+let kata = 0
+for (let i = 0; i < indeksAksara; i += 1) if (konteks.teks[i] === ' ') kata += 1
+return kata
+}
 function letakPeristiwa(konteks, sub) {
 let awal = Infinity
+for (const [pola, bobot] of sub.pola) {
+if (!bobot || bobot < 0) continue
+const cocok = pola.exec(konteks.teks)
+if (!cocok) continue
+const letak = letakAksara(konteks, cocok.index)
+if (letak < awal) awal = letak
+}
 for (const [kata, bobot] of sub.kunci) {
 if (!bobot || bobot < 0) continue
 let letak
@@ -233,8 +292,11 @@ export function klasifikasikan(berita = {}) {
 const judul = bersihkanTeks(berita.judul)
 const ringkasan = bersihkanTeks(berita.ringkasan)
 const tambahan = bersihkanTeks(berita.caption_manual || berita.raw_analysis)
-const gabungan = [judul, judul, ringkasan, tambahan].filter(Boolean).join(' . ')
-const teksNormal = normalkan(gabungan)
+const bagian = [judul, judul, ringkasan, tambahan]
+.filter(Boolean)
+.map((t) => normalkan(t))
+.filter(Boolean)
+const teksNormal = samarkanFrasa(bagian.join(' . '))
 if (!teksNormal || teksNormal.length < PANJANG_MINIMUM) {
 return hasilKosong('Teks terlalu pendek untuk dinilai')
 }
@@ -260,12 +322,17 @@ peringkat = [hoaks, ...peringkat.filter((p) => p !== hoaks)]
 }
 }
 }
-if (peringkat[0] && peringkat[0].sub.sifat !== 'positif' && adaKegiatan(konteks)) {
-const positif = peringkat.find((p) => p.sub.kategoriKode === '8')
-if (positif) {
-const letakKegiatan = letakTerawal(konteks, FRASA_KEGIATAN)
+if (peringkat[0] && peringkat[0].sub.sifat !== 'positif') {
+const kegiatan = kegiatanTerawal(konteks)
 const letakKejadian = letakPeristiwa(konteks, peringkat[0].sub)
-if (letakKegiatan < letakKejadian) {
+if (kegiatan.letak < letakKejadian) {
+let positif = peringkat.find((p) => p.sub.kategoriKode === '8')
+if (!positif) {
+const kode = subkategoriKegiatan(kegiatan.frasa)
+const sub = SEMUA_SUBKATEGORI.find((s) => s.kode === kode)
+if (sub) positif = { sub, skor: peringkat[0].skor, cocok: [kegiatan.frasa] }
+}
+if (positif) {
 skorTergeser = Math.max(skorTergeser, peringkat[0].skor)
 peringkat = [positif, ...peringkat.filter((p) => p !== positif)]
 }

@@ -119,7 +119,21 @@
       <path class="nyala-cincin"
             d="M34 6 L62 6 L90 34 L90 62 L62 90 L34 90 L6 62 L6 34 Z"></path>
       <path class="nyala-busur" d="M48 12 A36 36 0 0 1 84 48"></path>
-      <text x="48" y="57" text-anchor="middle">TS</text>
+      <!--
+         Lencana di dalam cincin, menggantikan dua huruf "TS" yang berdiri di
+         sini sampai 7 September 2026.
+
+         Berkasnya sudah bundar dengan sudut tembus pandang, jadi tidak ada
+         clipPath sama sekali. Yang tidak boleh hilang adalah cincin dan
+         busurnya: keduanya yang menyatakan "masih berjalan", dan lencana yang
+         diam sendirian membuat pemuatan tiga detik terlihat persis seperti
+         pemuatan yang tidak akan pernah selesai.
+
+         Alamatnya diketik di sini, bukan diambil dari KONFIG.lencana, dengan
+         alasan yang sama dengan <title> dan nama sistem di bawah: layar ini
+         harus tergambar sebelum satu baris JavaScript pun berjalan.
+      -->
+      <image href="assets/lambang-trans-siber.png" x="24" y="24" width="48" height="48"></image>
     </svg>
 
     <div>

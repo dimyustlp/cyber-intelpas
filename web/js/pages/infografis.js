@@ -163,7 +163,7 @@ export async function halamanInfografis({ keadaan, isi }) {
     <div class="tumpuk">
       ${kartu({
         judul: 'Lembar infografis',
-        ket: 'Digambar di peramban Anda. Tidak ada data yang dikirim ke pihak mana pun untuk digambar.',
+        ket: 'Digambar di browser Anda sendiri. Tidak ada data yang dikirim ke pihak mana pun untuk digambar.',
         isi: `
           <div class="baris gap-12" style="flex-wrap:wrap;align-items:flex-end">
             <div>

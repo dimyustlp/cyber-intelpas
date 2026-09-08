@@ -8,7 +8,7 @@
  *
  * Yang sengaja tidak ada di sini: tombol "tarik sekarang". Menariknya menuntut
  * token sinkronisasi, dan token itu tidak boleh pernah berada di peramban.
- * Penjadwal di dalam basis data sudah memanggil penyalin setiap lima menit;
+ * Penjadwal di dalam basis data sudah menariknya setiap lima menit;
  * yang dibutuhkan layar ini hanyalah menjelaskan hasilnya.
  */
 
@@ -21,6 +21,7 @@ const keadaanSinkron = {
   dimuat: false,
   sumber: [],
   riwayat: [],
+  penjaring: [],
   galat: null,
 }
 
@@ -41,19 +42,37 @@ function soalAkses(pesan) {
 }
 
 function kartuSumber(s) {
+  /*
+     Sumber yang sudah tidak dipakai lagi ditandai SEKALI, bukan dua kali.
+
+     Sampai 8 September 2026 kartu ini menuliskan dua lencana yang berbunyi
+     sama persis — satu dari `terakhir_status` yang memang berisi "Nonaktif",
+     satu lagi dari `s.aktif`. Yang terbaca di layar: "NONAKTIF NONAKTIF".
+
+     Yang lebih menyesatkan daripada pengulangannya: keduanya memakai kosakata
+     kegagalan untuk sesuatu yang sama sekali bukan kegagalan. Baris penjaring
+     memang sengaja dimatikan pada 6 September 2026 karena tugasnya diambil
+     alih Edge Function — perayapannya justru berjalan setiap lima menit. Kartu
+     yang berbunyi "nonaktif" membuat operator menyimpulkan penjaringnya mati,
+     lalu mencari sebab yang tidak ada.
+  */
+  const nonaktif = !s.aktif
   const status = s.terakhir_status || 'Belum pernah'
-  const gagal = status === 'Gagal'
+  const gagal = status === 'Gagal' && !nonaktif
+  const nada = nonaktif ? 'rendah' : nadaStatusSinkron(status)
 
   return `
-    <article class="kartu" style="border-left:3px solid var(--${nadaStatusSinkron(status)})">
+    <article class="kartu" style="border-left:3px solid var(--${nada})${nonaktif ? ';opacity:.72' : ''}">
       <div class="kartu-isi" style="display:flex;flex-direction:column;gap:9px">
         <div class="baris gap-6">
           ${keping(s.lingkup === 'pusat' ? 'Pusat' : 'Kantor wilayah',
             s.lingkup === 'pusat' ? 'aksen' : 'netral', true)}
-          ${keping(status, nadaStatusSinkron(status))}
-          ${s.aktif ? '' : keping('Nonaktif', 'rendah', true)}
+          ${nonaktif
+            ? keping('Tidak dipakai lagi', 'rendah', true)
+            : keping(status, nadaStatusSinkron(status))}
           <span class="mini-teks samar-teks dorong"
             title="${amankan(s.terakhir_sinkron_at ? tanggalJam(s.terakhir_sinkron_at) : '')}">
+            ${nonaktif ? 'dihentikan' : ''}
             ${s.terakhir_sinkron_at ? amankan(jarakWaktu(s.terakhir_sinkron_at)) : 'belum pernah ditarik'}
           </span>
         </div>
@@ -81,7 +100,7 @@ function kartuSumber(s) {
               <b>Spreadsheet ini belum bisa dibaca tanpa akun Google.</b>
               Buka berkasnya, tekan <b>Bagikan</b>, lalu setel aksesnya menjadi
               “Siapa saja yang memiliki link” sebagai <b>Pelihat</b>.
-              Penyalin mencoba lagi setiap lima menit — tidak ada yang perlu ditekan di sini
+              Sistem mencoba lagi setiap lima menit — tidak ada yang perlu ditekan di sini
               setelah aksesnya dibuka.
             </div>
           </div>` : ''}
@@ -90,6 +109,83 @@ function kartuSumber(s) {
           target="_blank" rel="noopener noreferrer">${ikon('tautan')} Buka spreadsheet</a>` : ''}
       </div>
     </article>`
+}
+
+/**
+ * Keadaan penjaring berita.
+ *
+ * KENAPA KARTU TERSENDIRI, DAN KENAPA BUKAN SEBAGAI SUMBER SPREADSHEET
+ *
+ * Sampai 6 September 2026 penjaring memang sebuah spreadsheet: sebuah skrip
+ * Google menuliskan temuannya ke sana, dan penyalin membacanya seperti sumber
+ * lain. Sejak tugasnya diambil alih Edge Function, barisnya di daftar sumber
+ * tinggal peninggalan — dan peninggalan itu menampilkan dirinya sebagai sumber
+ * yang mati, tepat di halaman tempat orang datang untuk memastikan asupan
+ * datanya hidup.
+ *
+ * Yang membingungkan bukan hanya kata "nonaktif"-nya. Sesudah pindah, TIDAK
+ * ADA satu layar pun yang memperlihatkan bahwa penjaringnya berjalan —
+ * satu-satunya cara mengetahuinya adalah membuka tabel `penjaring_log` lewat
+ * basis data. Sebuah pengumpul berita yang berjalan setiap lima menit dan
+ * tidak bisa dilihat siapa pun adalah pengumpul yang kegagalannya baru
+ * ketahuan berhari-hari kemudian, ketika ada yang menyadari arsipnya sepi.
+ *
+ * Empat angka yang ditampilkan sengaja bukan angka keberhasilan. Penjaring
+ * yang sehat memang MENOLAK hampir semua yang dilihatnya — itu memang
+ * tugasnya. Yang menandakan kerusakan adalah "terlihat" yang jatuh ke nol,
+ * bukan "diterima" yang kecil.
+ */
+function kartuPenjaring(log) {
+  if (!log || !log.length) return ''
+
+  const terakhir = log[0]
+  const segar = terakhir.mulai_at
+    && (Date.now() - new Date(terakhir.mulai_at).getTime()) < 45 * 60 * 1000
+
+  const jumlah = (bidang) => log.reduce((n, r) => n + (r[bidang] || 0), 0)
+  const terlihat = jumlah('butir_terlihat')
+  const diterima = jumlah('diterima')
+  const gagal = log.filter((r) => r.status === 'Gagal').length
+
+  const nada = gagal ? 'kritis' : segar ? 'positif' : 'sedang'
+  const keadaan = gagal
+    ? `${angka(gagal)} dari ${angka(log.length)} jalan terakhir gagal.`
+    : segar
+      ? 'Berjalan normal.'
+      : 'Belum ada jalan baru dalam 45 menit terakhir.'
+
+  const mode = [...new Set(log.map((r) => r.mode).filter(Boolean))].join(', ')
+
+  return kartu({
+    judul: 'Penjaring berita',
+    ket: 'Pencarian berita langsung dari sistem, tanpa spreadsheet',
+    isi: `
+      <div class="baris gap-6" style="margin-bottom:10px;flex-wrap:wrap">
+        ${keping(keadaan, nada)}
+        <span class="mini-teks samar-teks dorong"
+          title="${amankan(terakhir.mulai_at ? tanggalJam(terakhir.mulai_at) : '')}">
+          jalan terakhir ${amankan(terakhir.mulai_at ? jarakWaktu(terakhir.mulai_at) : '—')}
+        </span>
+      </div>
+
+      <dl class="kisi kisi-4" style="margin:0;gap:10px">
+        <div><dt class="mini-teks samar-teks">Berita dilihat</dt>
+          <dd class="angka" style="margin:0;font-size:19px;font-weight:700">${angka(terlihat)}</dd></div>
+        <div><dt class="mini-teks samar-teks">Masuk arsip</dt>
+          <dd class="angka" style="margin:0;font-size:19px;font-weight:700">${angka(diterima)}</dd></div>
+        <div><dt class="mini-teks samar-teks">Jalan tercatat</dt>
+          <dd class="angka" style="margin:0;font-size:19px;font-weight:700">${angka(log.length)}</dd></div>
+        <div><dt class="mini-teks samar-teks">Cara mencari</dt>
+          <dd style="margin:0;font-size:12px;line-height:1.5">${amankan(mode || '—')}</dd></div>
+      </dl>
+
+      <p class="kecil-teks samar-teks" style="margin:10px 0 0;line-height:1.55">
+        Angka di atas dari ${angka(log.length)} jalan terakhir. Penjaring memang menolak
+        hampir semua yang dilihatnya — sebagian besar hasil pencarian bukan berita
+        pemasyarakatan, atau sudah lebih dulu ada di arsip. Yang perlu dicurigai
+        adalah <b>berita dilihat</b> yang jatuh ke nol, bukan <b>masuk arsip</b> yang kecil.
+      </p>`,
+  })
 }
 
 function tabelRiwayat(daftar) {
@@ -138,8 +234,13 @@ export function halamanSinkronisasi({ keadaan, isi }) {
     }
 
     const sumber = keadaanSinkron.sumber
-    const gagal = sumber.filter((s) => s.terakhir_status === 'Gagal')
-    const belumPernah = sumber.filter((s) => !s.terakhir_status)
+    /* Hanya sumber yang masih dipakai yang boleh ikut dihitung. Sumber yang
+       sudah dihentikan tidak pernah ditarik lagi, jadi memasukkannya ke dalam
+       "seluruh 3 sumber tertarik tanpa kegagalan" membuat kalimat itu
+       menjanjikan sesuatu yang tidak pernah terjadi. */
+    const dipakai = sumber.filter((s) => s.aktif)
+    const gagal = dipakai.filter((s) => s.terakhir_status === 'Gagal')
+    const belumPernah = dipakai.filter((s) => !s.terakhir_status)
 
     isi.innerHTML = `
       <div class="tumpuk">
@@ -147,25 +248,28 @@ export function halamanSinkronisasi({ keadaan, isi }) {
           ? pesanSistem(`<b>Sebagian data tidak dapat dibaca.</b> ${amankan(keadaanSinkron.galat)}`, 'sedang', 'info')
           : ''}
 
-        ${!sumber.length ? '' : gagal.length
+        ${!dipakai.length ? '' : gagal.length
           ? pesanSistem(
-              `<b>${angka(gagal.length)} dari ${angka(sumber.length)} sumber gagal ditarik.</b>
+              `<b>${angka(gagal.length)} dari ${angka(dipakai.length)} sumber gagal ditarik.</b>
                Sumber lain tetap berjalan seperti biasa — kegagalan satu spreadsheet
                tidak menghentikan yang lain.`, 'kritis', 'peringatan')
           : pesanSistem(
-              `Seluruh ${angka(sumber.length)} sumber tertarik tanpa kegagalan.
-               Penjadwal memanggil penyalin setiap lima menit.`, 'positif', 'centang')}
+              `Seluruh ${angka(dipakai.length)} sumber yang aktif tertarik tanpa kegagalan.
+               Penjadwal menariknya setiap lima menit.`, 'positif', 'centang')}
+
+        ${kartuPenjaring(keadaanSinkron.penjaring)}
 
         ${kartu({
           judul: 'Sumber spreadsheet',
-          ket: `${angka(sumber.length)} sumber terdaftar${belumPernah.length
+          ket: `${angka(dipakai.length)} sumber aktif${sumber.length - dipakai.length
+            ? ` · ${angka(sumber.length - dipakai.length)} sudah dihentikan` : ''}${belumPernah.length
             ? ` · ${angka(belumPernah.length)} belum pernah ditarik` : ''}`,
           rapat: true,
           isi: `<div style="padding:14px">
             ${sumber.length
               ? `<div class="kisi kisi-kartu">${sumber.map(kartuSumber).join('')}</div>`
               : kosong('Belum ada sumber terdaftar',
-                  'Penyalin akan memakai alamat bawaan sampai ada baris pada tabel sumber.')}
+                  'Sistem memakai alamat bawaan sampai ada baris pada daftar sumber.')}
           </div>`,
         })}
 
@@ -181,8 +285,8 @@ export function halamanSinkronisasi({ keadaan, isi }) {
 
         ${pesanSistem(
           '<b>Menambah kantor wilayah tidak menuntut penggelaran ulang.</b> '
-          + 'Administrator menambahkan satu baris pada daftar sumber, dan penyalin '
-          + 'membacanya pada jalan berikutnya.', 'netral', 'info')}
+          + 'Administrator menambahkan satu baris pada daftar sumber, dan sistem '
+          + 'membacanya pada penarikan berikutnya.', 'netral', 'info')}
       </div>`
   }
 
@@ -217,6 +321,20 @@ export function halamanSinkronisasi({ keadaan, isi }) {
       }) || []
     } catch {
       keadaanSinkron.riwayat = []
+    }
+
+    /* Jalan penjaring yang terakhir. Dua puluh empat cukup untuk menutup dua
+       jam pada jadwal lima menit — cukup panjang untuk memperlihatkan pola,
+       cukup pendek untuk tidak menjadikan angkanya rata-rata sepanjang hari
+       yang menyembunyikan berhentinya sejak setengah jam lalu. */
+    try {
+      keadaanSinkron.penjaring = await ambil('penjaring_log', {
+        select: 'id,mulai_at,mode,status,butir_terlihat,diterima,pesan,galat',
+        order: 'mulai_at.desc',
+        limit: 24,
+      }) || []
+    } catch {
+      keadaanSinkron.penjaring = []
     }
 
     keadaanSinkron.dimuat = true

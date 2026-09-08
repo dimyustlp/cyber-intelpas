@@ -95,6 +95,12 @@ function barisKeterangan(k) {
   return [
     ['Klasifikasi', labelTingkat(k.tingkat).toUpperCase()],
     ['Perlakuan', tingkatDari(k.tingkat).keterangan],
+    /* Yang mengeluarkan berkas, bukan hanya yang mengunduhnya. CSV dan JSON
+       tidak bisa membawa lambang, dan berkas berklasifikasi yang beredar tanpa
+       nama lembaga penerbitnya kehilangan separuh arti barisnya sendiri:
+       "Perlakuan" menyebut apa yang boleh dilakukan, tetapi tidak menyebut
+       kepada siapa berkas itu harus dikembalikan. */
+    ['Instansi', `${KONFIG.instansiSingkat} · ${KONFIG.induk}`],
     ['Judul', k.judul],
     ['Nomor berkas', k.nomor],
     ['Diunduh oleh', k.peran ? `${k.oleh} (${k.peran})` : k.oleh],
@@ -175,7 +181,7 @@ export function unduh({ nama, isi, jenis = 'text/csv;charset=utf-8', bom = true 
   if (typeof Blob === 'undefined'
     || typeof URL?.createObjectURL !== 'function'
     || typeof document === 'undefined') {
-    return { berhasil: false, alasan: 'Peramban ini tidak mendukung pengunduhan berkas.' }
+    return { berhasil: false, alasan: 'Browser ini tidak mendukung pengunduhan berkas.' }
   }
 
   // BOM di depan supaya Excel di Windows membaca UTF-8 dengan benar; tanpa itu,

@@ -31,9 +31,42 @@ export const KONFIG = {
      Ketiganya bukan tulisan di layar, melainkan pengenal yang sudah tersimpan.
   */
   nama: 'Trans-Siber PAS',
-  /** Dua huruf pada lambang menu samping dan ikon peramban. */
+  /**
+     Dua huruf, dipakai ketika berkas lambang tidak tergambar: teks alternatif
+     gambar, dan tempat yang memang hanya menerima aksara.
+  */
   lambang: 'TS',
+
+  /**
+     Dua lencana resmi, dan hanya di sini alamatnya ditulis.
+
+     Keduanya berbentuk lingkaran penuh yang menyentuh keempat tepi berkas.
+     Itu bukan kebetulan: yang menggambarnya cukup memberi `border-radius: 50%`
+     untuk mendapatkan lencana bundar yang rapi, dan ukuran berapa pun tetap
+     seimbang tanpa satu pun penyesuaian per tempat.
+
+     Lembar infografis TIDAK memakai alamat ini — ia menanam lambangnya sebagai
+     data URI lewat ui/lambang-data.js, sebab dua dari tiga keluarannya tidak
+     bisa mengambil berkas dari mana pun. Alasannya di kepala berkas itu.
+  */
+  lencana: {
+    /** Lencana sistem: Trans-Siber Pemasyarakatan · Database Pamintel. */
+    sistem: 'assets/lambang-trans-siber.png',
+    /** Lencana Direktorat Pengamanan dan Intelijen Republik Indonesia. */
+    direktorat: 'assets/lambang-ditpamintel.png',
+  },
+
   instansi: 'Direktorat Pengamanan dan Intelijen',
+  /**
+     Singkatan resmi direktorat, huruf besar seluruhnya.
+
+     Sampai 7 September 2026 kop menu samping menuliskan "Dirpamintel" — awalan
+     yang keliru: satuan kerjanya direktorat, bukan direktur, sehingga
+     singkatannya DIT-, bukan DIR-. Kata itu diketik langsung di main.js dan
+     tidak punya sumber lain, jadi setiap tempat yang butuh menyebutnya
+     mengetiknya sendiri. Sekarang satu tempat.
+  */
+  instansiSingkat: 'DITPAMINTEL',
   induk: 'Direktorat Jenderal Pemasyarakatan',
   kementerian: 'Kementerian Imigrasi dan Pemasyarakatan',
   versi: '2.0.0',

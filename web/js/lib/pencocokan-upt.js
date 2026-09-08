@@ -194,7 +194,7 @@ export function normalkanUpt(nilai) {
   const dasar = String(nilai ?? '')
     .toLowerCase()
     .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
+    .replace(/[\u0300-\u036f]/g, '')
     .replace(/[^a-z0-9\s]/g, ' ')
     // Angka di dalam kata rapat memisahkan dua bagian nama: "kelas1bandarlampung".
     .replace(/([a-z])(\d)/g, '$1 $2')

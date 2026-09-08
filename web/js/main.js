@@ -295,14 +295,24 @@ function kerangka() {
     <div class="tirai-menu" data-aksi="tutup-menu" aria-hidden="true"></div>
     <aside class="samping" id="samping">
       <div class="merek">
-        <div class="merek-lambang">${amankan(KONFIG.lambang)}</div>
+        ${/* Lencana sistem, bukan dua huruf.
+
+              Ukurannya kecil — 32 piksel — dan lencana bundar berdetail pada
+              ukuran itu memang tidak terbaca kata per kata. Yang dikenali
+              pemakai pada ukuran itu bukan tulisannya melainkan siluet dan
+              warnanya, dan itu cukup: kop ini menandai ruang, tidak
+              menjelaskannya. Yang menjelaskan ada di halaman masuk, tempat
+              lencana yang sama tampil cukup besar untuk dibaca. */''}
+        <img class="merek-lambang" src="${amankan(KONFIG.lencana.sistem)}"
+             alt="${amankan(KONFIG.nama)}" width="32" height="32" decoding="async">
         <div class="merek-teks">
           <div class="merek-nama">${amankan(KONFIG.nama)}</div>
           ${/* Disingkat, bukan diperpanjang. Keterangan yang terpotong di
                 tengah kata menyampaikan lebih sedikit daripada singkatan yang
                 utuh — dan "UPT" memang sebutan sehari-hari pemakainya. */''}
           <div class="merek-sub">${amankan(unit ? 'Portal UPT'
-            : eksternal ? 'Portal Kantor Wilayah' : 'Dirpamintel · Ditjen PAS')}</div>
+            : eksternal ? 'Portal Kantor Wilayah'
+            : `${KONFIG.instansiSingkat} · Ditjen PAS`)}</div>
         </div>
       </div>
 
@@ -873,10 +883,25 @@ document.addEventListener('hitung-ulang', () => {
 
 /* ------------------------------------------------------------------ data */
 
-/** Kolom yang ditarik. Sengaja disebut satu per satu, bukan `*`. */
+/**
+ * Kolom yang ditarik. Sengaja disebut satu per satu, bukan `*`.
+ *
+ * Empat kolom ditambahkan 7 September 2026, dan semuanya ringkas dengan
+ * sengaja — kolom panjang seperti `ai_alasan` tetap tinggal di halaman detail
+ * yang menarik satu baris, bukan di sini yang menarik empat ribu.
+ *
+ * `kata_kunci` dan `subkategori_kode` ditambahkan karena panel penilaian mesin
+ * di Antrean Telaah selama ini tampil separuh: berkas panelnya menampilkan
+ * kata kunci penentu, tetapi kolomnya tidak pernah ikut ditarik, sehingga
+ * bagian itu selalu kosong justru di halaman tempat orang memutuskan setuju
+ * atau tidak. `ai_provider` dan `ai_classified_at` ditambahkan supaya versi
+ * mesin yang menilai sebuah baris bisa dibaca — nilainya sudah lama disimpan
+ * untuk keperluan itu dan belum pernah sampai ke layar.
+ */
 const KOLOM_BERITA = 'id,judul,nama_upt,kanwil_asal,media,platform,link,created_at,'
-  + 'tanggal_publikasi,kategori,subkategori,sentimen,urgensi,tingkat_perhatian,'
-  + 'status_verifikasi,source_type,ringkasan,rekomendasi,ai_confidence'
+  + 'tanggal_publikasi,kategori,subkategori,subkategori_kode,sentimen,urgensi,'
+  + 'tingkat_perhatian,status_verifikasi,source_type,ringkasan,rekomendasi,'
+  + 'ai_confidence,kata_kunci,ai_provider,ai_classified_at'
 
 /** Sekali tarik. Nilai ini di bawah batas baris bawaan PostgREST. */
 const UKURAN_TARIK = 500

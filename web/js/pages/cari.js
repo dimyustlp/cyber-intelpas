@@ -58,7 +58,7 @@ const CONTOH = [
   { teks: '"warga binaan"', ket: 'frasa utuh' },
   { teks: '"sipir narkoba"~6', ket: 'dua kata berdekatan' },
   { teks: 'upt:Cilegon -status:"Tidak Valid"', ket: 'bidang, dan pengecualian' },
-  { teks: 'selundup* sentimen:Negatif', ket: 'jokar dan bidang' },
+  { teks: 'selundup* sentimen:Negatif', ket: 'awalan kata dan bidang' },
   { teks: 'sejak:2026-09-01 urgensi:Kritis', ket: 'rentang tanggal' },
 ]
 
@@ -402,7 +402,10 @@ function kartuAspek(hasil) {
     if (!urut.length) return ''
     return `
       <div class="aspek-kolom">
-        <h4>${amankan(a.label)}</h4>
+        ${/* h3, bukan h4: kop kartu di sekelilingnya sudah h2, dan tingkat
+              yang dilompati membuat pembaca layar mengumumkan bagian ini
+              sebagai anak dari judul yang tidak ada. */''}
+        <h3>${amankan(a.label)}</h3>
         ${urut.map(([nilai, n]) => `
           <button class="aspek-butir" data-sisip="${amankan(sebagaiKueri(a.bidang, nilai))}"
                   title="Tambahkan ${amankan(sebagaiKueri(a.bidang, nilai))} ke kueri">
@@ -443,7 +446,7 @@ function kartuSelainBerita(hasil) {
     isi: `
       <div class="kisi kisi-2">
         <div>
-          <h4 class="kecil-teks">Unit</h4>
+          <h3 class="kecil-teks">Unit</h3>
           ${unit.size
             ? `<ul class="cari-daftar">${[...unit.entries()]
                 .sort((a, b) => b[1] - a[1]).slice(0, 8)
@@ -452,7 +455,7 @@ function kartuSelainBerita(hasil) {
             : '<span class="samar-teks kecil-teks">Tidak ada unit yang teridentifikasi pada hasil ini.</span>'}
         </div>
         <div>
-          <h4 class="kecil-teks">Media</h4>
+          <h3 class="kecil-teks">Media</h3>
           ${media.size
             ? `<ul class="cari-daftar">${[...media.entries()]
                 .sort((a, b) => b[1] - a[1]).slice(0, 8)

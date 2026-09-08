@@ -24,6 +24,9 @@
 import { kelompokkanPeristiwa, validasi, sumberAsli, rapikanJudul } from './peristiwa.js'
 import { belumTerpetakan } from './unit-terpetakan.js'
 import { KONFIG } from './konfig.js'
+/* Berkas laporan berdiri sendiri di luar aplikasi, jadi lambangnya harus ikut
+   sebagai teks — sama seperti lembar infografis, dan dari sumber yang sama. */
+import { TRANS_SIBER, DITPAMINTEL } from '../ui/lambang-data.js'
 
 /* ------------------------------------------------------------------ dasar */
 
@@ -512,9 +515,23 @@ function bagianKop(d, opsi) {
      setiap laporan resmi keluar dengan lambang sistem yang sudah tidak ada,
      dan tidak ada satu pun layar yang memperlihatkannya.
   */
+  /*
+     Lencananya data URI, bukan alamat berkas, dan itu tidak bisa ditawar di
+     sini: laporan ini diunduh sebagai satu berkas HTML lepas dan dipratinjau
+     lewat srcdoc — dua keadaan yang sama-sama tidak punya alamat dasar untuk
+     menyelesaikan `assets/...`. Yang tergambar dari alamat relatif adalah
+     kotak gambar rusak, di kop laporan yang naik ke pimpinan.
+
+     Berkasnya JPEG berdasar putih, dan `border-radius: 50%` di lembar gaya
+     memotong keempat sudut putihnya — sehingga lencana yang sama tetap benar
+     di atas kop yang berlatar biru tua.
+  */
   return `
   <header class="kop">
-    <div class="kop-lambang">${esc(KONFIG.lambang)}</div>
+    <div class="kop-lencana">
+      <img class="kop-lambang" src="${TRANS_SIBER}" alt="${esc(KONFIG.nama)}" width="44" height="44">
+      <img class="kop-lambang" src="${DITPAMINTEL}" alt="${esc(KONFIG.instansi)}" width="44" height="44">
+    </div>
     <div class="kop-teks">
       <div class="kop-lembaga">${esc(KONFIG.kementerian)}<br>${esc(KONFIG.induk)}</div>
       <h1>Laporan Intelijen Pemberitaan Negatif</h1>
@@ -829,10 +846,23 @@ body {
   background: linear-gradient(135deg, #12335F 0%, #1D4E8F 55%, #2A5FA8 100%);
   color: #fff; padding: 22px 26px;
 }
+/* Kedua lencana berdampingan di kiri, bukan mengapit judul. Mengapit terlihat
+   seimbang pada lebar penuh dan berantakan pada kertas sempit: judulnya
+   terjepit menjadi empat baris, dan lencana kanan berdiri persis di sebelah
+   nomor laporan seolah bagian dari nomor itu. */
+.kop-lencana { display: flex; gap: 8px; flex: none; }
 .kop-lambang {
-  width: 44px; height: 44px; border-radius: 10px; flex: none;
-  background: linear-gradient(140deg, #C89A34, #A9791C); color: #1A1206;
-  display: grid; place-items: center; font-weight: 800; font-size: 16px;
+  width: 44px; height: 44px; flex: none;
+  /* Berkasnya persegi berdasar putih; potongan bundar inilah yang membuang
+     keempat sudut putihnya di atas kop yang berlatar biru tua. */
+  border-radius: 50%; object-fit: cover;
+  box-shadow: 0 0 0 1px rgba(255,255,255,.28);
+}
+/* Warna latar dipaksa ikut tercetak. Tanpa ini sebagian besar peramban
+   membuang latar dan bayangan saat mencetak, dan kop biru tua berubah menjadi
+   dua lencana yang melayang di atas kertas putih. */
+@media print {
+  .kop { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }
 .kop-teks { flex: 1; min-width: 0; }
 .kop-lembaga { font-family: "IBM Plex Mono", monospace; font-size: 9px; letter-spacing: .1em; opacity: .78; line-height: 1.5; text-transform: uppercase; }

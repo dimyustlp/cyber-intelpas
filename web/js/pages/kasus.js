@@ -701,7 +701,7 @@ export function halamanKasus({ keadaan, isi }) {
 
   /**
    * Berita yang dituju dari halaman lain — tombol "Jadikan kasus" di Peringatan
-   * Dini dan Kanal Negatif.
+   * Dini dan Berita Negatif.
    *
    * Yang dibuka bukan borang kosong melainkan borang yang sudah terisi
    * peristiwa tempat berita itu berada, lengkap dengan seluruh publikasi

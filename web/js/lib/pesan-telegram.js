@@ -21,6 +21,7 @@
  */
 
 import { angka, tanggal, tanggalPanjang } from './format.js'
+import { KONFIG } from './konfig.js'
 import { nilaiKeadaan, susunRekomendasi } from './laporan.js'
 
 /** Batas aman satu pesan. Telegram menolak di 4096; sisanya untuk jaga-jaga. */
@@ -103,7 +104,18 @@ export function pesanLaporan(olahan, opsi = {}) {
 
   const baris = []
 
+  /*
+     Kop pesan menyebutkan yang mengeluarkannya, bukan hanya jenis laporannya.
+
+     Telegram tidak menggambarkan apa pun di dalam pesan — tidak ada lambang
+     yang bisa ditempel di sini, dan satu-satunya lampiran bergambar (lembar
+     infografis dan PDF) baru terlihat sesudah seseorang menekannya. Satu baris
+     nama lembaga adalah bentuk kop yang tersedia di ragam ini, dan ia menjawab
+     pertanyaan yang sungguh muncul di grup berisi banyak kanal: laporan ini
+     dari siapa.
+  */
   baris.push(`${LAMBANG_KEADAAN[keadaan.label] || '🔵'} <b>LAPORAN INTELIJEN PEMBERITAAN ${namaJenis.toUpperCase()}</b>`)
+  baris.push(`<i>${lepas(KONFIG.instansiSingkat)} · ${lepas(KONFIG.induk)}</i>`)
   baris.push(`<i>${lepas(rentang)}</i>`)
   if (opsi.nomor) baris.push(`<code>${lepas(opsi.nomor)}</code>`)
   baris.push('')
@@ -157,7 +169,7 @@ export function pesanLaporan(olahan, opsi = {}) {
   }
 
   baris.push(`<i>Klasifikasi: ${lepas(opsi.klasifikasi || 'Internal')}. `
-    + 'Disusun otomatis oleh Trans-Siber PAS dari data terklasifikasi mesin. '
+    + `Disusun otomatis oleh ${lepas(KONFIG.nama)} dari data terklasifikasi mesin. `
     + 'Laporan utuh terlampir.</i>')
 
   return rapikan(baris)

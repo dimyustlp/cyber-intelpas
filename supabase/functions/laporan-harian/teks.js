@@ -7,6 +7,10 @@ const POLA_BOILERPLATE = [
 /rekomendasi\s*:\s*arsip[^.]*\./gi,
 /rekomendasi\s*:\s*lakukan pemantauan berkala[^.]*\./gi,
 /generated automatically[^.]*\./gi,
+/\bditemukan\s+(?:penjaring|perayap|sheet-sync|crawler)[\w.-]*\s*(?:\([^)]*\))?\s*\.?/gi,
+/konten terdeteksi otomatis oleh sistem patroli siber\.?/gi,
+/\bfallback data\b\.?/gi,
+/\[sistem\][^.]*\.?/gi,
 ]
 const POLA_EKOR_JUDUL =
 /\s*[-–—]\s*(instagram\.com|facebook\.com|tiktok\.com|x\.com|twitter\.com|youtube\.com|youtube|tiktok|instagram|facebook)\s*$/i
@@ -30,7 +34,7 @@ export function normalkan(nilai) {
 const dasar = bersihkanTeks(nilai)
 .toLowerCase()
 .normalize('NFD')
-.replace(/[̀-ͯ]/g, '')
+.replace(/[\u0300-\u036f]/g, '')
 .replace(/[^a-z0-9\s]/g, ' ')
 .replace(/\s+/g, ' ')
 .trim()
@@ -54,6 +58,7 @@ const AKAR_TERLARANG = new Set([
 'guna', 'tuju', 'satu', 'baik', 'besar', 'jadi', 'kali', 'lalu', 'oleh',
 'patah', 'jaya', 'putra', 'putri', 'agung', 'mulia', 'indah', 'terang',
 'pelari', 'pelar', 'larian', 'sehat',
+'ikan',
 ])
 const simpananAkar = new Map()
 export function akarKata(kata) {

@@ -62,7 +62,7 @@ export function halamanPeringatan({ keadaan, isi }) {
     <div class="tumpuk">
       ${kritis
         ? pesanSistem(
-            `<b>${kritis} kejadian berstatus kritis.</b> Menurut panduan Dirpamintel,
+            `<b>${kritis} kejadian berstatus kritis.</b> Menurut panduan Ditpamintel,
              tingkat ini berarti ancaman terhadap nyawa atau stabilitas yang menuntut respons segera,
              bukan pemantauan berkala.`, 'kritis', 'peringatan')
         : pesanSistem(

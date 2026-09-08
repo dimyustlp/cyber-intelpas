@@ -7,6 +7,8 @@
  * tidak ada satu pun nama yang diubah, sehingga jejak galat tetap terbaca.
  */
 import { readFileSync, writeFileSync } from 'node:fs'
+import { resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 /**
  * Modul yang dibutuhkan tiap Edge Function.
@@ -19,7 +21,7 @@ import { readFileSync, writeFileSync } from 'node:fs'
  * pimpinan akan membaca "tiga peristiwa" pada lampiran dan "lima peristiwa" di
  * layar untuk hari yang sama.
  */
-const KEBUTUHAN = {
+export const KEBUTUHAN = {
   klasifikasi: ['unit-terpetakan.js', 'teks.js', 'taksonomi.js', 'penerbit.js', 'klasifikasi.js', 'pencocokan-upt.js'],
   /*
      laporan-harian menyusun DUA hal dari modul yang sama dengan layar:
@@ -39,7 +41,7 @@ const KEBUTUHAN = {
     'unit-terpetakan.js', 'teks.js', 'pencocokan-upt.js', 'peristiwa.js',
     'format.js', 'sentimen.js', 'hitung.js', 'taksonomi.js', 'penerbit.js',
     'infografis.js', 'peta-indonesia.js', 'peta-provinsi.js',
-    'ui/infografis-tata.js', 'ui/infografis-svg.js',
+    'ui/infografis-tata.js', 'ui/infografis-svg.js', 'ui/lambang-data.js',
   ],
 }
 
@@ -90,7 +92,20 @@ function buangKomentar(kode) {
   return hasil
 }
 
-for (const [fungsi, berkas] of Object.entries(KEBUTUHAN)) {
+/*
+   Menyalin hanya ketika alat ini benar-benar dijalankan.
+
+   `KEBUTUHAN` diimpor tools/uji-fungsi.mjs untuk memeriksa kelengkapannya, dan
+   tanpa penjaga ini setiap kali uji itu berjalan ia ikut MENULIS ULANG seluruh
+   salinan Edge Function. Uji yang mengubah isi repositori adalah uji yang
+   menyembunyikan persis apa yang seharusnya dilaporkannya: salinan basi selalu
+   tampak segar, sebab ujinya sendiri yang menyegarkannya sesaat sebelum
+   memeriksa.
+*/
+const dijalankanLangsung = process.argv[1]
+  && resolve(process.argv[1]) === fileURLToPath(import.meta.url)
+
+for (const [fungsi, berkas] of (dijalankanLangsung ? Object.entries(KEBUTUHAN) : [])) {
   console.log(`\n  supabase/functions/${fungsi}/`)
   for (const jalur of berkas) {
     // 'ui/x.js' dibaca dari web/js/ui/, sisanya dari web/js/lib/ — tetapi

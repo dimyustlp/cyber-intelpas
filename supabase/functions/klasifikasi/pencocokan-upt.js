@@ -82,7 +82,7 @@ export function normalkanUpt(nilai) {
 const dasar = String(nilai ?? '')
 .toLowerCase()
 .normalize('NFD')
-.replace(/[̀-ͯ]/g, '')
+.replace(/[\u0300-\u036f]/g, '')
 .replace(/[^a-z0-9\s]/g, ' ')
 .replace(/([a-z])(\d)/g, '$1 $2')
 .replace(/(\d)([a-z])/g, '$1 $2')

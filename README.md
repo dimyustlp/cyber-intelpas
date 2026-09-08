@@ -46,7 +46,9 @@ web/                     aplikasi peramban, disajikan apa adanya
                            alasan tiap barisnya di docs/tajuk-keamanan.md
   manifes.webmanifest    nama dan ikon saat dipasang di layar utama telepon
   fonts/                 huruf, disimpan sendiri — dihasilkan tools/ambil-huruf.mjs
-  ikon/                  ikon aplikasi — dihasilkan dari kanvas peramban
+  ikon/                  ikon aplikasi — dipotong dari lencana Trans-Siber
+  assets/                dua lencana resmi; *.png beralfa untuk layar,
+                           *-lembar.jpg berdasar putih untuk lembar dan PDF
   css/app.css            sistem desain — seluruh warna sebagai token
   css/huruf.css          @font-face — dihasilkan, jangan disunting
   js/
@@ -128,6 +130,10 @@ tools/
   uji-jangkar.mjs        uji saringan relevansi penjaring — sadar imbuhan
   periksa-lainnya.mjs    uji 62 kasus nyata yang dulu gagal dikelompokkan
   ringkas-fungsi.mjs     menyalin web/js/lib ke Edge Function dalam bentuk ringkas
+  susun-lambang.mjs      menanam lencana web/assets/ menjadi web/js/ui/lambang-data.js
+  uji-fungsi.mjs         memeriksa kelengkapan modul Edge Function dan berkas halaman
+  uji-cakupan.mjs        mengukur berapa berita yang lolos tanpa dikelompokkan mesin
+  bundel.mjs             menggabung seluruh modul menjadi satu berkas HTML mandiri
   potret.mjs             memotret halaman pada lebar layar yang benar-benar diminta
 ```
 
@@ -255,6 +261,52 @@ Keputusan yang tidak bisa disimpulkan mesin — 23 unit yang tertulis dengan nam
 berbeda di kedua daftar — ada di tabel `PADANAN` pada alat itu, satu per satu,
 dengan alasannya.
 
+## Lambang
+
+Dua lencana resmi dipakai di seluruh keluaran: **Trans-Siber Pemasyarakatan ·
+Database Pamintel** (lencana sistem) dan **Direktorat Pengamanan dan Intelijen
+Republik Indonesia** (lencana direktorat). Urutannya selalu sama — sistem lebih
+dulu, direktorat sesudahnya — di halaman masuk, di kop laporan berkala, dan di
+kepala lembar infografis.
+
+Berkasnya di `web/assets/`, dan ada **dua bentuk untuk setiap lencana** karena
+ada dua jenis tempat yang memakainya:
+
+| Berkas | Bentuk | Dipakai |
+| --- | --- | --- |
+| `lambang-*.png` | 128 px, beralfa | antarmuka: kop menu, halaman masuk, layar nyala |
+| `lambang-*-lembar.jpg` | 224 px, dasar putih | lembar infografis, PDF, kop laporan yang diunduh |
+
+Keduanya berupa lingkaran penuh yang menyentuh keempat tepi berkas. Itu yang
+membuat `border-radius: 50%` cukup untuk mendapatkan lencana bundar yang rapi
+di mana pun — termasuk memotong keempat sudut putih berkas JPEG, sehingga
+lencana berdasar putih tetap benar di atas kop yang berlatar biru tua.
+
+**Kenapa ada bentuk JPEG yang ditanam sebagai teks.** Lembar infografis keluar
+tiga kali dari satu penggambar: layar, PNG untuk grup Telegram, dan PDF. Dua
+yang terakhir tidak bisa mengambil berkas dari mana pun — PNG dirasterkan
+peramban dengan memuat SVG ke dalam `<img>`, tempat setiap rujukan ke luar
+diabaikan tanpa satu pun pesan; PDF disusun Edge Function, yang tidak punya
+berkas repositori di sampingnya. Data URI satu-satunya bentuk yang bekerja di
+keduanya, dan JPEG masuk ke PDF apa adanya sebagai aliran DCTDecode.
+
+Sesudah mengganti berkas lencana mana pun:
+
+```bash
+node tools/susun-lambang.mjs
+```
+
+Alat itu menulis ulang `web/js/ui/lambang-data.js`, menolak berkas yang bukan
+JPEG, dan menolak berkas di atas 60 KB. Bila `web/js/ui/*` disentuh, lanjutkan
+dengan `node tools/ringkas-fungsi.mjs` supaya salinan Edge Function ikut
+diperbarui — `lambang-data.js` ada di daftar `KEBUTUHAN` laporan-harian.
+
+`node tools/uji-infografis.mjs` menjaga dua hal sekaligus: bahwa kedua lencana
+benar-benar tertanam di lembar, dan bahwa setiap bentuk SVG yang digambar
+dikenali penerjemah PDF di `supabase/functions/laporan-harian/svg-ke-pdf.ts`.
+Bentuk yang tidak dikenalinya hilang dari PDF tanpa satu pun galat, dan PDF
+adalah keluaran yang paling jarang dilihat siapa pun.
+
 ## Menjalankan di komputer sendiri
 
 ```bash
@@ -307,7 +359,7 @@ node tools/uji-mesin.mjs
 ```
 
 Menjalankan 23 kasus uji perilaku yang diturunkan langsung dari matriks panduan
-Dirpamintel, lalu mengukur liputan klasifikasi dan pencocokan UPT terhadap data
+Ditpamintel, lalu mengukur liputan klasifikasi dan pencocokan UPT terhadap data
 sungguhan dari Spreadsheet crawler.
 
 ## Menggelar

@@ -87,6 +87,12 @@ import {
   FRASA_BANTAHAN,
   FRASA_KEGIATAN,
   FRASA_TEMUAN,
+  OBJEK_TEMUAN,
+  KEGIATAN_KE_SUBKATEGORI,
+  POLA_YURISDIKSI_ASING,
+  PENANDA_ASING_TEGAS,
+  JANGKAR_INDONESIA,
+  SAMARAN_FRASA,
   PEMICU_KRITIS,
   PERINGKAT_URGENSI,
 } from './taksonomi.js'
@@ -123,12 +129,110 @@ import { kenaliPenerbit } from './penerbit.js'
    selama sebulan langsung terlihat pada hari sumber beritanya diperluas.
    Mesin yang benar atas seratus berita sehari belum tentu benar atas seribu.
 
+   v4.3 (7 September 2026) — mesin berhenti menilai tulisan perayap sebagai
+   tulisan berita, dan berhenti melaporkan penjara negara lain.
+
+   v4.3 lahir dari lima pemberitahuan "BERITA NEGATIF MASUK" yang lagi-lagi
+   sungguh-sungguh terkirim, sehari sesudah v4.2 digelar. Semuanya kegiatan
+   positif: peninjauan Dirjenpas ke rutan terdampak gempa, penyaluran bantuan
+   Rp1,8 miliar untuk korban gempa NTT, pemeriksaan APAR, sosialisasi
+   penanggulangan kebakaran, dan aksi berbagi camilan. Satu lagi berita
+   penjara di Gaza.
+
+   Yang penting dari v4.3 bukan daftar kata yang bertambah, melainkan SEBAB
+   yang ditemukan di baliknya, dan sebab itu tidak pernah terlihat dari
+   membaca judulnya:
+
+     Setiap baris hasil perayap membawa catatan asal-usulnya sendiri di kolom
+     raw_analysis — "Ditemukan penjaring-v1.0 (isu:isu-bencana)." — dan mesin
+     menilainya sebagai bagian dari beritanya. Kata "Ditemukan" menyalakan
+     kaidah temuan pada SELURUH 718 baris perayap, yang tugasnya justru
+     mengubah juara positif menjadi negatif. Label "(isu:isu-bencana)" lalu
+     menyumbang kata "bencana" pada berita yang judulnya tidak menyebutnya,
+     sehingga mesin membenarkan tebakan perayap memakai bukti yang berasal
+     dari tebakan itu sendiri.
+
+     Kaidah kegiatan dan kaidah urutan kata v4.2 tidak pernah salah. Yang
+     dinilai mesin memang bukan lagi beritanya.
+
+   Pelajaran yang pantas diingat lebih lama daripada tambalannya: SETIAP kolom
+   yang ikut dinilai mesin harus dipastikan berisi tulisan manusia. Kolom yang
+   diisi mesin lain akan membentuk lingkaran yang tidak bisa dipatahkan kata
+   kunci mana pun, dan lingkaran itu tidak meninggalkan galat.
+
+   Empat perubahan lain di v4.3, semuanya menutup lubang yang sudah ada
+   sebelum v4.2 dan hanya kebetulan tidak pernah terlihat:
+
+     - Gerbang yurisdiksi asing. Nama negara yang berdiri langsung sesudah
+       kata lembaga penahanan ("sipir Israel") menutup berita dari hitungan,
+       kecuali ada jangkar Indonesia yang tegas.
+     - Kaidah temuan menuntut BARANGNYA, bukan hanya kata kerjanya.
+     - Kaidah kegiatan punya jalan keluar ketika tidak ada satu pun kandidat
+       8.x untuk dipromosikan — jenis kegiatannya yang menentukan.
+     - Frasa yang menyamar sebagai peristiwa disamarkan lebih dulu: nama unit
+       ("Lapas NARKOTIKA Karang Intan") dan sarana keselamatan ("JALUR
+       evakuasi").
+
+   v4.4 (7 September 2026, sore) — lima kekeliruan yang TIDAK dilaporkan
+   siapa pun, ditemukan dengan membaca satu contoh dari tiap subkategori pada
+   arsip yang baru saja dinilai ulang v4.3. Lima keliru dari dua puluh enam
+   yang diperiksa, dan tak satu pun pernah dikeluhkan:
+
+     - "BERIKAN Informasi Hukum" tercatat 8.6 Ketahanan Pangan, kata kunci
+       penentu "perikanan". Jembatan imbuhannya sama bentuknya dengan
+       'pelari': ber+IKAN bertemu per+IKAN+an di akar 'ikan'. Kata "berikan"
+       muncul di ratusan judul kehumasan, dan semuanya menyumbang nilai kepada
+       subkategori perikanan.
+     - "Rutan Ruteng RUSAK Diguncang Gempa" tercatat 1.2 KERUSUHAN, lewat
+       kekerabatan 'rusak' dengan 'pengrusakan'.
+     - "Dapatkan Makan Bergizi, Higienis dan LAYAK" tercatat 4.2 keluhan
+       kelayakan hidup, sentimen Negatif — kunci [makanan, layak] tidak peduli
+       bahwa layak adalah keadaan yang diinginkan.
+     - "Warga Terdampak Gempa Terima Bantuan Pemasyarakatan" tercatat 4.3
+       Bencana; lembaga yang membantu terbaca sebagai lembaga yang tertimpa.
+     - "Dua Napiter Ikrar Setia NKRI" tercatat 5.2 PENOLAKAN program
+       deradikalisasi — kunci yang persis terbalik dari nama subkategorinya.
+
+   Cara menemukannya patut ditiru sesudah tiap penggelaran, dan lebih berharga
+   daripada kelima tambalannya: baca SATU baris dari setiap subkategori. Yang
+   mengeluh hanya menemukan kekeliruan yang mengganggu; yang paling mahal pada
+   sistem ini justru yang diam.
+
    Perlu diketahui saat menggelar: Edge Function dengan hanya_belum: true
    menyaring baris yang ai_classified_at-nya masih kosong, BUKAN yang versi
-   mesinnya lama. Arsip yang sudah dinilai v4.1 tidak akan ikut diperbaiki
+   mesinnya lama. Arsip yang sudah dinilai v4.3 tidak akan ikut diperbaiki
    sampai fungsinya dipanggil sekali dengan hanya_belum: false.
 */
-const VERSI_MESIN = 'aturan-v4.2'
+/*
+   v4.5 — 8 September 2026. Cakupan, bukan ketepatan.
+
+   Keempat versi sebelumnya menyetel kaidah yang SUDAH ADA supaya lebih tepat.
+   Yang ini menambah kaidah untuk hal yang sama sekali belum punya kaidahnya,
+   dan sumbernya bukan keluhan melainkan hitungan: 220 dari 1.805 baris arsip
+   produksi (12,2%) berakhir di "Belum Dikelompokkan", lalu 120 di antaranya
+   dibaca satu per satu. Yang muncul bukan dua ratus kasus berbeda, melainkan
+   delapan pola yang berulang — dan yang terbesar cuma satu kalimat: unit
+   mengikuti pengarahan Dirjenpas lewat Zoom, lalu memberitakannya.
+
+   Yang bertambah: arahan pimpinan pusat, kepegawaian, arahan integritas ke
+   jajaran (8.4); kesehatan pencegahan (8.7); perguruan tinggi masuk UPT dan
+   pendidikan dai (8.2); hasil olahan serta upah kerja warga binaan (8.6);
+   layanan kunjungan keluarga (8.3); hak integrasi (8.1); kematian warga
+   binaan yang ditulis tanpa kata "tewas" (4.1); dan satuan kerja internal
+   kepolisian sebagai penanda di luar lingkup.
+
+   Yang paling menentukan di antaranya 4.1. Tiga berita tentang satu kematian
+   di Lapas Karangasem tersangkut sebagai "Belum Dikelompokkan" berurgensi
+   Sedang — sebab daftar lama mengenal ['meninggal','warga binaan'] tetapi
+   tidak ['meninggal','napi']. Kematian orang di dalam tahanan adalah
+   peristiwa yang paling menuntut kecepatan di seluruh sistem ini, dan ia
+   lewat tanpa menyalakan apa pun.
+
+   Diukur `tools/uji-cakupan.mjs` terhadap 47 judul sungguhan dari arsip:
+   4,3% dikenali sebelum, 100% sesudah, tanpa satu pun salah kelompok dan
+   tanpa satu pun uji perilaku yang mundur.
+*/
+const VERSI_MESIN = 'aturan-v4.5'
 
 /** Ambang skor minimum sebelum sebuah berita boleh keluar dari "Lainnya". */
 const AMBANG_SKOR = 3.0
@@ -193,10 +297,67 @@ export function adaKegiatan(konteks) {
   return false
 }
 
-/** Benar bila teks menyebut sesuatu yang sudah ditemukan atau disita. */
+/**
+ * Benar bila teks menyebut sesuatu yang sudah ditemukan atau disita.
+ *
+ * Menuntut DUA hal sekaligus: kata kerjanya dan barangnya. Kata kerjanya saja
+ * tidak pernah cukup — 'ditemukan', 'diamankan', dan 'disita' terlalu lazim
+ * untuk berdiri sendiri, dan selama sebulan kaidah ini menyala pada seluruh
+ * baris perayap gara-gara catatan asal-usul yang berbunyi "Ditemukan
+ * penjaring-v1.0 (unit)." Razia yang berhasil selalu menyebut apa yang
+ * ditemukannya; tanpa barangnya, tidak ada temuan.
+ */
 export function adaTemuan(konteks) {
-  for (const f of FRASA_TEMUAN) if (hitungFrasa(konteks, f, 1)) return true
+  let adaKerja = false
+  for (const f of FRASA_TEMUAN) {
+    if (hitungFrasa(konteks, f, 1)) { adaKerja = true; break }
+  }
+  if (!adaKerja) return false
+
+  for (const b of OBJEK_TEMUAN) if (hitungFrasa(konteks, b, 1)) return true
   return false
+}
+
+/**
+ * Kegiatan mana yang disebut paling awal, beserta letaknya.
+ *
+ * Berbeda dari letakTerawal() yang hanya mengembalikan angka: di sini yang
+ * dibutuhkan juga FRASA-nya, sebab jenis kegiatan itulah yang menentukan ke
+ * subkategori positif mana beritanya dibawa ketika tidak ada satu pun kandidat
+ * 8.x yang bisa dipromosikan.
+ */
+export function kegiatanTerawal(konteks) {
+  let letak = Infinity
+  let frasa = null
+  for (const f of FRASA_KEGIATAN) {
+    const i = letakFrasa(konteks, f)
+    if (i < letak) { letak = i; frasa = f }
+  }
+  return { letak, frasa }
+}
+
+/** Subkategori positif yang paling masuk akal untuk sebuah frasa kegiatan. */
+export function subkategoriKegiatan(frasa) {
+  for (const kelompok of KEGIATAN_KE_SUBKATEGORI) {
+    if (kelompok.frasa.includes(frasa)) return kelompok.kode
+  }
+  // 8.4 adalah jawaban terakhir, sama seperti untuk unggahan humas tanpa kata
+  // kunci: kegiatan kelembagaan yang jenisnya belum dirinci.
+  return '8.4'
+}
+
+/**
+ * Menyamarkan frasa yang menyamar sebagai peristiwa.
+ *
+ * Dijalankan atas teks yang SUDAH dinormalkan, sebelum konteks disiapkan,
+ * sehingga seluruh mesin — kata kunci, pola tekstual, letak kata, pemicu
+ * urgensi — melihat teks yang sama. Menyamarkannya di satu tempat saja akan
+ * membuat dua bagian mesin membaca dua berita yang berbeda.
+ */
+export function samarkanFrasa(teks) {
+  let hasil = teks
+  for (const [pola, ganti] of SAMARAN_FRASA) hasil = hasil.replace(pola, ganti)
+  return hasil
 }
 
 /** Benar bila teks berciri unggahan resmi humas unit pelaksana teknis. */
@@ -226,6 +387,38 @@ export function periksaRelevansi(konteks, penerbit = null) {
       lolos: false,
       kode: '9.1',
       alasan: `Teks menyebut ${lembagaLain[0]}, yaitu fasilitas penahanan milik lembaga di luar Ditjen Pemasyarakatan.`,
+    }
+  }
+
+  /*
+     Lembaga penahanan milik negara lain.
+
+     Diperiksa sesudah PENANDA_LEMBAGA_LAIN dan sebelum jangkar, sebab
+     jangkarnya justru akan lolos: berita penjara Israel ditulis wartawan
+     Indonesia dengan kata "sipir", "napi", dan "penjara" yang semuanya ada di
+     JANGKAR_PEMASYARAKATAN. "Dr Abu Safiya: Sipir Israel Terus Menganiaya dan
+     Mengancam Saya agar Bungkam" karena itu lolos gerbang, menang telak di 3.3
+     Kekerasan oleh Petugas dengan keyakinan 0,97, dan berangkat ke grup
+     pimpinan sebagai peringatan urgensi Tinggi.
+
+     Jangkar Indonesia diperiksa lebih dulu dan menang, sebab kerja sama
+     internasional memang ada: "Kemenimipas Terima Kunjungan Delegasi
+     Pemasyarakatan Malaysia" adalah berita kita, dan satu-satunya pembedanya
+     dari berita penjara Malaysia adalah penyebutan lembaga kita sendiri.
+  */
+  if (!yangMuncul(konteks, JANGKAR_INDONESIA).length) {
+    const asing = yangMuncul(konteks, PENANDA_ASING_TEGAS)
+    const yurisdiksi = POLA_YURISDIKSI_ASING.some((p) => p.test(konteks.teks))
+    if (asing.length || yurisdiksi) {
+      return {
+        lolos: false,
+        kode: '9.1',
+        alasan: asing.length
+          ? `Teks menyebut ${asing[0]} tanpa satu pun penyebutan lembaga Pemasyarakatan Indonesia, `
+            + 'sehingga yang diberitakan adalah penahanan di luar yurisdiksi Ditjen Pemasyarakatan.'
+          : 'Nama negara asing berdiri langsung sesudah kata lembaga penahanan, dan tidak ada satu pun '
+            + 'penyebutan Ditjenpas, Kemenimipas, kanwil, atau nama unit Pemasyarakatan Indonesia.',
+      }
     }
   }
 
@@ -342,8 +535,50 @@ function pengaliAktor(sub, aktor) {
  * Frasa berbobot negatif ditinggalkan dengan sengaja: ia justru penanda bahwa
  * subkategori ini BUKAN yang dimaksud.
  */
+/**
+ * Kedudukan sebuah kecocokan regex, dihitung dalam nomor kata.
+ *
+ * Diperlukan karena pola tekstual bekerja atas aksara sedangkan seluruh kaidah
+ * urutan bekerja atas kata. Teks sudah dinormalkan menjadi satu spasi tunggal
+ * antar kata, jadi menghitung spasi sudah cukup dan tidak perlu menokenkan
+ * ulang.
+ */
+function letakAksara(konteks, indeksAksara) {
+  if (!(indeksAksara >= 0)) return Infinity
+  let kata = 0
+  for (let i = 0; i < indeksAksara; i += 1) if (konteks.teks[i] === ' ') kata += 1
+  return kata
+}
+
 function letakPeristiwa(konteks, sub) {
   let awal = Infinity
+
+  /*
+     Pola tekstual ikut dihitung letaknya, dan itu bukan kelengkapan belaka.
+
+     Sampai 7 September 2026 letak peristiwa hanya dibaca dari kata kuncinya.
+     Akibatnya peristiwa yang HANYA tertangkap pola menempati letak Infinity —
+     dan Infinity kalah oleh apa pun, sehingga kata kegiatan mana pun yang
+     kebetulan ada di dalam teks langsung memenangkan kaidah kegiatan.
+
+     Terukur pada "Kebakaran Hebat Melanda Blok Hunian Lapas Kelas IIA Kupang,
+     APAR Tak Berfungsi dan Warga Binaan Dievakuasi": kata "kebakaran" berdiri
+     di kata ke-0 tetapi hanya dikenali pola /(kebakaran)[^.]{0,35}(lapas)/,
+     sehingga letak peristiwanya terbaca dari 'dievakuasi' di kata ke-14. Kata
+     'apar' di kata ke-9 lebih dulu, dan kebakaran sungguhan dengan alat
+     pemadam yang tidak berfungsi tercatat sebagai pemeriksaan APAR rutin,
+     sentimen POSITIF.
+
+     Arah kekeliruannya sunyi — persis sama dengan kaidah temuan, dan sama
+     mahalnya.
+  */
+  for (const [pola, bobot] of sub.pola) {
+    if (!bobot || bobot < 0) continue
+    const cocok = pola.exec(konteks.teks)
+    if (!cocok) continue
+    const letak = letakAksara(konteks, cocok.index)
+    if (letak < awal) awal = letak
+  }
 
   for (const [kata, bobot] of sub.kunci) {
     if (!bobot || bobot < 0) continue
@@ -494,7 +729,7 @@ export function tentukanSentimen(konteks, sub, adaPembalik) {
 export function tentukanUrgensi(konteks, sub, adaPembalik, risikoCrawler) {
   let urgensi = sub ? sub.urgensi : 'Rendah'
 
-  // Panduan Dirpamintel hanya mengenal tiga tingkat: Tinggi, Sedang, Rendah.
+  // Panduan Ditpamintel hanya mengenal tiga tingkat: Tinggi, Sedang, Rendah.
   // Basis data memiliki satu tingkat lagi di atasnya, dan tingkat itu sengaja
   // dijaga tetap langka. "Kritis" berarti kejadian sedang berlangsung dan
   // menyangkut banyak nyawa sekaligus — kerusuhan massal, kebakaran dengan
@@ -559,10 +794,27 @@ export function klasifikasikan(berita = {}) {
   const ringkasan = bersihkanTeks(berita.ringkasan)
   const tambahan = bersihkanTeks(berita.caption_manual || berita.raw_analysis)
 
-  // Judul diberi bobot ganda karena di sanalah inti peristiwa berada, sedangkan
-  // ringkasan hasil crawl sering berisi kalimat generik yang sama untuk semua.
-  const gabungan = [judul, judul, ringkasan, tambahan].filter(Boolean).join(' . ')
-  const teksNormal = normalkan(gabungan)
+  /*
+     Judul diberi bobot ganda karena di sanalah inti peristiwa berada, sedangkan
+     ringkasan hasil crawl sering berisi kalimat generik yang sama untuk semua.
+
+     Tiap bagian dinormalkan SENDIRI, lalu disambung dengan titik yang sengaja
+     dipertahankan. Sebelumnya seluruhnya disambung dulu baru dinormalkan, dan
+     normalkan() membuang titiknya — sehingga penjaga [^.]{0,35} di dalam pola
+     taksonomi tidak punya apa pun untuk berhenti, dan polanya bisa menyeberang
+     dari akhir salinan judul ke awal salinan berikutnya.
+
+     Terukur: "Dirjenpas Tinjau Kondisi Rutan Ruteng yang Terdampak Gempa
+     Flores" mencocoki pola 4.3 /(gempa)[^.]{0,35}(rutan)/ dengan cara
+     membaca "GEMPA Flores . Dirjenpas Tinjau Kondisi RUTAN Ruteng" — yaitu
+     gempa dari salinan pertama dan rutan dari salinan kedua, sebuah kalimat
+     yang tidak pernah ditulis siapa pun.
+  */
+  const bagian = [judul, judul, ringkasan, tambahan]
+    .filter(Boolean)
+    .map((t) => normalkan(t))
+    .filter(Boolean)
+  const teksNormal = samarkanFrasa(bagian.join(' . '))
 
   if (!teksNormal || teksNormal.length < PANJANG_MINIMUM) {
     return hasilKosong('Teks terlalu pendek untuk dinilai')
@@ -674,12 +926,38 @@ export function klasifikasikan(berita = {}) {
           Napi Dievakuasi, Kanwil Kirim Bantuan" adalah kabar bencana yang
           diikuti kegiatan — bukan kegiatan yang kebetulan menyebut bencana.
   */
-  if (peringkat[0] && peringkat[0].sub.sifat !== 'positif' && adaKegiatan(konteks)) {
-    const positif = peringkat.find((p) => p.sub.kategoriKode === '8')
-    if (positif) {
-      const letakKegiatan = letakTerawal(konteks, FRASA_KEGIATAN)
-      const letakKejadian = letakPeristiwa(konteks, peringkat[0].sub)
-      if (letakKegiatan < letakKejadian) {
+  if (peringkat[0] && peringkat[0].sub.sifat !== 'positif') {
+    const kegiatan = kegiatanTerawal(konteks)
+    const letakKejadian = letakPeristiwa(konteks, peringkat[0].sub)
+
+    if (kegiatan.letak < letakKejadian) {
+      let positif = peringkat.find((p) => p.sub.kategoriKode === '8')
+
+      /*
+         Kalau tidak ada satu pun kandidat 8.x, JENIS kegiatannya yang menjadi
+         jawaban — bukan diamnya kaidah ini.
+
+         Sampai v4.2 kaidah berhenti di sini tanpa suara, dan diamnya itu yang
+         paling mahal: berita yang paling jelas kegiatannya justru yang paling
+         mungkin tidak punya kandidat positif, sebab kosakata kegiatannya habis
+         terpakai menerangkan musibah yang ditanganinya. "Kemenimipas Salurkan
+         Bantuan Rp1,8 Miliar untuk Korban Gempa NTT" tidak punya satu pun kata
+         bernilai di kategori 8 mana pun pada waktu itu, sehingga satu-satunya
+         kandidat yang ada adalah 4.3 Bencana — dan bantuan kemanusiaan
+         terbesar tahun itu dilaporkan kepada pimpinan sebagai musibah.
+
+         Skornya diwarisi dari juara yang digeser, sama seperti skorTergeser di
+         bawah: pertanyaan "apakah teks ini bermuatan" sudah dijawab oleh
+         kandidat yang digeser, dan menuntut penggantinya menjawabnya lagi
+         sendiri akan membuang beritanya ke "Lainnya".
+      */
+      if (!positif) {
+        const kode = subkategoriKegiatan(kegiatan.frasa)
+        const sub = SEMUA_SUBKATEGORI.find((s) => s.kode === kode)
+        if (sub) positif = { sub, skor: peringkat[0].skor, cocok: [kegiatan.frasa] }
+      }
+
+      if (positif) {
         skorTergeser = Math.max(skorTergeser, peringkat[0].skor)
         peringkat = [positif, ...peringkat.filter((p) => p !== positif)]
       }

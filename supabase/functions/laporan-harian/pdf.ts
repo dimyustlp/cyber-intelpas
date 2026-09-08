@@ -50,7 +50,7 @@ import { kelompokkanPeristiwa, sumberAsli } from './peristiwa.js'
 // @ts-ignore modul JavaScript murni tanpa tipe
 import { bersihkanTeks } from './teks.js'
 
-import { gambarSvg } from './svg-ke-pdf.ts'
+import { gambarSvg, siapkanGambar } from './svg-ke-pdf.ts'
 
 // ------------------------------------------------------------------- ukuran
 
@@ -458,7 +458,10 @@ export async function susunPdf(bahan: BahanLaporan): Promise<{ base64: string, h
   let halamanLembar = 0
   if (bahan.svgLembar) {
     const lembar = doc.addPage([A4.tinggi, A4.lebar])
-    gambarSvg(lembar, bahan.svgLembar, { biasa: reguler, tebal }, amankanTeks)
+    // Lambang ditanam lebih dulu: penggambarnya berjalan tanpa await, dan
+    // menolak menggambar lembar yang gambarnya belum ada.
+    const gambar = await siapkanGambar(doc, bahan.svgLembar)
+    gambarSvg(lembar, bahan.svgLembar, { biasa: reguler, tebal }, amankanTeks, gambar)
     halamanLembar = 1
   }
 

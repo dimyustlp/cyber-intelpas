@@ -1106,7 +1106,27 @@ function susunPayload(b: Butir, url: string, asal: string): Record<string, unkno
     tingkat_perhatian: 'SEDANG',
     dampak: 'UPT',
     ringkasan: b.judul,
-    raw_analysis: `Ditemukan ${VERSI} (${asal}).`,
+    /*
+       Awalan "[sistem]" wajib, dan bukan hiasan.
+
+       Kolom ini ikut dinilai mesin klasifikasi bersama judul dan ringkasan.
+       Sampai 7 September 2026 isinya berbunyi "Ditemukan penjaring-v1.0
+       (isu:isu-bencana)." tanpa penanda apa pun, dan mesin membacanya sebagai
+       kalimat berita: kata "Ditemukan" menyalakan kaidah temuan pada seluruh
+       718 baris perayap — kaidah yang tugasnya mengubah juara positif menjadi
+       negatif — sementara label "(isu:isu-bencana)" menyumbangkan kata
+       "bencana" kepada berita yang judulnya tidak pernah menyebutnya.
+
+       Akibatnya lima pemberitahuan "BERITA NEGATIF MASUK" terkirim ke grup
+       pimpinan untuk lima kegiatan positif, dan sebabnya tidak terlihat dari
+       satu pun judul yang dilaporkan.
+
+       teks.js membuang seluruh kalimat yang diawali penanda ini. Perayap
+       berikutnya cukup memakai penanda yang sama; tanpa penanda, penilaian
+       mesin akan membenarkan tebakan mesin lain memakai bukti dari tebakan itu
+       sendiri — lingkaran yang tidak meninggalkan galat.
+    */
+    raw_analysis: `[sistem] Ditemukan ${VERSI} (${asal}).`,
     status_baca: 'PENJARINGAN OTOMATIS',
     catatan: 'Nama UPT belum dikenali otomatis dan perlu dipetakan oleh analis.',
     status_verifikasi: 'Belum Ditelaah',

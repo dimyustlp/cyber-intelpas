@@ -1,3 +1,4 @@
+import { TRANS_SIBER, DITPAMINTEL } from './lambang-data.js'
 export const TATA = {
 lebar: 1600,
 tinggi: 1131,
@@ -31,22 +32,12 @@ negatif: '#d93025',
 abu: '#c8d0d9',
 abuSamar: '#dfe5ec',
 }
-export function LAMBANG(x, y, ukuran) {
-const s = ukuran / 60
-const g = (n) => Number((n * s).toFixed(2))
-return `<g transform="translate(${Number(x).toFixed(2)} ${Number(y).toFixed(2)})">`
-+ `<path d="M${g(30)} ${g(2)}L${g(56)} ${g(12)}L${g(56)} ${g(32)}`
-+ `C${g(56)} ${g(46)} ${g(44)} ${g(55)} ${g(30)} ${g(58)}`
-+ `C${g(16)} ${g(55)} ${g(4)} ${g(46)} ${g(4)} ${g(32)}`
-+ `L${g(4)} ${g(12)}Z" fill="${WARNA.navy}"/>`
-+ `<path d="M${g(30)} ${g(8)}L${g(51)} ${g(16)}L${g(51)} ${g(32)}`
-+ `C${g(51)} ${g(43)} ${g(41)} ${g(50)} ${g(30)} ${g(52)}`
-+ `C${g(19)} ${g(50)} ${g(9)} ${g(43)} ${g(9)} ${g(32)}`
-+ `L${g(9)} ${g(16)}Z" fill="none" stroke="#d9b34a" stroke-width="${g(1.6)}"/>`
-+ `<text x="${g(30)}" y="${g(37)}" font-family="${TATA.huruf.judul}" font-size="${g(17)}"`
-+ ` font-weight="800" fill="#ffffff" text-anchor="middle">PAS</text>`
-+ '</g>'
+export function lencana(x, y, ukuran, data) {
+return `<image x="${Number(x).toFixed(2)}" y="${Number(y).toFixed(2)}"`
++ ` width="${Number(ukuran).toFixed(2)}" height="${Number(ukuran).toFixed(2)}"`
++ ` href="${data}"/>`
 }
+export const LAMBANG = { TRANS_SIBER, DITPAMINTEL }
 function bungkus(x, y, ukuran, isi, warna) {
 const s = ukuran / 24
 return `<g transform="translate(${Number(x).toFixed(2)} ${Number(y).toFixed(2)}) scale(${s.toFixed(4)})"`

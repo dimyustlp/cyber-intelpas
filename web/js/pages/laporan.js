@@ -157,13 +157,13 @@ export function halamanLaporan({ keadaan, isi }) {
     <div class="tumpuk">
       ${pesanSistem(
         `<b>Laporan ini hanya memuat pemberitaan negatif.</b> Publikasi positif dihitung sebagai
-         konteks pada bagian ikhtisar, tetapi tidak dirinci — laporan berkala Dirpamintel adalah
+         konteks pada bagian ikhtisar, tetapi tidak dirinci — laporan berkala Ditpamintel adalah
          daftar hal yang menuntut tindakan, bukan rapor kehumasan.`,
         'aksen', 'info')}
 
       ${kartu({
         judul: 'Susun laporan berkala',
-        ket: 'Berkas tersusun di peramban Anda. Tidak ada data yang dikirim ke pihak ketiga.',
+        ket: 'Berkas dibuat di browser Anda sendiri. Tidak ada data yang dikirim ke pihak ketiga.',
         isi: `
           <div class="baris gap-12" style="flex-wrap:wrap;align-items:flex-end">
             <div>

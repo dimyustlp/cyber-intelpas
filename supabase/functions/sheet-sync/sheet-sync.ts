@@ -527,7 +527,7 @@ async function daftarSumber(
   const bawaan: Sumber = {
     id: null,
     kode: "pusat",
-    nama: "Pemantauan Pusat — Dirpamintel",
+    nama: "Pemantauan Pusat — Ditpamintel",
     lingkup: "pusat",
     kanwil: null,
     sheet_id: DEFAULT_PUBLICATION_ID,

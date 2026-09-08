@@ -54,11 +54,33 @@
  *
  * `kering` mengembalikan teks pesan yang persis akan dikirim. Itulah cara
  * memeriksa bentuk pemberitahuan tanpa mengganggu satu orang pun di grup.
+ *
+ * ---------------------------------------------------------------------------
+ * v1.1 — PESAN YANG MENGATAKAN SEBERAPA YAKIN IA
+ * ---------------------------------------------------------------------------
+ *
+ * Tiga perubahan, semuanya lahir dari lima pemberitahuan salah yang terkirim
+ * pada 7 September 2026:
+ *
+ *   - Pesan satuan menyebut DASAR penilaian mesin: angka keyakinan dan kata
+ *     kunci penentunya. Pada kelima pesan salah itu barisnya akan berbunyi
+ *     "kata kunci: gempa" di bawah judul tentang penyaluran bantuan, dan
+ *     kekeliruannya terbaca dalam sekali lihat tanpa membuka aplikasi.
+ *   - Di bawah keyakinan 0,55 judul pesannya berganti menjadi "PERLU TELAAH
+ *     ANALIS". Lihat AMBANG_YAKIN.
+ *   - Berita di luar lingkup (kategori 9) tidak pernah lagi menjadi pesan
+ *     satuan. Penyaringnya bukan di sini melainkan di view
+ *     notifikasi_antrean_siap, tempat seluruh aturan prioritas tinggal.
+ *
+ * Catatan penggelaran: salinan yang berjalan di Edge Function memuat
+ * penjelasan yang lebih ringkas daripada berkas ini, sama seperti salinan
+ * modul yang dihasilkan tools/ringkas-fungsi.mjs. Yang berbeda hanya
+ * komentarnya; kodenya sama baris per baris.
  */
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-const VERSI = 'notifikasi-v1.0'
+const VERSI = 'notifikasi-v1.1'
 
 const KEPALA = {
   'Content-Type': 'application/json; charset=utf-8',
@@ -118,13 +140,47 @@ interface Antre {
   ringkasan: string | null
   source_type: string | null
   ai_classified_at: string | null
+  ai_confidence: number | string | null
+  kata_kunci: string[] | null
   tanggal_publikasi: string | null
+  luar_lingkup: boolean
   prioritas: number
   negatif: boolean
 }
 
 const LENCANA: Record<string, string> = {
   KRITIS: '🚨', TINGGI: '🔴', SEDANG: '🟠', RENDAH: '🟡',
+}
+
+/**
+ * Di bawah angka ini, kesimpulan mesin disebut dugaan — bukan kabar.
+ *
+ * ---------------------------------------------------------------------------
+ * KENAPA JUDUL PESANNYA IKUT BERUBAH, BUKAN HANYA ANGKANYA
+ * ---------------------------------------------------------------------------
+ *
+ * Sampai 7 September 2026 setiap pesan berjudul "BERITA NEGATIF MASUK" dengan
+ * huruf tebal, apa pun keyakinan mesinnya. Yakin 97 persen dan menebak 30
+ * persen terbaca persis sama, dan pembacanya tidak punya satu pun cara untuk
+ * membedakannya.
+ *
+ * Akibatnya bukan sekadar salah baca. Pada pagi hari lima pesan salah
+ * terkirim, keliman-limanya berkeyakinan rendah — dan kalau saja judulnya
+ * berbunyi "perlu telaah analis", tidak seorang pun perlu dipanggil. Yang
+ * merusak kepercayaan pada sistem peringatan bukan mesin yang kadang salah,
+ * melainkan mesin yang menyampaikan tebakannya dengan nada yang sama dengan
+ * kepastiannya.
+ *
+ * 0,55 dipilih karena itulah keyakinan yang diberikan mesin kepada unggahan
+ * humas yang jenis kegiatannya belum dirinci — batas yang sudah dipakai
+ * klasifikasi.js untuk memisahkan "sudah dinilai" dari "masih perlu dilihat
+ * orang".
+ */
+const AMBANG_YAKIN = 0.55
+
+function angkaYakin(nilai: unknown): number | null {
+  const n = Number(nilai)
+  return Number.isFinite(n) && n > 0 ? n : null
 }
 
 /**
@@ -155,8 +211,13 @@ function pesanSatuan(b: Antre): string {
     : 0
   const penanda = umurHari >= 3 ? ` <i>(arsip — terbit ${umurHari} hari lalu)</i>` : ''
 
+  const yakin = angkaYakin(b.ai_confidence)
+  const ragu = yakin !== null && yakin < AMBANG_YAKIN
+
   const baris = [
-    `${lencana} <b>BERITA NEGATIF MASUK</b>${penanda}`,
+    ragu
+      ? `🟠 <b>PERLU TELAAH ANALIS</b>${penanda}`
+      : `${lencana} <b>BERITA NEGATIF MASUK</b>${penanda}`,
     '',
     `<b>${amanHtml(potong(b.judul || 'Tanpa judul', 220))}</b>`,
     '',
@@ -168,20 +229,50 @@ function pesanSatuan(b: Antre): string {
   baris.push(`📰 Media   : ${amanHtml(b.media || '—')}`)
   baris.push(`🕘 Terbit  : ${waktuWib(b.tanggal_publikasi)} WIB`)
 
+  /*
+     Dasar penilaian mesin, disebutkan apa adanya.
+
+     Bukan hiasan: inilah satu-satunya keterangan yang memungkinkan pembaca
+     pesan menolak kesimpulan mesin tanpa membuka aplikasi. Pada lima pesan
+     salah 7 September 2026, baris ini akan berbunyi "kata kunci: gempa" di
+     bawah judul yang jelas-jelas bercerita tentang penyaluran bantuan — dan
+     kekeliruannya terbaca dalam sekali lihat, oleh siapa pun.
+  */
+  const kunci = (b.kata_kunci || []).filter(Boolean).slice(0, 4)
+  if (yakin !== null || kunci.length) {
+    const bagian = []
+    if (yakin !== null) bagian.push(`keyakinan mesin ${Math.round(yakin * 100)}%`)
+    if (kunci.length) bagian.push(`kata kunci: ${kunci.join(', ')}`)
+    baris.push(`🧭 Dasar   : ${amanHtml(bagian.join(' · '))}`)
+  }
+
   const ringkas = potong(b.ringkasan || '', 320)
   if (ringkas && ringkas !== potong(b.judul || '', 320)) {
     baris.push('', amanHtml(ringkas))
   }
   if (b.link) baris.push('', `🔗 ${amanHtml(b.link)}`)
 
+  if (ragu) {
+    baris.push(
+      '',
+      '<i>Mesin belum yakin pada penilaian ini. Mohon ditelaah analis sebelum '
+      + 'ditindaklanjuti sebagai peristiwa.</i>',
+    )
+  }
+
   return baris.join('\n')
 }
 
 /** Satu pesan untuk berita yang tidak negatif, supaya grup tidak dibanjiri. */
 function pesanRingkasan(daftar: Antre[], sejak: string | null): string {
-  const hitung = { negatif: 0, netral: 0, positif: 0, belum: 0 }
+  const hitung = { negatif: 0, netral: 0, positif: 0, belum: 0, luar: 0 }
   for (const b of daftar) {
-    if (b.sentimen === 'Negatif') hitung.negatif++
+    /* Di luar lingkup dihitung tersendiri dan tidak ikut ember sentimen mana
+       pun. Sebuah berita penjara negara lain yang bersentimen negatif, kalau
+       ikut dijumlahkan sebagai "negatif", menaikkan angka yang dibaca pimpinan
+       sebagai jumlah masalah di unit sendiri. */
+    if (b.luar_lingkup) hitung.luar++
+    else if (b.sentimen === 'Negatif') hitung.negatif++
     else if (b.sentimen === 'Positif') hitung.positif++
     else if (!b.sentimen || b.sentimen === 'Tidak diketahui') hitung.belum++
     else hitung.netral++
@@ -193,7 +284,8 @@ function pesanRingkasan(daftar: Antre[], sejak: string | null): string {
     '',
     `Total <b>${daftar.length}</b> berita baru.`,
     `Negatif ${hitung.negatif} · Netral/Campuran ${hitung.netral} · `
-      + `Positif ${hitung.positif} · Belum dinilai ${hitung.belum}`,
+      + `Positif ${hitung.positif} · Belum dinilai ${hitung.belum}`
+      + (hitung.luar ? ` · Di luar lingkup ${hitung.luar}` : ''),
     '',
   ].filter((x) => x !== '')
 
@@ -202,7 +294,9 @@ function pesanRingkasan(daftar: Antre[], sejak: string | null): string {
   const tampil = daftar.slice(0, 10)
   baris.push('<b>Beberapa di antaranya:</b>')
   tampil.forEach((b, i) => {
-    const tanda = b.sentimen === 'Negatif' ? '🔴' : b.sentimen === 'Positif' ? '🟢' : '⚪️'
+    const tanda = b.luar_lingkup
+      ? '⬛️'
+      : b.sentimen === 'Negatif' ? '🔴' : b.sentimen === 'Positif' ? '🟢' : '⚪️'
     baris.push(`${i + 1}. ${tanda} ${amanHtml(potong(b.judul || 'Tanpa judul', 110))}`
       + `\n     <i>${amanHtml(potong(b.media || '—', 40))}</i>`)
   })

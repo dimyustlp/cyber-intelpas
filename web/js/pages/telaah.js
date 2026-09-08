@@ -341,7 +341,7 @@ export function halamanTelaah({ keadaan, isi }) {
                         <li><b>Koreksi</b> bila kategorinya keliru — dan sebutkan kelirunya.</li>
                         <li><b>Tidak valid</b> bila ini bukan berita, atau bukan urusan Pemasyarakatan.</li>
                       </ul>
-                      <p class="ket">Pintasan papan tik: <kbd>S</kbd> setujui, <kbd>K</kbd> koreksi,
+                      <p class="ket">Pintasan keyboard: <kbd>S</kbd> setujui, <kbd>K</kbd> koreksi,
                       <kbd>X</kbd> tidak valid, <kbd>→</kbd> lewati.</p>
                     </div>`}
               </div>

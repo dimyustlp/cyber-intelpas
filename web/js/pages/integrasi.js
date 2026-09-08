@@ -43,12 +43,12 @@ const DIAGNOSA_DEMO = {
     temuan: [],
   },
   grup_terdeteksi: [
-    { chat_id: '-1002145887301', nama: 'Grup Pimpinan Dirpamintel', jenis: 'supergroup', utasan: null },
+    { chat_id: '-1002145887301', nama: 'Grup Pimpinan Ditpamintel', jenis: 'supergroup', utasan: null },
     { chat_id: '-1002088341170', nama: 'Piket Intelijen 24 Jam', jenis: 'supergroup', utasan: '12' },
   ],
   grup_tersimpan: [
     {
-      id: 'demo-1', chat_id: '-1002145887301', label: 'Grup Pimpinan Dirpamintel',
+      id: 'demo-1', chat_id: '-1002145887301', label: 'Grup Pimpinan Ditpamintel',
       is_active: true, message_thread_id: null, min_classification: 'Terbatas',
       report_types: ['harian', 'mingguan'], send_urgent_alert: true,
     },

@@ -83,6 +83,25 @@ secara malas di `js/main.js` memangkas berkas pada layar masuk dari 65 menjadi
 Yang disimpan setahun hanya `/fonts/`: isinya tidak pernah berubah, dan namanya
 menyebut versinya.
 
+`/assets/` dan `/ikon/` — lencana dan ikon aplikasi — disimpan **sehari**, dengan
+`stale-while-revalidate` sepekan. Ketiga angkanya dipilih terhadap satu risiko
+yang berbeda dari risiko JS dan CSS di atas.
+
+Lencana tidak pernah dipakai bersama-sama dengan kode: berkas gambar yang basi
+tidak bisa menghasilkan angka yang salah, paling jauh ia menampilkan lambang
+lama. Maka ia boleh disimpan. Tetapi namanya juga tidak menyebut versinya —
+`lambang-trans-siber.png` tetap bernama begitu ketika isinya diganti — sehingga
+`immutable` seperti `/fonts/` akan menahan lambang lama di peramban petugas
+sampai setahun, dan satu-satunya cara keluar adalah menyuruh setiap orang
+mengosongkan simpanan peramban masing-masing. Sehari adalah lama yang cukup
+untuk menghapus permintaan berulang sepanjang satu hari kerja, dan singkat yang
+cukup untuk membetulkan kekeliruan lambang tanpa menelepon siapa pun.
+
+Kenapa ini sepadan: kop menu samping digambar ulang setiap kali halaman
+berpindah, jadi lencananya diminta ulang pada setiap perpindahan menu. Tanpa
+tajuk ini, setiap permintaan itu menjadi satu perjalanan bolak-balik penuh ke
+Vercel — bukan satu, sebab lencananya dua.
+
 ## Menguji tanpa menggelar
 
 `tools/server-lokal.mjs` membaca `web/vercel.json` dan mengirimkan tajuk yang

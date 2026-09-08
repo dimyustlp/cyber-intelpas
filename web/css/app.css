@@ -330,19 +330,27 @@ code, .mono, .angka {
   flex: none;
 }
 
+/*
+   Lencana bundar, bukan ubin bersudut.
+
+   Berkasnya persegi dengan lingkaran yang menyentuh keempat tepi, jadi
+   `border-radius: 50%` memotong tepat pada tepi lencananya — tidak ada sudut
+   yang tersisa, dan tidak perlu satu berkas terpisah per tempat.
+
+   Tanpa `object-fit` gambar 256 piksel akan dipepatkan bila suatu saat ada
+   yang menaruh lencana yang tidak persegi di sini; dengan `cover` ia dipotong,
+   dan lencana yang terpotong sedikit masih terbaca sedangkan lencana yang
+   lonjong tidak.
+*/
 .merek-lambang {
-  width: 30px;
-  height: 30px;
+  width: 32px;
+  height: 32px;
   flex: none;
-  border-radius: var(--r-2);
-  background: var(--accent);
-  color: var(--accent-in);
-  display: grid;
-  place-items: center;
-  font-family: var(--disp);
-  font-weight: 700;
-  font-size: 12px;
-  letter-spacing: -0.03em;
+  border-radius: 50%;
+  object-fit: cover;
+  /* Gambar yang belum terunduh menyisakan lubang seukurannya, bukan pergeseran
+     tata letak — kop menu adalah hal pertama yang tergambar. */
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .merek-teks { min-width: 0; }
@@ -1148,11 +1156,11 @@ h1, h2, h3, h4 { font-family: var(--disp); font-weight: 700; letter-spacing: -0.
   border-bottom: 1px solid rgba(255, 255, 255, 0.09);
   padding: 15px 16px;
 }
+/* Cincin kuningan tipis menggantikan ubin kuningan yang dulu ada di sini:
+   lencananya sendiri sudah berwarna, dan latar penuh di belakangnya hanya
+   menutupi tepinya. */
 .merek-lambang {
-  background: linear-gradient(140deg, var(--brass-2), var(--brass));
-  color: #1A1206;
-  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
-  font-weight: 800;
+  box-shadow: 0 0 0 1px rgba(201, 162, 77, 0.55), 0 3px 10px rgba(0, 0, 0, 0.3);
 }
 .merek-nama { color: #FFFFFF; font-weight: 700; letter-spacing: -0.02em; }
 .merek-sub { color: rgba(213, 227, 245, 0.62); }
@@ -2522,6 +2530,16 @@ kbd {
   border-top: 1px solid var(--line-2);
 }
 
+/* Jejak versi mesin. Sengaja paling redup di dalam panel: ia keterangan
+   perawatan, bukan bagian dari penilaian yang sedang dibaca analis. */
+.mesin-jejak {
+  margin-top: 12px;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--ink-4);
+}
+.mesin-jejak b { font-weight: 600; color: var(--ink-3); }
+
 /* ---------------------------------------------------------- tuntunan */
 
 .telaah-tuntun {
@@ -2665,6 +2683,30 @@ kbd {
    penjaga-kontras di tengah, teks di paling depan.
 */
 .masuk-kiri { position: relative; isolation: isolate; }
+
+/*
+   Kop halaman masuk: dua lencana di atas tiga baris nama lembaga.
+
+   Lencananya diberi cincin dan bayangan tipis, bukan latar penuh. Keduanya
+   berdiri di atas koridor 3D yang bergerak, dan lencana tanpa tepi akan
+   sesekali kehilangan batasnya ketika sebuah kartu terang kebetulan lewat
+   persis di belakangnya.
+*/
+.masuk-kop { display: grid; gap: 14px; }
+
+.masuk-lencana { display: flex; align-items: center; gap: 12px; }
+
+.masuk-lencana img {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  object-fit: cover;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.16), 0 6px 18px rgba(4, 8, 16, 0.5);
+}
+
+@media (max-width: 520px) {
+  .masuk-lencana img { width: 46px; height: 46px; }
+}
 
 .masuk-kiri-isi {
   position: relative;
@@ -5678,7 +5720,7 @@ table.tabel button.judul-buka:hover { color: var(--accent); text-decoration: und
   grid-template-columns: repeat(auto-fill, minmax(min(180px, 100%), 1fr));
   gap: 14px;
 }
-.aspek-kolom h4 {
+.aspek-kolom h3 {
   font-family: var(--mono);
   font-size: 10px;
   letter-spacing: 0.08em;

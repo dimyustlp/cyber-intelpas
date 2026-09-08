@@ -199,7 +199,137 @@ for (const c of contohKlas) {
 
 judul('3. UJI PERILAKU WAJIB (matriks panduan Dirpamintel)')
 
+/**
+ * Catatan asal-usul yang ditulis perayap ke dalam raw_analysis setiap baris.
+ *
+ * Kasus v4.3 di bawah WAJIB memakainya. Tanpa kolom ini keenamnya lulus
+ * bahkan pada mesin v4.2 yang cacat — sebab yang membuat mereka gagal di
+ * lapangan bukan judulnya, melainkan kalimat yang ditambahkan perayap sendiri
+ * di sebelahnya. Menguji judulnya saja berarti menguji berita yang tidak
+ * pernah ada di dalam basis data.
+ */
+const jejakPerayap = (isu) => ({
+  raw_analysis: `Ditemukan penjaring-v1.0 (${isu}).`,
+  source_type: 'penjaring',
+})
+
 const kasus = [
+  /*
+     Enam kasus berikut lahir dari pemberitahuan Telegram yang SUNGGUH-SUNGGUH
+     TERKIRIM ke grup pimpinan pada 7 September 2026 — sehari sesudah v4.2
+     digelar untuk memperbaiki kelas kekeliruan yang sama.
+
+     Semuanya berlabel "BERITA NEGATIF MASUK", dan semuanya kegiatan positif:
+     peninjauan Dirjenpas, penyaluran bantuan gempa, pemeriksaan APAR,
+     sosialisasi kebakaran, aksi berbagi. Satu lagi berita penjara di Gaza.
+
+     Yang membuatnya berharga sebagai kasus uji: kelimanya LULUS bila diuji
+     dengan judulnya saja. Sebab kegagalannya ada pada `raw_analysis` — dan
+     itulah pelajaran yang paling pantas dijaga oleh berkas ini.
+  */
+  {
+    nama: 'Peninjauan pejabat ke unit terdampak bukan berita bencana',
+    judul: 'Dirjenpas Tinjau Kondisi Rutan Ruteng yang Terdampak Gempa Flores',
+    berita: jejakPerayap('isu:isu-bencana'),
+    harap: { sentimen: 'Positif' },
+  },
+  {
+    nama: 'Bantuan untuk korban gempa bukan berita gempa',
+    judul: 'Kemenimipas Salurkan Bantuan Rp1,8 Miliar untuk Korban Gempa NTT',
+    berita: jejakPerayap('isu:isu-bencana'),
+    harap: { subkategori_kode: '8.3', sentimen: 'Positif' },
+  },
+  {
+    nama: 'Pemeriksaan APAR bukan kebakaran',
+    judul: 'Lapas Tembilahan Siaga, Pemeriksaan APAR Secara Berkala sebagai Langkah Antisipasi Bahaya Kebakaran',
+    berita: jejakPerayap('unit'),
+    harap: { subkategori_kode: '8.5', sentimen: 'Positif' },
+  },
+  {
+    nama: 'Jalur evakuasi adalah sarana, bukan evakuasi — dan bukan Kritis',
+    judul: 'Cegah Kebakaran, Rutan Manna Kembali Periksa APAR, CCTV, Listrik dan Jalur Evakuasi',
+    berita: jejakPerayap('unit'),
+    harap: { sentimen: 'Positif', urgensi: 'Rendah' },
+  },
+  {
+    nama: 'Nama unit bukan peristiwa: Lapas Narkotika berbagi camilan',
+    judul: 'Tingkatkan Kepedulian Humanis, Lapas Narkotika Karang Intan Gelar Aksi Berbagi Camilan',
+    berita: jejakPerayap('unit'),
+    harap: { sentimen: 'Positif' },
+  },
+  {
+    nama: 'Penjara negara lain bukan urusan Ditjen Pemasyarakatan',
+    judul: 'Dr Abu Safiya: Sipir Israel Terus Menganiaya dan Mengancam Saya agar Bungkam',
+    berita: jejakPerayap('isu:isu-kekerasan'),
+    harap: { subkategori_kode: '9.1', dalam_lingkup: false },
+  },
+
+  /* Arah sebaliknya untuk tiga kaidah baru di atas. Tanpa ketiganya, cara
+     termudah meluluskan keenam kasus di atas adalah mematikan kaidahnya. */
+  {
+    nama: 'Kebakaran sungguhan tetap kebakaran meski ada kata APAR',
+    judul: 'Kebakaran Hebat Melanda Blok Hunian Lapas Kelas IIA Kupang, APAR Tak Berfungsi dan Warga Binaan Dievakuasi',
+    berita: jejakPerayap('isu:isu-bencana'),
+    harap: { subkategori_kode: '4.3', sentimen: 'Negatif' },
+  },
+  {
+    nama: 'Kerja sama internasional tetap berita kita',
+    judul: 'Kemenimipas Terima Kunjungan Delegasi Pemasyarakatan Malaysia di Jakarta',
+    harap: { dalam_lingkup: true },
+  },
+  {
+    nama: 'Razia di Lapas Narkotika yang menemukan sabu tetap temuan',
+    judul: 'Razia Blok Hunian Lapas Narkotika Kelas IIA Karang Intan, Petugas Sita Sabu dan Empat Ponsel',
+    berita: jejakPerayap('unit'),
+    harap: { sentimen: 'Negatif' },
+  },
+
+  /*
+     Lima kasus berikut TIDAK dilaporkan siapa pun. Semuanya ditemukan dengan
+     membaca satu contoh dari tiap subkategori pada arsip yang baru saja
+     dinilai ulang v4.3 — lima keliru dari dua puluh enam yang diperiksa.
+
+     Itu caranya menemukan kelas kekeliruan yang tidak berisik: bukan menunggu
+     ada yang mengeluh, melainkan membaca satu baris dari setiap subkategori
+     sesudah tiap penggelaran. Yang mengeluh hanya menemukan yang mengganggu;
+     yang paling mahal justru yang diam.
+  */
+  {
+    nama: 'Bangunan rusak karena gempa bukan pengrusakan oleh warga binaan',
+    judul: 'Rutan Ruteng Rusak Diguncang Gempa, Pelayanan Warga Binaan Tetap Berjalan Sesuai Standar',
+    berita: jejakPerayap('unit'),
+    harap: { subkategori_kode: '4.3', sentimen: 'Negatif' },
+  },
+  {
+    nama: 'Makanan yang layak bukan keluhan kelayakan hidup',
+    judul: 'Warga Binaan Lapas Cikarang Dapatkan Makan Bergizi, Higienis dan Layak',
+    berita: jejakPerayap('unit'),
+    harap: { subkategori_kode: '8.3', sentimen: 'Positif' },
+  },
+  {
+    nama: 'Unit yang membantu korban gempa bukan unit yang tertimpa gempa',
+    judul: 'Warga Terdampak Gempa di Manggarai Terima Bantuan Imigrasi dan Pemasyarakatan',
+    berita: jejakPerayap('isu:isu-bencana'),
+    harap: { subkategori_kode: '8.3', sentimen: 'Positif' },
+  },
+  {
+    nama: 'Napiter yang berikrar setia NKRI adalah keberhasilan, bukan penolakan',
+    judul: 'Dua Napiter Lapas Pati Ikrar Setia NKRI, Teguhkan Komitmen Kebangsaan di Kabupaten Pati',
+    berita: jejakPerayap('isu:isu-teroris'),
+    harap: { subkategori_kode: '8.2', sentimen: 'Positif' },
+  },
+  {
+    nama: 'Penolakan ikrar tetap penolakan meski frasa ikrarnya lengkap',
+    judul: 'Napiter di Lapas Kelas I Semarang Tolak Ikuti Upacara dan Ikrar Setia NKRI',
+    harap: { subkategori_kode: '5.2', sentimen: 'Negatif' },
+  },
+  {
+    nama: '"Berikan" bukan "perikanan"',
+    judul: 'Berikan Informasi Hukum, Bapas Saumlaki Layani Masyarakat',
+    berita: jejakPerayap('umum:umum-bapas'),
+    harap: { subkategori_kode: '8.3', sentimen: 'Positif' },
+  },
+
   /*
      Enam kasus di bawah ini lahir dari pemberitahuan Telegram yang
      SUNGGUH-SUNGGUH TERKIRIM ke grup pimpinan pada 6 September 2026, jam
@@ -316,7 +446,7 @@ const kasus = [
 
 let lulus = 0
 for (const k of kasus) {
-  const h = klasifikasikan({ judul: k.judul })
+  const h = klasifikasikan({ judul: k.judul, ...(k.berita || {}) })
   const gagal = Object.entries(k.harap).filter(([bidang, nilai]) => h[bidang] !== nilai)
   if (!gagal.length) {
     lulus++
@@ -434,6 +564,18 @@ const kasusBersih = [
   ['kalimat manusia, jangan disentuh',
     'Kepala Lapas memberi arahan tentang topik: integritas petugas dan rekomendasi: perbaikan layanan kunjungan.',
     'Kepala Lapas memberi arahan tentang topik: integritas petugas dan rekomendasi: perbaikan layanan kunjungan.'],
+
+  /*
+     Catatan asal-usul perayap. Bentuk lama menutupi seluruh 718 baris hasil
+     perayap dan merusak klasifikasi lewat dua jalan sekaligus; bentuk baru
+     memakai penanda "[sistem]" yang disepakati untuk semua mesin berikutnya.
+  */
+  ['jejak perayap lama', 'Ditemukan penjaring-v1.0 (isu:isu-bencana).', ''],
+  ['jejak perayap bertanda sistem', '[sistem] Ditemukan penjaring-v1.1 (unit).', ''],
+  ['jejak perayap sesudah kalimat berita',
+    'Napi kabur dari Lapas Kelas IIB Sukadana. [sistem] Ditemukan penjaring-v1.1 (isu:isu-pelarian).',
+    'Napi kabur dari Lapas Kelas IIB Sukadana.'],
+  ['catatan patroli siber', 'Konten terdeteksi otomatis oleh sistem patroli siber.', ''],
 ]
 
 let lulusBersih = 0

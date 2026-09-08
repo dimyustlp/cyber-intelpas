@@ -2,7 +2,7 @@
  * Sentimen — satu-satunya tempat yang boleh menentukan arti tiap nilai.
  *
  * Sebelum berkas ini ada, empat halaman mengelompokkan sentimen dengan aturan
- * masing-masing: dasbor menghitung "Negatif" saja, Kanal Negatif menghitung
+ * masing-masing: dasbor menghitung "Negatif" saja, Berita Negatif menghitung
  * "Negatif" beserta "Campuran", laporan berkala mengikuti kanal, dan sisanya
  * dilabeli "Netral" lewat pengurangan. Keempatnya berjalan persis seperti yang
  * ditulis, dan justru karena itu pimpinan membaca tiga angka berbeda untuk satu

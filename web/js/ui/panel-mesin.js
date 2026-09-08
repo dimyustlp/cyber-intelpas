@@ -17,7 +17,7 @@
  */
 
 import { keping, pesanSistem } from './komponen.js'
-import { amankan, persen, nadaSentimen, nadaUrgensi } from '../lib/format.js'
+import { amankan, persen, nadaSentimen, nadaUrgensi, tanggalJam } from '../lib/format.js'
 import { KONFIG } from '../lib/konfig.js'
 
 /**
@@ -96,5 +96,22 @@ export function panelMesin(b, opsi = {}) {
          Mesin sendiri menandai hasil ini sebagai perlu diperiksa sebelum dipakai.`,
         'sedang', 'info',
       ) : ''}
+
+      ${/*
+           Versi mesin dan waktu penilaian, di kaki panel.
+
+           Angka ini sudah lama disimpan pada tiap baris justru supaya baris
+           yang dinilai sebelum dan sesudah sebuah perbaikan bisa dibedakan —
+           dan selama ini ia tidak pernah sampai ke layar, sehingga
+           gunanya nol. Analis yang membuka sebuah penilaian aneh tidak punya
+           cara mengetahui apakah yang ia lihat sudah dinilai mesin terbaru
+           atau tertinggal di mesin yang cacatnya sudah diperbaiki dua versi
+           lalu, lalu melaporkan ulang cacat yang sudah tidak ada.
+        */''}
+      ${b.ai_provider || b.ai_classified_at ? `
+        <p class="mesin-jejak">
+          Dinilai ${b.ai_provider ? `<b>${amankan(b.ai_provider)}</b>` : 'mesin tak dikenal'}
+          ${b.ai_classified_at ? ` · ${amankan(tanggalJam(b.ai_classified_at))}` : ''}
+        </p>` : ''}
     </div>`
 }

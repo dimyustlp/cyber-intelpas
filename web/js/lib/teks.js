@@ -67,6 +67,45 @@ const POLA_BOILERPLATE = [
   /rekomendasi\s*:\s*arsip[^.]*\./gi,
   /rekomendasi\s*:\s*lakukan pemantauan berkala[^.]*\./gi,
   /generated automatically[^.]*\./gi,
+
+  /*
+     Catatan asal-usul yang ditulis perayap sendiri ke dalam `raw_analysis`.
+
+     Bentuknya "Ditemukan penjaring-v1.0 (isu:isu-bencana)." dan ia menempel
+     pada SELURUH 718 baris hasil perayap — bukan sebagian. Selama sebulan ia
+     merusak klasifikasi lewat dua jalan sekaligus, dan keduanya sunyi:
+
+       1. Kata "Ditemukan" adalah anggota FRASA_TEMUAN. Kaidah temuan mengambil
+          juara 8.x yang positif dan menggantinya dengan kandidat negatif
+          terbaik — jadi setiap kegiatan humas yang punya pesaing negatif sekecil
+          apa pun berubah menjadi berita negatif. "Tingkatkan Kepedulian
+          Humanis, Lapas Narkotika Karang Intan Gelar Aksi Berbagi Camilan"
+          tercatat 6.2 Penyerangan Fisik Eksternal, urgensi Tinggi.
+
+       2. Tebakan perayap sendiri ikut dinilai sebagai kata beritanya. Label
+          "(isu:isu-bencana)" menyumbang dua kali kata "bencana" pada teks yang
+          judulnya tidak pernah menyebutnya. Mesin lalu membenarkan tebakan
+          perayap dengan bukti yang berasal dari tebakan itu juga — lingkaran
+          yang tidak bisa dipatahkan oleh kata kunci mana pun.
+
+     Inilah sebab sesungguhnya di balik lima pemberitahuan salah pada 7
+     September 2026. Kaidah kegiatan dan kaidah urutan kata v4.2 sudah benar;
+     yang dinilai mesin memang bukan lagi beritanya.
+  */
+  /\bditemukan\s+(?:penjaring|perayap|sheet-sync|crawler)[\w.-]*\s*(?:\([^)]*\))?\s*\.?/gi,
+  /konten terdeteksi otomatis oleh sistem patroli siber\.?/gi,
+  /\bfallback data\b\.?/gi,
+
+  /*
+     Kesepakatan untuk seterusnya: catatan yang ditulis mesin ke dalam kolom
+     yang ikut dinilai mesin HARUS diawali "[sistem]".
+
+     Tiga pola di atas mengenali tiga templat yang kebetulan sudah ada, dan
+     daftar semacam itu selalu ketinggalan satu versi di belakang perayapnya.
+     Penanda yang disepakati di muka tidak perlu dikenali — ia mengumumkan
+     dirinya sendiri, dan perayap berikutnya cukup memakainya.
+  */
+  /\[sistem\][^.]*\.?/gi,
 ]
 
 /** Ekor nama platform yang menempel pada judul hasil crawl. */
@@ -102,7 +141,13 @@ export function normalkan(nilai) {
   const dasar = bersihkanTeks(nilai)
     .toLowerCase()
     .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
+    /* Tanda diakritik ditulis sebagai lolosan \u, bukan sebagai aksaranya
+       sendiri. Aksara penggabung tidak terlihat di dalam kurung siku pada
+       penyunting mana pun — ia tampak seperti kurung kosong — sehingga setiap
+       penyalinan berkas ini (ke Edge Function, ke papan klip, lewat alat yang
+       menormalkan Unicode) bisa menghapusnya tanpa meninggalkan jejak, dan
+       normalisasi diam-diam berhenti membuang aksen. */
+    .replace(/[\u0300-\u036f]/g, '')
     .replace(/[^a-z0-9\s]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim()
@@ -180,6 +225,25 @@ const AKAR_TERLARANG = new Set([
      kata oleh siapa pun yang memeriksanya.
   */
   'pelari', 'pelar', 'larian', 'sehat',
+
+  /*
+     "ikan" — ditemukan 7 September 2026 dari arsip yang sudah dinilai v4.3.
+
+     "BERIKAN Informasi Hukum, Bapas Saumlaki Layani Masyarakat" tercatat 8.6
+     Ketahanan Pangan dan Pemberdayaan Ekonomi, dengan kata kunci penentu
+     "perikanan". Jembatannya persis sama bentuknya dengan 'pelari': "berikan"
+     dikupas awalan ber- menjadi "ikan", "perikanan" dikupas per- dan -an
+     menjadi "ikan" juga, dan keduanya bertemu di sana.
+
+     Bahayanya bukan pada satu berita itu. "Berikan" adalah kata kerja yang
+     muncul di ratusan judul kehumasan — memberikan bantuan, memberikan
+     pelatihan, memberikan penyuluhan — dan semuanya selama ini menyumbang
+     nilai kepada subkategori perikanan.
+
+     Bentuk permukaannya tetap dicocokkan: 'kolam ikan' dan 'perikanan' pada
+     berita budidaya sungguhan tidak terpengaruh.
+  */
+  'ikan',
 ])
 
 const simpananAkar = new Map()

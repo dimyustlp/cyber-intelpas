@@ -6,7 +6,7 @@
  * sini, kuerinya tetap ditolak di server. Guna daftar ini hanya satu: jangan
  * menampilkan tombol yang, kalau ditekan, hanya akan berujung penolakan.
  *
- * Sebutan peran mengikuti nomenklatur Dirpamintel yang dirumuskan pengguna.
+ * Sebutan peran mengikuti nomenklatur Ditpamintel yang dirumuskan pengguna.
  */
 
 export const PERAN = {
@@ -242,11 +242,11 @@ export const MENU = [
          yang membaca daftar izin di atas berhak menyimpulkan halamannya ada.
          Sekarang ia ada.
       */
-      { id: 'briefing', label: 'Executive Brief', ikon: 'laporan', izin: 'lihat_briefing' },
+      { id: 'briefing', label: 'Ringkasan Pimpinan', ikon: 'laporan', izin: 'lihat_briefing' },
       // Kanal negatif berdiri sendiri di menu. Isu yang merugikan institusi
       // tidak boleh dicari dulu di dalam daftar gabungan sebelum bisa dibaca.
-      { id: 'negatif', label: 'Kanal Negatif', ikon: 'peringatan', izin: 'lihat_dasbor', lencana: 'negatif' },
-      { id: 'positif', label: 'Kanal Positif', ikon: 'centang', izin: 'lihat_dasbor' },
+      { id: 'negatif', label: 'Berita Negatif', ikon: 'peringatan', izin: 'lihat_dasbor', lencana: 'negatif' },
+      { id: 'positif', label: 'Berita Positif', ikon: 'centang', izin: 'lihat_dasbor' },
       { id: 'peringatan', label: 'Peringatan Dini', ikon: 'peringatan', izin: 'lihat_peringatan', lencana: 'peringatan' },
       { id: 'peta', label: 'Peta Sebaran', ikon: 'peta', izin: 'lihat_peta' },
       { id: 'tren', label: 'Tren Pemberitaan', ikon: 'tren', izin: 'lihat_tren' },

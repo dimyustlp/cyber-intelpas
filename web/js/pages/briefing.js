@@ -1,5 +1,5 @@
 /**
- * Executive Brief — situasi dalam satu layar.
+ * Ringkasan Pimpinan — situasi dalam satu layar.
  *
  * ---------------------------------------------------------------------------
  * Kenapa halaman ini ada, dan kenapa ia baru ada sekarang
@@ -141,7 +141,7 @@ export function halamanBriefing({ keadaan, isi }) {
       ),
     })
     pasangPenyimak(isi)
-    return { judul: 'Executive Brief', sub: 'Tidak ada data pada periode ini' }
+    return { judul: 'Ringkasan Pimpinan', sub: 'Tidak ada data pada periode ini' }
   }
 
   isi.innerHTML = `
@@ -316,7 +316,7 @@ export function halamanBriefing({ keadaan, isi }) {
   pasangPenyimak(isi)
 
   return {
-    judul: 'Executive Brief',
+    judul: 'Ringkasan Pimpinan',
     sub: `Risiko nasional ${nasional.kode} · ${tanggal(mulai)} – ${tanggal(selesai)}`,
   }
 }

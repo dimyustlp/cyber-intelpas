@@ -37,9 +37,28 @@ export function halamanMasuk({ onMasuk }) {
   wadah.innerHTML = `
     <section class="masuk-kiri">
       <div class="masuk-kiri-isi">
-        <div>
-          <p class="masuk-eyebrow">${amankan(KONFIG.kementerian)}</p>
-          <p class="masuk-eyebrow" style="margin-top:2px">${amankan(KONFIG.induk)}</p>
+        ${/*
+             Satu-satunya tempat kedua lencana tampil cukup besar untuk dibaca.
+
+             Urutannya sama dengan urutan kop lembar infografis dan kop laporan
+             berkala: lencana sistem lebih dulu, lencana direktorat sesudahnya.
+             Yang menandatangani laporan adalah direktoratnya, dan yang
+             menyusunnya sistem ini — urutan itu yang dipakai di ketiganya,
+             supaya orang yang membandingkan layar dengan lembar cetak tidak
+             menemukan dua susunan yang berbeda.
+          */''}
+        <div class="masuk-kop">
+          <div class="masuk-lencana">
+            <img src="${amankan(KONFIG.lencana.sistem)}" width="60" height="60"
+                 alt="Lencana ${amankan(KONFIG.nama)}" decoding="async">
+            <img src="${amankan(KONFIG.lencana.direktorat)}" width="60" height="60"
+                 alt="Lencana ${amankan(KONFIG.instansi)}" decoding="async">
+          </div>
+          <div>
+            <p class="masuk-eyebrow">${amankan(KONFIG.kementerian)}</p>
+            <p class="masuk-eyebrow" style="margin-top:2px">${amankan(KONFIG.induk)}</p>
+            <p class="masuk-eyebrow" style="margin-top:2px">${amankan(KONFIG.instansi)}</p>
+          </div>
         </div>
 
         <div class="masuk-judul-plate">

@@ -102,7 +102,7 @@ export const SINYAL = [
   },
   {
     kode: 'sentimen', label: 'Sentimen', jenis: 'pilihan', pilihan: ['Negatif', 'Netral / Campuran', 'Positif', 'Belum dinilai'],
-    ket: 'Ember sentimen menurut lib/sentimen.js.',
+    ket: 'Kelompok sentimen berita: Positif, Netral, atau Negatif.',
     ambil: (p, k) => k.sentimen,
   },
   {

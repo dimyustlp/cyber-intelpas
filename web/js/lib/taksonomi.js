@@ -409,6 +409,31 @@ export const KATEGORI = [
           ['jenazah warga binaan', 3], ['sakit tanpa penanganan', 3],
           ['korban meninggal dunia', 3], ['berujung kematian', 2],
           ['autopsi', 2], ['visum', 2],
+          /*
+             "Meninggal" TANPA kata "tewas", dan itu bentuk yang paling lazim.
+
+             Ditambahkan 8 September 2026 dari arsip produksi. Tiga judul
+             tentang satu kematian yang sama di Lapas Karangasem — "Napi Kasus
+             Pembunuhan di Lapas Karangasem Meninggal", "Diduga Sakit Abses
+             Otak, Narapidana Lapas Karangasem Meninggal" — ketiganya berakhir
+             di "Belum Dikelompokkan" dengan urgensi Sedang.
+             Sebabnya sempit: daftar lama mengenal ['meninggal','warga binaan']
+             dan ['meninggal','sel'], tetapi tidak ['meninggal','napi'] maupun
+             ['meninggal','narapidana'] — dan pemberitaan sehari-hari hampir
+             selalu memakai dua kata terakhir itu.
+             Akibatnya bukan salah kelompok belaka: kematian orang di dalam
+             tahanan adalah peristiwa yang paling menuntut kecepatan di seluruh
+             sistem ini, dan ia lewat tanpa menyalakan apa pun.
+
+             Pasangannya sengaja kata ORANG, bukan kata tempat. ['meninggal',
+             'lapas'] akan ikut menyala pada "Lapas X Gelar Doa untuk Almarhum
+             Mantan Kalapas" — berita duka yang bukan kematian dalam tahanan.
+          */
+          [['meninggal', 'napi'], 3], [['meninggal', 'narapidana'], 3],
+          [['meninggal', 'tahanan'], 3], [['meninggal', 'wbp'], 3],
+          ['napi meninggal', 3], ['narapidana meninggal', 3],
+          ['warga binaan meninggal', 3], ['tahanan meninggal', 3],
+          [['meninggal', 'blok hunian'], 3], [['meninggal', 'jeruji'], 3],
         ],
       },
       {
@@ -418,7 +443,20 @@ export const KATEGORI = [
         urgensi: 'Rendah',
         kunci: [
           [['makanan', 'keluhan'], 3], [['makan', 'dikeluhkan'], 3],
-          [['makanan', 'layak'], 2], [['keluhkan', 'makan'], 3],
+          /*
+             Kunci [['makanan','layak'], 2] dibuang 7 September 2026.
+
+             "Layak" adalah keadaan yang DIINGINKAN, dan kunci majemuk tidak
+             peduli urutan maupun kata penyangkalnya. Akibatnya "Warga Binaan
+             Lapas Cikarang Dapatkan Makan Bergizi, Higienis dan Layak" —
+             unggahan humas tentang dapur yang baik — tercatat 4.2
+             Overkapasitas dan Kelayakan Hidup dengan sentimen NEGATIF.
+
+             Yang tidak layak sudah punya frasanya sendiri di bawah
+             ('makanan tidak layak', 'kualitas makanan'), dan frasa itu menyebut
+             ketidaklayakannya secara utuh.
+          */
+          [['keluhkan', 'makan'], 3],
           ['overkapasitas', 3], ['over kapasitas', 3], ['kelebihan kapasitas', 3],
           ['melebihi kapasitas', 3], ['kelebihan penghuni', 3], ['hunian sesak', 3],
           ['tidur berdesakan', 3], ['tidur menumpuk', 3], ['penghuni melebihi', 3],
@@ -490,7 +528,24 @@ export const KATEGORI = [
           */
           [/\b(banjir|air|lumpur|api)\b[^.]{0,25}\b(rendam|merendam|menggenangi|melanda|membakar|menghanguskan)\b[^.]{0,30}\b(lapas|rutan|bapas|lpka)\b/, 6],
           [/\b(kebakaran|kebanjiran|gempa|longsor|puting beliung)\b[^.]{0,35}\b(lapas|rutan|bapas|lpka)\b/, 6],
-          [/\b(lapas|rutan|bapas|lpka)\b[^.]{0,25}\b(terendam|kebanjiran|terbakar|roboh|ambruk)\b/, 6],
+          /*
+             'rusak', 'retak', dan 'hancur' ditambahkan 7 September 2026.
+
+             "Rutan Ruteng RUSAK Diguncang Gempa, Pelayanan Warga Binaan Tetap
+             Berjalan Sesuai Standar" tercatat 1.2 KERUSUHAN DAN PEMBERONTAKAN.
+             Sebabnya jembatan imbuhan: "rusak" sekerabat dengan "pengrusakan",
+             yang bernilai di 1.2 sebagai perusakan fasilitas oleh warga binaan.
+             Bangunan yang rusak karena gempa dengan begitu terbaca sebagai
+             kerusuhan — dua peristiwa yang tidak bisa lebih berbeda tuntutan
+             tindak lanjutnya.
+
+             Yang diperbaiki bukan 1.2 melainkan 4.3: kata 'pengrusakan' memang
+             pantas bernilai di sana, dan yang kurang adalah bencana yang
+             merusak bangunan tidak pernah tertangkap polanya sendiri. Bobot 6
+             membuatnya menang, sama seperti dua pola bencana di atasnya.
+          */
+          [/\b(lapas|rutan|bapas|lpka)\b[^.]{0,25}\b(terendam|kebanjiran|terbakar|roboh|ambruk|rusak|retak|hancur)\b/, 6],
+          [/\b(gempa|banjir|longsor|angin|puting beliung)\b[^.]{0,30}\b(rusak|merusak|meruntuhkan|menghancurkan|retak|roboh|ambruk)\b/, 4],
         ],
       },
     ],
@@ -516,6 +571,18 @@ export const KATEGORI = [
           ['kelompok eksklusif', 3], ['terorisme di lapas', 3], ['jaringan teroris', 3],
           ['ekstremisme', 3], ['perekrutan di lapas', 3], ['densus', 2],
           ['sel teroris', 3], ['propaganda radikal', 3],
+          /*
+             Frasa keberhasilan deradikalisasi membatalkan kategori ini.
+
+             Kata 'napiter' saja bernilai 3 di sini, dan itu memang perlu:
+             hampir setiap berita radikalisme menyebutnya. Tetapi 'napiter'
+             juga muncul pada berita yang isinya justru sebaliknya — narapidana
+             terorisme yang berikrar setia kepada NKRI. Tanpa pembatal di bawah,
+             kabar baik terbesar yang dimiliki program deradikalisasi
+             dilaporkan sebagai penyebaran paham radikal.
+          */
+          ['ikrar setia', -5], ['setia nkri', -5], ['kembali ke pangkuan nkri', -5],
+          ['bersedia dibina', -4], ['lepas dari jaringan', -4],
         ],
       },
       {
@@ -524,11 +591,36 @@ export const KATEGORI = [
         aktor: 'wbp',
         urgensi: 'Tinggi',
         kunci: [
-          ['menolak ikrar', 4], ['ikrar setia nkri', 4], ['tolak hormat bendera', 4],
+          /*
+             'ikrar setia nkri' DIBUANG dari sini 7 September 2026.
+
+             Kunci itu terbalik dari nama subkategorinya sendiri. Subkategori
+             ini adalah PENOLAKAN program deradikalisasi, dan berikrar setia
+             kepada NKRI adalah lawan persis dari menolaknya — ia hasil yang
+             dituju program itu. "Dua Napiter Lapas Pati Ikrar Setia NKRI"
+             karena itu tercatat sebagai penolakan deradikalisasi berurgensi
+             Tinggi, sebuah pemberitahuan malam hari untuk sebuah keberhasilan.
+
+             Bentuk penolakannya tetap lengkap di bawah, dan semuanya menyebut
+             kata penolakan itu sendiri. Frasa positifnya kini bernilai di 8.2.
+          */
+          ['menolak ikrar', 4], ['tolak hormat bendera', 4],
           ['menolak upacara', 4], ['menolak deradikalisasi', 4],
           ['tolak ikuti upacara', 4], ['tolak ikrar', 4],
           ['menolak pembinaan ideologi', 3], ['mengurung diri di sel', 3],
           ['tidak mau berinteraksi dengan pamong', 3],
+          /*
+             TIDAK ada pembatal frasa positif di sini, berbeda dengan 5.1.
+
+             Sempat ada, dan salah: "Napiter di Lapas Kelas I Semarang Tolak
+             Ikuti Upacara DAN IKRAR SETIA NKRI" memuat frasa positifnya
+             lengkap — sebab yang ditolak justru ikrar itu. Pembatal di sini
+             membuang penolakan yang paling jelas bunyinya.
+
+             Yang membedakan kedua berita bukan ada-tidaknya frasa ikrar,
+             melainkan ada-tidaknya kata penolakan. Karena itu penjagaannya
+             ditaruh di 8.2 — di sanalah kata penolakan berarti "bukan ini".
+          */
         ],
       },
     ],
@@ -581,7 +673,22 @@ export const KATEGORI = [
           ['penyerbuan', 3], ['pengepungan lapas', 3], ['pengerahan massa', 3],
           ['aksi damai', 3], ['aksi unjuk rasa', 3], ['menuntut penangguhan', 3],
           ['orasi', 3], ['spanduk protes', 3],
-          [['aksi', 'rutan'], 2], [['aksi', 'lapas'], 2], [['demo', 'lapas'], 3],
+          /*
+             Kunci majemuk ['aksi','lapas'] dibuang 7 September 2026.
+
+             "Aksi" berdiri sendiri berarti apa saja: aksi berbagi, aksi donor
+             darah, aksi bersih-bersih, aksi sosial. Digabung dengan 'lapas' —
+             kata yang muncul di hampir setiap judul — ia praktis menyala pada
+             setiap kegiatan humas yang memakai kata itu. "Tingkatkan
+             Kepedulian Humanis, Lapas Narkotika Karang Intan Gelar Aksi
+             Berbagi Camilan" tercatat 6.2 PENYERANGAN FISIK EKSTERNAL dengan
+             urgensi Tinggi, semata karena dua kata itu ada di dalamnya.
+
+             Bentuk unjuk rasa yang sungguhan sudah punya frasanya sendiri di
+             atas ('aksi damai', 'aksi unjuk rasa') dan pola di bawah, yang
+             keduanya menuntut kata protes yang sebenarnya.
+          */
+          ['aksi massa', 3], ['aksi solidaritas', 2], [['demo', 'lapas'], 3],
         ],
         pola: [
           /*
@@ -668,7 +775,7 @@ export const KATEGORI = [
     sifat: 'positif',
     warna: 'positif',
     keterangan:
-      'Pemberitaan yang menguatkan citra institusi. Dipakai sebagai bahan counter-narrative dalam laporan.',
+      'Pemberitaan yang menguatkan citra institusi. Dipakai sebagai bahan penyeimbang dalam laporan.',
     subkategori: [
       {
         kode: '8.1',
@@ -681,6 +788,11 @@ export const KATEGORI = [
           ['langsung bebas', 3], ['menerima remisi', 3], ['diusulkan dapat remisi', 3],
           ['usulan remisi', 3], ['program asimilasi', 2], ['integrasi sosial', 3],
           ['pengurangan masa pidana', 3], ['bebas murni', 3],
+          /* Ditambahkan 8 September 2026: "hak integrasi" adalah sebutan
+             sehari-hari petugas untuk remisi, asimilasi, dan PB sekaligus,
+             dan justru sebutan itu yang dipakai judul beritanya. */
+          ['hak integrasi', 3], ['peroleh hak integrasi', 3],
+          ['menerima hak integrasi', 3], ['program integrasi', 2],
           /*
              Frasa berbobot negatif: remisi yang DIPERJUALBELIKAN bukan kabar
              baik melainkan dugaan korupsi, dan tempatnya di 3.4.
@@ -690,7 +802,7 @@ export const KATEGORI = [
              4,05 melawan 3,44 di 3.4 — semata karena kata "remisi" bernilai 3.
              Akibatnya bukan salah kelompok belaka: subkategori ini bersifat
              POSITIF, sehingga dugaan korupsi ikut masuk hitungan narasi positif
-             dan menjadi bahan counter-narrative dalam laporan pimpinan.
+             dan menjadi bahan penyeimbang dalam laporan pimpinan.
           */
           ['jual beli remisi', -5], ['suap remisi', -5], ['calo remisi', -5],
           ['memperjualbelikan', -4], ['jual beli cuti bersyarat', -5],
@@ -739,6 +851,57 @@ export const KATEGORI = [
           ['idul adha', 2], ['natal', 2], ['paskah', 2], ['nyepi', 2],
           ['waisak', 2], ['doa bersama', 3], ['istighosah', 3], ['kajian', 2],
           ['ceramah agama', 3], ['khataman', 3], ['santri', 2],
+          /*
+             Perguruan tinggi masuk ke UPT — bentuk yang berulang setiap
+             semester dan tidak dikenali sama sekali sebelum 8 September 2026.
+
+             Mahasiswa menjalani PPL, praktikum, KKN, atau Kampus Mengajar di
+             Lapas/Rutan/LPKA; unit memberitakannya. Daftar lama mengenal
+             'magang' dan 'kuliah kerja nyata' tetapi tidak satu pun singkatan
+             yang benar-benar dipakai judulnya.
+
+             'ppl' ditulis sebagai frasa berspasi, bukan kata lepas, supaya ia
+             tidak menyala pada potongan kata lain yang kebetulan memuatnya.
+          */
+          ['praktik pengalaman lapangan', 3], ['praktikum', 3],
+          ['kampus mengajar', 3], ['mahasiswa', 2], ['perkuliahan', 3],
+          ['kuliah', 2], ['skb', 2], ['sanggar kegiatan belajar', 3],
+          ['pendidikan nonformal', 3], ['kejar paket', 3],
+          ['smp istimewa', 3], ['sma istimewa', 3], ['sekolah istimewa', 3],
+          [['mahasiswa', 'praktik'], 3], [['mahasiswa', 'lapas'], 3],
+          [['mahasiswa', 'rutan'], 3], [['mahasiswa', 'lpka'], 3],
+          /*
+             Pendidikan dai, imam, dan khatib — program keagamaan yang punya
+             nama bakunya sendiri, dan tidak tertangkap kata 'pengajian'
+             maupun 'ceramah agama'.
+          */
+          ['sekolah dai', 3], ['pelatihan dai', 3], ['imam dan khatib', 3],
+          ['dai imam', 3], ['bimroh', 3], ['penyuluh agama', 3],
+          ['penyuluh kua', 3], ['kua', 2],
+          /* "Belajar" berdiri sendiri sengaja berbobot rendah: ia muncul juga
+             pada "belajar membuat keripik", yang tempatnya di 8.6. */
+          ['belajar', 1], ['pembelajaran', 2], ['hak pendidikan', 3],
+          /*
+             Keberhasilan deradikalisasi adalah pembinaan ideologi, dan
+             tempatnya di sini — bukan di 5.2 Penolakan Program Deradikalisasi,
+             tempat 'ikrar setia nkri' salah dituliskan sampai 7 September 2026.
+          */
+          ['ikrar setia nkri', 3], ['ikrar setia', 3], ['kembali ke pangkuan nkri', 3],
+          ['pembinaan wawasan kebangsaan', 3], ['wawasan kebangsaan', 3],
+          ['deradikalisasi', 2], ['bela negara', 3],
+          /*
+             Penolakan membatalkan seluruh nilai ikrar di atas, dan bobotnya
+             sengaja lebih besar daripada jumlah nilai yang dibatalkannya.
+
+             "Napiter di Lapas Kelas I Semarang Tolak Ikuti Upacara dan Ikrar
+             Setia NKRI" memuat frasa ikrar selengkap berita keberhasilan,
+             sebab yang ditolak memang ikrar itu sendiri. Kata penolakannya
+             yang membedakan, dan hanya di sini ia bisa diperiksa: pada 5.2
+             pembatal serupa justru membuang penolakan yang paling jelas.
+          */
+          [['tolak', 'ikrar'], -8], [['menolak', 'ikrar'], -8],
+          [['tolak', 'upacara'], -6], [['menolak', 'upacara'], -6],
+          ['tolak hormat bendera', -8], ['menolak deradikalisasi', -8],
         ],
       },
       {
@@ -753,6 +916,41 @@ export const KATEGORI = [
           ['bakti sosial', 3], ['baksos', 3],
           ['bansos', 3], ['sembako', 3], ['santunan', 3],
           ['berbagi', 2], ['bantuan sosial', 3], ['santunan anak yatim', 3],
+          /*
+             Bantuan kemanusiaan untuk korban bencana — ditambahkan 7 September
+             2026. Sebelumnya tidak ada satu pun frasa di seluruh kategori 8
+             yang menangkapnya, sehingga "Kemenimipas Salurkan Bantuan Rp1,8
+             Miliar untuk Korban Gempa NTT" hanya punya kandidat 4.3 dan
+             tercatat sebagai berita bencana. Lembaga yang membantu korban
+             bencana adalah narasi positif yang paling kuat yang dimiliki
+             Pemasyarakatan, dan selama ini justru dilaporkan sebagai musibah.
+          */
+          /*
+             Layanan kunjungan keluarga — ditambahkan 8 September 2026.
+
+             Hak dikunjungi keluarga adalah layanan dasar yang paling sering
+             dirasakan warga binaan, dan pemberitaannya berulang setiap akhir
+             pekan. Tidak satu pun kata di daftar mana pun menangkapnya
+             sebelum ini, sehingga "Kunjungan Khusus Anak di Rutan Cipinang"
+             berakhir tanpa kelompok — sementara frasa 'kunjungan kerja' di
+             8.4 justru menangkap kunjungan PEJABAT, bukan kunjungan keluarga.
+          */
+          ['kunjungan keluarga', 3], ['kunjungan khusus anak', 3],
+          ['layanan kunjungan', 3], ['ruang kunjungan', 3],
+          ['hari kunjungan', 3], ['besuk', 3], ['membesuk', 3],
+          [['kunjungan', 'anak'], 3], [['kunjungan', 'buah hati'], 3],
+          /* "Buah hati" di dalam berita Lapas atau Rutan hampir selalu berarti
+             anak yang datang menjenguk; ia berdiri sendiri karena judulnya
+             kerap tidak memakai kata "kunjungan" sama sekali. */
+          ['buah hati', 3],
+          [['anak', 'temui', 'orang tua'], 3],
+          ['bantuan kemanusiaan', 3], ['bantuan logistik', 3],
+          ['korban bencana', 3], ['korban gempa', 3], ['korban banjir', 3],
+          [['salurkan', 'bantuan'], 3], [['serahkan', 'bantuan'], 3],
+          [['bantuan', 'korban'], 3], [['bantuan', 'terdampak'], 3],
+          [['bantuan', 'gempa'], 3], [['bantuan', 'banjir'], 3],
+          ['dapur umum', 3], ['posko bantuan', 3],
+          ['peduli bencana', 3], ['solidaritas kemanusiaan', 3],
           ['baznas', 3], ['rumah layak huni', 3], ['bedah rumah', 3],
           ['layanan prima', 3], ['pelayanan publik', 3], ['digitalisasi layanan', 3],
           ['maklumat pelayanan', 3], ['layanan kunjungan', 3], ['alur pelayanan', 3],
@@ -778,6 +976,22 @@ export const KATEGORI = [
           ['hak warga binaan', 3], ['perlengkapan dasar', 3], ['kasur', 2],
           ['air bersih', 3], ['sanitasi', 3], ['makanan layak', 3],
           ['dapur higienis', 3], ['menu makanan', 3], ['bahan makanan', 2],
+          /*
+             Dua bentuk yang jatuh ke "Belum Dikelompokkan" pada arsip
+             7 September 2026, keduanya unggahan humas yang paling lazim.
+
+             "Warga Binaan Lapas Cikarang Dapatkan MAKAN BERGIZI, HIGIENIS dan
+             Layak" tidak tertangkap 'makanan layak' karena kedua katanya tidak
+             berdampingan; sebelumnya ia malah tertangkap 4.2 sebagai keluhan
+             kelayakan hidup. "BERIKAN INFORMASI HUKUM, Bapas Saumlaki LAYANI
+             MASYARAKAT" tidak tertangkap 'penyuluh hukum' maupun 'bantuan
+             hukum' — Bapas menyebutnya memberi informasi.
+          */
+          [['makan', 'bergizi'], 3], [['makanan', 'bergizi'], 3],
+          ['makan bergizi', 3], ['higienis', 2], ['gizi seimbang', 3],
+          [['informasi', 'hukum'], 3], ['informasi hukum', 3],
+          ['layani masyarakat', 3], ['melayani masyarakat', 3],
+          ['konsultasi hukum', 3], ['penerangan hukum', 3],
         ],
       },
       {
@@ -843,6 +1057,62 @@ export const KATEGORI = [
           ['progres pembangunan', 3], ['pembangunan rutan', 3], ['pembangunan lapas', 3],
           ['gedung baru', 3], ['menara pengawas', 3], ['pagar pengaman', 3],
           ['sensus', 3], ['pendataan', 2],
+
+          /*
+             ARAHAN PIMPINAN PUSAT — kelompok tunggal terbesar yang selama ini
+             lolos.
+
+             Ditambahkan 8 September 2026. Dari 120 baris "Belum Dikelompokkan"
+             yang diperiksa di arsip produksi, empat belas di antaranya satu
+             bentuk yang sama persis: unit mengikuti pengarahan Dirjenpas lewat
+             Zoom, lalu memberitakannya. Bentuk itu berulang setiap kali ada
+             arahan nasional — satu arahan menghasilkan puluhan berita serentak
+             dari puluhan unit — sehingga ia bukan sekadar satu kasus yang
+             terlewat, melainkan sumber "Belum Dikelompokkan" yang paling
+             produktif di seluruh arsip.
+
+             Daftar lama sudah memuat 'rapat koordinasi' dan 'apel', tetapi
+             tidak satu pun kata yang muncul di judul-judul itu.
+          */
+          ['pengarahan dirjenpas', 3], ['arahan dirjenpas', 3],
+          ['pengarahan ditjenpas', 3], ['arahan ditjenpas', 3],
+          ['pengarahan direktur jenderal', 3], ['arahan direktur jenderal', 3],
+          ['arahan strategis', 3], ['pengarahan virtual', 3], ['apel virtual', 3],
+          ['zoom meeting', 2], ['zoom dirjenpas', 3], ['rapat virtual', 3],
+          [['ikuti', 'pengarahan'], 3], [['ikuti', 'arahan'], 3],
+          [['simak', 'arahan'], 3], [['tindaklanjuti', 'arahan'], 3],
+          [['hadiri', 'pengarahan'], 3], [['mengikuti', 'arahan'], 3],
+
+          /*
+             KEPEGAWAIAN. Sumpah jabatan, pegawai baru, rapat dinas, dan
+             pembahasan anggaran adalah kabar kelembagaan yang khas, dan
+             seluruhnya berskor nol sebelum baris ini ada.
+          */
+          ['sumpah jabatan', 3], ['diambil sumpah', 3], ['sumpah pns', 3],
+          ['berstatus pns', 3], ['resmi jadi asn', 3], ['pegawai baru', 2],
+          ['pns baru', 3], ['cpns menjadi pns', 3], ['rapat dinas', 3],
+          ['rapat kepegawaian', 3], ['supervisi rka', 3], ['rka-k/l', 3],
+          ['dipa', 2], ['pagu anggaran', 3], ['emban amanah', 2],
+
+          /*
+             ARAHAN INTEGRITAS KE JAJARAN — dan kenapa ini 8.4, bukan 3.x.
+
+             "Kalapas Tegaskan Seluruh Pegawai Jauhi Korupsi" menyebut korupsi,
+             tetapi ia bukan dugaan pelanggaran: ia kegiatan pembinaan internal
+             yang justru menguatkan institusi. Menempatkannya di 3.5 akan
+             membuat setiap arahan antikorupsi tercatat sebagai kasus dugaan
+             korupsi — dan angka dugaan korupsi naik setiap kali seorang Kalapas
+             mengingatkan jajarannya untuk tidak korupsi.
+          */
+          [['tekankan', 'integritas'], 3], [['ingatkan', 'integritas'], 3],
+          [['tegaskan', 'integritas'], 3], [['tegaskan', 'disiplin'], 3],
+          [['tekankan', 'profesionalisme'], 3], [['jauhi', 'korupsi'], 3],
+          [['tegaskan', 'pegawai'], 2], ['zona integritas', 3], ['wbk', 3],
+          ['wbbm', 3], ['pembangunan zona integritas', 3],
+
+          /* Olahraga bersama yang belum tertampung daftar di atas. */
+          ['kalapas cup', 3], ['karutan cup', 3], ['volly', 3], ['voli', 2],
+          [['gelar', 'senam'], 3], ['senam', 2], ['olahraga', 2],
         ],
       },
       {
@@ -926,6 +1196,26 @@ export const KATEGORI = [
           [['karya', 'warga binaan'], 3], [['karya', 'lapas'], 2],
           [['produk', 'warga binaan'], 3], [['panen', 'lapas'], 3],
           [['panen', 'rutan'], 3],
+          /*
+             Hasil olahan dan upah kerja — ditambahkan 8 September 2026.
+
+             Daftar lama sangat kuat di sisi HULU (tanam, ternak, panen) dan
+             hampir kosong di sisi HILIR: makanan olahan yang dijual, kerajinan
+             tangan, jalur pemasaran, dan premi yang diterima warga binaan.
+             Padahal justru sisi hilir itu yang diberitakan — panen tidak
+             menarik media, keripik yang masuk restoran menarik.
+
+             'premi' di sini berarti upah hasil kerja warga binaan, istilah
+             baku Pemasyarakatan; bukan premi asuransi.
+          */
+          ['keripik', 3], ['kerajinan', 3], ['kerajinan tangan', 3],
+          ['premi', 3], ['premi hasil kerja', 3], ['upah kerja', 3],
+          ['e-katalog', 3], ['ekatalog', 3], ['tata boga', 3],
+          ['barista', 3], ['kafe', 2], ['kopi', 2], ['roti', 2],
+          ['bros', 3], ['souvenir', 3], ['cinderamata', 3],
+          ['bekal usaha', 3], ['penghasilan', 2], ['peluang pasar', 3],
+          ['produktif', 2], ['hasil karya', 3], ['galeri produk', 3],
+          [['belajar', 'membuat'], 2], [['pelatihan', 'usaha'], 3],
         ],
         pola: [
           [/\bpanen\s+\d{1,4}\s*(kg|kilogram|ton|kwintal)/, 3],
@@ -959,6 +1249,26 @@ export const KATEGORI = [
           ['kesehatan jiwa', 3], ['psikolog', 3], ['konseling', 2],
           ['obat', 2], ['apotek', 3], ['poliklinik', 3],
           [['layanan', 'kesehatan'], 3], [['pemeriksaan', 'warga binaan'], 2],
+          /*
+             Kesehatan pencegahan — dan ini yang paling sering diberitakan unit.
+
+             Ditambahkan 8 September 2026 dari arsip. Daftar lama mengenal
+             layanan medis (klinik, rujukan, dokter) tetapi hampir tidak
+             mengenal PENCEGAHAN: masker, multivitamin, perlengkapan mandi,
+             kebersihan diri, dan penyuluhan hidup sehat. Padahal itulah bentuk
+             kegiatan kesehatan yang paling rutin dilakukan dan paling sering
+             ditulis unit di media.
+
+             Perhatikan 'cek kesehatan' tanpa kata "gratis": daftar lama hanya
+             memuat 'cek kesehatan gratis' dan 'ckg', sehingga "Lapas Kelas I
+             Tangerang Tuntaskan Cek Kesehatan" berskor nol.
+          */
+          ['cek kesehatan', 3], ['masker', 3], ['multivitamin', 3],
+          ['peralatan mandi', 3], ['perlengkapan mandi', 3],
+          ['kebersihan diri', 3], ['sanitasi', 3], ['phbs', 3],
+          ['perilaku hidup bersih', 3], ['hidup bersih dan sehat', 3],
+          ['kebugaran', 2], ['penyuluhan kesehatan', 3], ['kesehatan mental', 3],
+          ['kesadaran mental', 3], ['pembagian masker', 3],
         ],
         pola: [
           [/\b(dirujuk|dilarikan)\s+ke\s+(rs|rumah sakit|puskesmas)/, 3],
@@ -1032,6 +1342,161 @@ export const PENANDA_LEMBAGA_LAIN = [
   'ditahan di brimob', 'ditahan di mako brimob', 'mako brimob', 'brimob',
   'ditahan di polda', 'ditahan di polres', 'ditahan di mabes',
   'ditahan di kejaksaan', 'ditahan di kejagung', 'rutan kejagung',
+  /*
+     Satuan kerja INTERNAL kepolisian — ditambahkan 8 September 2026.
+
+     Daftar di atas menyaring berdasarkan nama TEMPAT ("rutan polres"), dan itu
+     meleset pada dua bentuk yang sungguh ditemukan di arsip:
+
+       - "Rutan Mapolresta Palangka Raya" — awalan "Ma-" pada nama markas
+         membuatnya tidak cocok dengan 'rutan polresta'.
+       - "Demi Keamanan Rutan, Pamapta II SPKT Lakukan Pengecekan Tahanan" —
+         tidak menyebut nama lembaga sama sekali. Yang menandainya sebagai
+         urusan kepolisian hanyalah nama JABATAN dan SATUANNYA.
+
+     Akibatnya bukan sekadar satu baris yang salah masuk: dua di antaranya
+     bahkan terpetakan ke UPT Pemasyarakatan sungguhan yang kebetulan sekota,
+     sehingga pemeriksaan tahanan oleh petugas Polri tercatat sebagai kegiatan
+     Rutan kita — lengkap dengan namanya di peta sebaran.
+
+     'bhabinkamtibmas' SENGAJA TIDAK ADA di daftar ini. Bhabinkamtibmas yang
+     menghadiri kegiatan di Lapas adalah berita Pemasyarakatan yang sah, dan
+     memasukkannya ke sini akan membuang berita yang justru ingin dihitung.
+  */
+  'rutan mapolresta', 'rutan mapolres', 'rutan mapolda', 'rutan mapolsek',
+  'ruang tahanan mapolres', 'spkt', 'pamapta', 'sipropam',
+  'propam polres', 'propam polda', 'provos',
+]
+
+/**
+ * Nama negara asing, dipakai HANYA lewat POLA_YURISDIKSI_ASING di bawah.
+ *
+ * Daftar ini tidak pernah diuji sendirian, dan itu menentukan. "Lapas Cipinang
+ * Terima Kunjungan Delegasi Malaysia" menyebut Malaysia dan tetap berita
+ * Pemasyarakatan Indonesia; "WNA Tiongkok Ditahan di Rutan Denpasar" menyebut
+ * Tiongkok dan justru berita unit kita. Yang membuat sebuah negara berarti
+ * "bukan urusan kita" bukan penyebutannya, melainkan kedudukannya sebagai
+ * PEMILIK lembaganya — "penjara Israel", "sipir Israel", "napi Malaysia".
+ */
+const NEGARA_ASING = [
+  'israel', 'palestina', 'malaysia', 'singapura', 'filipina', 'thailand',
+  'kamboja', 'myanmar', 'vietnam', 'laos', 'brunei', 'tiongkok', 'china',
+  'jepang', 'korea', 'india', 'pakistan', 'bangladesh', 'afghanistan',
+  'iran', 'irak', 'suriah', 'mesir', 'turki', 'arab saudi', 'qatar', 'yaman',
+  'amerika', 'kanada', 'meksiko', 'brasil', 'ekuador', 'venezuela', 'kolombia',
+  'peru', 'bolivia', 'honduras', 'guatemala', 'haiti',
+  'inggris', 'prancis', 'jerman', 'belanda', 'italia', 'spanyol', 'portugal',
+  'rusia', 'ukraina', 'belarus', 'polandia', 'yunani',
+  'australia', 'selandia baru', 'nigeria', 'kenya', 'somalia', 'sudan',
+  'libya', 'aljazair', 'maroko', 'tunisia', 'afrika selatan', 'ethiopia',
+]
+
+/**
+ * Kata lembaga penahanan. Boleh disisipi satu kata sebelum nama negaranya,
+ * sebab "penjara MILITER Israel" dan "otoritas PENJARA Malaysia" adalah bentuk
+ * yang lazim.
+ */
+const LEMBAGA_PENAL_ASING = [
+  'penjara', 'lapas', 'rutan', 'kamp tahanan', 'otoritas penjara',
+  'lembaga pemasyarakatan', 'penjaga penjara',
+]
+
+/**
+ * Kata orang. TIDAK boleh disisipi apa pun, dan itu yang membedakan "napi
+ * Malaysia" (narapidana di Malaysia) dari "napi kasus narkoba asal Malaysia"
+ * — yang kedua adalah warga negara asing di unit kita.
+ */
+const ORANG_PENAL_ASING = ['sipir', 'napi', 'narapidana', 'terpidana']
+
+const daftarPola = (daftar) => daftar.map((k) => k.replace(/\s+/g, '\\s+')).join('|')
+
+/**
+ * Berita lembaga penahanan milik negara lain.
+ *
+ * Ditemukan 7 September 2026: "Dr Abu Safiya: Sipir Israel Terus Menganiaya
+ * dan Mengancam Saya agar Bungkam" tercatat 3.3 Kekerasan oleh Petugas dengan
+ * keyakinan 0,97 dan urgensi Tinggi — pemberitahuan tengah malam kepada
+ * pimpinan Pemasyarakatan Indonesia tentang penjara di Gaza. PENANDA_LEMBAGA_LAIN
+ * sudah memuat 'penjara israel' dan 'lapas israel', tetapi tidak 'sipir israel',
+ * dan daftar nama tidak akan pernah selesai: setiap negara punya sebutan
+ * petugasnya sendiri.
+ *
+ * Karena itu yang dikenali BENTUKNYA, bukan namanya: nama negara yang berdiri
+ * langsung sesudah kata lembaga atau kata orang penahanan, dengan paling banyak
+ * satu kata sisipan ("penjara MILITER israel"). Urutan itu satu arah dengan
+ * sengaja — "napi Malaysia" adalah narapidana di Malaysia, sedangkan "WNA
+ * Malaysia ditahan di rutan" adalah warga negara asing di rutan kita.
+ */
+export const POLA_YURISDIKSI_ASING = [
+  new RegExp(
+    `\\b(?:${daftarPola(LEMBAGA_PENAL_ASING)})\\s+(?:\\w+\\s+)?(?:${daftarPola(NEGARA_ASING)})\\b`,
+  ),
+  new RegExp(`\\b(?:${daftarPola(ORANG_PENAL_ASING)})\\s+(?:${daftarPola(NEGARA_ASING)})\\b`),
+]
+
+/**
+ * Penanda yang sendirian sudah membuktikan beritanya bukan urusan kita.
+ *
+ * Berbeda dari daftar negara, kata-kata ini tidak punya pembacaan Indonesia
+ * yang wajar di dalam berita Pemasyarakatan. Tetap dijaga gerbang jangkar
+ * Indonesia di bawah, sebab kunjungan delegasi asing memang ada.
+ */
+export const PENANDA_ASING_TEGAS = [
+  'zionis', 'gaza', 'tepi barat', 'ofer', 'megiddo', 'guantanamo',
+  'el salvador', 'cecot', 'idf', 'pasukan israel', 'otoritas israel',
+  'militer israel', 'penjajah israel', 'tahanan palestina', 'napi palestina',
+]
+
+/**
+ * Jangkar yang membuktikan beritanya tentang Pemasyarakatan INDONESIA.
+ *
+ * Berbeda dari JANGKAR_PEMASYARAKATAN, yang menjawab "apakah ini soal
+ * penjara". Daftar ini menjawab "apakah ini penjara KITA", dan karena itu
+ * sengaja tidak memuat kata yang ikut terbawa terjemahan berita luar negeri —
+ * 'penjara', 'sipir', 'narapidana', dan 'tahanan' semuanya dipakai wartawan
+ * Indonesia ketika menulis tentang penjara Israel.
+ */
+export const JANGKAR_INDONESIA = [
+  'pemasyarakatan', 'kemenimipas', 'ditjenpas', 'ditjen pas', 'imipas',
+  'kanwil', 'kakanwil', 'kalapas', 'karutan', 'warga binaan', 'wbp',
+  'lapas kelas', 'rutan kelas', 'lpka', 'lpp', 'bapas', 'napiter',
+  'direktorat jenderal pemasyarakatan', 'kementerian imigrasi',
+  'dirjenpas', 'dirjen pas', 'menteri imipas', 'balai pemasyarakatan',
+]
+
+/**
+ * Frasa yang harus disamarkan SEBELUM penilaian, beserta penggantinya.
+ *
+ * ---------------------------------------------------------------------------
+ * KENAPA MENYAMARKAN, BUKAN MENURUNKAN BOBOT
+ * ---------------------------------------------------------------------------
+ *
+ * Dua bentuk, dan keduanya kata yang kebetulan sama dengan kata peristiwa
+ * padahal sama sekali bukan peristiwa:
+ *
+ *   NAMA UNIT. "Lapas Narkotika Kelas IIA Karang Intan" memuat kata
+ *   "narkotika" pada setiap berita unit itu — pengajian, salat Dhuha, latihan
+ *   band — dan kata itu bernilai di 2.1 Peredaran Narkotika. Menurunkan
+ *   bobotnya tidak menolong: yang salah bukan besarnya nilai melainkan
+ *   adanya. Unit yang namanya menyebut sebuah pelanggaran tidak sedang
+ *   melakukan pelanggaran itu setiap hari.
+ *
+ *   SARANA KESELAMATAN. "Jalur evakuasi" adalah tangga dan pintu, bukan
+ *   evakuasi. Kata 'dievakuasi' bernilai 3 di 4.3 dan 'evakuasi' adalah
+ *   PEMICU_KRITIS — sehingga "Cegah Kebakaran, Rutan Manna Kembali Periksa
+ *   APAR, CCTV, Listrik dan Jalur Evakuasi" tercatat 4.3 Bencana, Negatif,
+ *   urgensi KRITIS. Pemeriksaan alat pemadam menjadi kabar kebakaran besar.
+ *
+ * Penggantinya bukan spasi kosong, melainkan kata yang benar. "Sarana
+ * keselamatan" tetap membawa berita itu ke 8.5 seperti seharusnya, sedangkan
+ * membuangnya akan menjadikannya berita tanpa isi.
+ */
+export const SAMARAN_FRASA = [
+  [/\b(lapas|rutan|lpn)\s+narkotika\b/g, '$1'],
+  [/\blapas\s+perempuan\b/g, 'lapas'],
+  [/\brutan\s+perempuan\b/g, 'rutan'],
+  [/\b(jalur|rute|peta|tangga|pintu|rambu|denah)\s+evakuasi\b/g, 'sarana keselamatan'],
+  [/\btitik\s+kumpul\b/g, 'sarana keselamatan'],
 ]
 
 /**
@@ -1218,6 +1683,112 @@ export const FRASA_KEGIATAN = [
   */
   'cegah', 'mencegah', 'pencegahan', 'memastikan', 'pastikan',
   'ikrar', 'ikrar setia', 'deklarasi', 'komitmen', 'penandatanganan pakta',
+
+  /*
+     Gelombang ketiga, 7 September 2026. Kelimanya bentuk yang sama sekali
+     tidak tertangkap dua gelombang sebelumnya, dan semuanya terkirim ke grup
+     pimpinan sebagai "BERITA NEGATIF MASUK":
+
+       "Dirjenpas TINJAU Kondisi Rutan Ruteng yang Terdampak Gempa Flores"
+       "Lapas Tembilahan SIAGA, PEMERIKSAAN APAR Secara Berkala sebagai
+        Langkah ANTISIPASI Bahaya Kebakaran"
+       "Lapas Kalianda ... Sosialisasi PENANGGULANGAN Kebakaran"
+       "Kemenimipas SALURKAN BANTUAN Rp1,8 Miliar untuk KORBAN Gempa NTT"
+
+     Daftar lama memuat 'meninjau' tetapi tidak 'tinjau'; memuat 'menyalurkan'
+     tetapi kalah lebih dulu karena sebab lain. Yang menyatukan keempatnya:
+     lembaga MENANGANI sebuah musibah, dan penanganan bukan musibah.
+  */
+  'tinjau', 'peninjauan', 'meninjau lokasi', 'memantau', 'pemantauan',
+  'antisipasi', 'mengantisipasi', 'siaga', 'kesiapan', 'kesiagaan',
+  'penanggulangan', 'menanggulangi', 'penanganan', 'menangani',
+  'pemeriksaan berkala', 'pengecekan', 'perawatan', 'pemeliharaan',
+  'apar', 'alat pemadam', 'hydrant', 'proteksi kebakaran',
+  'berbagi', 'kepedulian', 'peduli', 'menyerahkan santunan', 'bantuan logistik',
+  'tanggap darurat', 'pemulihan', 'rehabilitasi bangunan', 'perbaikan',
+  'himbauan', 'imbauan', 'arahan', 'sarasehan', 'diskusi', 'talkshow',
+]
+
+/**
+ * Ke mana sebuah berita kegiatan dibawa ketika mesin TIDAK punya satu pun
+ * kandidat 8.x untuk dipromosikan.
+ *
+ * ---------------------------------------------------------------------------
+ * LUBANG YANG DITUTUP DAFTAR INI
+ * ---------------------------------------------------------------------------
+ *
+ * Kaidah kegiatan v4.2 mempromosikan "kandidat 8.x TERBAIK yang sudah ada di
+ * peringkat", dan itu benar selama ada satu. Ketika tidak ada, kaidahnya
+ * berhenti tanpa suara dan juara negatifnya tetap menang — persis yang
+ * terjadi pada "Kemenimipas Salurkan Bantuan Rp1,8 Miliar untuk Korban Gempa
+ * NTT": tidak satu pun kata di judul itu bernilai pada subkategori 8 mana pun,
+ * sehingga tidak ada yang bisa dipromosikan dan beritanya tercatat 4.3
+ * Bencana, Negatif, urgensi Tinggi.
+ *
+ * Yang dipakai kalau begitu adalah JENIS kegiatannya. Urutan daftar ini
+ * berarti: yang lebih khusus diperiksa lebih dulu, dan 8.4 di paling bawah
+ * adalah jawaban terakhir — "kegiatan kelembagaan, jenis belum dirinci" —
+ * yang sama dengan jawaban untuk unggahan humas tanpa kata kunci.
+ */
+export const KEGIATAN_KE_SUBKATEGORI = [
+  {
+    kode: '8.3',
+    frasa: [
+      'bantuan kemanusiaan', 'bantuan logistik', 'menyerahkan bantuan',
+      'menyalurkan', 'penyaluran', 'santunan', 'menyerahkan santunan',
+      'bakti sosial', 'donor darah', 'berbagi', 'kepedulian', 'peduli',
+    ],
+  },
+  {
+    kode: '8.5',
+    frasa: [
+      'simulasi', 'mitigasi', 'kesiapsiagaan', 'apel siaga', 'siaga',
+      'kesiagaan', 'kesiapan', 'antisipasi', 'mengantisipasi', 'gladi',
+      'cegah', 'mencegah', 'pencegahan', 'penanggulangan', 'menanggulangi',
+      'pemeriksaan berkala', 'pengecekan', 'perawatan', 'pemeliharaan',
+      'apar', 'alat pemadam', 'hydrant', 'proteksi kebakaran',
+      'memastikan', 'pastikan', 'tanggap darurat',
+    ],
+  },
+  {
+    kode: '8.2',
+    frasa: [
+      'pelatihan', 'bimbingan teknis', 'bimtek', 'workshop', 'seminar',
+      'lokakarya', 'edukasi', 'penyuluhan', 'sosialisasi', 'pembekalan',
+      'latihan', 'penguatan', 'sarasehan', 'diskusi', 'talkshow',
+    ],
+  },
+]
+
+/**
+ * Barang yang bisa DITEMUKAN dalam sebuah razia.
+ *
+ * ---------------------------------------------------------------------------
+ * KENAPA KATA KERJANYA SAJA TIDAK PERNAH CUKUP
+ * ---------------------------------------------------------------------------
+ *
+ * Kaidah temuan v4.2 menyala hanya dengan kata kerjanya — 'ditemukan',
+ * 'diamankan', 'disita'. Kata-kata itu terlalu lazim untuk berdiri sendiri,
+ * dan akibatnya terbukti mahal: catatan asal-usul perayap sendiri yang
+ * berbunyi "Ditemukan penjaring-v1.0 (unit)." menyalakan kaidah ini pada
+ * SELURUH 718 baris hasil perayap, sehingga setiap kegiatan humas yang punya
+ * pesaing negatif sekecil apa pun berubah menjadi berita negatif.
+ *
+ * Templat itu kini dibuang lebih awal di teks.js, tetapi menambal satu templat
+ * bukan perbaikan — templat berikutnya akan berbunyi lain. Yang diperbaiki di
+ * sini adalah kaidahnya: sebuah razia yang berhasil selalu menyebut APA yang
+ * ditemukannya. Tanpa barangnya, tidak ada temuan.
+ */
+export const OBJEK_TEMUAN = [
+  'ponsel', 'handphone', 'telepon genggam', 'telepon seluler', 'hp',
+  'sabu', 'narkoba', 'narkotika', 'ganja', 'ekstasi', 'tembakau sintetis',
+  'pil koplo', 'obat terlarang', 'psikotropika', 'bong', 'alat hisap',
+  'senjata tajam', 'sajam', 'pisau', 'gunting', 'celurit', 'clurit',
+  'besi runcing', 'senjata api', 'peluru', 'korek api', 'pemantik',
+  'barang terlarang', 'benda terlarang', 'barang haram', 'benda berbahaya',
+  'barang bukti', 'uang tunai', 'minuman keras', 'miras', 'tuak', 'arak',
+  'charger', 'kartu perdana', 'simcard', 'earphone', 'powerbank',
+  'kabel data', 'headset', 'flashdisk', 'barang selundupan',
 ]
 
 /**
@@ -1255,7 +1826,7 @@ export const FRASA_TEMUAN = [
 ]
 
 /**
- * Pemicu eskalasi ke urgensi tertinggi. Sesuai rumusan Dirpamintel, urgensi
+ * Pemicu eskalasi ke urgensi tertinggi. Sesuai rumusan Ditpamintel, urgensi
  * "Kritis" hanya diberikan pada kejadian yang mengancam nyawa atau stabilitas
  * secara massal. Mesin aturan versi lama tidak pernah menghasilkan nilai ini
  * sama sekali.
@@ -1314,7 +1885,7 @@ export const KATEGORI_TAK_DIHITUNG = new Set([KATEGORI_LUAR_LINGKUP.nama])
  *
  * Taksonomi di atas disusun untuk pekerjaan intelijen: ia bertanya "ancaman
  * apa ini, siapa pelakunya, seberapa mendesak". Itu pertanyaan yang benar untuk
- * halaman Kanal Negatif, Kasus, dan Risiko — dan sembilan kategorinya memang
+ * halaman Berita Negatif, Kasus, dan Risiko — dan sembilan kategorinya memang
  * dipakai untuk itu setiap hari.
  *
  * Laporan berkala menjawab pertanyaan yang lain: "sepekan ini Pemasyarakatan

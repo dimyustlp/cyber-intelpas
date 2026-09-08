@@ -1,5 +1,5 @@
 /**
- * Kanal Negatif dan Kanal Positif.
+ * Berita Negatif dan Berita Positif.
  *
  * Dua halaman, satu berkas, karena keduanya menjawab pertanyaan yang berbentuk
  * sama dari dua arah berlawanan: apa yang sedang merugikan institusi, dan apa
@@ -135,7 +135,7 @@ function gambarKanal({ keadaan, isi }, sisi) {
 
   const bolehKasus = negatif && punyaIzin(keadaan.profil?.role, 'kelola_kasus')
 
-  const judul = negatif ? 'Kanal Negatif' : 'Kanal Positif'
+  const judul = negatif ? 'Berita Negatif' : 'Berita Positif'
   const sub = negatif
     ? 'Isu yang merugikan institusi, dikelompokkan per peristiwa'
     : 'Narasi yang menguatkan institusi, bahan penyeimbang laporan'
@@ -232,7 +232,7 @@ function gambarKanal({ keadaan, isi }, sisi) {
   /*
      Jalan dari peristiwa ke perkara.
 
-     Kanal Negatif sudah menyatukan publikasi menjadi peristiwa dengan mesin
+     Berita Negatif sudah menyatukan publikasi menjadi peristiwa dengan mesin
      yang sama dengan halaman Kasus Intelijen. Analis yang membacanya di sini
      sudah melihat perkaranya utuh; memintanya berpindah halaman lalu memilih
      ulang peristiwa yang sama dari daftar berisi empat puluh adalah meminta

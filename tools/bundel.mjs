@@ -55,6 +55,11 @@ function impornya(kunci, sumber) {
     /import\s*\{[^}]*\}\s*from\s*['"]([^'"]+)['"]/g,
     /import\s*['"]([^'"]+)['"]/g,
     /\bimport\(\s*['"]([^'"]+)['"]\s*\)/g,
+    /* Ekspor-ulang juga sebuah ketergantungan. Tanpa baris ini modulnya hanya
+       ikut terbawa bila ada berkas LAIN yang mengimpornya langsung — dan
+       ketergantungan yang kebetulan terpenuhi adalah ketergantungan yang akan
+       putus pada penyuntingan berikutnya, di berkas yang tidak disentuh. */
+    /export\s*\{[^}]*\}\s*from\s*['"]([^'"]+)['"]/g,
   ]
   for (const p of pola) {
     let m
@@ -122,6 +127,39 @@ function ubah(kunci, sumber) {
     (_, jalur) => `__minta('${selesaikan(kunci, jalur)}')`,
   )
 
+  /*
+     export { a, b as c } from './x.js'
+
+     Ekspor-ulang: mengambil dari modul lain dan meneruskannya sebagai milik
+     sendiri. Dijalankan SEBELUM penangan `export { … }` biasa supaya jelas
+     urutannya, walau keduanya tidak berebut — pola yang biasa menuntut kurung
+     kurawal penutup berada di akhir baris.
+
+     Sampai 7 September 2026 bentuk ini tidak ditangani sama sekali, dan
+     akibatnya bukan bundel yang salah melainkan bundel yang tidak pernah jadi:
+     `node tools/bundel.mjs` berhenti dengan "Bentuk export yang belum
+     ditangani di js/lib/pencocokan-upt.js". Berkas mandiri yang terakhir
+     berhasil dibuat karena itu tertinggal beberapa hari di belakang aplikasinya
+     tanpa ada yang menyadarinya — satu-satunya penandanya adalah tanggal
+     berkasnya sendiri.
+
+     Perhatikan pembalikan nama. Pada impor, `a as b` berarti "ambil a, sebut b"
+     sehingga menjadi `{ a: b }`; di sini arahnya sama — yang diambil nama kiri,
+     yang diteruskan nama kanan.
+  */
+  hasil = hasil.replace(
+    /^export\s*\{([^}]*)\}\s*from\s*['"]([^'"]+)['"];?$/gm,
+    (_, isi, jalur) => {
+      const bagian = isi.split(',').map((x) => x.trim()).filter(Boolean).map((s) => {
+        const m = s.match(/^(\S+)\s+as\s+(\S+)$/)
+        if (m) { ekspor.push(m[2]); return `${m[1]}: ${m[2]}` }
+        ekspor.push(s)
+        return s
+      })
+      return `const { ${bagian.join(', ')} } = __minta('${selesaikan(kunci, jalur)}');`
+    },
+  )
+
   // export function / const / let / class
   hasil = hasil.replace(
     /^export\s+(async\s+)?(function|const|let|class)\s+([A-Za-z0-9_$]+)/gm,
@@ -187,15 +225,85 @@ function __minta(nama) {
 }
 `
 
-const css = readFileSync(join(AKAR, 'css/app.css'), 'utf8')
+/**
+ * Menanamkan sebuah berkas biner sebagai data URI.
+ *
+ * "Mandiri" hanya berarti sesuatu bila SELURUH isinya ikut. Berkas yang masih
+ * menunjuk ke berkas tetangganya bukan berkas mandiri — ia berkas yang bekerja
+ * di satu komputer, yaitu komputer tempat ia dibuat, dan gagal diam-diam di
+ * mana pun ia dikirim.
+ */
+function dataUri(jalurRelatif, jenis) {
+  const bita = readFileSync(join(AKAR, jalurRelatif))
+  return `data:${jenis};base64,${bita.toString('base64')}`
+}
+
+/*
+   Ketiga lembar gaya ikut, dan URUTANNYA adalah keseluruhan alasan ia
+   dituliskan begini.
+
+   index.html memuat huruf.css, app.css, lalu gerak.css — dan gerak.css sengaja
+   paling akhir supaya tidak ada aturan lain yang bisa menimpanya. Sampai
+   7 September 2026 alat ini hanya menanamkan app.css, dan dua sisanya tetap
+   berupa <link> ke berkas yang tidak ada di sebelah berkas mandiri. Akibatnya
+   tidak pernah berupa galat: berkasnya terbuka, berjalan, dan hanya kehilangan
+   seluruh hurufnya dan seluruh geraknya — persis jenis kerusakan yang dikira
+   "memang begitu tampilannya" oleh orang yang baru pertama membukanya.
+*/
+const gayaUrut = ['css/huruf.css', 'css/app.css', 'css/gerak.css']
+let css = gayaUrut.map((j) => `/* === ${j} === */\n${readFileSync(join(AKAR, j), 'utf8')}`).join('\n\n')
+
+// Huruf disajikan dari berkas ini sendiri. 80 KB untuk empat potongan huruf,
+// dan tanpanya seluruh lembar gaya jatuh ke huruf serif bawaan peramban.
+css = css.replace(
+  /url\(['"]\.\.\/fonts\/([^'"]+)['"]\)/g,
+  (_, nama) => `url('${dataUri(`fonts/${nama}`, 'font/woff2')}')`,
+)
+
 const html = readFileSync(join(AKAR, 'index.html'), 'utf8')
 
-const badan = html
-  .replace(/<link rel="stylesheet" href="css\/app\.css">/, `<style>\n${css}\n</style>`)
+/*
+   Penggantian dengan FUNGSI, bukan dengan teks — dan ini bukan gaya penulisan.
+
+   String.replace memperlakukan `$&`, `` $` ``, `$'`, `$1`, dan `$$` di dalam
+   teks pengganti sebagai rujukan ke hasil pencocokan. Kode yang melarikan pola
+   regex hampir selalu memuat `'\\$&'`, dan modul semacam itu memang ada di
+   aplikasi ini. Ditanamkan lewat teks pengganti, tiap `$&` di dalam seluruh 84
+   modul berubah menjadi teks yang barusan dicocokkan — yakni seluruh tag
+   <script> yang sedang diganti.
+
+   Yang dihasilkannya bukan berkas yang gagal dibuka, melainkan berkas yang
+   terbuka dan salah: fungsi pelarian regex mengembalikan sepotong HTML, dan
+   penyorotan kata pada hasil pencarian berhenti bekerja tanpa satu pun galat.
+   Fungsi pengganti tidak menafsirkan apa pun.
+*/
+let badan = html
+  // Ketiga <link> lembar gaya diganti satu blok <style> di tempat yang pertama.
+  .replace(/<link rel="stylesheet" href="css\/huruf\.css">/, () => `<style>\n${css}\n</style>`)
+  .replace(/<link rel="stylesheet" href="css\/(app|gerak)\.css">\n?/g, '')
+  /* Prapemuatan huruf, manifes, dan ikon layar utama semuanya menunjuk berkas
+     tetangga. Hurufnya kini ada di dalam <style> di atas, dan manifes tidak
+     berarti apa-apa bagi berkas yang dibuka dari flashdisk — yang tersisa dari
+     ketiganya hanyalah tiga permintaan yang gagal. */
+  .replace(/\s*<link rel="preload" href="fonts\/[^"]*"[^>]*>/g, '')
+  .replace(/\s*<link rel="manifest" href="[^"]*">/, '')
+  .replace(/\s*<link rel="apple-touch-icon" href="[^"]*">/, '')
   .replace(
     /<script type="module" src="js\/main\.js"><\/script>/,
-    `<script type="module">\n${pencatat}\n${potongan.join('\n\n')}\n\n__minta('js/main.js');\n</script>`,
+    () => `<script type="module">\n${pencatat}\n${potongan.join('\n\n')}\n\n__minta('js/main.js');\n</script>`,
   )
+
+/*
+   Lambang, di HTML maupun di dalam kode.
+
+   Alamatnya muncul di dua bentuk yang sangat berbeda — atribut href pada layar
+   nyala, dan nilai string di KONFIG.lencana — tetapi teksnya sama persis di
+   keduanya. Menukar teks itu sekali karena itu cukup, dan lebih tahan daripada
+   dua pola yang harus ikut berubah setiap kali salah satu pemakainya berubah.
+*/
+for (const jalur of ['assets/lambang-trans-siber.png', 'assets/lambang-ditpamintel.png']) {
+  badan = badan.split(jalur).join(dataUri(jalur, 'image/png'))
+}
 
 /**
  * Pemeriksaan terakhir sebelum berkas ditulis: setiap permintaan modul di

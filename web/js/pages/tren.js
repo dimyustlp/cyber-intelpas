@@ -298,8 +298,8 @@ export function halamanTren({ keadaan, isi }) {
 
       <div class="kisi kisi-2">
         ${kartu({
-          judul: 'Irama pekan',
-          ket: 'Hari mana pemberitaan menumpuk sepanjang periode ini.',
+          judul: 'Hari tersibuk',
+          ket: 'Hari apa pemberitaan paling menumpuk sepanjang periode ini.',
           isi: iramaPekan(deret),
         })}
 

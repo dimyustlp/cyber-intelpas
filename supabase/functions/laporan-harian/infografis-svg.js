@@ -1,4 +1,4 @@
-import { TATA, WARNA, IKON_TEMA, LAMBANG } from './infografis-tata.js'
+import { TATA, WARNA, IKON_TEMA, LAMBANG, lencana } from './infografis-tata.js'
 export function lepas(nilai) {
 return String(nilai ?? '')
 .replace(/&/g, '&amp;')
@@ -130,24 +130,26 @@ return `${huruf}${bulat(px)} ${bulat(py)}`
 function panelKepala(m, x, y, l, t) {
 const bagian = []
 bagian.push(kotak(x, y, l, t, 8, WARNA.kartu, { garis: WARNA.garis }))
-const lx = x + 26
-const ly = y + t / 2
-bagian.push(LAMBANG(lx, ly - 30, 60))
-const tx = lx + 78
-bagian.push(teks(tx, y + 40, 'MONITORING BERITA LAPAS & RUTAN', {
+const sisi = 66
+const ly = y + (t - sisi) / 2
+const kiri = x + 20
+const kanan = x + l - 20 - sisi
+bagian.push(lencana(kiri, ly, sisi, LAMBANG.TRANS_SIBER))
+bagian.push(lencana(kanan, ly, sisi, LAMBANG.DITPAMINTEL))
+const tx = kiri + sisi + 18
+const lebarTeksMaks = kanan - 18 - tx
+bagian.push(teks(tx, y + 40, potong('MONITORING BERITA LAPAS & RUTAN', lebarTeksMaks, 30, true), {
 ukuran: 30, tebal: 800, warna: WARNA.navy, huruf: TATA.huruf.judul, spasi: -0.3,
 }))
-bagian.push(teks(tx, y + 66, `PERIODE ${String(m.periode.label).toUpperCase()}`, {
+bagian.push(teks(tx, y + 66, potong(`PERIODE ${String(m.periode.label).toUpperCase()}`, lebarTeksMaks, 15, true), {
 ukuran: 15, tebal: 700, warna: WARNA.biru, spasi: 0.8,
 }))
-const penjelas = m.jenis === 'harian'
-? 'Ringkasan pemberitaan seputar Lembaga Pemasyarakatan (Lapas) dan Rumah Tahanan (Rutan)'
-: 'Ringkasan pemberitaan seputar Lembaga Pemasyarakatan (Lapas) dan Rumah Tahanan (Rutan)'
+const penjelas = 'Ringkasan pemberitaan seputar Lembaga Pemasyarakatan (Lapas) dan Rumah Tahanan (Rutan)'
 const penjelas2 = m.jenis === 'harian'
 ? 'di seluruh Indonesia selama satu hari terakhir.'
 : 'di seluruh Indonesia selama satu pekan terakhir.'
-bagian.push(teks(tx, y + 90, penjelas, { ukuran: 12.5, warna: WARNA.redup }))
-bagian.push(teks(tx, y + 107, penjelas2, { ukuran: 12.5, warna: WARNA.redup }))
+bagian.push(teks(tx, y + 90, potong(penjelas, lebarTeksMaks, 12.5), { ukuran: 12.5, warna: WARNA.redup }))
+bagian.push(teks(tx, y + 107, potong(penjelas2, lebarTeksMaks, 12.5), { ukuran: 12.5, warna: WARNA.redup }))
 return bagian.join('')
 }
 function panelSentimen(m, x, y, l, t) {

@@ -353,12 +353,7 @@
   to { transform: rotate(360deg); }
 }
 
-.nyala-lambang text {
-  font-family: var(--disp);
-  font-weight: 800;
-  font-size: 25px;
-  letter-spacing: -0.03em;
-  fill: var(--ink);
+.nyala-lambang image {
   animation: nyala-terbit 700ms var(--k-datang) 260ms backwards;
 }
 
@@ -904,19 +899,61 @@ table.tabel tbody tr td:first-child::before {
 
 /* ------------------------------------------- 10. Gerak dikurangi & cetak */
 /*
-   Satu tempat, dan seluruh gerak berkas ini padam.
+   Satu tempat, dan seluruh gerak padam.
 
-   Ditulis sebagai daftar nama, bukan `*`, supaya jelas apa saja yang sedang
-   dipadamkan — dan supaya penambahan gerak baru yang lupa didaftarkan di sini
-   ketahuan saat diperiksa, bukan saat dipakai orang yang memintanya padam.
+   DAFTAR NAMA SUDAH DICOBA, DAN GAGAL PERSIS SEPERTI YANG DIJANJIKANNYA TIDAK.
+
+   Sampai 7 September 2026 blok ini hanya berisi daftar selektor, dengan alasan
+   yang ditulis di sini bahwa gerak baru yang lupa didaftarkan "ketahuan saat
+   diperiksa". Ia tidak pernah ketahuan. Pemeriksaan CSSOM pada 7 September
+   menemukan 28 aturan beranimasi di seluruh aplikasi dan hanya 10 di antaranya
+   yang benar-benar terjangkau daftar ini; delapan belas sisanya tetap bergerak
+   bagi orang yang sudah menyatakan tidak sanggup melihat gerak — termasuk yang
+   paling merugikan: titik peta yang berdenyut terus-menerus, cincin pilihan di
+   peta, dan lampu status kritis yang berkedip tanpa henti.
+
+   Sebabnya bukan kelalaian satu orang, melainkan bentuk daftarnya: gerak
+   ditambahkan di berkas ini DAN di app.css, oleh orang yang sedang mengerjakan
+   halaman lain, dan tidak ada satu pun yang gagal bila namanya tidak ikut
+   ditulis. Daftar yang harus dijaga disiplin selalu kalah oleh berkas yang
+   bertambah panjang.
+
+   Yang dipakai sekarang menjangkau semuanya sekaligus, dan menjangkau juga
+   gerak yang belum ditulis siapa pun. Bukan `animation: none` — melainkan
+   durasi yang dipangkas menjadi hampir nol dengan SATU putaran:
+
+     - `none` akan membatalkan jaring pengaman layar nyala, yang justru
+       BERGANTUNG pada animasi bertunda 15 detik untuk memadamkan dirinya
+       tanpa JavaScript. Tundaan tidak ikut dipangkas, jadi jaring itu tetap
+       bekerja.
+     - Durasi hampir nol membuat setiap animasi kedatangan langsung berdiri di
+       keadaan akhirnya. Yang memakai `backwards` karena itu tetap terlihat,
+       bukan menghilang.
+     - Satu putaran menghentikan yang tak berhingga — denyut, kedip, putaran —
+       dan itulah yang paling menyiksa penderita gangguan vestibular.
+
+   Aturan khusus di bawahnya tetap ada dan tetap menang, sebab kekhususannya
+   lebih tinggi daripada `*`. Yang mereka kerjakan memang tidak bisa dikerjakan
+   pemangkasan durasi: memadamkan transform pada tunjuk-tahan, menegakkan
+   keadaan akhir yang tidak berasal dari animasi, dan menjaga sorot penunjuk
+   tetap ada.
 */
 @media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
   .ambien-noda,
   .ambien-kisi,
   .ambien-butir,
   .nyala-cincin,
   .nyala-busur,
-  .nyala-lambang text,
+  .nyala-lambang image,
   .nyala-nama,
   .nyala-instansi,
   .nyala-rel,

@@ -16,6 +16,12 @@
  * membandingkan lembar yang sama akan melihat dua benda yang berbeda.
  */
 
+/* Jalur impor ini sengaja tanpa folder, dan itu berlaku di dua tempat
+   sekaligus: di web/js/ui/ berkasnya bersebelahan, dan di dalam Edge Function
+   ia bersebelahan juga — tools/ringkas-fungsi.mjs menyalin isi ui/ RATA ke
+   folder fungsi, tanpa membuat subfolder. */
+import { TRANS_SIBER, DITPAMINTEL } from './lambang-data.js'
+
 export const TATA = {
   /* Perbandingan A4 lanskap (√2). Lembar yang sama memenuhi kertas ketika
      dicetak dan memenuhi layar ketika dilihat, tanpa penyesuaian. */
@@ -66,32 +72,29 @@ export const WARNA = {
 /**
  * Lambang pada kepala lembar.
  *
- * Digambar, bukan ditempel. Lembar ini juga disusun di dalam Edge Function,
- * yang tidak bisa membaca berkas gambar mana pun dari repositori.
+ * DITEMPEL SEBAGAI DATA URI, DAN ITU SATU-SATUNYA BENTUK YANG BEKERJA.
  *
- * Yang digambar sengaja BUKAN tiruan lambang resmi Kemenimipas. Lambang negara
- * punya bentuk baku yang tidak boleh diterka, dan tiruan yang mirip-tetapi-tidak
- * -sama justru lebih buruk daripada tanda netral: ia terbaca sebagai lambang
- * resmi yang digambar sembarangan. Yang ada di sini perisai polos dengan huruf
- * PAS — tanda milik aplikasi ini sendiri. Bila suatu saat berkas lambang resmi
- * disediakan, ia bisa disisipkan sebagai data URI lewat opsi `lambang`.
+ * Sampai 7 September 2026 di tempat ini ada perisai yang digambar sendiri
+ * dengan huruf PAS — tanda netral, dipakai karena belum ada berkas lambang
+ * resmi dan karena dua dari tiga keluaran lembar ini tidak bisa mengambil
+ * berkas dari mana pun: PNG dirasterkan peramban dari SVG yang dimuat ke dalam
+ * <img>, tempat setiap rujukan ke luar diabaikan tanpa pesan; PDF disusun Edge
+ * Function, yang tidak punya satu pun berkas repositori di sampingnya.
+ *
+ * Kedua kendala itu tidak hilang ketika lambang resminya tersedia — yang
+ * berubah hanya cara memenuhinya. Lambangnya kini ikut sebagai teks di dalam
+ * ui/lambang-data.js, disusun tools/susun-lambang.mjs dari web/assets/.
+ *
+ * Dua lambang, dan urutannya berarti: lencana sistem di kiri (yang menyusun
+ * lembar), lencana direktorat di kanan (yang mengeluarkannya).
  */
-export function LAMBANG(x, y, ukuran) {
-  const s = ukuran / 60
-  const g = (n) => Number((n * s).toFixed(2))
-  return `<g transform="translate(${Number(x).toFixed(2)} ${Number(y).toFixed(2)})">`
-    + `<path d="M${g(30)} ${g(2)}L${g(56)} ${g(12)}L${g(56)} ${g(32)}`
-    + `C${g(56)} ${g(46)} ${g(44)} ${g(55)} ${g(30)} ${g(58)}`
-    + `C${g(16)} ${g(55)} ${g(4)} ${g(46)} ${g(4)} ${g(32)}`
-    + `L${g(4)} ${g(12)}Z" fill="${WARNA.navy}"/>`
-    + `<path d="M${g(30)} ${g(8)}L${g(51)} ${g(16)}L${g(51)} ${g(32)}`
-    + `C${g(51)} ${g(43)} ${g(41)} ${g(50)} ${g(30)} ${g(52)}`
-    + `C${g(19)} ${g(50)} ${g(9)} ${g(43)} ${g(9)} ${g(32)}`
-    + `L${g(9)} ${g(16)}Z" fill="none" stroke="#d9b34a" stroke-width="${g(1.6)}"/>`
-    + `<text x="${g(30)}" y="${g(37)}" font-family="${TATA.huruf.judul}" font-size="${g(17)}"`
-    + ` font-weight="800" fill="#ffffff" text-anchor="middle">PAS</text>`
-    + '</g>'
+export function lencana(x, y, ukuran, data) {
+  return `<image x="${Number(x).toFixed(2)}" y="${Number(y).toFixed(2)}"`
+    + ` width="${Number(ukuran).toFixed(2)}" height="${Number(ukuran).toFixed(2)}"`
+    + ` href="${data}"/>`
 }
+
+export const LAMBANG = { TRANS_SIBER, DITPAMINTEL }
 
 /**
  * Piktogram tema dan ubin angka.

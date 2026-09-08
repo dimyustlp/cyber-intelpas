@@ -176,6 +176,82 @@ console.log('Lembar tanpa berita negatif')
   uji('kesimpulan tidak menakut-nakuti', m.kesimpulan[1].nada === 'baik')
 }
 
+/* ------------------------------------------- lembar tergambar & jangkauan PDF */
+
+/*
+   Penjaga cakupan penerjemah PDF.
+
+   Lembar yang sama digambar sekali dan keluar tiga kali: layar, PNG, dan PDF.
+   Dua yang pertama memakai penggambar SVG itu sendiri, jadi keduanya selalu
+   ikut berubah. Yang ketiga tidak: PDF disusun penerjemah terpisah di
+   supabase/functions/laporan-harian/svg-ke-pdf.ts, yang hanya mengerti bentuk
+   yang namanya disebut di dalamnya.
+
+   Bentuk baru di penggambar karena itu tidak menghasilkan galat apa pun di
+   sini — ia menghasilkan lembar PDF yang kehilangan sesuatu, dan lembar PDF
+   adalah keluaran yang paling jarang dilihat siapa pun. Pada 7 September 2026
+   <image> ditambahkan untuk lambang, dan lembar di layar berlambang sedangkan
+   lembar yang naik ke pimpinan tidak — tanpa satu pun uji yang merah.
+
+   Uji ini menutup celah itu dengan membandingkan dua daftar: bentuk yang
+   BENAR-BENAR keluar dari penggambar, dan bentuk yang disebut penerjemah.
+*/
+console.log('Jangkauan penerjemah PDF')
+{
+  const { svgInfografis } = await import('../web/js/ui/infografis-svg.js')
+  const { BATAS, DARATAN, TETANGGA } = await import('../web/js/lib/peta-indonesia.js')
+  const { PROVINSI, PROVINSI_INDUK } = await import('../web/js/lib/peta-provinsi.js')
+
+  const m = susunInfografis({
+    berita: [
+      {
+        judul: 'Panen pakcoy di Lapas Bekasi', nama_upt: 'Lapas Kelas IIA Bekasi',
+        subkategori_kode: '8.6', subkategori: 'Ketahanan Pangan dan Pemberdayaan Ekonomi',
+        sentimen: 'Positif', media: 'RRI.co.id', tanggal_publikasi: '2026-09-01T02:00:00Z',
+      },
+      {
+        judul: 'Dugaan pungli di Rutan Pondok Bambu', nama_upt: 'Rutan Kelas I Pondok Bambu',
+        subkategori_kode: '3.1', subkategori: 'Pungli dan Pemerasan oleh Petugas',
+        sentimen: 'Negatif', urgensi: 'Tinggi', media: 'ANTARA News',
+        tanggal_publikasi: '2026-09-02T02:00:00Z',
+      },
+    ],
+    unit: [
+      { nama_upt: 'Lapas Kelas IIA Bekasi', jenis_upt: 'Lapas', provinsi: 'Jawa Barat' },
+      { nama_upt: 'Rutan Kelas I Pondok Bambu', jenis_upt: 'Rutan', provinsi: 'DKI Jakarta' },
+    ],
+    mulai: '2026-09-01', selesai: '2026-09-03', jenis: 'mingguan',
+    indukProvinsi: PROVINSI_INDUK,
+  })
+  const svg = svgInfografis(m, { batas: BATAS, daratan: DARATAN, tetangga: TETANGGA, provinsi: PROVINSI })
+
+  const dipakai = new Set(
+    [...svg.matchAll(/<([a-zA-Z][a-zA-Z0-9:-]*)\b/g)].map((x) => x[1]),
+  )
+  const sumberPdf = readFileSync(
+    new URL('../supabase/functions/laporan-harian/svg-ke-pdf.ts', import.meta.url), 'utf8',
+  )
+  const ditangani = new Set(
+    [...sumberPdf.matchAll(/nama === '([a-zA-Z/][a-zA-Z0-9:/-]*)'/g)].map((x) => x[1]),
+  )
+  const tertinggal = [...dipakai].filter((t) => !ditangani.has(t)).sort()
+  uji(
+    'setiap bentuk yang digambar dikenali penerjemah PDF',
+    tertinggal.length === 0,
+    tertinggal.length
+      ? `Belum ditangani svg-ke-pdf.ts: ${tertinggal.join(', ')}. `
+        + 'Bentuk ini akan hilang dari lembar PDF tanpa satu pun galat.'
+      : '',
+  )
+
+  // Lambang: satu-satunya isi lembar yang datang dari berkas, bukan dari data.
+  // Bila alat penyusunnya belum dijalankan, keduanya hilang diam-diam.
+  uji('lencana Trans-Siber tertanam di lembar',
+    svg.includes('href="data:image/jpeg;base64,') && (svg.match(/<image /g) || []).length === 2,
+    'Kepala lembar harus memuat dua lencana sebagai data URI. Jalankan '
+    + 'node tools/susun-lambang.mjs bila web/assets/ baru berubah.')
+}
+
 console.log(`\n${lulus} lulus, ${gagal} gagal`)
 
 /* ------------------------------------------------- pemeriksaan mata, opsional */

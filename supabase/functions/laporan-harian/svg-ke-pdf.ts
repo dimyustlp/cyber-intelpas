@@ -29,7 +29,9 @@
 
 import {
   rgb,
+  type PDFDocument,
   type PDFFont,
+  type PDFImage,
   type PDFPage,
   type RGB,
 } from 'https://esm.sh/pdf-lib@1.17.1'
@@ -111,18 +113,52 @@ export interface HurufLembar {
 }
 
 /**
+ * Menanam setiap gambar yang dirujuk lembar ke dalam dokumen PDF.
+ *
+ * Dipisahkan dari penggambar karena penanaman berjalan async sedangkan
+ * penggambaran tidak, dan membuat gambarSvg() async berarti setiap pemanggilnya
+ * ikut berubah demi satu bentuk saja.
+ *
+ * Yang dirujuk lembar hanya data URI — lihat ui/lambang-data.js — dan itu
+ * kebetulan yang paling murah di sini juga: JPEG masuk ke PDF apa adanya
+ * sebagai aliran DCTDecode, tanpa satu piksel pun disandikan ulang.
+ *
+ * Kuncinya alamat URI itu sendiri, bukan nomor urut: lambang yang sama dipakai
+ * dua kali akan ditanam sekali.
+ */
+export async function siapkanGambar(
+  doc: PDFDocument,
+  svg: string,
+): Promise<Map<string, PDFImage>> {
+  const peta = new Map<string, PDFImage>()
+  const pola = /href="(data:image\/(jpeg|jpg|png);base64,([A-Za-z0-9+/=]+))"/g
+  let cocok: RegExpExecArray | null
+  while ((cocok = pola.exec(svg)) !== null) {
+    const [, alamat, jenis, base64] = cocok
+    if (peta.has(alamat)) continue
+    const biner = atob(base64)
+    const bita = new Uint8Array(biner.length)
+    for (let i = 0; i < biner.length; i++) bita[i] = biner.charCodeAt(i)
+    peta.set(alamat, jenis === 'png' ? await doc.embedPng(bita) : await doc.embedJpg(bita))
+  }
+  return peta
+}
+
+/**
  * Menggambar satu SVG ke satu halaman PDF.
  *
  * @param halaman  halaman tujuan, ukurannya sudah ditetapkan pemanggil
  * @param svg      keluaran svgInfografis()
  * @param huruf    dua huruf baku; berat >= 600 memakai yang tebal
  * @param amankan  penukar aksara di luar WinAnsi (pdf-lib melempar galat, bukan mengabaikan)
+ * @param gambar   hasil siapkanGambar() untuk svg yang sama
  */
 export function gambarSvg(
   halaman: PDFPage,
   svg: string,
   huruf: HurufLembar,
   amankan: (nilai: unknown) => string,
+  gambar: Map<string, PDFImage> = new Map(),
 ): void {
   const kotakPandang = svg.match(/viewBox="0 0 ([\d.]+) ([\d.]+)"/)
   if (!kotakPandang) throw new Error('SVG tanpa viewBox; penerjemah tidak tahu skalanya.')
@@ -144,7 +180,18 @@ export function gambarSvg(
   const keY = (y: number) => tinggiHalaman - (kini().geserY + y * kini().skala) * skala
   const keUkuran = (n: number) => n * kini().skala * skala
 
-  const pola = /<(rect|text|circle|path|g|\/g|svg|\/svg)\b([^>]*?)(\/?)>([^<]*)/g
+  /*
+     Polanya menangkap SETIAP tag, bukan hanya yang dikenali.
+
+     Sampai 7 September 2026 di sini berdiri daftar tertutup — rect|text|circle|
+     path|g — dan daftar itu diam-diam membatalkan janji yang ditulis di kepala
+     berkas ini. Bentuk yang tidak dikenali memang melempar galat, tetapi hanya
+     bentuk yang SUDAH ADA di daftarnya; tag yang namanya tidak disebut sama
+     sekali tidak pernah cocok, tidak pernah sampai ke baris terakhir, dan
+     hilang tanpa suara. Persis itu yang terjadi ketika <image> ditambahkan:
+     lembar di layar berlambang, lembar yang naik ke pimpinan tidak.
+  */
+  const pola = /<(\/?[a-zA-Z][a-zA-Z0-9:-]*)\b([^>]*?)(\/?)>([^<]*)/g
   let cocok: RegExpExecArray | null
 
   while ((cocok = pola.exec(svg)) !== null) {
@@ -175,6 +222,12 @@ export function gambarSvg(
       if (tumpukan.length > 1) tumpukan.pop()
       continue
     }
+
+    /* Tag penutup selain </g> tidak menggambar apa pun dan tidak membawa
+       keadaan — </text> satu-satunya yang sungguh muncul. Yang dijaga galat di
+       bawah adalah tag PEMBUKA yang tidak dikenali; menuntut penutupnya ikut
+       dikenali hanya akan melaporkan bentuk yang sama dua kali. */
+    if (nama.startsWith('/')) continue
 
     const warisan = kini()
     const buram = a.opacity != null ? Number(a.opacity) : warisan.buram
@@ -245,6 +298,27 @@ export function gambarSvg(
         borderWidth: garisWarna ? keUkuran(tebalGaris) : undefined,
         opacity: buram,
         borderOpacity: buram,
+      })
+      continue
+    }
+
+    if (nama === 'image') {
+      const alamat = a.href ?? a['xlink:href']
+      const gbr = alamat ? gambar.get(alamat) : undefined
+      if (!gbr) {
+        // Lambang yang gagal ditanam adalah lembar resmi tanpa lambang. Lebih
+        // baik laporannya tidak terkirim daripada terkirim setengah benar.
+        throw new Error('Lembar merujuk gambar yang belum ditanam; panggil siapkanGambar() lebih dulu.')
+      }
+      const l = angka(a.width)
+      const t = angka(a.height)
+      if (l <= 0 || t <= 0) continue
+      halaman.drawImage(gbr, {
+        x: keX(angka(a.x)),
+        y: keY(angka(a.y) + t),
+        width: keUkuran(l),
+        height: keUkuran(t),
+        opacity: buram,
       })
       continue
     }

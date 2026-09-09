@@ -196,6 +196,38 @@ if (existsSync(jatim)) {
   periksa('portal Tier 1 TIDAK disemai sebagai umpan',
     !/"alamat":\s*"https:\/\/detik\.com"/.test(isi),
     'Umpan portal nasional besar sekali dan hanya memboroskan kuota.');
+
+  // v2.1: jangkar wilayah. Fungsi diWilayah/wilayahJangkar/berbatasKata murni —
+  // bisa dijalankan tanpa satu pun layanan Apps Script.
+  let diWilayah = null;
+  try {
+    diWilayah = new Function(`${isi}\nreturn diWilayah;`)();
+  } catch (e) {
+    periksa('diWilayah bisa dijalankan', false, String(e.message).slice(0, 120));
+  }
+
+  if (typeof diWilayah === 'function') {
+    periksa('berita unit Jawa Timur diterima jangkar wilayah',
+      diWilayah('Petugas Rutan Kelas I Surabaya Gagalkan Penyelundupan Sabu Lewat Makanan'),
+      'Nama unit wilayah sendiri harus lolos.');
+
+    periksa('nama provinsi saja sudah cukup',
+      diWilayah('Kakanwil Ditjenpas Jawa Timur Tinjau Kesiapan Pengamanan'),
+      'Provinsi termasuk jangkar wilayah.');
+
+    // Baris sungguhan dari lembar Jawa Timur 9 September 2026 — semuanya unit
+    // Kalimantan yang lolos jangkar kata Pemasyarakatan.
+    for (const luar of [
+      'Lapas Kotabaru Dorong Penerapan Pola Hidup Sehat Bagi Seluruh Warga Binaan',
+      'Kalapas Bontang Terima Kunjungan Kepala BNNK Bontang untuk Perkuat Sinergi',
+      'Pegawai Lapas Narkotika Karang Intan Olahraga Tenis Bersama untuk Jaga Kebugaran',
+      'Sumpah Jabatan PNS, Enam Pegawai Lapas Amuntai Resmi Masuki Babak Baru',
+    ]) {
+      periksa(`berita luar wilayah ditolak: "${luar.slice(0, 45)}…"`,
+        diWilayah(luar) === false,
+        'Berita Pemasyarakatan provinsi lain tidak boleh masuk lembar ini.');
+    }
+  }
 } else {
   periksa('berkas Jawa Timur ada', false);
 }

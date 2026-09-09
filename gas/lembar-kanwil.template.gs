@@ -79,6 +79,21 @@
  * Seluruh pencocokan jangkar di berkas ini memakai batas kata.
  *
  * ----------------------------------------------------------------------------
+ * v2.1 — JANGKAR WILAYAH
+ * ----------------------------------------------------------------------------
+ *
+ * Jangkar kata Pemasyarakatan menjawab "apakah ini urusan kita", bukan "apakah
+ * ini wilayah kita". Diukur 9 September 2026 di lembar Jawa Timur: satu portal
+ * jaringan memasukkan belasan berita Lapas Kalimantan Selatan dan Timur —
+ * semuanya lolos, sebab semuanya benar berita Pemasyarakatan.
+ *
+ * Kaki portal kini menolak butir yang tidak menyebut satu pun unit,
+ * kabupaten/kota, atau provinsi kanwil ini (`diWilayah`). Daftarnya diturunkan
+ * dari `UNIT` dan `PROVINSI`, jadi ragam nama yang dikurasi daerah ikut
+ * memperluasnya. Penolakannya tercatat di Jurnal kolom "Tolak: Luar Wilayah" —
+ * bila besar untuk satu portal, portal itu bukan hiperlokal wilayah ini.
+ *
+ * ----------------------------------------------------------------------------
  * CARA MEMASANG (sekali saja, sekitar tiga menit)
  * ----------------------------------------------------------------------------
  *
@@ -105,7 +120,7 @@
 
 /* ═══════════════════════════════════════════════════════════ setelan ══ */
 
-var VERSI = 'lembar-kanwil-v2.0';
+var VERSI = 'lembar-kanwil-v2.1';
 
 var L_BERITA = 'Berita';
 var L_UNIT   = 'Target Unit';
@@ -167,6 +182,67 @@ var LEMBAGA_LAIN = [
   'rutan mapolda', 'rutan kejaksaan', 'rutan kejari', 'rutan militer',
   'spkt', 'pamapta', 'sipropam', 'provos'
 ];
+
+/**
+ * Jangkar WILAYAH: sebuah berita portal baru diterima bila ia menyebut unit,
+ * kabupaten/kota, atau provinsi kanwil INI.
+ *
+ * ----------------------------------------------------------------------------
+ * KENAPA PERLU, PADAHAL PORTALNYA SUDAH HIPERLOKAL
+ * ----------------------------------------------------------------------------
+ *
+ * Sebagian portal di lembar Portal Wilayah ternyata bukan hiperlokal satu
+ * kabupaten — ia jaringan yang menerbitkan berita Pemasyarakatan dari banyak
+ * provinsi sekaligus. Diukur 9 September 2026 di lembar Jawa Timur: satu portal
+ * memasukkan belasan berita Lapas Kotabaru, Karang Intan, Amuntai, dan Bontang
+ * — seluruhnya Kalimantan. Jangkar kata Pemasyarakatan meloloskannya karena
+ * memang benar berita Pemasyarakatan; yang tidak benar adalah WILAYAHNYA.
+ *
+ * Daftar ini diturunkan dari `UNIT` dan `PROVINSI` yang sudah disuntik pabrik,
+ * jadi ia ikut tumbuh setiap kali petugas daerah menambah ragam nama di lembar
+ * Target Unit. Pencocokannya berbatas kata, sama seperti JANGKAR.
+ *
+ * Fail-open: bila daftarnya kosong (konfig belum tersuntik), `diWilayah`
+ * mengembalikan true supaya tidak menolak segalanya tanpa sebab yang terlihat.
+ */
+var _wilayahJangkar = null;
+
+function wilayahJangkar() {
+  if (_wilayahJangkar) return _wilayahJangkar;
+
+  var set = {};
+  var tambah = function (nilai) {
+    var v = String(nilai || '').toLowerCase()
+      .replace(/^(kota administrasi|kota|kabupaten|kab\.?)\s+/i, '')
+      .trim();
+    if (v.length >= 4) set[v] = true;
+  };
+
+  if (typeof PROVINSI === 'string') tambah(PROVINSI);
+
+  if (typeof UNIT !== 'undefined' && UNIT && UNIT.length) {
+    for (var i = 0; i < UNIT.length; i++) {
+      var u = UNIT[i];
+      tambah(u.nama);
+      tambah(u.kota);
+      var alias = u.alias || [];
+      for (var j = 0; j < alias.length; j++) tambah(alias[j]);
+    }
+  }
+
+  _wilayahJangkar = Object.keys(set);
+  return _wilayahJangkar;
+}
+
+function diWilayah(teks) {
+  var daftar = wilayahJangkar();
+  if (!daftar.length) return true;
+  var t = String(teks || '').toLowerCase();
+  for (var i = 0; i < daftar.length; i++) {
+    if (berbatasKata(t, daftar[i])) return true;
+  }
+  return false;
+}
 
 /* ═══════════════════════════════════════════════════════ menu & pemicu ══ */
 
@@ -409,13 +485,14 @@ function siapkanJurnal(berkas) {
   if (!l) l = berkas.insertSheet(L_JURNAL);
 
   var judul = ['Waktu', 'Kaki', 'Portal Diperiksa', 'Baris Baru', 'Tolak: Tak Relevan',
-               'Tolak: Kembar', 'Tolak: Alamat', 'Tolak: Lembaga Lain', 'Tolak: Terlalu Lama',
+               'Tolak: Kembar', 'Tolak: Alamat', 'Tolak: Lembaga Lain', 'Tolak: Luar Wilayah',
+               'Tolak: Terlalu Lama',
                'Panggilan Jaringan', 'Lama (detik)', 'Pesan'];
   l.getRange(1, 1, 1, judul.length).setValues([judul])
     .setFontWeight('bold').setBackground('#eceff1');
   l.setFrozenRows(1);
   l.getRange(2, 1, Math.max(l.getMaxRows() - 1, 1), 1).setNumberFormat('yyyy-mm-dd hh:mm:ss');
-  l.setColumnWidth(12, 460);
+  l.setColumnWidth(judul.length, 460);
   l.setTabColor('#607d8b');
 
   l.getRange(1, 5).setNote(
@@ -424,6 +501,14 @@ function siapkanJurnal(berkas) {
     + 'kata Pemasyarakatan.\n\n'
     + 'Yang menandakan rusak justru sebaliknya: "Portal Diperiksa" terisi tapi '
     + '"Panggilan Jaringan" nol.');
+
+  l.getRange(1, 9).setNote(
+    'Berita Pemasyarakatan dari provinsi lain yang ditolak. Bila angka ini '
+    + 'BESAR untuk satu portal, portal itu bukan hiperlokal wilayah ini — '
+    + 'pertimbangkan menonaktifkannya di lembar Portal Wilayah.\n\n'
+    + 'Penyaringnya memakai nama unit, kabupaten/kota, dan provinsi kanwil ini. '
+    + 'Kalau berita wilayah sendiri ikut tertolak, tambahkan ragam namanya di '
+    + 'lembar Target Unit.');
 }
 
 function siapkanPetunjuk(berkas) {
@@ -588,6 +673,10 @@ function olahTemuan(t, sudahAda, tolak) {
 
   if (!berjangkar(teks)) { tolak.takRelevan++; return null; }
   if (adaLembagaLain(teks)) { tolak.lembagaLain++; return null; }
+
+  // Berita Pemasyarakatan dari provinsi lain: portal jaringan memasukkannya
+  // sama derasnya dengan berita wilayah sendiri. Lihat wilayahJangkar().
+  if (!diWilayah(teks)) { tolak.luarWilayah++; return null; }
 
   if (t.tanggal && UMUR_MAKS_HARI > 0) {
     var umur = (new Date().getTime() - t.tanggal.getTime()) / 86400000;
@@ -816,7 +905,10 @@ function adaLembagaLain(teks) {
 /* ══════════════════════════════════════════════════ sasaran & penulisan ══ */
 
 function petaTolak() {
-  return { takRelevan: 0, kembar: 0, alamat: 0, lembagaLain: 0, terlaluLama: 0, kuota: 0 };
+  return {
+    takRelevan: 0, kembar: 0, alamat: 0, lembagaLain: 0, luarWilayah: 0,
+    terlaluLama: 0, kuota: 0
+  };
 }
 
 function bacaSasaran(namaLembar, kolomWaktu, kolomAktif) {
@@ -892,7 +984,8 @@ function catatJurnal(kaki, sasaran, baru, tolak, kuota, mulai, pesan) {
 
   l.appendRow([
     new Date(), kaki, sasaran, baru,
-    tolak.takRelevan, tolak.kembar, tolak.alamat, tolak.lembagaLain, tolak.terlaluLama,
+    tolak.takRelevan, tolak.kembar, tolak.alamat, tolak.lembagaLain, tolak.luarWilayah,
+    tolak.terlaluLama,
     kuota.ambil,
     Math.round((new Date().getTime() - mulai.getTime()) / 1000),
     pesan || ''

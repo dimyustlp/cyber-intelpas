@@ -657,8 +657,23 @@ export const KATEGORI = [
           ['pemasok narkoba', 3], ['memasok narkoba', 3], ['jalur masuk narkoba', 3],
           ['dititipkan lewat', 3], ['disamarkan', 3],
           [['paket', 'dilempar'], 3], [['lempar', 'tembok'], 3],
+          // Modus sembunyi-dalam-barang tanpa kata "selundup" sama sekali:
+          // "Enam Paket Diduga Sabu Disembunyikan dalam Ikan Tongkol, Berhasil
+          // Diamankan Petugas Rutan" — dulu jatuh ke 2.1 karena 6.1 tak punya
+          // satu pun kata kunci yang menyala.
+          [['sabu', 'disembunyikan'], 3], [['narkoba', 'disembunyikan'], 3],
+          [['narkotika', 'disembunyikan'], 3], [['paket', 'disembunyikan'], 3],
+          ['disembunyikan dalam ikan', 3], ['disembunyikan dalam sayur', 3],
+          ['disembunyikan dalam sepatu', 3], ['disembunyikan dalam sandal', 3],
+          ['disembunyikan dalam bungkus', 3], ['diselipkan dalam', 3],
+          ['dijahit dalam', 3], ['dicor dalam', 3], ['dalam ikan tongkol', 3],
+          ['digagalkan petugas', 3], ['berhasil digagalkan', 3],
+          [['upaya', 'memasukkan'], 3], [['cegah', 'masuknya', 'narkoba'], 3],
         ],
-        pola: [[/\b(selundup|seludup)/, 2]],
+        pola: [
+          [/\b(selundup|seludup)/, 2],
+          [/\b(sabu|narkoba|narkotika|ganja|paket)\b[^.]{0,40}\bdisembunyikan\b[^.]{0,25}\bdalam\b/, 3],
+        ],
       },
       {
         kode: '6.2',
@@ -1042,6 +1057,13 @@ export const KATEGORI = [
           ['pengambilan sumpah', 3], ['pengukuhan', 3],
           ['lhp bpk', 3], ['laporan hasil pemeriksaan', 3], ['bpk', 2],
           ['pegawai terbaik', 3], ['penguatan', 2], ['bertekad', 2],
+          // Tanda kehormatan negara. "Satyalancana Karya Satya" diberikan
+          // kepada pegawai dengan masa bakti panjang — sepenuhnya seremonial,
+          // tetapi "gawai" pernah menjebaknya ke 2.2 lewat kata "pegawai".
+          ['satyalancana', 3], ['satya lancana', 3], ['karya satya', 3],
+          ['tanda kehormatan', 3], ['penyematan satyalancana', 3],
+          ['pegawai berdedikasi', 3], ['pegawai berprestasi', 3],
+          ['penghargaan masa bakti', 3], ['lencana pengabdian', 3],
           ['dialog', 2], ['podcast', 2], ['talkshow', 3], ['siaran', 2],
           ['media sosial', 2], ['follow', 2], ['konten', 2],
           // Ucapan selamat dan kunjungan tamu adalah dua bentuk unggahan

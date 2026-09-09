@@ -244,6 +244,21 @@ const AKAR_TERLARANG = new Set([
      berita budidaya sungguhan tidak terpengaruh.
   */
   'ikan',
+
+  /*
+     "gawai" — ditemukan 9 September 2026 dari pemberitahuan Telegram yang
+     sungguh-sungguh terkirim: "Bapas Jogja Sematkan Satyalancana Karya Satya
+     bagi PEGAWAI Berdedikasi" tercatat 2.2 Kejahatan Siber dan HP Ilegal
+     dengan kata kunci penentu "gawai", keyakinan 74 persen. Jembatannya sama
+     bentuknya dengan 'ikan': "pegawai" dikupas awalan pe- menjadi "gawai",
+     dan "gawai" adalah kata kunci 2.2 untuk telepon genggam ilegal.
+
+     "Pegawai" muncul di ribuan judul kehumasan — pelantikan pegawai, pegawai
+     teladan, kesejahteraan pegawai — dan tak satu pun berurusan dengan HP
+     terlarang di dalam sel. Bentuk permukaannya tetap dicocokkan: judul yang
+     benar-benar menulis "gawai" tetap berakar "gawai".
+  */
+  'gawai',
 ])
 
 const simpananAkar = new Map()

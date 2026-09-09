@@ -14,7 +14,7 @@ diagregasi ke pusat. Rancangan itu **tidak diikuti**, dan ini alasannya.
 
 | Yang dirancang cetak biru | Yang dikerjakan | Sebabnya |
 | --- | --- | --- |
-| Lexicon sentimen di tiap kanwil | Mesin `klasifikasi` v4.5 di pusat | 38 salinan akan menyimpang satu per satu. v4.5 sudah dijaga 107 kasus `periksa-lainnya.mjs` dan 47 judul `uji-cakupan.mjs`; salinan di Apps Script tidak dijaga apa pun. |
+| Lexicon sentimen di tiap kanwil | Mesin `klasifikasi` v4.6 di pusat | 38 salinan akan menyimpang satu per satu. v4.6 sudah dijaga 107 kasus `periksa-lainnya.mjs` dan 47 judul `uji-cakupan.mjs`; salinan di Apps Script tidak dijaga apa pun. |
 | Bot Telegram di tiap kanwil | `telegram-kirim` di pusat | Satu berita nasional yang menyebut sepuluh unit akan membangunkan pimpinan sepuluh kali. Token juga tersebar di 38 tempat. |
 | Tier ditebak dari `if domain includes` | Daftar induk `media_tier` | Kolom `media` pada tabel berita adalah teks bebas berisi "Medsos Radar" dan "YouTube [Lapas ...]" — ia tidak bisa dijadikan kunci apa pun. Kuncinya domain dari tautan. |
 | Google CSE API | Google News RSS + RSS portal langsung | CSE gratis hanya 100 kueri/hari lalu $5 per 1.000. 38 kanwil tidak akan muat. Google News RSS gratis dan sudah terbukti di `penjaring`. |
@@ -28,7 +28,7 @@ berpengaruh dari seluruh pekerjaan ini.
 **Kedudukan lembar kanwil: kaki, bukan otak.** Ia menjaring dan menyetor.
 
 ```
-  lembar kanwil  ──sheet-sync──>  berita  ──klasifikasi v4.5──>  sentimen/kategori
+  lembar kanwil  ──sheet-sync──>  berita  ──klasifikasi v4.6──>  sentimen/kategori
   (38 spreadsheet)                  │                              urgensi/tema
                                     ├──> media_tier ──> tier + bobot
                                     └──> notifikasi ──> telegram-kirim
@@ -68,7 +68,7 @@ melainkan dari mana permintaannya berangkat.**
 | kurasi **Ragam Nama** unit | pencarian per unit — mode `ragam` |
 | kurasi **Portal Wilayah** | pencarian kata kunci & isu |
 | jaring **RSS portal hiperlokal** | penguraian alamat Google News |
-| — | sentimen, kategori, urgensi (v4.5) |
+| — | sentimen, kategori, urgensi (v4.6) |
 | — | tier media, dedup, Telegram |
 
 Kaki portal tetap di daerah karena ia satu-satunya yang **tidak** bertanya

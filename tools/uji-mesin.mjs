@@ -442,6 +442,30 @@ const kasus = [
     judul: 'Lapas Kelas IIA Waingapu Klarifikasi Video Viral, Tegaskan Kejadian Lama November 2024',
     harap: { subkategori_kode: '7.1' },
   },
+  {
+    /* Pemberitahuan Telegram 9 September 2026: tercatat 2.2 Kejahatan Siber
+       dengan kata kunci "gawai", keyakinan 74% — "gawai" adalah potongan
+       akar dari "pegawai". Penyematan tanda kehormatan negara. */
+    nama: 'Satyalancana untuk pegawai bukan HP ilegal',
+    judul: 'Bapas Jogja Sematkan Satyalancana Karya Satya bagi Pegawai Berdedikasi',
+    harap: { subkategori_kode: '8.4', sentimen: 'Positif' },
+  },
+  {
+    /* Pemberitahuan Telegram 9 September 2026: tercatat 2.1 Pengendalian
+       Narkoba oleh WBP — padahal barangnya dicegat di pintu masuk oleh
+       petugas, tidak pernah masuk. Pencegatan modus baru, bukan temuan
+       di dalam blok. */
+    nama: 'Sabu disembunyikan dalam ikan, dicegat petugas',
+    judul: 'Enam Paket Diduga Sabu Disembunyikan dalam Ikan Tongkol, Berhasil Diamankan Petugas Rutan',
+    harap: { subkategori_kode: '6.1', sentimen: 'Positif' },
+  },
+  {
+    /* Penjaga arah sebaliknya: temuan sungguhan DI DALAM blok tetap negatif,
+       kaidah pencegatan tidak boleh membocorkannya. */
+    nama: 'Razia blok temukan sabu tetap negatif',
+    judul: 'Razia Blok Hunian Lapas Narkotika Kelas IIA Karang Intan, Petugas Sita Sabu dan Empat Ponsel',
+    harap: { sentimen: 'Negatif' },
+  },
 ]
 
 let lulus = 0

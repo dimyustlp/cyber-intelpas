@@ -232,7 +232,21 @@ import { kenaliPenerbit } from './penerbit.js'
    4,3% dikenali sebelum, 100% sesudah, tanpa satu pun salah kelompok dan
    tanpa satu pun uji perilaku yang mundur.
 */
-const VERSI_MESIN = 'aturan-v4.5'
+/*
+   v4.6 — dua pemberitahuan Telegram salah, 9 September 2026:
+
+   - "gawai" adalah potongan akar dari "pegawai"; setiap unggahan tentang
+     pegawai teladan atau penyematan Satyalancana menyumbang nilai ke 2.2
+     Kejahatan Siber. Ditutup di AKAR_TERLARANG, dan 8.4 kini mengenal tanda
+     kehormatan negara.
+   - Barang terlarang yang DICEGAT di pintu masuk — "disembunyikan dalam ikan
+     tongkol, berhasil diamankan petugas" — tercatat 2.1 Pengendalian Narkoba
+     oleh WBP. 6.1 diperkuat untuk modus sembunyi-dalam-barang tanpa kata
+     "selundup", dan kaidah "temuan di dalam blok" kini mengecualikan
+     pencegatan eksternal yang digagalkan petugas: peristiwanya keberhasilan
+     pengamanan, bukan barang yang lolos.
+*/
+const VERSI_MESIN = 'aturan-v4.6'
 
 /** Ambang skor minimum sebelum sebuah berita boleh keluar dari "Lainnya". */
 const AMBANG_SKOR = 3.0
@@ -713,7 +727,14 @@ export function tentukanSentimen(konteks, sub, adaPembalik) {
   // Ancaman eksternal yang digagalkan petugas bukan sentimen negatif murni:
   // kejadiannya buruk, penanganannya baik. Berlaku juga untuk penyelundupan
   // yang berhasil dicegah, yang justru menunjukkan pengamanan bekerja.
-  if (adaPembalik && (sub.kategoriKode === '6' || sub.kode === '8.5')) return 'Campuran'
+  //
+  // Bila tak ada satu pun penanda negatif dan penanganannya berhasil —
+  // "berhasil diamankan", "digagalkan" — pencegatan yang tuntas dibaca
+  // Positif, sejalan dengan razia rutin yang berakhir kondusif. Bila masih
+  // ada penanda negatif yang tersisa, tetap Campuran.
+  if (adaPembalik && (sub.kategoriKode === '6' || sub.kode === '8.5')) {
+    return negatif > positif ? 'Campuran' : negatif === 0 && positif > 0 ? 'Positif' : 'Campuran'
+  }
 
   // Bantahan dan klarifikasi adalah tindakan pengelolaan isu, bukan insiden.
   if (sub.kode === '7.1') return negatif > positif + 1 ? 'Negatif' : 'Netral'
@@ -991,7 +1012,25 @@ export function klasifikasikan(berita = {}) {
   */
   if (peringkat[0] && peringkat[0].sub.kategoriKode === '8' && adaTemuan(konteks)) {
     const temuan = peringkat.find((p) => p.sub.sifat !== 'positif')
-    if (temuan) {
+
+    /*
+       Kecuali: pencegatan di pintu masuk, bukan temuan di dalam blok.
+
+       "Enam Paket Diduga Sabu Disembunyikan dalam Ikan Tongkol, Berhasil
+       Diamankan Petugas Rutan" — barangnya TIDAK pernah masuk; ia dicegat
+       saat hendak diselundupkan. Tandanya tiga sekaligus: ada kandidat
+       Ancaman Eksternal (kategori 6), ada frasa pembalik (digagalkan /
+       diamankan petugas), dan tidak ada satu pun isyarat warga binaan atau
+       oknum sebagai pelaku. Berita seperti ini adalah keberhasilan
+       pengamanan, bukan barang terlarang yang lolos.
+    */
+    const pencegatan = temuan
+      && temuan.sub.kategoriKode === '6'
+      && pembalik
+      && aktor.wbp === 0
+      && !hitungFrasa(konteks, 'oknum', 1)
+
+    if (temuan && !pencegatan) {
       peringkat = [temuan, ...peringkat.filter((p) => p !== temuan)]
     }
   }

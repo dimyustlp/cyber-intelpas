@@ -24,7 +24,7 @@ PERINGKAT_URGENSI,
 } from './taksonomi.js'
 import { bersihkanTeks, normalkan, siapkanKonteks, hitungFrasa, yangMuncul, letakTerawal, letakFrasa } from './teks.js'
 import { kenaliPenerbit } from './penerbit.js'
-const VERSI_MESIN = 'aturan-v4.5'
+const VERSI_MESIN = 'aturan-v4.6'
 const AMBANG_SKOR = 3.0
 const AMBANG_HUMAS = 2.0
 const PANJANG_MINIMUM = 8
@@ -254,7 +254,9 @@ if (positif > negatif) return 'Positif'
 return 'Netral'
 }
 if (sub.sifat === 'positif') return negatif > positif + 1 ? 'Campuran' : 'Positif'
-if (adaPembalik && (sub.kategoriKode === '6' || sub.kode === '8.5')) return 'Campuran'
+if (adaPembalik && (sub.kategoriKode === '6' || sub.kode === '8.5')) {
+return negatif > positif ? 'Campuran' : negatif === 0 && positif > 0 ? 'Positif' : 'Campuran'
+}
 if (sub.kode === '7.1') return negatif > positif + 1 ? 'Negatif' : 'Netral'
 if (sub.sifat === 'negatif') return positif > negatif + 2 ? 'Campuran' : 'Negatif'
 return 'Netral'
@@ -340,7 +342,12 @@ peringkat = [positif, ...peringkat.filter((p) => p !== positif)]
 }
 if (peringkat[0] && peringkat[0].sub.kategoriKode === '8' && adaTemuan(konteks)) {
 const temuan = peringkat.find((p) => p.sub.sifat !== 'positif')
-if (temuan) {
+const pencegatan = temuan
+&& temuan.sub.kategoriKode === '6'
+&& pembalik
+&& aktor.wbp === 0
+&& !hitungFrasa(konteks, 'oknum', 1)
+if (temuan && !pencegatan) {
 peringkat = [temuan, ...peringkat.filter((p) => p !== temuan)]
 }
 }

@@ -209,8 +209,26 @@ Deno.serve(async (permintaan: Request) => {
         select: 'id,judul,ringkasan,media,platform,link,nama_upt,kategori,subkategori,'
           + 'subkategori_kode,sentimen,urgensi,status_verifikasi,tanggal_publikasi,created_at',
         deleted_at: 'is.null',
-        tanggal_publikasi: `gte.${awalPeriode}T00:00:00+07:00`,
-        and: `(tanggal_publikasi.lte.${akhirPeriode}T23:59:59+07:00)`,
+        /*
+           Dipotong menurut waktu TANGKAP, bukan tanggal terbit.
+
+           Dua alasan, dan keduanya pernah berakibat di dalam berkas yang sama.
+
+           Pertama, `snapshot_laporan` dan `rincian_negatif_laporan` di atas
+           memotong harinya dengan `created_at` di zona Jakarta. Selama baris
+           lembar dipilih dengan kolom yang lain, satu PDF memuat dua himpunan
+           berita untuk satu tanggal: angka di kepalanya tidak berjumlah sama
+           dengan batang di lembarnya, dan tidak ada satu pun galat yang
+           menandainya.
+
+           Kedua, `tanggal_publikasi` boleh kosong — kolomnya nullable, dan
+           berita yang dimasukkan tangan tanpa tanggal terbit memang
+           menyimpannya kosong. Saringan rentang atas kolom nullable membuang
+           baris kosong itu seluruhnya, sehingga berita yang ikut dihitung di
+           kepala laporan tidak pernah muncul di lembarnya.
+        */
+        created_at: `gte.${awalPeriode}T00:00:00+07:00`,
+        and: `(created_at.lte.${akhirPeriode}T23:59:59+07:00)`,
         limit: '2000',
       }),
       baris('upt', { select: 'nama_upt,jenis_upt,kanwil,provinsi', aktif: 'eq.true', limit: '1000' }),

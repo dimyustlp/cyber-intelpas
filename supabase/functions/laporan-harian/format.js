@@ -50,6 +50,9 @@ const j = keJakarta(nilai)
 if (!j) return ''
 return `${j.tahun}-${String(j.bulan).padStart(2, '0')}-${String(j.hari).padStart(2, '0')}`
 }
+export function hariWib(geser = 0) {
+return tanggalIso(new Date(Date.now() + geser * 86_400_000))
+}
 export function romawiBulan(nilai) {
 const j = keJakarta(nilai)
 return j ? BULAN_ROMAWI[j.bulan - 1] : ''

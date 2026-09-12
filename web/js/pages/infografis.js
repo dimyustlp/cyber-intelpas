@@ -24,7 +24,7 @@
 import { kartu, kosong, pesanSistem, tombol, roti } from '../ui/komponen.js'
 import { amankan } from '../lib/format.js'
 import { ambil } from '../lib/api.js'
-import { susunInfografis } from '../lib/infografis.js'
+import { susunInfografis, hariIso } from '../lib/infografis.js'
 import { svgInfografis } from '../ui/infografis-svg.js'
 import { TATA } from '../ui/infografis-tata.js'
 import { BATAS, DARATAN, TETANGGA } from '../lib/peta-indonesia.js'
@@ -68,9 +68,13 @@ const GEO = { batas: BATAS, daratan: DARATAN, tetangga: TETANGGA, provinsi: PROV
 
 function susun(keadaan) {
   const semua = keadaan.dalamLingkup || keadaan.berita || []
+  /* Disaring dengan hariIso(), bukan dengan memotong string ISO sendiri.
+     Pemotongan sendiri memberikan hari menurut UTC atas tanggal TERBIT — dua
+     hal yang berbeda dari yang dipakai lembar ini mengelompokkan isinya, dan
+     dari yang dipakai laporan harian memilih barisnya. */
   const dalam = semua.filter((b) => {
-    const t = String(b.tanggal_publikasi || b.created_at || '').slice(0, 10)
-    return t >= pilihan.mulai && t <= pilihan.selesai
+    const t = hariIso(b)
+    return t && t >= pilihan.mulai && t <= pilihan.selesai
   })
   return susunInfografis({
     berita: dalam,

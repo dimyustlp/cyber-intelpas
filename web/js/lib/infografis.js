@@ -79,9 +79,21 @@ function pecah(iso) {
   return { tahun: t, bulan: b, hari: h }
 }
 
-/** Tanggal sebuah berita sebagai YYYY-MM-DD menurut WIB. */
+/**
+ * Hari sebuah berita sebagai YYYY-MM-DD menurut WIB — atas waktu TANGKAP.
+ *
+ * `created_at` lebih dulu, bukan `tanggal_publikasi`, dan itu bukan urutan
+ * yang bisa ditukar. Lembar ini mendampingi laporan harian, dan laporan harian
+ * memotong harinya dengan waktu tangkap sejak migrasi 20260912010000. Selama
+ * keduanya memakai kolom yang berbeda, satu berkas PDF memuat dua himpunan
+ * berita untuk satu tanggal — angka di kepalanya tidak berjumlah sama dengan
+ * batang di lembarnya, dan tidak ada satu pun galat yang menandainya.
+ *
+ * `tanggal_publikasi` tetap dipakai bila waktu tangkapnya tidak ada, dan itu
+ * hanya terjadi pada baris yang dikarang mode peragaan.
+ */
 export function hariIso(b) {
-  const nilai = b?.tanggal_publikasi || b?.created_at || b?.detected_at
+  const nilai = b?.created_at || b?.tanggal_publikasi || b?.detected_at
   if (!nilai) return ''
   const d = new Date(nilai)
   if (Number.isNaN(d.getTime())) return String(nilai).slice(0, 10)

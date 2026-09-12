@@ -26,7 +26,7 @@ const [t, b, h] = String(iso || '').slice(0, 10).split('-').map(Number)
 return { tahun: t, bulan: b, hari: h }
 }
 export function hariIso(b) {
-const nilai = b?.tanggal_publikasi || b?.created_at || b?.detected_at
+const nilai = b?.created_at || b?.tanggal_publikasi || b?.detected_at
 if (!nilai) return ''
 const d = new Date(nilai)
 if (Number.isNaN(d.getTime())) return String(nilai).slice(0, 10)

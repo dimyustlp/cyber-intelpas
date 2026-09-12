@@ -70,6 +70,21 @@ export function tanggalIso(nilai) {
   return `${j.tahun}-${String(j.bulan).padStart(2, '0')}-${String(j.hari).padStart(2, '0')}`
 }
 
+/**
+ * Hari ini menurut WIB, digeser sekian hari, sebagai YYYY-MM-DD.
+ *
+ * Ada supaya "hari" berarti satu hal saja di seluruh aplikasi: 00.00 sampai
+ * 23.59 waktu Jakarta. Sebelum ini tiap halaman yang perlu memilih rentang
+ * menuliskan `new Date().toISOString().slice(0, 10)` sendiri — dan bentuk itu
+ * memberikan hari menurut UTC, yaitu tujuh jam di belakang. Akibatnya antara
+ * pukul 00.00 dan 07.00 WIB seluruh halaman itu menganggap "hari ini" adalah
+ * kemarin, tanpa satu pun galat dan tanpa satu pun tanda di layar — dan
+ * laporan harian justru disusun di dalam jam-jam itu.
+ */
+export function hariWib(geser = 0) {
+  return tanggalIso(new Date(Date.now() + geser * 86_400_000))
+}
+
 export function romawiBulan(nilai) {
   const j = keJakarta(nilai)
   return j ? BULAN_ROMAWI[j.bulan - 1] : ''

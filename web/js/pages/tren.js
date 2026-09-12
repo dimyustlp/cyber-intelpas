@@ -22,7 +22,7 @@
  */
 
 import { kartu, kosong, keping, tombol } from '../ui/komponen.js'
-import { amankan, angka, persen, tanggalPanjang, tanggal } from '../lib/format.js'
+import { amankan, angka, persen, tanggalPanjang, tanggal, hariWib } from '../lib/format.js'
 import { ikon } from '../lib/ikon.js'
 import { baganTren, baganUptMuncul, baganUrgensi } from '../ui/bagan.js'
 import {
@@ -51,14 +51,8 @@ const NAMA_HARI = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu
 /** Pilihan yang bertahan selama sesi. */
 const pilihan = { hari: 30, bidang: 'subkategori' }
 
-function isoHari(geser = 0) {
-  const t = new Date()
-  t.setDate(t.getDate() + geser)
-  return t.toISOString().slice(0, 10)
-}
-
 function rentang() {
-  return { mulai: isoHari(-(pilihan.hari - 1)), selesai: isoHari(0) }
+  return { mulai: hariWib(-(pilihan.hari - 1)), selesai: hariWib(0) }
 }
 
 /* ------------------------------------------------------------------ bagian */

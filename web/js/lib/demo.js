@@ -249,7 +249,18 @@ export function sebaran(berita, bidang) {
  * @param {{mulai: string, selesai: string}} periode  batas tanggal, format ISO
  */
 export function snapshotDemo(berita = [], { mulai, selesai }) {
-  const hari = (b) => String(b.tanggal_publikasi || b.created_at || '').slice(0, 10)
+  /*
+     Hari sebuah baris ditentukan waktu TANGKAP-nya menurut WIB — pemotongan
+     yang sama persis dengan yang dipakai public.snapshot_negatif sejak migrasi
+     20260912010000. Bentuk sebelumnya memotong string ISO apa adanya, yaitu
+     hari menurut UTC atas tanggal TERBIT, dan laporan yang diperiksa di
+     peragaan karena itu memuat himpunan yang berbeda dari laporan yang terbit.
+  */
+  const hari = (b) => {
+    const t = new Date(b.created_at || b.tanggal_publikasi || 0)
+    if (Number.isNaN(t.getTime())) return ''
+    return new Date(t.getTime() + 7 * 3600 * 1000).toISOString().slice(0, 10)
+  }
 
   /*
      Himpunan dasarnya diambil `dasar()`, bukan disaring di sini. Fungsi basis
@@ -299,6 +310,8 @@ export function snapshotDemo(berita = [], { mulai, selesai }) {
         platform: b.platform || 'Lainnya',
         link: b.link,
         tanggal: b.tanggal_publikasi || b.created_at,
+        // Hari tangkap menurut WIB, sama seperti yang dikirim basis data.
+        hari: hari(b),
         kategori: b.kategori || 'Lainnya',
         subkategori: b.subkategori || 'Belum Dikelompokkan',
         subkategori_kode: b.subkategori_kode || '0.1',

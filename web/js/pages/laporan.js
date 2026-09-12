@@ -12,7 +12,7 @@
  */
 
 import { kartu, kosong, tombol, pesanSistem } from '../ui/komponen.js'
-import { amankan, angka, tanggalPanjang } from '../lib/format.js'
+import { amankan, angka, tanggalPanjang, hariWib } from '../lib/format.js'
 import { panggilFungsi, pesanRamah } from '../lib/api.js'
 import { roti } from '../ui/komponen.js'
 import { susunLaporan, nomorLaporan, olahLaporan } from '../lib/laporan.js'
@@ -26,22 +26,16 @@ import { uptNaik } from '../lib/hitung.js'
 /** Pilihan periode yang bertahan selama sesi. */
 const pilihan = { jenis: 'mingguan', mulai: '', selesai: '', hasil: null, sibuk: false }
 
-function isoHari(geser = 0) {
-  const t = new Date()
-  t.setDate(t.getDate() + geser)
-  return t.toISOString().slice(0, 10)
-}
-
 function siapkanPeriode() {
   if (pilihan.jenis === 'harian') {
-    pilihan.mulai = isoHari(0)
-    pilihan.selesai = isoHari(0)
+    pilihan.mulai = hariWib(0)
+    pilihan.selesai = hariWib(0)
   } else if (pilihan.jenis === 'mingguan') {
-    pilihan.mulai = isoHari(-6)
-    pilihan.selesai = isoHari(0)
+    pilihan.mulai = hariWib(-6)
+    pilihan.selesai = hariWib(0)
   } else {
-    pilihan.mulai = isoHari(-29)
-    pilihan.selesai = isoHari(0)
+    pilihan.mulai = hariWib(-29)
+    pilihan.selesai = hariWib(0)
   }
 }
 

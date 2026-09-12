@@ -6338,3 +6338,162 @@ table.tabel button.judul-buka:hover { color: var(--accent); text-decoration: und
 .syarat-baris .pilihan { width: auto; flex: 1 1 150px; min-width: 120px; }
 .syarat-baris .pilihan[data-syarat="sinyal"] { flex: 2 1 190px; }
 .syarat-baris .masukan { flex: 0 1 130px; min-width: 90px; }
+
+/* ------------------------------------------------------------- 12. Panduan */
+/*
+   Panduan adalah satu-satunya halaman yang isinya seluruhnya teks panjang.
+   Aturan di bawah menjawab tiga hal yang tidak dijawab kelas mana pun di atas:
+   bagaimana tiga puluh keterangan tetap terbaca tanpa menjadi dinding kata,
+   bagaimana ruang yang bukan milik pembacanya tetap ada tanpa menyita
+   perhatian, dan bagaimana halaman ini tercetak menjadi buku manual yang utuh.
+*/
+
+.panduan-alat {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.panduan-alat .cari { flex: 1 1 260px; max-width: 420px; }
+
+/* Dua kolom pada layar lebar. Keterangan fitur panjangnya seragam — tiga
+   sampai lima baris — sehingga dua kolom tidak menghasilkan tepi yang
+   bergerigi, dan satu kolom memaksa menggulir empat layar penuh. */
+.panduan-daftar {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 10px;
+}
+
+.panduan-fitur {
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-2);
+  background: var(--surface-2);
+  padding: 12px 13px;
+  break-inside: avoid;
+}
+
+.panduan-fitur-kop {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.panduan-fitur-kop h3 {
+  font-size: 13.5px;
+  font-weight: 650;
+  margin: 0;
+  line-height: 1.3;
+}
+
+.panduan-ikon {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--r-1);
+  display: grid;
+  place-items: center;
+  background: var(--surface-3);
+  color: var(--ink-4);
+  border: 1px solid var(--line-2);
+}
+.panduan-ikon svg { width: 15px; height: 15px; }
+
+/*
+   Label dan isinya sebagai dua kolom, bukan sebagai dua baris.
+
+   "Isinya" dan "Untuk apa" adalah pertanyaan yang sama pada tiap fitur, dan
+   pembaca yang membandingkan dua fitur menyapu matanya ke bawah pada kolom
+   yang sama. Label yang berpindah-pindah letak menghapus kemampuan itu.
+*/
+.panduan-isi { margin: 10px 0 0; display: flex; flex-direction: column; gap: 7px; }
+.panduan-isi > div { display: grid; grid-template-columns: 78px minmax(0, 1fr); gap: 10px; }
+.panduan-isi dt {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-4);
+  padding-top: 2px;
+}
+.panduan-isi dd { margin: 0; font-size: 12.5px; line-height: 1.55; color: var(--ink-2); }
+
+/* Batas yang mudah disalahpahami diberi tepi, bukan hanya warna huruf. Yang
+   membaca cepat melewati perbedaan warna; tepi menahan matanya sebentar. */
+.panduan-catat {
+  border-left: 2px solid var(--sedang-tepi, var(--line-1));
+  padding-left: 9px;
+  margin-left: -2px;
+}
+.panduan-catat dd { color: var(--ink-3); }
+
+/* Ruang yang bukan milik pembacanya: ada, terbuka sekali tekan, dan tidak
+   menyita perhatian selama tidak dibutuhkan. */
+.panduan-lain {
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-2);
+  background: var(--surface-1);
+}
+.panduan-lain > summary {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 12px 14px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  list-style: none;
+}
+.panduan-lain > summary::-webkit-details-marker { display: none; }
+.panduan-lain > summary svg {
+  width: 15px;
+  height: 15px;
+  flex: none;
+  color: var(--ink-4);
+  transition: transform var(--cepat);
+}
+.panduan-lain[open] > summary svg { transform: rotate(90deg); }
+.panduan-lain > summary .ket { font-weight: 450; }
+.panduan-lain-isi { padding: 0 10px 10px; }
+
+/* Tiga angka jendela pelaporan, berdampingan. */
+.panduan-jendela {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.panduan-jendela > div {
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-2);
+  background: var(--surface-2);
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.panduan-jendela b { font-size: 15px; font-weight: 650; font-variant-numeric: tabular-nums; }
+
+@media (max-width: 720px) {
+  .panduan-daftar { grid-template-columns: 1fr; }
+  .panduan-isi > div { grid-template-columns: 1fr; gap: 2px; }
+}
+
+/*
+   Tercetak sebagai buku manual yang utuh.
+
+   Yang membuka ruang terlipat sebelum mencetak adalah penangan tombol di
+   pages/panduan.js, bukan aturan di sini: peramban menyembunyikan isi
+   <details> lewat mekanismenya sendiri, dan menimpanya dari CSS hanya bekerja
+   di sebagian peramban. Yang tersisa untuk aturan cetak adalah membuang
+   perkakas layar dan melepas bingkai yang tidak berguna di atas kertas.
+*/
+@media print {
+  .panduan-alat { display: none !important; }
+  .panduan-lain { border: 0; }
+  .panduan-lain > summary { padding-left: 0; }
+  .panduan-lain > summary svg { display: none; }
+  .panduan-lain-isi { padding: 0; }
+  .panduan-daftar { grid-template-columns: 1fr; }
+  .panduan-fitur { border-color: #ccc; }
+}

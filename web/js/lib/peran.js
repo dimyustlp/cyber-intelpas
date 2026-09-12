@@ -113,10 +113,21 @@ export const PERAN_EKSTERNAL = new Set(['kanwil_admin', 'upt_penelaah'])
 /** Peran yang cakupannya satu unit, bukan satu kantor wilayah. */
 export const PERAN_UNIT = new Set(['upt_penelaah'])
 
+/*
+   Satu izin yang dipegang SETIAP peran: membuka panduan.
+
+   Ditulis sebagai izin, bukan sebagai butir menu tanpa syarat, supaya ketiga
+   muara penegakan hak — penjaga rute, penyapu tombol, dan penyaring menu —
+   memperlakukannya dengan aturan yang sama seperti seluruh halaman lain.
+   Butir menu yang syaratnya kosong adalah satu-satunya bentuk yang ketiganya
+   harus diajari mengenali secara khusus, dan bentuk semacam itu selalu
+   terlewat di salah satu dari ketiganya.
+*/
 export const IZIN = {
   super_admin: ['*'],
 
   executive_decision_maker: [
+    'lihat_panduan',
     'lihat_dasbor', 'lihat_briefing', 'lihat_berita', 'lihat_berita_terverifikasi',
     'lihat_peta', 'lihat_tren', 'lihat_kasus', 'lihat_laporan_lapangan',
     'lihat_rekomendasi', 'putuskan_kasus', 'lihat_laporan', 'unduh_laporan',
@@ -125,6 +136,7 @@ export const IZIN = {
   ],
 
   media_intelligence_analyst: [
+    'lihat_panduan',
     'lihat_dasbor', 'lihat_briefing', 'lihat_berita', 'buat_berita', 'telaah_berita',
     'verifikasi_berita', 'petakan_upt', 'lihat_peta', 'lihat_tren', 'lihat_kasus',
     'kelola_kasus', 'kaitkan_berita_kasus', 'buat_laporan', 'sunting_draf_laporan',
@@ -135,18 +147,21 @@ export const IZIN = {
   ],
 
   news_data_operator: [
+    'lihat_panduan',
     'lihat_dasbor', 'lihat_briefing', 'lihat_berita', 'buat_berita', 'sunting_berita_sendiri',
     'validasi_metadata', 'lihat_sinkronisasi', 'jalankan_sinkronisasi', 'lihat_duplikat',
     'unggah_lampiran', 'lihat_ruang_analis',
   ],
 
   field_verification_officer: [
+    'lihat_panduan',
     'lihat_dasbor', 'lihat_briefing', 'lihat_kasus_ditugaskan', 'lihat_penugasan',
     'kirim_laporan_lapangan', 'unggah_bukti_lapangan', 'perbarui_penugasan',
     'lihat_laporan_lapangan_sendiri', 'lihat_tindak_lanjut', 'perbarui_tindak_lanjut',
   ],
 
   evaluation_recommendation_analyst: [
+    'lihat_panduan',
     'lihat_dasbor', 'lihat_briefing', 'lihat_berita', 'lihat_kasus', 'lihat_laporan_lapangan',
     'lihat_penugasan', 'lihat_peringatan', 'analisis_kasus', 'kelola_rekomendasi',
     'nilai_tindak_lanjut', 'buat_laporan',
@@ -167,6 +182,7 @@ export const IZIN = {
      keduanya tercatat lengkap dengan nama penelaahnya masing-masing.
   */
   kanwil_admin: [
+    'lihat_panduan',
     'lihat_dasbor_wilayah', 'buat_berita', 'lihat_berita_wilayah',
     'lihat_kiriman_wilayah', 'lihat_unit_wilayah', 'telaah_wilayah',
     // Menerbitkan akun penelaah unit di wilayahnya sendiri. Batasnya ditegakkan
@@ -184,6 +200,7 @@ export const IZIN = {
      wilayahnya hanya punya satu unit yang pernah diberitakan.
   */
   upt_penelaah: [
+    'lihat_panduan',
     'lihat_dasbor_unit', 'lihat_berita_unit', 'telaah_wilayah', 'tanggapi_berita_unit',
   ],
 }
@@ -320,6 +337,12 @@ export const MENU = [
       { id: 'kesehatan', label: 'Kesehatan Sistem', ikon: 'kesehatan', izin: 'lihat_kesehatan' },
     ],
   },
+  {
+    grup: 'Panduan',
+    butir: [
+      { id: 'panduan', label: 'Panduan Penggunaan', ikon: 'info', izin: 'lihat_panduan' },
+    ],
+  },
 ]
 
 /**
@@ -348,6 +371,12 @@ export const MENU_KANWIL = [
       { id: 'pengguna', label: 'Pengguna Wilayah', ikon: 'pengguna', izin: 'kelola_pengguna_wilayah' },
     ],
   },
+  {
+    grup: 'Panduan',
+    butir: [
+      { id: 'panduan', label: 'Panduan Penggunaan', ikon: 'info', izin: 'lihat_panduan' },
+    ],
+  },
 ]
 
 /**
@@ -365,6 +394,12 @@ export const MENU_UPT = [
       { id: 'upt-dasbor', label: 'Ringkasan Unit', ikon: 'dasbor', izin: 'lihat_dasbor_unit' },
       { id: 'wilayah-telaah', label: 'Telaah & Tanggapan', ikon: 'centang', izin: 'telaah_wilayah', lencana: 'telaahWilayah' },
       { id: 'wilayah-berita', label: 'Berita Unit', ikon: 'berita', izin: 'lihat_berita_unit' },
+    ],
+  },
+  {
+    grup: 'Panduan',
+    butir: [
+      { id: 'panduan', label: 'Panduan Penggunaan', ikon: 'info', izin: 'lihat_panduan' },
     ],
   },
 ]

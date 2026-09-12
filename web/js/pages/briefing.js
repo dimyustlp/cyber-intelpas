@@ -38,7 +38,7 @@
 import { kartu, keping, kosong, tombol, pesanSistem, ubin } from '../ui/komponen.js'
 import {
   amankan, angka, persen, delta, ringkas, tanggalPanjang, tanggal, jarakWaktu,
-  nadaUrgensi,
+  nadaUrgensi, hariWib,
 } from '../lib/format.js'
 
 import {
@@ -58,12 +58,6 @@ const PERIODE = [
   { hari: 7, label: '7 hari' },
   { hari: 30, label: '30 hari' },
 ]
-
-function isoHari(geser = 0) {
-  const t = new Date()
-  t.setDate(t.getDate() + geser)
-  return t.toISOString().slice(0, 10)
-}
 
 /**
  * Tingkat risiko nasional — satu pernyataan di puncak layar.
@@ -105,8 +99,8 @@ function banding(kini, lalu, satuan) {
 }
 
 export function halamanBriefing({ keadaan, isi }) {
-  const mulai = isoHari(-(pilihan.hari - 1))
-  const selesai = isoHari(0)
+  const mulai = hariWib(-(pilihan.hari - 1))
+  const selesai = hariWib(0)
 
   const semua = keadaan.berita || []
   const b = bandingPeriode(semua, { mulai, selesai })

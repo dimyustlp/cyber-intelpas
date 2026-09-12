@@ -60,6 +60,7 @@ web/                     aplikasi peramban, disajikan apa adanya
       unit-terpetakan.js satu pemeriksaan "unitnya sudah diketahui?" — sengaja dipisah
       pesan-telegram.js  penyusun pesan ringkas untuk grup pimpinan
       peran.js           peran, izin, dan susunan menu
+      panduan.js         katalog penjelasan tiap fitur, per ruang — teks polos
       peta-indonesia.js  garis pantai Indonesia — dihasilkan tools/susun-peta.mjs
       sentimen.js        tiga ember sentimen beserta keterangannya
       hitung.js          satu himpunan dasar untuk seluruh angka di layar
@@ -98,6 +99,8 @@ web/                     aplikasi peramban, disajikan apa adanya
                            narasi.js      cerita yang sedang berjalan, bukan daftar berita
                            jaringan.js    gambar kaitan, berpusat pada satu simpul
                            komando.js     Pusat Komando — satu layar untuk dinding piket
+                           panduan.js     penjelasan tiap fitur, manual kirim berita,
+                                            dan aturan jendela pelaporan harian
     main.js              sesi, kerangka layar, penunjuk halaman
 
 data/
@@ -127,6 +130,8 @@ tools/
   uji-risiko.mjs         uji skor risiko — ketertutupan penjumlahan dan urutannya
   uji-laju.mjs           uji empat aturan peringatan: menyala dan diamnya
   uji-tombol.mjs         uji integritas tombol antar fitur: tujuan, izin, penyimak
+  uji-panduan.mjs        penjaga cakupan panduan: tiap butir menu punya penjelasannya
+  uji-jendela.mjs        uji jendela hari 00.00–23.59 WIB, di layar dan di basis data
   uji-jangkar.mjs        uji saringan relevansi penjaring — sadar imbuhan
   periksa-lainnya.mjs    uji 62 kasus nyata yang dulu gagal dikelompokkan
   ringkas-fungsi.mjs     menyalin web/js/lib ke Edge Function dalam bentuk ringkas
@@ -261,6 +266,79 @@ induknya. Melihat bentuk pesannya tanpa mengirim apa pun ke siapa pun:
 ```json
 { "aksi": "kirim", "kering": true }
 ```
+
+## Jendela pelaporan harian
+
+Satu hari laporan adalah **satu hari kalender Jakarta: 00.00 sampai 23.59
+WIB** — bukan hari menurut UTC, dan bukan pukul tujuh sampai pukul tujuh.
+Aturan itu berlaku sama untuk tiga keluaran yang menyebut angka yang sama:
+laporan Telegram terjadwal, Laporan Berkala yang disusun sendiri di layar, dan
+Lembar Infografis.
+
+Yang menentukan sebuah berita masuk hari mana adalah **waktu ia ditangkap
+sistem** (`created_at`), bukan tanggal terbitnya. Berita yang terbit pekan lalu
+dan baru tertangkap tadi malam tetap kabar baru bagi yang membaca laporan pagi
+ini; memotongnya menurut tanggal terbit membuatnya tidak pernah muncul di
+laporan mana pun. Tanggal terbitnya tidak hilang — ia tetap tercetak pada tiap
+baris laporan.
+
+| | |
+|---|---|
+| Awal periode | 00.00 WIB |
+| Akhir periode | 23.59 WIB |
+| Laporan harian dikirim | 05.30 WIB hari berikutnya (`30 22 * * *` UTC) |
+| Laporan mingguan dikirim | Minggu 05.30 WIB (`30 22 * * 0` UTC) |
+
+Contohnya: seluruh berita yang ditangkap pada 11 September 2026 pukul 00.00
+sampai 23.59 WIB dilaporkan pada 12 September 2026 pukul 05.30 WIB.
+
+### Kelas cacat yang ditutup migrasi `20260912010000`
+
+Sampai 12 September 2026, dua layar yang menyebut tanggal yang sama menjawab
+dengan angka yang berbeda, tanpa satu pun galat yang menandainya.
+`snapshot_laporan` — yang dipakai laporan Telegram — sudah memotong harinya
+dengan `(created_at at time zone 'Asia/Jakarta')::date`. `snapshot_negatif` —
+yang dipakai Laporan Berkala di layar — memotongnya dengan
+`coalesce(tanggal_publikasi, created_at)::date`, dan itu keliru dua kali:
+`::date` atas `timestamptz` memakai zona sesi peladen, yaitu UTC, sehingga
+batas harinya jatuh pukul 07.00 WIB; dan yang dipotong adalah tanggal terbit,
+bukan waktu tangkap. Untuk 11 September 2026 selisihnya **429 lawan 385** —
+empat puluh empat berita yang ada di satu laporan dan tidak ada di laporan
+lain, untuk tanggal yang sama.
+
+Di sisi peramban, empat berkas memilih rentangnya dengan
+`new Date().toISOString().slice(0, 10)`. Bentuk itu memberikan hari menurut
+UTC, sehingga antara pukul 00.00 dan 07.00 WIB — jam-jam ketika laporan harian
+justru disusun — "hari ini" berarti kemarin. Penggantinya `hariWib()` di
+`lib/format.js`, dan `tools/uji-jendela.mjs` merahkan berkas mana pun yang
+kembali memakai bentuk lama.
+
+## Panduan di dalam aplikasi
+
+Halaman **Panduan Penggunaan** menjelaskan tiap fitur menurut ruangnya: apa
+isinya, untuk apa ia ada, dan batas mana yang mudah disalahpahami. Ia terbuka
+bagi seluruh peran lewat izin `lihat_panduan` — satu-satunya izin yang dipegang
+setiap peran — dan memuat tiga hal yang tidak ada di layar lain: manual
+mengirim berita dalam dua belas langkah, aturan jendela pelaporan di atas, dan
+keterangan tentang dua ruang yang bukan milik pembacanya.
+
+Ruang lain sengaja ikut ditampilkan. Petugas kantor wilayah berhak tahu apa
+yang dilihat pusat atas kiriman mereka, dan analis pusat perlu tahu persis apa
+yang bisa dan tidak bisa dikerjakan daerah sebelum menjawab pertanyaan lewat
+telepon. Yang ditampilkan keterangan tentang fiturnya, bukan satu baris data
+pun; hak atas datanya tetap ditegakkan RLS seperti biasa, dan tombol "Buka"
+hanya digambar untuk halaman yang memang berhak dibuka pembacanya.
+
+Isinya tinggal di `web/js/lib/panduan.js` sebagai teks polos, terpisah dari
+halaman yang menggambarnya. Pemisahan itu yang memungkinkan
+`tools/uji-panduan.mjs` menyatakan sebuah fitur baru belum punya penjelasan —
+dan panduan yang tidak lengkap tidak terlihat rusak dari mana pun: halamannya
+tetap terbuka, fitur yang sudah dijelaskan tetap terbaca, dan yang tidak
+dijelaskan hanya tidak ada, persis seperti fitur yang memang belum dibuat.
+
+Halaman ini bisa dicetak menjadi buku manual yang utuh. Tombol "Cetak panduan"
+membuka dua ruang yang terlipat lebih dulu — kalau tidak, cetakannya kehilangan
+dua dari tiga ruangnya tanpa satu pun tanda bahwa ada yang hilang.
 
 ## Data induk UPT
 
@@ -673,8 +751,25 @@ node tools/uji-jaringan.mjs     # 49 uji jaringan kaitan
 node tools/uji-aturan.mjs       # 61 uji mesin aturan peringatan
 node tools/uji-kpi.mjs          # 60 uji ukuran kinerja
 node tools/uji-tombol.mjs       # integritas tombol antar fitur
+node tools/uji-panduan.mjs      # cakupan panduan: tiap fitur punya penjelasannya
+node tools/uji-jendela.mjs      # 98 uji jendela hari 00.00-23.59 WIB
 node tools/periksa-lainnya.mjs  # 62 kasus nyata dari arsip
 ```
+
+### Dua penjaga yang merahkan apa yang tidak terlihat rusak
+
+`uji-panduan.mjs` gagal ketika sebuah butir menu ditambahkan tanpa
+penjelasannya, ketika penjelasan tertinggal untuk fitur yang sudah dihapus,
+atau ketika sebuah penjelasan menunjuk halaman yang tidak terdaftar. Ketiganya
+tidak terlihat rusak dari layar mana pun: halaman panduan tetap terbuka, dan
+fitur yang tidak dijelaskan hanya tidak ada — persis seperti fitur yang memang
+belum dibuat.
+
+`uji-jendela.mjs` menjaga arti kata "hari": ia memeriksa pemotong harinya pada
+empat instan yang jawabannya berbeda antara UTC dan WIB, menyisir seluruh
+`web/js` untuk bentuk pemilih tanggal berbasis UTC, memastikan rekap harian
+sebuah laporan berjumlah sama dengan publikasinya sendiri, dan membaca migrasi
+untuk memastikan basis data dan penjadwal masih sepaham.
 
 ### Uji integritas tombol
 

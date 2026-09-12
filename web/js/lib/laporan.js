@@ -97,9 +97,20 @@ function namaHari(iso) {
   return Number.isNaN(t.getTime()) ? '' : HARI[t.getDay()]
 }
 
+/**
+ * Hari sebuah nilai waktu menurut WIB, sebagai YYYY-MM-DD.
+ *
+ * Pergeserannya dihitung di sini, bukan diserahkan kepada zona waktu peramban:
+ * laporan yang sama harus memuat berita yang sama ketika disusun dari Jakarta
+ * maupun dari komputer yang jamnya disetel ke zona lain. Bentuk sebelumnya
+ * memakai UTC, dan akibatnya berita yang terbit sebelum pukul tujuh pagi WIB
+ * tercatat pada hari sebelumnya — tepat kelompok berita yang paling sering
+ * menjadi isi laporan pagi.
+ */
 function isoHari(nilai) {
   const t = new Date(nilai)
-  return Number.isNaN(t.getTime()) ? '' : t.toISOString().slice(0, 10)
+  if (Number.isNaN(t.getTime())) return ''
+  return new Date(t.getTime() + 7 * 3600 * 1000).toISOString().slice(0, 10)
 }
 
 function nadaUrgensi(u) {
@@ -182,11 +193,22 @@ export function olahLaporan(snapshot) {
   // Rekap per hari sepanjang periode, termasuk hari yang kosong. Hari sepi
   // adalah informasi; menghilangkannya membuat garis tren berbohong.
   const perHari = []
-  const mulai = new Date(periode.mulai)
-  const selesai = new Date(periode.selesai)
-  for (let t = new Date(mulai); t <= selesai; t.setDate(t.getDate() + 1)) {
-    const iso = t.toISOString().slice(0, 10)
-    const hariIni = publikasi.filter((b) => isoHari(b.tanggal) === iso)
+  /* Dilangkahi sebagai hari UTC murni, bukan lewat setDate() yang membaca jam
+     lokal peramban. Bentuk yang lama melompati satu hari di peramban yang
+     zonanya di sebelah barat Greenwich, dan hari yang terlompati hilang dari
+     rekap tanpa meninggalkan tanda apa pun. */
+  const mulai = Date.parse(`${periode.mulai}T00:00:00Z`)
+  const selesai = Date.parse(`${periode.selesai}T00:00:00Z`)
+  for (let t = mulai; t <= selesai; t += 86_400_000) {
+    const iso = new Date(t).toISOString().slice(0, 10)
+    /* `hari` dikirim basis data: hari kalender Jakarta atas waktu TANGKAP,
+       yaitu pemotongan yang sama dengan yang dipakai memilih baris ini ke
+       dalam periode. `tanggal` — tanggal terbit — hanya dipakai bila kolom
+       itu tidak ada, yakni pada mode peragaan dan pada snapshot lama yang
+       masih tersimpan di peramban seseorang. Mengelompokkan menurut tanggal
+       terbit membuat batang harian tidak berjumlah sama dengan angka
+       totalnya sendiri, dan selisihnya terbaca sebagai salah hitung. */
+    const hariIni = publikasi.filter((b) => (b.hari || isoHari(b.tanggal)) === iso)
     const peristiwaHari = peristiwa.filter((p) => isoHari(p.tanggal_pertama) === iso)
     perHari.push({
       tanggal: iso,

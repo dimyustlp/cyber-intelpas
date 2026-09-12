@@ -102,6 +102,7 @@ const HALAMAN = {
   koordinat: () => import('./pages/koordinat.js').then((m) => m.halamanKoordinat),
   audit: () => import('./pages/audit.js').then((m) => m.halamanAudit),
   kesehatan: () => import('./pages/kesehatan.js').then((m) => m.halamanKesehatan),
+  panduan: () => import('./pages/panduan.js').then((m) => m.halamanPanduan),
   profil: () => import('./pages/profil.js').then((m) => m.halamanProfil),
   input: () => import('./pages/input.js').then((m) => m.halamanInput),
   sinkronisasi: () => import('./pages/sinkronisasi.js').then((m) => m.halamanSinkronisasi),

@@ -71,8 +71,8 @@ export const KONFIG = {
   kementerian: 'Kementerian Imigrasi dan Pemasyarakatan',
   versi: '2.0.0',
 
-  url: 'https://ffcebfslmnhivravwhvm.supabase.co',
-  kunciPublik: 'sb_publishable_zPFtwp1EbYbIHaKT80FwWA_tZs4vNdn',
+  url: 'https://iprsfkuunuiepxjfyjmw.supabase.co',
+  kunciPublik: 'sb_publishable_jRALhkLLNnuA1hfOH22awA_hM_TUkdk',
 
   mode: parameter.get('mode') === 'demo' ? 'demo' : 'langsung',
 

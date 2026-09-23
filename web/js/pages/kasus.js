@@ -199,11 +199,17 @@ function rincian(kasus, keadaan, bolehKelola) {
       </div>
     </div>
 
-    ${kasus.summary ? `
-      <div class="siklus-bagian">
-        <div class="siklus-bagian-kop"><span class="label-mono">Ringkasan analis</span></div>
-        <p class="kecil-teks" style="line-height:1.6;color:var(--ink-2)">${amankan(kasus.summary)}</p>
-      </div>` : ''}
+    ${/* Analisa Awal selalu tampil, termasuk ketika kosong. Isinya datang dari
+         borang Bentuk Kasus (kolom `summary`), dan bagian yang lenyap saat
+         kosong membuat pembacanya tidak tahu bahwa borang itu punya tempat
+         untuk menuliskannya. Bernama "Ringkasan analis" sampai 23 September
+         2026; nama kolomnya di basis data tidak berubah. */''}
+    <div class="siklus-bagian">
+      <div class="siklus-bagian-kop"><span class="label-mono">Analisa Awal</span></div>
+      ${kasus.summary
+        ? `<p class="kecil-teks" style="line-height:1.6;color:var(--ink-2);white-space:pre-line">${amankan(kasus.summary)}</p>`
+        : `<p class="ket">Belum diisi. Analisa Awal ditulis pada borang kasus, lewat tombol Sunting di atas bagi yang berhak mengelola kasus.</p>`}
+    </div>
 
     <div class="siklus-bagian">
       <div class="siklus-bagian-kop">
@@ -241,7 +247,7 @@ function rincian(kasus, keadaan, bolehKelola) {
         <div><dt>Dibuat</dt><dd>${amankan(tanggalJam(kasus.created_at))} oleh ${amankan(kasus.created_by || '—')}</dd></div>
         <div><dt>Pemberitaan pertama</dt><dd>${amankan(kasus.first_detected_at ? tanggalJam(kasus.first_detected_at) : '—')}</dd></div>
         <div><dt>Pemberitaan terakhir</dt><dd>${amankan(kasus.last_media_at ? tanggalJam(kasus.last_media_at) : '—')}</dd></div>
-        <div><dt>Penanggung jawab</dt><dd>${amankan(kasus.owner_username || 'Belum ditetapkan')}</dd></div>
+        <div><dt>PIC</dt><dd>${amankan(kasus.owner_username || 'Belum ditetapkan')}</dd></div>
         ${kasus.closed_at ? `<div><dt>Ditutup</dt><dd>${amankan(tanggalJam(kasus.closed_at))}</dd></div>` : ''}
       </dl>
     </div>`
@@ -308,19 +314,21 @@ function borangKasus(kasus, peristiwa) {
         })}
 
         ${bidangPilih({
-          nama: 'actuality_status', label: 'Keaktualan', nilai: kasus?.actuality_status || 'Tidak Dapat Dipastikan',
+          nama: 'actuality_status', label: 'Nilai informasi', nilai: kasus?.actuality_status || 'Tidak Dapat Dipastikan',
           opsi: NAMA_KEAKTUALAN,
           ket: 'Apakah isi beritanya benar. Terpisah dari status penanganannya.',
         })}
 
         ${bidangSatuBaris({
-          nama: 'owner_username', label: 'Penanggung jawab', nilai: kasus?.owner_username || '',
+          nama: 'owner_username', label: 'PIC', nilai: kasus?.owner_username || '',
           petunjuk: 'username analis',
+          ket: 'Orang yang memegang kasus ini sampai ditutup.',
         })}
 
         ${bidangTeks({
-          nama: 'summary', label: 'Ringkasan analis', nilai: kasus?.summary || '', baris: 4,
-          ket: 'Apa yang terjadi, apa yang belum diketahui, dan mengapa ini menuntut perhatian.',
+          nama: 'summary', label: 'Analisa awal', nilai: kasus?.summary || '', baris: 4,
+          ket: 'Apa yang terjadi, apa yang belum diketahui, dan mengapa ini menuntut perhatian. '
+            + 'Tampil di rincian kasus sebagai Analisa Awal.',
         }).replace('<label class="bidang"', '<label class="bidang penuh"')}
       </form>
 

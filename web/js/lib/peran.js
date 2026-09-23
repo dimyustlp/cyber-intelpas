@@ -297,7 +297,6 @@ export const MENU = [
     butir: [
       { id: 'ruang', label: 'Ruang Analis', ikon: 'pengguna', izin: 'lihat_ruang_analis' },
       { id: 'cari', label: 'Pencarian Lanjutan', ikon: 'cari', izin: 'lihat_berita' },
-      { id: 'aturan', label: 'Aturan Peringatan', ikon: 'gembok', izin: 'kelola_aturan' },
     ],
   },
   {
@@ -309,15 +308,29 @@ export const MENU = [
       // Operator Puldata, dan pekerjaan harian tidak pantas disembunyikan di
       // dalam halaman lain.
       { id: 'input', label: 'Input Berita', ikon: 'tambah', izin: 'buat_berita' },
-      { id: 'telaah', label: 'Antrean Telaah', ikon: 'centang', izin: 'telaah_berita', lencana: 'telaah' },
-      { id: 'pemetaan', label: 'Pemetaan UPT', ikon: 'peta', izin: 'petakan_upt', lencana: 'pemetaan' },
-      { id: 'sinkronisasi', label: 'Sinkronisasi Sumber', ikon: 'sinkron', izin: 'lihat_sinkronisasi' },
+      /* Antrean Telaah pindah ke Kasus Intelijen; Pemetaan UPT dan
+         Sinkronisasi Sumber tidak lagi punya butir menu (23 September 2026).
+         Keduanya tetap bisa dibuka dari tombol di halaman lain — lihat
+         SYARAT_TAMBAHAN. */
     ],
   },
   {
     grup: 'Siklus Intelijen',
     butir: [
-      { id: 'kasus', label: 'Kasus Intelijen', ikon: 'kasus', izin: 'lihat_kasus' },
+      /*
+         Antrean Telaah dan Kasus Intelijen, satu butir sejak 23 September
+         2026 (pages/siklus-kasus.js): menelaah berita lalu membentuk kasus
+         beserta Analisa Awal-nya adalah dua langkah satu pekerjaan.
+
+         Syaratnya `lihat_kasus`. Setiap peran yang memegang `telaah_berita`
+         juga memegang `lihat_kasus`, jadi tidak ada penelaah yang kehilangan
+         antreannya. Lencananya lencana antrean telaah, supaya angka berita
+         yang menunggu tidak hilang bersama butir menunya yang lama — tetapi
+         hanya bagi yang berhak membuka tab itu (`lencanaUntuk`). Pimpinan
+         membuka butir yang sama dan tidak menelaah; angka 83 di menunya
+         menjanjikan pekerjaan yang bukan miliknya.
+      */
+      { id: 'siklus-kasus', label: 'Kasus Intelijen', ikon: 'kasus', izin: 'lihat_kasus', lencana: 'telaah', lencanaUntuk: 'telaah' },
       { id: 'lapangan', label: 'Verifikasi Lapangan', ikon: 'lapangan', izin: 'lihat_penugasan' },
       { id: 'evaluasi', label: 'Evaluasi dan Rekomendasi', ikon: 'tindak', izin: 'analisis_kasus' },
       { id: 'keputusan', label: 'Keputusan Pimpinan', ikon: 'keputusan', izin: 'putuskan_kasus' },
@@ -335,11 +348,15 @@ export const MENU = [
   {
     grup: 'Kelola Sistem',
     butir: [
-      { id: 'pengguna', label: 'Manajemen Pengguna', ikon: 'pengguna', izin: 'kelola_pengguna' },
-      { id: 'koordinat', label: 'Koordinat UPT', ikon: 'peta', izin: 'kelola_koordinat' },
-      { id: 'integrasi', label: 'Integrasi dan Kunci', ikon: 'gembok', izin: 'kelola_integrasi' },
-      { id: 'audit', label: 'Jejak Audit', ikon: 'audit', izin: 'lihat_audit' },
-      { id: 'kesehatan', label: 'Kesehatan Sistem', ikon: 'kesehatan', izin: 'lihat_kesehatan' },
+      /*
+         Dua butir gabungan sejak 23 September 2026 (pages/pengguna-data.js
+         dan pages/pemantauan-sistem.js). Pemantauan Sistem bersyarat
+         `kelola_aturan` karena Aturan Peringatan, yang dulu di grup Ruang
+         Analis, kini tabnya — analis melihat grup ini dengan satu butir,
+         dan tab Kesehatan Sistem tetap hanya bagi superadmin.
+      */
+      { id: 'pengguna-data', label: 'Pengguna & Data Induk', ikon: 'pengguna', izin: 'kelola_pengguna' },
+      { id: 'pemantauan-sistem', label: 'Pemantauan Sistem', ikon: 'kesehatan', izin: 'kelola_aturan' },
     ],
   },
   {
@@ -500,6 +517,18 @@ const SYARAT_TAMBAHAN = {
   narasi: 'lihat_tren',
   jaringan: 'lihat_tren',
   komando: 'lihat_dasbor',
+  /* Tab tiga menu gabungan lainnya, dan dua halaman yang kehilangan butir
+     menunya — semuanya dengan izin yang dulu tertulis pada butirnya. */
+  telaah: 'telaah_berita',
+  kasus: 'lihat_kasus',
+  aturan: 'kelola_aturan',
+  kesehatan: 'lihat_kesehatan',
+  pengguna: 'kelola_pengguna',
+  koordinat: 'kelola_koordinat',
+  integrasi: 'kelola_integrasi',
+  audit: 'lihat_audit',
+  pemetaan: 'petakan_upt',
+  sinkronisasi: 'lihat_sinkronisasi',
   /* Nama lama halaman berita daerah, dipertahankan untuk tautan tersimpan. */
   'kanwil-riwayat': 'lihat_berita_wilayah',
 }
@@ -519,11 +548,21 @@ const SYARAT_TAMBAHAN = {
  * izin padahal ia hanya salah mengetik.
  */
 export function bolehBuka(peran, halaman) {
+  /*
+     Syarat tambahan DITAMBAHKAN pada syarat dari menu, bukan menggantikannya.
+
+     Sampai 23 September 2026 keduanya tidak pernah menyebut halaman yang
+     sama, sehingga bedanya tidak terlihat. Sejak alamat `pengguna` menjadi
+     tab di ruang pusat, ia muncul di dua tempat: `kelola_pengguna` di
+     SYARAT_TAMBAHAN, dan `kelola_pengguna_wilayah` dari MENU_KANWIL. Kalau
+     yang pertama menggantikan yang kedua, admin kanwil kehilangan halaman
+     Pengguna Wilayah-nya tanpa satu pun pesan galat.
+  */
+  const syarat = new Set(SYARAT_HALAMAN.get(halaman) || [])
   if (Object.prototype.hasOwnProperty.call(SYARAT_TAMBAHAN, halaman)) {
-    const syarat = SYARAT_TAMBAHAN[halaman]
-    return syarat === null || punyaIzin(peran, syarat)
+    if (SYARAT_TAMBAHAN[halaman] === null) return true
+    syarat.add(SYARAT_TAMBAHAN[halaman])
   }
-  const syarat = SYARAT_HALAMAN.get(halaman)
-  if (!syarat) return true
+  if (!syarat.size) return true
   return [...syarat].some((izin) => punyaIzin(peran, izin))
 }

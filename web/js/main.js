@@ -82,35 +82,41 @@ const HALAMAN = {
   positif: () => import('./pages/kanal.js').then((m) => m.halamanKanalPositif),
   laporan: () => import('./pages/laporan.js').then((m) => m.halamanLaporan),
   infografis: () => import('./pages/infografis.js').then((m) => m.halamanInfografis),
-  integrasi: () => import('./pages/integrasi.js').then((m) => m.halamanIntegrasi),
+  integrasi: () => import('./pages/pengguna-data.js').then((m) => m.halamanPenggunaData),
   distribusi: () => import('./pages/distribusi.js').then((m) => m.halamanDistribusi),
-  telaah: () => import('./pages/telaah.js').then((m) => m.halamanTelaah),
+  telaah: () => import('./pages/siklus-kasus.js').then((m) => m.halamanSiklusKasus),
   pemetaan: () => import('./pages/pemetaan.js').then((m) => m.halamanPemetaan),
   peta: () => import('./pages/peta.js').then((m) => m.halamanPeta),
   /* Satu fitur, lima alamat. `analisis` adalah butir menunya; keempat nama lama
      tetap hidup sebagai alamat tab-nya, supaya tautan tersimpan dan tombol di
      halaman lain mendarat di bagian yang tepat. Lihat pages/analisis.js. */
   analisis: () => import('./pages/analisis.js').then((m) => m.halamanAnalisis),
+  /* Tiga menu gabungan lain, dengan pola yang sama: alamat butir menunya
+     sendiri, dan alamat lama tiap bagian yang kini menjadi tab
+     (ui/bingkai-tab.js). */
+  'siklus-kasus': () => import('./pages/siklus-kasus.js').then((m) => m.halamanSiklusKasus),
+  'pemantauan-sistem': () => import('./pages/pemantauan-sistem.js').then((m) => m.halamanPemantauanSistem),
+  'pengguna-data': () => import('./pages/pengguna-data.js').then((m) => m.halamanPenggunaData),
   tren: () => import('./pages/analisis.js').then((m) => m.halamanAnalisis),
   narasi: () => import('./pages/analisis.js').then((m) => m.halamanAnalisis),
   jaringan: () => import('./pages/analisis.js').then((m) => m.halamanAnalisis),
   komando: () => import('./pages/analisis.js').then((m) => m.halamanAnalisis),
   ruang: () => import('./pages/ruang.js').then((m) => m.halamanRuang),
   cari: () => import('./pages/cari.js').then((m) => m.halamanCari),
-  aturan: () => import('./pages/aturan.js').then((m) => m.halamanAturan),
-  kasus: () => import('./pages/kasus.js').then((m) => m.halamanKasus),
+  aturan: () => import('./pages/pemantauan-sistem.js').then((m) => m.halamanPemantauanSistem),
+  kasus: () => import('./pages/siklus-kasus.js').then((m) => m.halamanSiklusKasus),
   lapangan: () => import('./pages/lapangan.js').then((m) => m.halamanLapangan),
   evaluasi: () => import('./pages/evaluasi.js').then((m) => m.halamanEvaluasi),
   keputusan: () => import('./pages/keputusan.js').then((m) => m.halamanKeputusan),
   tindak: () => import('./pages/tindak.js').then((m) => m.halamanTindak),
-  koordinat: () => import('./pages/koordinat.js').then((m) => m.halamanKoordinat),
-  audit: () => import('./pages/audit.js').then((m) => m.halamanAudit),
-  kesehatan: () => import('./pages/kesehatan.js').then((m) => m.halamanKesehatan),
+  koordinat: () => import('./pages/pengguna-data.js').then((m) => m.halamanPenggunaData),
+  audit: () => import('./pages/pengguna-data.js').then((m) => m.halamanPenggunaData),
+  kesehatan: () => import('./pages/pemantauan-sistem.js').then((m) => m.halamanPemantauanSistem),
   panduan: () => import('./pages/panduan.js').then((m) => m.halamanPanduan),
   profil: () => import('./pages/profil.js').then((m) => m.halamanProfil),
   input: () => import('./pages/input.js').then((m) => m.halamanInput),
   sinkronisasi: () => import('./pages/sinkronisasi.js').then((m) => m.halamanSinkronisasi),
-  pengguna: () => import('./pages/pengguna.js').then((m) => m.halamanPengguna),
+  pengguna: () => import('./pages/pengguna-data.js').then((m) => m.halamanPenggunaData),
   'kanwil-dasbor': () => import('./pages/kanwil.js').then((m) => m.halamanKanwilDasbor),
   'upt-dasbor': () => import('./pages/kanwil.js').then((m) => m.halamanUptDasbor),
   'wilayah-telaah': () => import('./pages/wilayah-telaah.js').then((m) => m.halamanWilayahTelaah),
@@ -266,20 +272,37 @@ function putarTema() {
  */
 const INDUK_HALAMAN = {
   'berita-detail': 'berita',
-  // Tab di dalam Analisis Pemberitaan menyalakan butir menu fitur itu.
+  // Tab di dalam menu gabungan menyalakan butir menu fitur itu.
   tren: 'analisis',
   narasi: 'analisis',
   jaringan: 'analisis',
   komando: 'analisis',
+  telaah: 'siklus-kasus',
+  kasus: 'siklus-kasus',
+  aturan: 'pemantauan-sistem',
+  kesehatan: 'pemantauan-sistem',
+  pengguna: 'pengguna-data',
+  koordinat: 'pengguna-data',
+  integrasi: 'pengguna-data',
+  audit: 'pengguna-data',
 }
 
 function daftarMenu(peran) {
-  const aktif = INDUK_HALAMAN[keadaan.halaman] || keadaan.halaman
-  return menuUntuk(peran).map((g) => `
+  const menu = menuUntuk(peran)
+  /* Induk dipakai hanya bila butirnya memang ada di menu peran ini. Alamat
+     `pengguna` adalah tab Pengguna & Data Induk di ruang pusat, tetapi butir
+     menunya sendiri — Pengguna Wilayah — di ruang wilayah. */
+  const ada = new Set(menu.flatMap((g) => g.butir.map((b) => b.id)))
+  const induk = INDUK_HALAMAN[keadaan.halaman]
+  const aktif = induk && ada.has(induk) ? induk : keadaan.halaman
+  return menu.map((g) => `
     <div class="nav-grup">
       <div class="nav-judul">${amankan(g.grup)}</div>
       ${g.butir.map((b) => {
-        const jumlah = b.lencana ? keadaan.hitungan[b.lencana] : 0
+        // `lencanaUntuk`: angka hanya tampil bagi yang berhak membuka halaman
+        // asal angka itu — dipakai butir gabungan yang lencananya milik satu tab.
+        const berhak = !b.lencanaUntuk || bolehBuka(peran, b.lencanaUntuk)
+        const jumlah = b.lencana && berhak ? keadaan.hitungan[b.lencana] : 0
         return `<button class="nav-butir" data-halaman="${b.id}"
           ${b.id === aktif ? 'aria-current="page"' : ''}>
           ${ikon(b.ikon)}<span>${amankan(b.label)}</span>

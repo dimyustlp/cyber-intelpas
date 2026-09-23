@@ -107,15 +107,6 @@ const PUSAT = {
       + 'dua ratus baris sekaligus, dan justru karena itu putusannya dibuat di Antrean '
       + 'Telaah, satu per satu, lengkap dengan catatan penelaahnya.',
   },
-  aturan: {
-    isi: 'Daftar aturan peringatan: bila apa terjadi, kabari siapa. Setiap kali syaratnya '
-      + 'diubah, jangkauannya dihitung ulang terhadap arsip yang termuat — sebelum tombol '
-      + 'Simpan ditekan.',
-    guna: 'Menuliskan pertanyaan tetap sebuah kantor supaya tidak perlu ditanyakan ulang '
-      + 'setiap hari.',
-    catatan: 'Lima aturan bawaan bisa dimatikan dan ambangnya bisa disunting, tetapi tidak '
-      + 'bisa dihapus. Tombolnya karena itu berbunyi Pulihkan, bukan Hapus.',
-  },
   berita: {
     isi: 'Tabel seluruh berita dengan enam saringan tetap, kotak cari, dan tombol unduh '
       + 'CSV. Tiap baris bisa dibuka menjadi halaman detailnya sendiri.',
@@ -131,41 +122,6 @@ const PUSAT = {
     catatan: 'Hasilnya tetap berstatus Belum Ditelaah dan tidak langsung menjadi angka. '
       + 'Masukan manual tidak lebih tepercaya daripada hasil mesin hanya karena diketik '
       + 'manusia.',
-  },
-  telaah: {
-    isi: 'Antrean satu berita per layar, lengkap dengan alasan mesin: kata kunci penentu, '
-      + 'skor keyakinan, dan pesaing terdekatnya. Analis menyetujui atau mengoreksi, lalu '
-      + 'lanjut ke berita berikutnya.',
-    guna: 'Tempat penilaian mesin menjadi penilaian resmi. Tanpa halaman ini, hasil '
-      + 'berkeyakinan 0,20 dan 0,95 sama-sama masuk laporan tanpa pernah dibaca manusia.',
-    catatan: 'Bentuk antrean dipilih, bukan tabel. Tabel dua puluh baris mengundang orang '
-      + 'mencentang semuanya sekaligus; satu berita yang memenuhi layar menuntut ia dibaca '
-      + 'lebih dulu.',
-  },
-  pemetaan: {
-    isi: 'Berita yang unitnya belum dikenali, beserta kandidat unit sebagai tombol — hasil '
-      + 'mesin pencocokan yang dijalankan ulang di peramban. Ada pula pencarian bebas ke '
-      + 'seluruh unit pada data induk.',
-    guna: 'Memutuskan unit mana yang dimaksud sebuah berita ketika skor mesin di bawah '
-      + 'ambang otomatis. Berita yang tidak terpetakan tidak pernah muncul di peta, di '
-      + 'daftar unit, maupun di lembar wilayah.',
-  },
-  sinkronisasi: {
-    isi: 'Keadaan tiap sumber data: kapan terakhir ditarik, berapa baris yang datang, dan '
-      + 'sebab kegagalan bila ada. Sumber pusat dan sumber tiap kantor wilayah dilaporkan '
-      + 'terpisah.',
-    guna: 'Menjawab kenapa hari ini sepi. Kosongnya data lebih sering berarti penarikan '
-      + 'terhenti daripada berarti tidak ada berita.',
-    catatan: 'Tidak ada tombol tarik sekarang di halaman ini, dan itu disengaja: '
-      + 'menariknya menuntut token yang tidak boleh berada di peramban. Penjadwal di '
-      + 'basis data sudah menariknya sendiri.',
-  },
-  kasus: {
-    isi: 'Perkara intelijen: beberapa publikasi dan peristiwa yang diikat menjadi satu '
-      + 'berkas dengan riwayat penanganannya.',
-    guna: 'Tempat pemberitaan berhenti menjadi daftar dan mulai menjadi perkara. '
-      + 'Menjawab sudah sampai mana penanganan sebuah perkara — pertanyaan yang tidak '
-      + 'punya tempat untuk dijawab di dalam tabel berita.',
   },
   lapangan: {
     isi: 'Satu daftar penugasan dipandang dari dua sisi: analis menerbitkan surat tugas, '
@@ -228,46 +184,29 @@ const PUSAT = {
       + 'catatan. Ketiganya adalah jawaban atas cacat sistem lama yang pernah mengirim dua '
       + 'berita yang tidak pernah terjadi.',
   },
-  pengguna: {
-    isi: 'Penerbitan akun beserta perannya, dan daftar akun yang sudah ada.',
-    guna: 'Menerbitkan akun untuk petugas baru. Superadmin menerbitkan peran apa pun; '
-      + 'Administrator Kantor Wilayah hanya Penelaah Berita UPT di wilayahnya sendiri.',
-    catatan: 'Akun kantor wilayah wajib memakai alamat surel sebagai nama pengguna. Petugas '
-      + 'wilayah berganti orang, dan alamat surat dinas adalah satu-satunya penanda yang '
-      + 'masih bisa ditelusuri kemudian.',
+  'siklus-kasus': {
+    isi: 'Dua tab berurutan: Antrean Telaah, tempat penilaian mesin atas tiap berita '
+      + 'disetujui atau dikoreksi, dan Kasus Intelijen, tempat berita yang pantas dijadikan '
+      + 'perkara dibentuk menjadi kasus beserta Analisa Awal, Nilai informasi, dan PIC-nya.',
+    guna: 'Satu pintu untuk dua langkah satu pekerjaan: menelaah lalu membentuk kasus. '
+      + 'Analisa Awal yang ditulis pada borang Bentuk Kasus tampil di rincian kasus itu.',
+    catatan: 'Pimpinan dan Analis Evaluasi tidak menelaah berita; bagi mereka menu ini '
+      + 'langsung membuka daftar kasus. Angka pada menu adalah jumlah berita yang menunggu telaah.',
   },
-  koordinat: {
-    isi: 'Satu unit pada satu waktu, dengan pratinjau titiknya di atas peta yang sama '
-      + 'dengan Peta Sebaran, dan kolom untuk membetulkan atau membenarkan koordinatnya.',
-    guna: 'Memperbaiki titik yang masih berupa pusat kota. Pratinjaunya cukup untuk '
-      + 'menangkap kelas kesalahan yang paling sering: bujur dan lintang tertukar, atau '
-      + 'tanda minus hilang.',
+  'pemantauan-sistem': {
+    isi: 'Dua tab: Aturan Peringatan (bila apa terjadi, kabari siapa) dan Kesehatan Sistem '
+      + '(apakah aliran data, penjadwal, dan sambungan keluar berjalan).',
+    guna: 'Menjawab satu pertanyaan dari dua sisi: apakah sistem ini akan memberi tahu pada '
+      + 'waktunya — dari aturan yang dinyalakan, dan dari aliran data yang membawa beritanya.',
+    catatan: 'Analis hanya melihat tab Aturan Peringatan; Kesehatan Sistem khusus superadmin.',
   },
-  integrasi: {
-    isi: 'Pemeriksaan sambungan Telegram: empat langkah penyiapan dengan tanda sudah atau '
-      + 'belum, dan kalimat yang menyebutkan persis apa yang salah pada kunci tersimpan.',
-    guna: 'Menyelesaikan penyiapan bot Telegram tanpa perlu membuka baris perintah. '
-      + 'Sebelumnya penyiapan bisa macet berhari-hari tanpa satu pun layar yang bisa '
-      + 'menjelaskan sebabnya.',
-    catatan: 'Tidak ada kolom isian kunci di halaman ini, dan tidak boleh pernah ada. '
-      + 'Kunci bot tidak pernah melewati peramban; yang terlihat di sini hanya hasil '
-      + 'pemeriksaannya.',
-  },
-  audit: {
-    isi: 'Riwayat tindakan pengguna, hanya bisa dibaca. Yang mengubah keadaan tampil lebih '
-      + 'dulu; pembacaan halaman disembunyikan di balik sakelar.',
-    guna: 'Menelusuri siapa melakukan apa dan kapan.',
-    catatan: 'Tidak ada tombol sunting dan tidak ada tombol hapus, sebab basis data memang '
-      + 'tidak menyediakan jalannya. Jejak yang bisa dihapus oleh yang meninggalkannya '
-      + 'bukan jejak.',
-  },
-  kesehatan: {
-    isi: 'Keadaan tiap komponen yang bekerja di belakang layar: penyalin sumber, perayap, '
-      + 'penjadwal laporan, dan pengiriman Telegram — masing-masing dinilai dari WAKTU '
-      + 'kegiatan terakhirnya, dengan ambang diamnya tertulis di layar.',
-    guna: 'Menjawab apakah sistemnya masih bekerja. Ketiganya bisa berhenti tanpa satu pun '
-      + 'galat muncul di layar siapa pun, dan itulah kelas kegagalan yang paling lama tidak '
-      + 'ketahuan.',
+  'pengguna-data': {
+    isi: 'Empat tab pekerjaan superadmin: Pengguna, Koordinat UPT, Integrasi dan Kunci, '
+      + 'serta Jejak Audit.',
+    guna: 'Menerbitkan dan mengatur akun, membetulkan data induk unit, mengatur sambungan '
+      + 'keluar, lalu memeriksa siapa mengubah apa — pekerjaan yang jarang dan berurutan.',
+    catatan: 'Admin kanwil tetap membuka halaman Pengguna Wilayah miliknya sendiri, tanpa tab '
+      + 'lain dan tanpa nama menu pusat ini.',
   },
 }
 
@@ -372,6 +311,94 @@ const UNIT = {
  * "belum dijelaskan" dari "memang tidak ada di menu".
  */
 export const TANPA_MENU = {
+  /* Bagian-bagian menu gabungan 23 September 2026, dan dua halaman yang
+     kehilangan butir menunya. Penjelasannya tetap per bagian, sebab tiap
+     bagian menjawab pertanyaan yang berbeda dan punya batasnya sendiri. */
+  telaah: {
+    isi: 'Antrean satu berita per layar, lengkap dengan alasan mesin: kata kunci penentu, '
+      + 'skor keyakinan, dan pesaing terdekatnya. Analis menyetujui atau mengoreksi, lalu '
+      + 'lanjut ke berita berikutnya.',
+    guna: 'Tempat penilaian mesin menjadi penilaian resmi. Tanpa halaman ini, hasil '
+      + 'berkeyakinan 0,20 dan 0,95 sama-sama masuk laporan tanpa pernah dibaca manusia.',
+    catatan: 'Bentuk antrean dipilih, bukan tabel. Tabel dua puluh baris mengundang orang '
+      + 'mencentang semuanya sekaligus; satu berita yang memenuhi layar menuntut ia dibaca '
+      + 'lebih dulu.',
+  },
+  kasus: {
+    isi: 'Perkara intelijen: beberapa publikasi dan peristiwa yang diikat menjadi satu '
+      + 'berkas dengan riwayat penanganannya.',
+    guna: 'Tempat pemberitaan berhenti menjadi daftar dan mulai menjadi perkara. '
+      + 'Menjawab sudah sampai mana penanganan sebuah perkara — pertanyaan yang tidak '
+      + 'punya tempat untuk dijawab di dalam tabel berita.',
+  },
+  aturan: {
+    isi: 'Daftar aturan peringatan: bila apa terjadi, kabari siapa. Setiap kali syaratnya '
+      + 'diubah, jangkauannya dihitung ulang terhadap arsip yang termuat — sebelum tombol '
+      + 'Simpan ditekan.',
+    guna: 'Menuliskan pertanyaan tetap sebuah kantor supaya tidak perlu ditanyakan ulang '
+      + 'setiap hari.',
+    catatan: 'Lima aturan bawaan bisa dimatikan dan ambangnya bisa disunting, tetapi tidak '
+      + 'bisa dihapus. Tombolnya karena itu berbunyi Pulihkan, bukan Hapus.',
+  },
+  kesehatan: {
+    isi: 'Keadaan tiap komponen yang bekerja di belakang layar: penyalin sumber, perayap, '
+      + 'penjadwal laporan, dan pengiriman Telegram — masing-masing dinilai dari WAKTU '
+      + 'kegiatan terakhirnya, dengan ambang diamnya tertulis di layar.',
+    guna: 'Menjawab apakah sistemnya masih bekerja. Ketiganya bisa berhenti tanpa satu pun '
+      + 'galat muncul di layar siapa pun, dan itulah kelas kegagalan yang paling lama tidak '
+      + 'ketahuan.',
+  },
+  pengguna: {
+    isi: 'Penerbitan akun beserta perannya, dan daftar akun yang sudah ada.',
+    guna: 'Menerbitkan akun untuk petugas baru. Superadmin menerbitkan peran apa pun; '
+      + 'Administrator Kantor Wilayah hanya Penelaah Berita UPT di wilayahnya sendiri.',
+    catatan: 'Akun kantor wilayah wajib memakai alamat surel sebagai nama pengguna. Petugas '
+      + 'wilayah berganti orang, dan alamat surat dinas adalah satu-satunya penanda yang '
+      + 'masih bisa ditelusuri kemudian.',
+  },
+  koordinat: {
+    isi: 'Satu unit pada satu waktu, dengan pratinjau titiknya di atas peta yang sama '
+      + 'dengan Peta Sebaran, dan kolom untuk membetulkan atau membenarkan koordinatnya.',
+    guna: 'Memperbaiki titik yang masih berupa pusat kota. Pratinjaunya cukup untuk '
+      + 'menangkap kelas kesalahan yang paling sering: bujur dan lintang tertukar, atau '
+      + 'tanda minus hilang.',
+  },
+  integrasi: {
+    isi: 'Pemeriksaan sambungan Telegram: empat langkah penyiapan dengan tanda sudah atau '
+      + 'belum, dan kalimat yang menyebutkan persis apa yang salah pada kunci tersimpan.',
+    guna: 'Menyelesaikan penyiapan bot Telegram tanpa perlu membuka baris perintah. '
+      + 'Sebelumnya penyiapan bisa macet berhari-hari tanpa satu pun layar yang bisa '
+      + 'menjelaskan sebabnya.',
+    catatan: 'Tidak ada kolom isian kunci di halaman ini, dan tidak boleh pernah ada. '
+      + 'Kunci bot tidak pernah melewati peramban; yang terlihat di sini hanya hasil '
+      + 'pemeriksaannya.',
+  },
+  audit: {
+    isi: 'Riwayat tindakan pengguna, hanya bisa dibaca. Yang mengubah keadaan tampil lebih '
+      + 'dulu; pembacaan halaman disembunyikan di balik sakelar.',
+    guna: 'Menelusuri siapa melakukan apa dan kapan.',
+    catatan: 'Tidak ada tombol sunting dan tidak ada tombol hapus, sebab basis data memang '
+      + 'tidak menyediakan jalannya. Jejak yang bisa dihapus oleh yang meninggalkannya '
+      + 'bukan jejak.',
+  },
+  pemetaan: {
+    isi: 'Berita yang unitnya belum dikenali, beserta kandidat unit sebagai tombol — hasil '
+      + 'mesin pencocokan yang dijalankan ulang di peramban. Ada pula pencarian bebas ke '
+      + 'seluruh unit pada data induk.',
+    guna: 'Memutuskan unit mana yang dimaksud sebuah berita ketika skor mesin di bawah '
+      + 'ambang otomatis. Berita yang tidak terpetakan tidak pernah muncul di peta, di '
+      + 'daftar unit, maupun di lembar wilayah.',
+  },
+  sinkronisasi: {
+    isi: 'Keadaan tiap sumber data: kapan terakhir ditarik, berapa baris yang datang, dan '
+      + 'sebab kegagalan bila ada. Sumber pusat dan sumber tiap kantor wilayah dilaporkan '
+      + 'terpisah.',
+    guna: 'Menjawab kenapa hari ini sepi. Kosongnya data lebih sering berarti penarikan '
+      + 'terhenti daripada berarti tidak ada berita.',
+    catatan: 'Tidak ada tombol tarik sekarang di halaman ini, dan itu disengaja: '
+      + 'menariknya menuntut token yang tidak boleh berada di peramban. Penjadwal di '
+      + 'basis data sudah menariknya sendiri.',
+  },
   /* Empat tab Analisis Pemberitaan. Penjelasannya tetap dipisah per tab, sebab
      tiap tab menjawab pertanyaan yang berbeda dan punya batasnya sendiri. */
   tren: {

@@ -1550,12 +1550,12 @@ table.tabel tbody td { border-bottom: 1px solid var(--line-3); }
   box-shadow: var(--bayang-1);
 }
 
-/* Bilah tab Analisis Pemberitaan. Tabnya tautan (aria-current), bukan sakelar
-   (aria-pressed) — lihat pages/analisis.js — tetapi rupanya sengaja sama
+/* Bilah tab menu gabungan (ui/bingkai-tab.js). Tabnya tautan (aria-current),
+   bukan sakelar (aria-pressed), tetapi rupanya sengaja sama
    dengan kendali bersegmen lain supaya tidak ada bentuk tab kedua yang harus
    dipelajari. Pada layar sempit ia bergulir ke samping, bukan membungkus. */
-.analisis-tab { align-self: flex-start; max-width: 100%; overflow-x: auto; }
-.analisis-tab button {
+.bingkai-tab { align-self: flex-start; max-width: 100%; overflow-x: auto; }
+.bingkai-tab button {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -1563,7 +1563,7 @@ table.tabel tbody td { border-bottom: 1px solid var(--line-3); }
   font-size: 12.5px;
   padding: 6px 14px;
 }
-.analisis-tab svg { width: 14px; height: 14px; }
+.bingkai-tab svg { width: 14px; height: 14px; }
 
 /* ------------------------------------------------------------ Halaman masuk */
 

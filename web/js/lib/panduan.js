@@ -40,8 +40,8 @@ const PUSAT = {
   dasbor: {
     isi: 'Keadaan pemberitaan hari ini dalam satu layar: jumlah publikasi beserta '
       + 'selisihnya terhadap kemarin, sebaran sentimen, kejadian yang menuntut '
-      + 'perhatian, unit yang paling banyak disorot, dan bilah kesehatan aliran data '
-      + 'di puncak halaman.',
+      + 'perhatian, unit yang paling banyak disorot, peta sebaran seluruh Lapas, Rutan, '
+      + 'dan LPKA, serta bilah kesehatan aliran data di puncak halaman.',
     guna: 'Layar pertama yang dibuka setiap pagi. Setiap angka pada ubin bisa ditekan '
       + 'dan membuka daftar yang menghasilkannya, sehingga tidak ada angka yang harus '
       + 'dicari sendiri asal-usulnya.',
@@ -52,7 +52,9 @@ const PUSAT = {
   briefing: {
     isi: 'Situasi nasional sebagai kalimat, bukan tabel: satu pernyataan tingkat risiko '
       + 'di puncak, angka-angka besar yang masing-masing membawa pembanding periode '
-      + 'sebelumnya, dan daftar pendek hal yang menuntut keputusan.',
+      + 'sebelumnya, dan daftar pendek hal yang menuntut keputusan. Pada bagian Penilaian '
+      + 'risiko, kata tingkat risiko tiap pola bisa ditekan untuk membuka kartu beritanya: '
+      + 'judul, sumber asli, tombol telaah, dan tombol jadikan kasus.',
     guna: 'Untuk pimpinan yang punya enam puluh detik, bukan analis yang punya sore hari. '
       + 'Dipakai sebagai bahan bacaan sebelum rapat pimpinan.',
     catatan: 'Tidak ada satu pun angka yang dihitung di halaman ini sendiri; seluruhnya '
@@ -75,23 +77,6 @@ const PUSAT = {
       + 'kanal negatif.',
     guna: 'Bahan kehumasan, dan penyeimbang ketika sebuah isu negatif perlu dijawab '
       + 'dengan capaian yang sudah terberitakan di unit yang sama.',
-  },
-  peringatan: {
-    isi: 'Kejadian berurgensi tinggi dan kritis sebagai kartu satu per satu, dengan pita '
-      + 'kerawanan di tepi kiri — bukan sebagai tabel.',
-    guna: 'Dibaca ketika sesuatu sedang berlangsung. Bentuk kartu dipilih supaya yang '
-      + 'terbaca adalah kejadiannya, bukan kolom-kolomnya.',
-    catatan: 'Label AWAL berarti belum ditelaah analis; label RESMI berarti sudah '
-      + 'diverifikasi. Hanya yang kedua yang boleh menjadi dasar keputusan.',
-  },
-  peta: {
-    isi: 'Seluruh Lapas, Rutan, dan LPKA di Indonesia sebagai titik pada satu peta, '
-      + 'diwarnai menurut keadaan pemberitaan masing-masing.',
-    guna: 'Menjawab pertanyaan yang tidak bisa dijawab tabel: di mana persoalannya '
-      + 'menumpuk. Sepuluh unit rawan yang tersebar dari Aceh sampai Papua dan sepuluh '
-      + 'unit rawan di satu provinsi terbaca sama di dalam tabel dan berbeda artinya.',
-    catatan: 'Sebagian besar koordinat masih berupa titik pusat kota, bukan alamat '
-      + 'gedungnya. Itu dinyatakan di layar dan diperbaiki lewat halaman Koordinat UPT.',
   },
   tren: {
     isi: 'Perbandingan periode berjalan terhadap periode sebelumnya yang panjangnya '
@@ -412,6 +397,24 @@ const UNIT = {
  * "belum dijelaskan" dari "memang tidak ada di menu".
  */
 export const TANPA_MENU = {
+  peringatan: {
+    isi: 'Kejadian berurgensi tinggi dan kritis sebagai kartu satu per satu, dengan pita '
+      + 'kerawanan di tepi kiri — bukan sebagai tabel.',
+    guna: 'Dibaca ketika sesuatu sedang berlangsung. Kartunya muncul juga sebagai jendela '
+      + 'ketika kata risiko di halaman Peringatan Dini ditekan; halaman penuhnya dibuka dari '
+      + 'tombol Lihat semua di dasbor.',
+    catatan: 'Label AWAL berarti belum ditelaah analis; label RESMI berarti sudah '
+      + 'diverifikasi. Hanya yang kedua yang boleh menjadi dasar keputusan.',
+  },
+  peta: {
+    isi: 'Seluruh Lapas, Rutan, dan LPKA di Indonesia sebagai titik pada satu peta, '
+      + 'diwarnai menurut keadaan pemberitaan masing-masing.',
+    guna: 'Tergambar di Dasbor Eksekutif. Menjawab pertanyaan yang tidak bisa dijawab tabel: di mana persoalannya '
+      + 'menumpuk. Sepuluh unit rawan yang tersebar dari Aceh sampai Papua dan sepuluh '
+      + 'unit rawan di satu provinsi terbaca sama di dalam tabel dan berbeda artinya.',
+    catatan: 'Sebagian besar koordinat masih berupa titik pusat kota, bukan alamat '
+      + 'gedungnya. Itu dinyatakan di layar dan diperbaiki lewat halaman Koordinat UPT.',
+  },
   'berita-detail': {
     isi: 'Satu berita utuh beserta dasar penilaiannya: kata kunci penentu, skor mesin, '
       + 'catatan telaah analis, dan tanggapan unit bila sudah ada.',

@@ -18,6 +18,7 @@ import { ikon } from '../lib/ikon.js'
 import { belumTerpetakan } from '../lib/unit-terpetakan.js'
 import { ringkasan, deretEmpatBelasHari } from '../lib/hitung.js'
 import { EMBER, BELUM } from '../lib/sentimen.js'
+import { punyaIzin } from '../lib/peran.js'
 
 /**
  * Bilah kesehatan aliran data.
@@ -121,6 +122,15 @@ export function halamanDasbor({ keadaan, isi }) {
   const netral = r.netral.length
   const belumDinilai = r.belumDinilai.length
 
+  /*
+     Peta Sebaran tinggal di sini sejak 23 September 2026, tanpa butir menu
+     sendiri. Ia tetap bersyarat `lihat_peta` — izin yang sama dengan yang
+     dulu membuka halamannya. Dasbor dibuka lima peran, peta hanya oleh dua;
+     memindahkan tempatnya tidak boleh diam-diam melebarkan siapa yang
+     melihatnya.
+  */
+  const bolehPeta = punyaIzin(keadaan.profil?.role, 'lihat_peta')
+
   isi.innerHTML = `
     <div class="tumpuk">
 
@@ -172,6 +182,15 @@ export function halamanDasbor({ keadaan, isi }) {
       ${barisRekonsiliasi(r, keadaan)}
 
       <div id="dasbor-siklus"><div class="rangka" style="height:104px"></div></div>
+
+      ${bolehPeta ? `
+        <section class="dasbor-peta" aria-labelledby="dasbor-peta-judul">
+          <div class="dasbor-peta-kop">
+            <h2 id="dasbor-peta-judul">Peta sebaran kerawanan</h2>
+            <span class="mini-teks samar-teks">Seluruh Lapas, Rutan, dan LPKA, diwarnai menurut keadaan pemberitaannya</span>
+          </div>
+          <div id="dasbor-peta"><div class="rangka" style="height:420px"></div></div>
+        </section>` : ''}
 
       ${blokKanal(peristiwaNegatif, peristiwaPositif, negatif, positif, netral, belumDinilai, berita.length)}
 
@@ -246,6 +265,7 @@ export function halamanDasbor({ keadaan, isi }) {
 
   // Bagan digambar setelah rangka HTML terpasang, supaya ukuran wadahnya sudah pasti.
   isiSiklus(isi, keadaan)
+  if (bolehPeta) isiPeta(isi, keadaan)
 
   const deret = deretEmpatBelasHari(berita)
   const warna = baganTren(document.getElementById('bagan-tren'), deret)
@@ -623,6 +643,30 @@ async function isiSiklus(isi, keadaan) {
     // Peran yang tidak berhak membaca tabel siklus tidak perlu diberi tahu
     // bahwa ia tidak berhak; ia sudah tidak melihat menunya.
     wadah.innerHTML = ''
+  }
+}
+
+/* ------------------------------------------------------------ peta sebaran */
+
+/**
+ * Peta sebaran di dasbor.
+ *
+ * Diunduh sesudah dasbor tergambar, dengan alasan yang sama seperti siklus
+ * intelijen di atas: garis pantai dan 531 titik tidak boleh menunda angka pagi
+ * yang dibaca lebih dulu. Wadahnya menunggu sebagai rangka setinggi peta,
+ * supaya halaman tidak melompat ketika petanya datang.
+ */
+async function isiPeta(isi, keadaan) {
+  const wadah = isi.querySelector('#dasbor-peta')
+  if (!wadah) return
+  try {
+    const { halamanPeta } = await import('./peta.js')
+    // Dasbor bisa sudah digambar ulang selama modulnya diunduh.
+    if (!wadah.isConnected) return
+    halamanPeta({ keadaan, isi: wadah, tertanam: true })
+  } catch {
+    wadah.innerHTML = pesanSistem('Peta sebaran gagal dimuat. Muat ulang halaman untuk mencoba lagi.',
+      'sedang', 'peta')
   }
 }
 

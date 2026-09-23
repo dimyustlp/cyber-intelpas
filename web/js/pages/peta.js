@@ -464,7 +464,19 @@ function panelUnit(u) {
 
 /* -------------------------------------------------------------- halaman */
 
-export function halamanPeta({ keadaan, isi }) {
+/**
+ * Menggambar peta ke dalam `isi` — halaman sendiri, atau sebuah wadah di dalam
+ * Dasbor Eksekutif (`tertanam: true`).
+ *
+ * Sejak 23 September 2026 peta tidak lagi punya butir menu dan tergambar di
+ * dasbor. Satu fungsi untuk dua tempat, bukan salinan kedua: aturan gerak di
+ * kepala berkas ini sudah cukup sulit dijaga di satu tempat.
+ *
+ * Tertanam, ia tidak boleh menyentuh bilah judul. Bilah itu milik dasbor, dan
+ * perbaruiSubjudul() akan menimpa tanggal dasbor dengan jumlah unit begitu
+ * data induk selesai dimuat.
+ */
+export function halamanPeta({ keadaan, isi, tertanam = false }) {
   if (!keadaanPeta.pandang) keadaanPeta.pandang = PANDANG_AWAL()
 
   // Mekarnya diulang setiap kali halaman ini dibuka, tetapi tidak pada
@@ -1148,6 +1160,7 @@ export function halamanPeta({ keadaan, isi }) {
    * sudah tergambar di bawahnya.
    */
   function perbaruiSubjudul() {
+    if (tertanam) return
     const bilah = document.getElementById('bilah-sub')
     if (bilah) bilah.textContent = subjudul()
   }

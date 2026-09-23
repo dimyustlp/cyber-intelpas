@@ -1,5 +1,9 @@
 /**
- * Ringkasan Pimpinan — situasi dalam satu layar.
+ * Peringatan Dini — situasi dalam satu layar.
+ *
+ * Bernama Ringkasan Pimpinan sampai 23 September 2026. Yang berganti hanya
+ * namanya di menu dan di bilah judul; isinya sengaja tetap. Kartu peringatan
+ * yang dulu punya halaman sendiri kini dibuka dari sini — lihat bukaPola().
  *
  * ---------------------------------------------------------------------------
  * Kenapa halaman ini ada, dan kenapa ia baru ada sekarang
@@ -49,6 +53,9 @@ import { peringkatRisiko } from '../lib/risiko.js'
 import { periksaLaju, rekapLaju, ATURAN } from '../lib/peringatan-laju.js'
 
 import { baganTren } from '../ui/bagan.js'
+import { kartuPeringatan } from './peringatan.js'
+import { punyaIzin } from '../lib/peran.js'
+import { ikon } from '../lib/ikon.js'
 
 /** Pilihan periode. Bertahan selama sesi. */
 const pilihan = { hari: 7 }
@@ -135,7 +142,7 @@ export function halamanBriefing({ keadaan, isi }) {
       ),
     })
     pasangPenyimak(isi)
-    return { judul: 'Ringkasan Pimpinan', sub: 'Tidak ada data pada periode ini' }
+    return { judul: 'Peringatan Dini', sub: 'Tidak ada data pada periode ini' }
   }
 
   isi.innerHTML = `
@@ -196,12 +203,18 @@ export function halamanBriefing({ keadaan, isi }) {
            membuat aturan lonjakan mustahil menyala pada periode "30 hari".
         */
         ket: 'Pola yang terdeteksi mesin, di luar penilaian berita satuan. '
-          + 'Tiap aturan memakai jendela waktunya sendiri, bukan periode yang dipilih di atas.',
+          + 'Tiap aturan memakai jendela waktunya sendiri, bukan periode yang dipilih di atas. '
+          + 'Tekan tingkat risikonya untuk membuka berita di balik pola itu.',
         isi: laju.length
           ? `<ul class="brief-pola">
-               ${laju.slice(0, 5).map((a) => `
+               ${laju.slice(0, 5).map((a, i) => `
                  <li data-nada="${nadaUrgensi(a.tingkat)}">
-                   ${keping(a.tingkat, nadaUrgensi(a.tingkat), true)}
+                   <button class="brief-risiko" data-pola="${i}"
+                     title="Buka berita di balik pola ini"
+                     aria-label="Risiko ${amankan(a.tingkat)}: buka ${angka((a.berita || []).length)} berita di balik pola ini">
+                     ${keping(a.tingkat, nadaUrgensi(a.tingkat), true)}
+                     ${ikon('panahKanan')}
+                   </button>
                    <div>
                      <b>${amankan(ATURAN[a.kode]?.nama || a.kode)}</b>
                      <span>${amankan(ringkas(a.judul, 96))}</span>
@@ -209,7 +222,7 @@ export function halamanBriefing({ keadaan, isi }) {
                    </div>
                  </li>`).join('')}
              </ul>
-             ${tombol({ label: 'Buka Peringatan Dini', ikon: 'peringatan', halaman: 'peringatan' })}`
+             ${tombol({ label: 'Lihat semua peringatan', ikon: 'peringatan', halaman: 'peringatan' })}`
           : pesanSistem('Tidak ada lonjakan, penyebaran ke banyak sumber, peristiwa berat yang '
               + 'didiamkan, maupun penumpukan pelan di satu unit.', 'positif', 'centang'),
       })}
@@ -307,10 +320,10 @@ export function halamanBriefing({ keadaan, isi }) {
   const wadah = isi.querySelector('#brief-bagan')
   if (wadah) baganTren(wadah, deretTren(periodeIni, { mulai, selesai }))
 
-  pasangPenyimak(isi)
+  pasangPenyimak(isi, { laju, peran: keadaan.profil?.role })
 
   return {
-    judul: 'Ringkasan Pimpinan',
+    judul: 'Peringatan Dini',
     sub: `Risiko nasional ${nasional.kode} · ${tanggal(mulai)} – ${tanggal(selesai)}`,
   }
 }
@@ -414,8 +427,97 @@ function rekomendasi({ r, peringkat, laju, unitNaik, nasional }) {
 
 /* ---------------------------------------------------------------- penyimak */
 
-function pasangPenyimak(isi) {
+/**
+ * Kartu peringatan di balik satu pola, dalam satu jendela.
+ *
+ * Pola hanya menyebut judul contoh dan sebabnya. Yang dibutuhkan pembacanya
+ * sesudah itu selalu sama: berita mana saja, dari media apa, dan apa yang bisa
+ * dilakukan sekarang — tiga hal yang sudah dijawab kartu Peringatan Dini. Maka
+ * kartu itulah yang dibuka, bukan tampilan baru yang lambat laun berbeda.
+ *
+ * Kartu tidak digambar di dalam `isi`, jadi tombol di dalamnya tidak ikut
+ * disapu `saringTombolTakBerhak()`. Karena itu hak tombol Telaah dan Jadikan
+ * kasus diputuskan di sini, dengan izin yang sama persis dengan halaman
+ * Daftar Peringatan; penjaga acara `buka-halaman` di main.js tetap menjadi
+ * lapis terakhirnya.
+ */
+function bukaPola(a, peran) {
+  const asal = document.activeElement
+  const berita = (a.berita || []).slice(0, 12)
+  const sisa = (a.berita || []).length - berita.length
+  const bolehTelaah = punyaIzin(peran, 'telaah_berita')
+  const bolehKasus = punyaIzin(peran, 'kelola_kasus')
+
+  const tirai = document.createElement('div')
+  tirai.className = 'tirai'
+  tirai.innerHTML = `
+    <div class="sembul sembul-lebar" role="dialog" aria-modal="true" aria-labelledby="pola-judul">
+      <header class="sembul-kop">
+        ${keping(a.tingkat, nadaUrgensi(a.tingkat))}
+        <h2 id="pola-judul">${amankan(ATURAN[a.kode]?.nama || a.kode)}</h2>
+        <button class="tbl ikon kecil dorong" data-tutup title="Tutup" aria-label="Tutup">${ikon('tutup')}</button>
+      </header>
+      <div class="sembul-isi tumpuk">
+        <p class="kecil-teks samar-teks" style="line-height:1.5">${amankan(a.sebab)}</p>
+        ${berita.length
+          ? `<div class="kisi kisi-kartu">
+               ${berita.map((b) => kartuPeringatan(b, bolehTelaah, bolehKasus)).join('')}
+             </div>
+             ${sisa > 0 ? `<p class="mini-teks samar-teks">dan ${angka(sisa)} terbitan lain pada pola yang sama.</p>` : ''}`
+          : kosong('Tidak ada berita tercatat', 'Pola ini tidak membawa daftar beritanya.')}
+      </div>
+    </div>`
+
+  const tutup = () => {
+    tirai.remove()
+    document.removeEventListener('keydown', kunci, true)
+    if (asal?.isConnected) asal.focus({ preventScroll: true })
+  }
+
+  // Jerat Tab dan Escape, dengan alasan yang sama seperti konfirmasi() di
+  // ui/komponen.js: tanpa jerat, Tab berpindah ke tombol di balik tirai.
+  const kunci = (e) => {
+    if (e.key === 'Escape') { e.preventDefault(); tutup(); return }
+    if (e.key !== 'Tab') return
+    const dapat = [...tirai.querySelectorAll('button, a[href]')]
+    if (!dapat.length) return
+    const awal = dapat[0]
+    const akhir = dapat[dapat.length - 1]
+    if (e.shiftKey && document.activeElement === awal) { e.preventDefault(); akhir.focus() }
+    else if (!e.shiftKey && document.activeElement === akhir) { e.preventDefault(); awal.focus() }
+    else if (!tirai.contains(document.activeElement)) { e.preventDefault(); awal.focus() }
+  }
+
+  tirai.addEventListener('click', (e) => {
+    if (e.target === tirai || e.target.closest('[data-tutup]')) { tutup(); return }
+
+    // Tujuannya sama dengan tombol yang sama di halaman Daftar Peringatan:
+    // Telaah membawa beritanya ke kepala antrean, Jadikan kasus membuka Kasus
+    // Intelijen dengan peristiwa itu terpilih.
+    const telaah = e.target.closest('[data-aksi="telaah"]')
+    const kasus = e.target.closest('[data-aksi="jadikan-kasus"]')
+    const sasaran = telaah || kasus
+    if (!sasaran) return
+    tutup()
+    document.dispatchEvent(new CustomEvent('buka-halaman', {
+      detail: { halaman: telaah ? 'telaah' : 'kasus', fokus: sasaran.dataset.id },
+    }))
+  })
+
+  document.addEventListener('keydown', kunci, true)
+  document.body.appendChild(tirai)
+  tirai.querySelector('[data-tutup]').focus()
+}
+
+function pasangPenyimak(isi, { laju = [], peran } = {}) {
   isi.addEventListener('click', (ev) => {
+    const pola = ev.target.closest('[data-pola]')?.dataset.pola
+    if (pola != null) {
+      const a = laju[Number(pola)]
+      if (a) bukaPola(a, peran)
+      return
+    }
+
     const periode = ev.target.closest('[data-periode]')?.dataset.periode
     if (periode) {
       pilihan.hari = Number(periode)

@@ -259,13 +259,22 @@ export const MENU = [
          yang membaca daftar izin di atas berhak menyimpulkan halamannya ada.
          Sekarang ia ada.
       */
-      { id: 'briefing', label: 'Ringkasan Pimpinan', ikon: 'laporan', izin: 'lihat_briefing' },
+      /*
+         Sejak 23 September 2026 butir ini bernama Peringatan Dini — isinya tetap
+         ringkasan situasi yang sama. Halaman kartu peringatan yang lama tidak
+         lagi punya butir menu sendiri: kartunya kini dibuka dari kata risiko di
+         bagian Penilaian risiko halaman ini, dan halaman penuhnya tetap bisa
+         dicapai lewat tombol-tombol yang menunjuknya (lihat SYARAT_TAMBAHAN).
+         Dua butir menu bernama sama akan membuat pembacanya menebak mana yang
+         dimaksud rekannya.
+      */
+      { id: 'briefing', label: 'Peringatan Dini', ikon: 'peringatan', izin: 'lihat_briefing', lencana: 'peringatan' },
       // Kanal negatif berdiri sendiri di menu. Isu yang merugikan institusi
       // tidak boleh dicari dulu di dalam daftar gabungan sebelum bisa dibaca.
       { id: 'negatif', label: 'Berita Negatif', ikon: 'peringatan', izin: 'lihat_dasbor', lencana: 'negatif' },
       { id: 'positif', label: 'Berita Positif', ikon: 'centang', izin: 'lihat_dasbor' },
-      { id: 'peringatan', label: 'Peringatan Dini', ikon: 'peringatan', izin: 'lihat_peringatan', lencana: 'peringatan' },
-      { id: 'peta', label: 'Peta Sebaran', ikon: 'peta', izin: 'lihat_peta' },
+      // Peta Sebaran tidak lagi berdiri di menu; ia tergambar di dalam Dasbor
+      // Eksekutif bagi peran yang memegang `lihat_peta`.
       { id: 'tren', label: 'Tren Pemberitaan', ikon: 'tren', izin: 'lihat_tren' },
       /*
          Narasi dan kaitan berdiri berdampingan dengan Tren, bukan di dalamnya.
@@ -328,7 +337,7 @@ export const MENU = [
     ],
   },
   {
-    grup: 'Administrasi',
+    grup: 'Kelola Sistem',
     butir: [
       { id: 'pengguna', label: 'Manajemen Pengguna', ikon: 'pengguna', izin: 'kelola_pengguna' },
       { id: 'koordinat', label: 'Koordinat UPT', ikon: 'peta', izin: 'kelola_koordinat' },
@@ -475,6 +484,16 @@ const SYARAT_HALAMAN = (() => {
 const SYARAT_TAMBAHAN = {
   'berita-detail': 'lihat_berita',
   profil: null,
+  /*
+     Dua halaman yang kehilangan butir menunya pada 23 September 2026, tetapi
+     tidak kehilangan haknya. Peringatan Dini lama tetap menjadi tujuan tombol
+     "Lihat semua" dan ubin "Perlu respons segera"; Peta Sebaran tetap menjadi
+     tujuan tombol di Tren dan kini juga tergambar di dasbor. Tanpa dua baris
+     ini, keduanya jatuh ke "halaman tidak dikenali" — yang dibalas true — dan
+     terbuka bagi peran yang dulu tidak berhak membukanya.
+  */
+  peringatan: 'lihat_peringatan',
+  peta: 'lihat_peta',
   /* Nama lama halaman berita daerah, dipertahankan untuk tautan tersimpan. */
   'kanwil-riwayat': 'lihat_berita_wilayah',
 }

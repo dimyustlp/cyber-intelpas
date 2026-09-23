@@ -185,7 +185,10 @@ export function halamanPeringatan({ keadaan, isi }) {
     }
   })
 
-  return { judul: 'Peringatan Dini', sub: `${angka(semua.length)} kejadian dipantau · ${angka(awal)} masih berstatus awal` }
+  // Bukan lagi "Peringatan Dini": nama itu kini milik butir menu ringkasan
+  // situasi, dan dua layar berjudul sama membuat orang saling menunjuk layar
+  // yang berbeda sambil menyebut nama yang sama.
+  return { judul: 'Daftar Peringatan', sub: `${angka(semua.length)} kejadian dipantau · ${angka(awal)} masih berstatus awal` }
 }
 
 /**
@@ -223,7 +226,15 @@ function kartuLaju(a) {
     </article>`
 }
 
-function kartuPeringatan(b, bolehTelaah, bolehKasus) {
+/**
+ * Satu kartu peringatan.
+ *
+ * Diekspor karena halaman Peringatan Dini (berkas briefing.js) membukanya di
+ * dalam jendela ketika kata risiko sebuah pola ditekan. Satu kartu, dua tempat:
+ * salinan kedua akan kehilangan tombol Telaah atau label Awal/Resmi pada hari
+ * yang pertama diubah, dan yang membaca keduanya tidak akan tahu mana yang benar.
+ */
+export function kartuPeringatan(b, bolehTelaah, bolehKasus) {
   const resmi = b.status_verifikasi === 'Terverifikasi'
   const nada = nadaUrgensi(b.urgensi)
 

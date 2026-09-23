@@ -78,41 +78,16 @@ const PUSAT = {
     guna: 'Bahan kehumasan, dan penyeimbang ketika sebuah isu negatif perlu dijawab '
       + 'dengan capaian yang sudah terberitakan di unit yang sama.',
   },
-  tren: {
-    isi: 'Perbandingan periode berjalan terhadap periode sebelumnya yang panjangnya '
-      + 'persis sama: ubin bertumbuh atau menyusut, batang per kategori, dan tabel '
-      + 'subkategori yang naik paling tajam.',
-    guna: 'Dasbor menjawab keadaan hari ini; halaman ini menjawab apa yang BERUBAH. '
-      + 'Dipakai menyusun laporan mingguan dan bulanan.',
-    catatan: 'Tidak ada ramalan di sini, dan itu disengaja. Sistem ini mencatat '
-      + 'pemberitaan yang sudah terbit.',
-  },
-  narasi: {
-    isi: 'Kumpulan peristiwa yang membentuk satu cerita, tiap cerita satu kartu: '
-      + 'bentuknya (menanjak, berulang, bertahan, mereda), sebarannya, pemantiknya, dan '
-      + 'ada tidaknya suara penyeimbang.',
-    guna: 'Menjawab cerita apa yang sedang berjalan tentang institusi — satu lapis di '
-      + 'atas peristiwa. Satu kartu bisa memuat tiga kejadian di tiga unit berbeda, dan '
-      + 'memang begitulah publik membacanya.',
-    catatan: 'Pemantik disebut sebagai terbitan paling awal yang tercatat, bukan sebagai '
-      + 'sumber narasi. Arsip ini hanya memuat yang berhasil ditangkap.',
-  },
-  jaringan: {
-    isi: 'Gambar kaitan antara unit, media, wilayah, tema, dan platform. Tebal garis '
-      + 'berarti berapa kali dua hal muncul di publikasi yang sama; besar simpul berarti '
-      + 'berapa publikasi menyebutnya.',
-    guna: 'Menjawab tiga pertanyaan yang tidak bisa dijawab tabel: media mana yang '
-      + 'mengangkat unit ini dan apa lagi yang mereka angkat, tema apa yang muncul di '
-      + 'banyak unit sekaligus, dan siapa yang menjembatani dua kelompok.',
-    catatan: 'Tidak ada simpul orang di sini, dan tidak akan ada sampai kewenangan '
-      + 'pengumpulan data akun perorangan dinyatakan tertulis.',
-  },
-  komando: {
-    isi: 'Enam angka nasional berukuran besar dan daftar peringatan terberat yang diam, '
-      + 'beserta waktu penyegaran terakhir.',
-    guna: 'Untuk dinding ruang piket — dibaca dari jarak tiga meter oleh orang yang '
-      + 'sedang berdiri sambil menerima telepon. Isinya sama dengan dasbor; bentuknya '
-      + 'yang berbeda.',
+  analisis: {
+    isi: 'Empat cara membaca arsip yang sama, masing-masing satu tab: Tren (apa yang '
+      + 'berubah dibanding periode sebelumnya), Narasi (cerita apa yang sedang berjalan), '
+      + 'Kaitan (unit, media, dan tema mana yang saling bertemu), dan Pusat Komando '
+      + '(layar besar untuk dinding ruang piket).',
+    guna: 'Satu pintu untuk pertanyaan sesudah dasbor: bukan lagi berapa hari ini, '
+      + 'melainkan ke mana arahnya, ceritanya apa, dan siapa yang terlibat. Tab yang '
+      + 'terakhir dibuka diingat selama sesi.',
+    catatan: 'Tab yang tidak menjadi kewenangan peran Anda tidak ditampilkan. Operator '
+      + 'Puldata dan Petugas Verifikasi Lapangan hanya melihat Pusat Komando.',
   },
   ruang: {
     isi: 'Empat bagian: yang menuntut hari ini, pantauan milik analis sendiri, temuan '
@@ -397,6 +372,44 @@ const UNIT = {
  * "belum dijelaskan" dari "memang tidak ada di menu".
  */
 export const TANPA_MENU = {
+  /* Empat tab Analisis Pemberitaan. Penjelasannya tetap dipisah per tab, sebab
+     tiap tab menjawab pertanyaan yang berbeda dan punya batasnya sendiri. */
+  tren: {
+    isi: 'Perbandingan periode berjalan terhadap periode sebelumnya yang panjangnya '
+      + 'persis sama: ubin bertumbuh atau menyusut, batang per kategori, dan tabel '
+      + 'subkategori yang naik paling tajam.',
+    guna: 'Dasbor menjawab keadaan hari ini; halaman ini menjawab apa yang BERUBAH. '
+      + 'Dipakai menyusun laporan mingguan dan bulanan.',
+    catatan: 'Tidak ada ramalan di sini, dan itu disengaja. Sistem ini mencatat '
+      + 'pemberitaan yang sudah terbit.',
+  },
+  narasi: {
+    isi: 'Kumpulan peristiwa yang membentuk satu cerita, tiap cerita satu kartu: '
+      + 'bentuknya (menanjak, berulang, bertahan, mereda), sebarannya, pemantiknya, dan '
+      + 'ada tidaknya suara penyeimbang.',
+    guna: 'Menjawab cerita apa yang sedang berjalan tentang institusi — satu lapis di '
+      + 'atas peristiwa. Satu kartu bisa memuat tiga kejadian di tiga unit berbeda, dan '
+      + 'memang begitulah publik membacanya.',
+    catatan: 'Pemantik disebut sebagai terbitan paling awal yang tercatat, bukan sebagai '
+      + 'sumber narasi. Arsip ini hanya memuat yang berhasil ditangkap.',
+  },
+  jaringan: {
+    isi: 'Gambar kaitan antara unit, media, wilayah, tema, dan platform. Tebal garis '
+      + 'berarti berapa kali dua hal muncul di publikasi yang sama; besar simpul berarti '
+      + 'berapa publikasi menyebutnya.',
+    guna: 'Menjawab tiga pertanyaan yang tidak bisa dijawab tabel: media mana yang '
+      + 'mengangkat unit ini dan apa lagi yang mereka angkat, tema apa yang muncul di '
+      + 'banyak unit sekaligus, dan siapa yang menjembatani dua kelompok.',
+    catatan: 'Tidak ada simpul orang di sini, dan tidak akan ada sampai kewenangan '
+      + 'pengumpulan data akun perorangan dinyatakan tertulis.',
+  },
+  komando: {
+    isi: 'Enam angka nasional berukuran besar dan daftar peringatan terberat yang diam, '
+      + 'beserta waktu penyegaran terakhir.',
+    guna: 'Untuk dinding ruang piket — dibaca dari jarak tiga meter oleh orang yang '
+      + 'sedang berdiri sambil menerima telepon. Isinya sama dengan dasbor; bentuknya '
+      + 'yang berbeda.',
+  },
   peringatan: {
     isi: 'Kejadian berurgensi tinggi dan kritis sebagai kartu satu per satu, dengan pita '
       + 'kerawanan di tepi kiri — bukan sebagai tabel.',

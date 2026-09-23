@@ -1543,11 +1543,27 @@ table.tabel tbody td { border-bottom: 1px solid var(--line-3); }
   transition: background var(--cepat), color var(--cepat);
 }
 .segmen button:hover { color: var(--ink); }
-.segmen button[aria-pressed="true"] {
+.segmen button[aria-pressed="true"],
+.segmen button[aria-current="page"] {
   background: var(--surface-2);
   color: var(--ink);
   box-shadow: var(--bayang-1);
 }
+
+/* Bilah tab Analisis Pemberitaan. Tabnya tautan (aria-current), bukan sakelar
+   (aria-pressed) — lihat pages/analisis.js — tetapi rupanya sengaja sama
+   dengan kendali bersegmen lain supaya tidak ada bentuk tab kedua yang harus
+   dipelajari. Pada layar sempit ia bergulir ke samping, bukan membungkus. */
+.analisis-tab { align-self: flex-start; max-width: 100%; overflow-x: auto; }
+.analisis-tab button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  font-size: 12.5px;
+  padding: 6px 14px;
+}
+.analisis-tab svg { width: 14px; height: 14px; }
 
 /* ------------------------------------------------------------ Halaman masuk */
 
@@ -6527,3 +6543,8 @@ table.tabel button.judul-buka:hover { color: var(--accent); text-decoration: und
   .panduan-daftar { grid-template-columns: 1fr; }
   .panduan-fitur { border-color: #ccc; }
 }
+
+/* Pemilih bulan di puncak Dasbor Eksekutif. Keterangannya boleh turun ke baris
+   berikutnya pada layar sempit; tombolnya tidak. */
+.dasbor-bulan { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.dasbor-bulan .segmen button { white-space: nowrap; }

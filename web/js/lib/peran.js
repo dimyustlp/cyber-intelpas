@@ -275,25 +275,21 @@ export const MENU = [
       { id: 'positif', label: 'Berita Positif', ikon: 'centang', izin: 'lihat_dasbor' },
       // Peta Sebaran tidak lagi berdiri di menu; ia tergambar di dalam Dasbor
       // Eksekutif bagi peran yang memegang `lihat_peta`.
-      { id: 'tren', label: 'Tren Pemberitaan', ikon: 'tren', izin: 'lihat_tren' },
       /*
-         Narasi dan kaitan berdiri berdampingan dengan Tren, bukan di dalamnya.
+         Tren, Narasi, Kaitan, dan Pusat Komando — satu butir sejak 23 September
+         2026, empat tab di dalamnya (pages/analisis.js).
 
-         Ketiganya membaca arsip yang sama dari tiga sudut yang tidak saling
-         menggantikan: Tren menjawab "berapa banyak, naik atau turun", Narasi
-         menjawab "cerita apa yang sedang berjalan", dan Kaitan menjawab "siapa
-         bertemu apa". Menumpuk ketiganya di dalam satu halaman bertab berarti
-         dua di antaranya tidak pernah dibuka.
+         Dulu keempatnya berdiri sendiri, dengan alasan bahwa halaman bertab
+         membuat tab kedua dan ketiga tidak pernah dibuka. User memilih menu
+         yang lebih pendek. Tab-nya dibuat sebagai tautan ke alamat lama supaya
+         yang dulu bisa dibuka langsung masih bisa dibuka langsung.
+
+         Syaratnya `lihat_dasbor`, bukan `lihat_tren`: Operator Puldata dan
+         Petugas Verifikasi Lapangan dulu melihat Pusat Komando di menunya, dan
+         menggabungkan menu tidak boleh diam-diam mencabut itu. Hak tiap tab
+         tetap izinnya sendiri — lihat SYARAT_TAMBAHAN.
       */
-      { id: 'narasi', label: 'Narasi Berjalan', ikon: 'tren', izin: 'lihat_tren' },
-      { id: 'jaringan', label: 'Analisis Kaitan', ikon: 'kasus', izin: 'lihat_tren' },
-      /*
-         Pusat Komando memakai izin dasbor yang sama, sebab isinya memang isi
-         dasbor yang sama — disusun untuk dibaca dari jarak tiga meter. Hak
-         yang berbeda untuk data yang sama hanya akan menghasilkan dua daftar
-         izin yang perlahan berselisih.
-      */
-      { id: 'komando', label: 'Pusat Komando', ikon: 'dasbor', izin: 'lihat_dasbor' },
+      { id: 'analisis', label: 'Analisis Pemberitaan', ikon: 'tren', izin: 'lihat_dasbor' },
     ],
   },
   {
@@ -494,6 +490,16 @@ const SYARAT_TAMBAHAN = {
   */
   peringatan: 'lihat_peringatan',
   peta: 'lihat_peta',
+  /*
+     Empat tab Analisis Pemberitaan, dengan izin yang sama persis dengan yang
+     dulu tertulis pada butir menunya masing-masing. Pusat Komando menumpang
+     izin dasbor karena isinya memang isi dasbor, disusun untuk dibaca dari
+     jarak tiga meter.
+  */
+  tren: 'lihat_tren',
+  narasi: 'lihat_tren',
+  jaringan: 'lihat_tren',
+  komando: 'lihat_dasbor',
   /* Nama lama halaman berita daerah, dipertahankan untuk tautan tersimpan. */
   'kanwil-riwayat': 'lihat_berita_wilayah',
 }

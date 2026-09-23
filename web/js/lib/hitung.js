@@ -25,7 +25,7 @@
  */
 
 import { ember, hitungEmber } from './sentimen.js'
-import { tanggalIso } from './format.js'
+import { tanggalIso, bulanTahun } from './format.js'
 import { belumTerpetakan } from './unit-terpetakan.js'
 
 /** Status yang menyatakan sebuah berita sudah tidak dipakai sebagai angka. */
@@ -242,6 +242,56 @@ export function lencana(daftar = []) {
     pemetaan: r.takTerpetakan.length,
     telaahWilayah: r.antreanWilayah.length,
   }
+}
+
+/* ------------------------------------------------------ bulan kalender WIB */
+
+/**
+ * Satu bulan kalender menurut waktu Jakarta, relatif terhadap bulan berjalan.
+ *
+ * `geser` 0 berarti bulan ini, -1 bulan lalu. Bulannya dibaca dari
+ * `tanggalIso()` — hari menurut WIB — lalu dihitung sebagai tanggal kalender
+ * murni, tanpa jam dan tanpa zona. Menghitungnya dari `new Date().getMonth()`
+ * akan memakai zona peramban: pada pukul 00.30 WIB tanggal 1, peramban yang
+ * disetel UTC masih berada di bulan sebelumnya, dan dasbor akan menampilkan
+ * bulan yang sudah lewat tanpa satu pun tanda yang salah.
+ *
+ * @returns {{kode:string, mulai:string, selesai:string, label:string}}
+ *          `mulai` dan `selesai` ISO hari, inklusif.
+ */
+export function bulanWib(geser = 0, acuan = new Date()) {
+  const [tahunKini, bulanKini] = tanggalIso(acuan).split('-').map(Number)
+  const nomor = (tahunKini * 12 + (bulanKini - 1)) + geser
+  const tahun = Math.floor(nomor / 12)
+  const bulan = (nomor % 12) + 1
+  const kode = `${tahun}-${String(bulan).padStart(2, '0')}`
+  // Hari terakhir: hari ke-0 bulan berikutnya. Date.UTC dipakai hanya sebagai
+  // kalkulator kalender; tidak ada jam yang terlibat, jadi zona tidak berperan.
+  const akhir = new Date(Date.UTC(tahun, bulan, 0)).getUTCDate()
+  return {
+    kode,
+    mulai: `${kode}-01`,
+    selesai: `${kode}-${String(akhir).padStart(2, '0')}`,
+    label: bulanTahun(`${kode}-15T12:00:00+07:00`),
+  }
+}
+
+/**
+ * Berita yang MASUK pada sebuah bulan kalender WIB.
+ *
+ * Memotong menurut `created_at` — waktu tangkap — sama dengan jendela hari
+ * laporan dan ubin "Berita masuk hari ini". Berita yang terbit Agustus tetapi
+ * baru tertangkap September adalah kabar September bagi pembacanya.
+ *
+ * Yang dikembalikan baris mentah, bukan himpunan dasar: pemanggilnya tetap
+ * menyerahkannya ke `ringkasan()`, supaya aturan lingkup dan status hanya
+ * tinggal di satu tempat.
+ */
+export function dalamBulan(daftar = [], bulan = bulanWib()) {
+  return (daftar || []).filter((b) => {
+    const h = tanggalIso(b.created_at)
+    return h >= bulan.mulai && h <= bulan.selesai
+  })
 }
 
 /* --------------------------------------------- unit yang naik ke permukaan */

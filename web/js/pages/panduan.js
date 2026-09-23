@@ -193,6 +193,12 @@ function panelJendela() {
 
 /** Nama layar yang tidak punya butir menu, sehingga labelnya tidak bisa dipinjam. */
 const LABEL_TANPA_MENU = {
+  tren: 'Analisis Pemberitaan · Tren',
+  narasi: 'Analisis Pemberitaan · Narasi',
+  jaringan: 'Analisis Pemberitaan · Kaitan',
+  komando: 'Analisis Pemberitaan · Pusat Komando',
+  peringatan: 'Daftar Peringatan',
+  peta: 'Peta Sebaran',
   'berita-detail': 'Detail Berita',
   profil: 'Profil Saya',
   panduan: 'Panduan Penggunaan',

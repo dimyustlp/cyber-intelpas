@@ -43,6 +43,13 @@ export function tanggal(nilai) {
   return `${j.hari} ${BULAN[j.bulan - 1]} ${j.tahun}`
 }
 
+/** September 2026 */
+export function bulanTahun(nilai) {
+  const j = keJakarta(nilai)
+  if (!j) return '—'
+  return `${BULAN[j.bulan - 1]} ${j.tahun}`
+}
+
 /** Sabtu, 22 Agustus 2026 */
 export function tanggalPanjang(nilai) {
   const j = keJakarta(nilai)

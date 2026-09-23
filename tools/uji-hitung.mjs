@@ -12,7 +12,7 @@
  */
 
 import { EMBER, BELUM, ember, nilaiSimpan, hitungEmber } from '../web/js/lib/sentimen.js'
-import { ringkasan, lencana, menungguTelaah, dasar } from '../web/js/lib/hitung.js'
+import { ringkasan, lencana, menungguTelaah, dasar, bulanWib, dalamBulan } from '../web/js/lib/hitung.js'
 
 let lulus = 0
 let gagal = 0
@@ -116,6 +116,29 @@ sama('Lencana pemetaan sama dengan yang belum terpetakan', l.pemetaan, r.takTerp
 // tiga. Angka pada lencana karena itu tidak pernah cocok dengan isi halamannya.
 sama('Lencana telaah dihitung dengan aturan yang sama',
   l.telaah, dasar(arsip).filter(menungguTelaah).length)
+
+/* --------------------------------------------------- bulan kalender WIB */
+
+console.log('Bulan kalender WIB (jendela dasbor)')
+
+// 00.30 WIB tanggal 1 Oktober masih 30 September menurut UTC. Dasbor yang
+// memotong menurut zona peramban akan menampilkan bulan yang sudah lewat.
+const tengahMalam = new Date('2026-09-30T17:30:00Z')
+sama('Bulan dibaca menurut WIB, bukan UTC', bulanWib(0, tengahMalam).kode, '2026-10')
+sama('Bulan lalu dari Oktober', bulanWib(-1, tengahMalam).kode, '2026-09')
+sama('Hari terakhir September', bulanWib(-1, tengahMalam).selesai, '2026-09-30')
+sama('Mundur melewati pergantian tahun', bulanWib(-10, tengahMalam).kode, '2025-12')
+sama('Februari tahun kabisat', bulanWib(0, new Date('2028-02-10T05:00:00Z')).selesai, '2028-02-29')
+sama('Label bulan', bulanWib(0, tengahMalam).label, 'Oktober 2026')
+
+const septemberWib = bulanWib(-1, tengahMalam)
+const bulanan = dalamBulan([
+  { id: 'a', created_at: '2026-08-31T16:59:00Z' }, // 31 Agu 23.59 WIB — di luar
+  { id: 'b', created_at: '2026-08-31T17:00:00Z' }, // 1 Sep 00.00 WIB — di dalam
+  { id: 'c', created_at: '2026-09-30T16:59:00Z' }, // 30 Sep 23.59 WIB — di dalam
+  { id: 'd', created_at: '2026-09-30T17:00:00Z' }, // 1 Okt 00.00 WIB — di luar
+], septemberWib)
+sama('Tepi bulan dipotong pukul 00.00 WIB', bulanan.map((b) => b.id).join(','), 'b,c')
 
 /* ------------------------------------------------------------------ akhir */
 

@@ -12,11 +12,11 @@ import { sumberAsli, kelompokkanPeristiwa, validasiBanyak, rekapMutu } from '../
 import { sebaran } from '../lib/demo.js'
 import {
   angka, persen, delta, tanggalPanjang, jarakWaktu, ringkas,
-  nadaUrgensi, amankan,
+  nadaUrgensi, amankan, tanggal, tanggalIso,
 } from '../lib/format.js'
 import { ikon } from '../lib/ikon.js'
 import { belumTerpetakan } from '../lib/unit-terpetakan.js'
-import { ringkasan, deretEmpatBelasHari } from '../lib/hitung.js'
+import { ringkasan, deretTren, bulanWib, dalamBulan } from '../lib/hitung.js'
 import { EMBER, BELUM } from '../lib/sentimen.js'
 import { punyaIzin } from '../lib/peran.js'
 
@@ -81,18 +81,42 @@ export function halamanDasbor({ keadaan, isi }) {
      satu pun yang salah hitung — yang berbeda pertanyaannya, dan pembacanya
      yang menanggung akibatnya.
   */
-  const r = ringkasan(keadaan.berita || [])
+  const semua = keadaan.berita || []
+
+  /*
+     Dua himpunan, dan pembagiannya disengaja.
+
+     Sejak 23 September 2026 dasbor hanya menampilkan satu bulan kalender WIB
+     — bulan berjalan, atau bulan lalu bila dipilih. Tanpa batas itu bagan
+     batang, donat sentimen, dan tabel unit terus menebal sejak hari pertama
+     arsip, dan lonjakan bulan ini tenggelam di bawah tumpukan bulan-bulan
+     yang sudah selesai. Tiap tanggal 1 dasbor mulai bersih.
+
+     Yang TIDAK ikut dibatasi adalah antrean kerja: perlu respons segera,
+     menunggu telaah, dan belum terpetakan. Ketiganya bukan gambaran bulan
+     ini, melainkan pekerjaan yang belum selesai. Berita kritis tanggal 29
+     yang belum ditangani tidak boleh lenyap dari dasbor pada tanggal 1 hanya
+     karena bulannya berganti — dan halaman yang dibuka ubinnya (Daftar
+     Peringatan, Antrean Telaah) memang menampilkan seluruh antrean.
+  */
+  const bulan = bulanWib(pilihanDasbor.geser)
+  const bulanan = dalamBulan(semua, bulan)
+  const r = ringkasan(bulanan)
+  const antrean = ringkasan(semua)
   const berita = r.inti
 
-  const jumlahHariIni = r.hariIni.length
-  const jumlahKemarin = r.kemarin.length
+  const jumlahHariIni = antrean.hariIni.length
+  const jumlahKemarin = antrean.kemarin.length
 
-  const mendesak = r.mendesak
+  const mendesak = antrean.mendesak
   const negatif = r.negatif
-  const belumTelaah = r.antrean
-  const takTerpetakan = r.takTerpetakan
+  const belumTelaah = antrean.antrean
+  const takTerpetakan = antrean.takTerpetakan
 
-  if (!berita.length) {
+  // Arsip yang sungguh kosong berbeda dari bulan yang belum berisi. Yang
+  // pertama berarti penjadwal belum pernah berjalan; yang kedua keadaan biasa
+  // setiap pagi tanggal 1, dan tidak pantas dibalas pesan gangguan.
+  if (!antrean.inti.length) {
     isi.innerHTML = kartu({
       judul: 'Belum ada data',
       isi: kosong(
@@ -107,6 +131,26 @@ export function halamanDasbor({ keadaan, isi }) {
       ),
     })
     return { judul: 'Dasbor Eksekutif', sub: tanggalPanjang(new Date()) }
+  }
+
+  if (!berita.length) {
+    isi.innerHTML = `
+      <div class="tumpuk">
+        ${bilahBulan(bulan)}
+        ${bilahKesehatan(keadaan.kesehatan)}
+        ${garisKeadaan(mendesak, belumTelaah, takTerpetakan)}
+        ${kartu({
+          isi: kosong(
+            `Belum ada berita yang masuk pada ${bulan.label}`,
+            'Bagan dan sebaran di dasbor ini dimulai ulang setiap tanggal 1. Antrean kerja '
+              + 'yang belum selesai tetap dihitung dari seluruh arsip dan terbuka lewat menu '
+              + 'Antrean Telaah serta tombol di bawah.',
+            tombol({ label: 'Lihat semua peringatan', ikon: 'peringatan', halaman: 'peringatan' }),
+          ),
+        })}
+      </div>`
+    pasangPenyimak(isi)
+    return { judul: 'Dasbor Eksekutif', sub: `${tanggalPanjang(new Date())} · ${bulan.label}` }
   }
 
   const uptTerdampak = new Set(berita.filter((b) => !belumTerpetakan(b.nama_upt)).map((b) => b.nama_upt))
@@ -133,6 +177,8 @@ export function halamanDasbor({ keadaan, isi }) {
 
   isi.innerHTML = `
     <div class="tumpuk">
+
+      ${bilahBulan(bulan)}
 
       ${bilahKesehatan(keadaan.kesehatan)}
 
@@ -167,19 +213,19 @@ export function halamanDasbor({ keadaan, isi }) {
           label: 'Menunggu telaah analis',
           nilai: belumTelaah.length,
           nada: belumTelaah.length > 20 ? 'sedang' : 'netral',
-          kaki: persen(belumTelaah.length, berita.length) + ' dari arsip',
+          kaki: persen(belumTelaah.length, antrean.inti.length) + ' dari seluruh arsip',
           halaman: 'telaah',
         })}
         ${ubin({
           label: 'Peristiwa negatif',
           nilai: peristiwaNegatif.length,
           nada: 'tinggi',
-          kaki: `dari ${angka(negatif.length)} publikasi`,
+          kaki: `dari ${angka(negatif.length)} publikasi ${bulan.label}`,
           halaman: 'negatif',
         })}
       </div>
 
-      ${barisRekonsiliasi(r, keadaan)}
+      ${barisRekonsiliasi(r, keadaan, bulan, semua.length)}
 
       <div id="dasbor-siklus"><div class="rangka" style="height:104px"></div></div>
 
@@ -187,7 +233,7 @@ export function halamanDasbor({ keadaan, isi }) {
         <section class="dasbor-peta" aria-labelledby="dasbor-peta-judul">
           <div class="dasbor-peta-kop">
             <h2 id="dasbor-peta-judul">Peta sebaran kerawanan</h2>
-            <span class="mini-teks samar-teks">Seluruh Lapas, Rutan, dan LPKA, diwarnai menurut keadaan pemberitaannya</span>
+            <span class="mini-teks samar-teks">Seluruh Lapas, Rutan, dan LPKA, diwarnai menurut pemberitaan yang masuk ${amankan(bulan.label)}</span>
           </div>
           <div id="dasbor-peta"><div class="rangka" style="height:420px"></div></div>
         </section>` : ''}
@@ -196,14 +242,14 @@ export function halamanDasbor({ keadaan, isi }) {
 
       <div class="kisi kisi-utama-samping">
         ${kartu({
-          judul: 'Arus pemberitaan empat belas hari',
-          ket: 'Menurut tanggal terbit beritanya, bukan tanggal penarikannya — sama dengan laporan berkala. Garis utuh seluruh berita, garis putus yang bersentimen negatif.',
+          judul: `Arus pemberitaan ${bulan.label}`,
+          ket: 'Per hari menurut tanggal terbit beritanya, bukan tanggal penarikannya — sama dengan laporan berkala. Garis utuh seluruh berita, garis putus yang bersentimen negatif.',
           isi: `<div id="bagan-tren"></div>
                 <div class="baris gap-12" style="margin-top:10px;font-size:12px" id="legenda-tren"></div>`,
         })}
         ${kartu({
           judul: 'Sebaran sentimen',
-          ket: 'Seluruh arsip yang tersedia bagi Anda',
+          ket: `Berita yang masuk ${bulan.label}`,
           isi: `<div id="bagan-sentimen"></div>
                 ${blokMutu(mutu)}`,
         })}
@@ -241,7 +287,7 @@ export function halamanDasbor({ keadaan, isi }) {
       <div class="kisi kisi-2">
         ${kartu({
           judul: 'UPT paling banyak disorot',
-          ket: `${uptTerdampak.size} UPT muncul dalam arsip saat ini`,
+          ket: `${uptTerdampak.size} UPT muncul pada ${bulan.label}`,
           rapat: true,
           isi: tabelUpt(berita),
         })}
@@ -265,9 +311,20 @@ export function halamanDasbor({ keadaan, isi }) {
 
   // Bagan digambar setelah rangka HTML terpasang, supaya ukuran wadahnya sudah pasti.
   isiSiklus(isi, keadaan)
-  if (bolehPeta) isiPeta(isi, keadaan)
+  // Peta ikut dibatasi bulan yang sama. Titik yang diwarnai berita tiga bulan
+  // lalu akan menyala merah di dasbor yang bagan-bagannya sudah bersih.
+  if (bolehPeta) isiPeta(isi, { ...keadaan, berita: bulanan })
+  pasangPenyimak(isi)
 
-  const deret = deretEmpatBelasHari(berita)
+  /* Satu titik per hari bulan itu, sampai hari ini bila bulannya masih
+     berjalan. Hari yang belum tiba tidak digambar sebagai nol — garis yang
+     jatuh ke dasar pada tanggal 24 sampai 30 akan terbaca sebagai pemberitaan
+     yang berhenti. */
+  const hariIni = tanggalIso(new Date())
+  const deret = deretTren(berita, {
+    mulai: bulan.mulai,
+    selesai: bulan.selesai < hariIni ? bulan.selesai : hariIni,
+  })
   const warna = baganTren(document.getElementById('bagan-tren'), deret)
   document.getElementById('legenda-tren').innerHTML = `
     <span class="baris gap-6"><i style="width:14px;height:2px;background:${warna.warnaTotal};display:block"></i> Seluruh berita</span>
@@ -282,10 +339,47 @@ export function halamanDasbor({ keadaan, isi }) {
   baganUrgensi(document.getElementById('bagan-urgensi'), sebaran(berita, 'urgensi'))
   baganBatang(document.getElementById('bagan-kategori'), sebaran(berita, 'kategori'))
 
-  return { judul: 'Dasbor Eksekutif', sub: tanggalPanjang(new Date()) }
+  return { judul: 'Dasbor Eksekutif', sub: `${tanggalPanjang(new Date())} · ${bulan.label}` }
 }
 
 /* ------------------------------------------------------------- potongan */
+
+/** Bulan yang ditampilkan dasbor. Bertahan selama sesi. */
+const pilihanDasbor = { geser: 0 }
+
+/**
+ * Pemilih bulan di puncak dasbor.
+ *
+ * Hanya dua pilihan, dan itu cukup. Bulan lalu ada untuk pagi tanggal 1 —
+ * ketika bulan berjalan baru berisi beberapa jam — dan untuk rapat awal bulan
+ * yang membahas bulan yang baru selesai. Arsip yang lebih tua dibaca di Tren
+ * dan Laporan Berkala, yang memang dibuat untuk membandingkan periode.
+ */
+function bilahBulan(bulan) {
+  const kini = bulanWib(0)
+  const lalu = bulanWib(-1)
+  const sampai = pilihanDasbor.geser === 0 ? tanggalIso(new Date()) : bulan.selesai
+  return `
+    <div class="dasbor-bulan">
+      <div class="segmen" role="group" aria-label="Bulan yang ditampilkan dasbor">
+        <button data-bulan="0" aria-pressed="${pilihanDasbor.geser === 0}">Bulan ini · ${amankan(kini.label)}</button>
+        <button data-bulan="-1" aria-pressed="${pilihanDasbor.geser === -1}">Bulan lalu · ${amankan(lalu.label)}</button>
+      </div>
+      <span class="mini-teks samar-teks">
+        Bagan dan sebaran memuat berita yang masuk ${amankan(tanggal(bulan.mulai))} sampai
+        ${amankan(tanggal(sampai))}. Antrean kerja tetap dihitung dari seluruh arsip.
+      </span>
+    </div>`
+}
+
+function pasangPenyimak(isi) {
+  isi.addEventListener('click', (ev) => {
+    const pilih = ev.target.closest('[data-bulan]')?.dataset.bulan
+    if (pilih == null) return
+    pilihanDasbor.geser = Number(pilih)
+    isi.dispatchEvent(new CustomEvent('gambar-ulang', { bubbles: true }))
+  })
+}
 
 /**
  * Baris rekonsiliasi.
@@ -297,7 +391,7 @@ export function halamanDasbor({ keadaan, isi }) {
  * kalau suatu hari muncul lagi — akan terbaca oleh pembacanya sendiri, bukan
  * ditemukan berbulan-bulan kemudian.
  */
-function barisRekonsiliasi(r, keadaan) {
+function barisRekonsiliasi(r, keadaan, bulan, seluruhArsip) {
   const potongan = [
     `<b class="angka">${angka(r.negatif.length)}</b> negatif`,
     `<b class="angka">${angka(r.netral.length)}</b> netral/campuran`,
@@ -322,7 +416,7 @@ function barisRekonsiliasi(r, keadaan) {
         </span>
       </div>
       <div class="rekon-kaki">
-        Seluruh arsip yang tersedia bagi Anda: ${angka(r.seluruhBaris)} baris.
+        Masuk pada ${amankan(bulan.label)}: ${angka(r.seluruhBaris)} dari ${angka(seluruhArsip)} baris arsip yang tersedia bagi Anda.
         ${dikecualikan.length ? `Tidak ikut dihitung: ${amankan(dikecualikan.join(', '))}.` : ''}
         ${keadaan?.terpotong
           ? '<b class="kritis-teks">Arsip melewati batas penarikan, sebagian baris lama belum termuat.</b>'

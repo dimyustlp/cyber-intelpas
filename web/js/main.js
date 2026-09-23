@@ -87,10 +87,14 @@ const HALAMAN = {
   telaah: () => import('./pages/telaah.js').then((m) => m.halamanTelaah),
   pemetaan: () => import('./pages/pemetaan.js').then((m) => m.halamanPemetaan),
   peta: () => import('./pages/peta.js').then((m) => m.halamanPeta),
-  tren: () => import('./pages/tren.js').then((m) => m.halamanTren),
-  narasi: () => import('./pages/narasi.js').then((m) => m.halamanNarasi),
-  jaringan: () => import('./pages/jaringan.js').then((m) => m.halamanJaringan),
-  komando: () => import('./pages/komando.js').then((m) => m.halamanKomando),
+  /* Satu fitur, lima alamat. `analisis` adalah butir menunya; keempat nama lama
+     tetap hidup sebagai alamat tab-nya, supaya tautan tersimpan dan tombol di
+     halaman lain mendarat di bagian yang tepat. Lihat pages/analisis.js. */
+  analisis: () => import('./pages/analisis.js').then((m) => m.halamanAnalisis),
+  tren: () => import('./pages/analisis.js').then((m) => m.halamanAnalisis),
+  narasi: () => import('./pages/analisis.js').then((m) => m.halamanAnalisis),
+  jaringan: () => import('./pages/analisis.js').then((m) => m.halamanAnalisis),
+  komando: () => import('./pages/analisis.js').then((m) => m.halamanAnalisis),
   ruang: () => import('./pages/ruang.js').then((m) => m.halamanRuang),
   cari: () => import('./pages/cari.js').then((m) => m.halamanCari),
   aturan: () => import('./pages/aturan.js').then((m) => m.halamanAturan),
@@ -260,7 +264,14 @@ function putarTema() {
  * menu kehilangan penanda halaman aktif, dan pembacanya kehilangan tahu ia
  * sedang berada di cabang yang mana.
  */
-const INDUK_HALAMAN = { 'berita-detail': 'berita' }
+const INDUK_HALAMAN = {
+  'berita-detail': 'berita',
+  // Tab di dalam Analisis Pemberitaan menyalakan butir menu fitur itu.
+  tren: 'analisis',
+  narasi: 'analisis',
+  jaringan: 'analisis',
+  komando: 'analisis',
+}
 
 function daftarMenu(peran) {
   const aktif = INDUK_HALAMAN[keadaan.halaman] || keadaan.halaman

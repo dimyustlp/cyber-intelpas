@@ -62,12 +62,14 @@ export async function catatLokasiBilaDiizinkan(profil) {
 
     if (jawaban !== 'setuju') {
       const ya = await konfirmasi({
-        judul: 'Catat lokasi login Anda?',
-        pesan: 'Untuk pengamanan akun, Pemilik Sistem dapat melihat titik lokasi perangkat Anda saat login, '
-          + 'bila peramban mengizinkan. Titik ini dipakai hanya untuk memeriksa login yang janggal, tidak dilacak '
-          + 'terus-menerus, dan dihapus otomatis setelah 30 hari. Menolak tidak mengurangi hak akses Anda.',
-        tegas: 'Izinkan',
-        batal: 'Tidak, terima kasih',
+        judul: 'Verifikasi keamanan login melalui lokasi perangkat',
+        pesan: 'Untuk keperluan verifikasi keamanan, Pemilik Sistem meminta persetujuan untuk mencatat titik lokasi '
+          + 'perangkat Anda saat login. Data ini dipakai terbatas untuk menilai kewajaran aktivitas login dan tidak '
+          + 'digunakan untuk pelacakan berkelanjutan. Pencatatan dilakukan satu kali per login dan data dihapus secara '
+          + 'otomatis setelah 30 hari. Penolakan tidak membatasi akses Anda. Jika setuju, Anda akan diminta memberikan '
+          + 'izin lokasi.',
+        tegas: 'Setuju',
+        batal: 'Tidak setuju',
       })
       jawaban = ya ? 'setuju' : 'tolak'
       tulis(kunci, jawaban)

@@ -46,7 +46,7 @@ import { amankan } from '../lib/format.js'
 import { ikon } from '../lib/ikon.js'
 
 /**
- * @param {{nama:string, tab:{id:string, label:string, ikon:string, bangun:Function}[]}} opsi
+ * @param {{nama:string, tab:{id:string, label:string, ikon:string, bangun:Function, syarat?:Function}[]}} opsi
  * @returns {Function} pembangun halaman `({ keadaan, isi }) => { judul, sub }`
  */
 export function bingkaiTab({ nama, tab: daftarTab }) {
@@ -69,7 +69,13 @@ export function bingkaiTab({ nama, tab: daftarTab }) {
 
   return function halamanBingkai({ keadaan, isi }) {
     const peran = keadaan.profil?.role
-    const boleh = daftarTab.filter((t) => bolehBuka(peran, t.id))
+    /*
+       `syarat` adalah penyaring tambahan per tab untuk hak yang tidak bisa
+       ditulis sebagai izin peran — misalnya hak Pemilik Sistem, yang melekat
+       pada satu akun, bukan pada satu peran. Tab yang gugur di sini tidak
+       digambar sama sekali.
+    */
+    const boleh = daftarTab.filter((t) => bolehBuka(peran, t.id) && (!t.syarat || t.syarat(keadaan)))
     const tab = tabUntuk(keadaan.halaman, boleh)
 
     if (!tab) {
@@ -84,7 +90,7 @@ export function bingkaiTab({ nama, tab: daftarTab }) {
     isi.innerHTML = `
       <div class="tumpuk">
         <nav class="bingkai-tab segmen" aria-label="Bagian ${amankan(nama)}">
-          ${daftarTab.map((t) => `
+          ${boleh.map((t) => `
             <button data-halaman="${t.id}"${t.id === tab.id ? ' aria-current="page"' : ''}>
               ${ikon(t.ikon)}<span>${amankan(t.label)}</span>
             </button>`).join('')}

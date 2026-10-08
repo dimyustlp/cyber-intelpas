@@ -96,6 +96,9 @@ const HALAMAN = {
      (ui/bingkai-tab.js). */
   'siklus-kasus': () => import('./pages/siklus-kasus.js').then((m) => m.halamanSiklusKasus),
   'pemantauan-sistem': () => import('./pages/pemantauan-sistem.js').then((m) => m.halamanPemantauanSistem),
+  'log-akses': () => import('./pages/pemantauan-sistem.js').then((m) => m.halamanPemantauanSistem),
+  'deteksi-lonjakan': () => import('./pages/deteksi-lonjakan.js').then((m) => m.halamanDeteksiLonjakan),
+  'situation-room': () => import('./pages/situation-room.js').then((m) => m.halamanSituationRoom),
   'pengguna-data': () => import('./pages/pengguna-data.js').then((m) => m.halamanPenggunaData),
   tren: () => import('./pages/analisis.js').then((m) => m.halamanAnalisis),
   narasi: () => import('./pages/analisis.js').then((m) => m.halamanAnalisis),
@@ -281,6 +284,8 @@ const INDUK_HALAMAN = {
   kasus: 'siklus-kasus',
   aturan: 'pemantauan-sistem',
   kesehatan: 'pemantauan-sistem',
+  'log-akses': 'pemantauan-sistem',
+  'situation-room': 'deteksi-lonjakan',
   pengguna: 'pengguna-data',
   koordinat: 'pengguna-data',
   integrasi: 'pengguna-data',

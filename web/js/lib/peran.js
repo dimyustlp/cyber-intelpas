@@ -132,7 +132,7 @@ export const IZIN = {
     'lihat_peta', 'lihat_tren', 'lihat_kasus', 'lihat_laporan_lapangan',
     'lihat_rekomendasi', 'putuskan_kasus', 'lihat_laporan', 'unduh_laporan',
     'setujui_laporan', 'publikasi_laporan', 'lihat_peringatan', 'lihat_tindak_lanjut',
-    'kelola_tindak_lanjut',
+    'kelola_tindak_lanjut', 'lihat_lonjakan',
   ],
 
   media_intelligence_analyst: [
@@ -143,7 +143,7 @@ export const IZIN = {
     'lihat_laporan', 'unduh_laporan', 'kirim_telegram', 'lihat_peringatan',
     'lihat_tindak_lanjut', 'unggah_lampiran', 'tugaskan_lapangan', 'lihat_penugasan',
     'lihat_laporan_lapangan', 'lihat_sinkronisasi',
-    'lihat_ruang_analis', 'kelola_aturan',
+    'lihat_ruang_analis', 'kelola_aturan', 'lihat_lonjakan',
   ],
 
   news_data_operator: [
@@ -269,6 +269,17 @@ export const MENU = [
          dimaksud rekannya.
       */
       { id: 'briefing', label: 'Peringatan Dini', ikon: 'peringatan', izin: 'lihat_briefing', lencana: 'peringatan' },
+      /*
+         Deteksi Lonjakan membaca dua tabel yang diisi mesin di peladen tiap
+         jam: lonjakan berita negatif per unit, dan isu yang diangkat banyak
+         media sekaligus. Peringatan Dini di atas menilai berita satu per satu;
+         butir ini menilai pola. Izinnya `lihat_lonjakan`, sama persis dengan
+         kebijakan baca kedua tabelnya di basis data (analis media, pengambil
+         keputusan, superadmin), supaya tidak ada peran yang membuka halaman
+         yang pasti kosong baginya. Situation Room, layar dinding versinya,
+         tidak punya butir menu: ia dibuka dari tombol di halaman ini.
+      */
+      { id: 'deteksi-lonjakan', label: 'Deteksi Lonjakan', ikon: 'tren', izin: 'lihat_lonjakan' },
       // Kanal negatif berdiri sendiri di menu. Isu yang merugikan institusi
       // tidak boleh dicari dulu di dalam daftar gabungan sebelum bisa dibaca.
       { id: 'negatif', label: 'Berita Negatif', ikon: 'peringatan', izin: 'lihat_dasbor', lencana: 'negatif' },
@@ -523,6 +534,11 @@ const SYARAT_TAMBAHAN = {
   kasus: 'lihat_kasus',
   aturan: 'kelola_aturan',
   kesehatan: 'lihat_kesehatan',
+  /* Log Akses: tab di Pemantauan Sistem. Peran superadmin lolos di sini; yang
+     membatasinya hanya untuk Pemilik Sistem adalah syarat tab di
+     pages/pemantauan-sistem.js dan kebijakan baris di basis data. */
+  'log-akses': 'lihat_kesehatan',
+  'situation-room': 'lihat_lonjakan',
   pengguna: 'kelola_pengguna',
   koordinat: 'kelola_koordinat',
   integrasi: 'kelola_integrasi',

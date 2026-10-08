@@ -65,6 +65,48 @@ const PERIODE = {
  */
 const LINGKUP = ['Semua baris', 'Yang dihitung']
 
+/*
+   Filter Tersimpan.
+
+   Disimpan di peramban (localStorage), bukan di basis data. Batas itu
+   disebutkan di layar: filter tidak berpindah ke komputer lain dan hilang bila
+   data situs dibersihkan. Yang disimpan hanya kunci saringan yang dikenal
+   halaman ini, dan hanya bila nilainya teks; isi yang rusak atau dari versi
+   lama dibuang diam-diam, supaya satu catatan rusak tidak mematikan halaman.
+*/
+const KUNCI_FILTER = 'transsiberpas.filter-berita'
+const MAKS_FILTER = 12
+
+function bacaFilter() {
+  try {
+    const mentah = JSON.parse(localStorage.getItem(KUNCI_FILTER) || '[]')
+    if (!Array.isArray(mentah)) return []
+    return mentah
+      .filter((f) => f && typeof f.nama === 'string' && f.nama.trim() && f.saring && typeof f.saring === 'object')
+      .slice(0, MAKS_FILTER)
+  } catch {
+    return []
+  }
+}
+
+function tulisFilter(daftar) {
+  try {
+    localStorage.setItem(KUNCI_FILTER, JSON.stringify(daftar.slice(0, MAKS_FILTER)))
+    return true
+  } catch {
+    return false
+  }
+}
+
+/** Hanya kunci yang dikenal dan bernilai teks yang lolos. */
+function saringanBersih(mentah) {
+  const hasil = {}
+  for (const k of Object.keys(NILAI_BAKU)) {
+    if (typeof mentah?.[k] === 'string') hasil[k] = mentah[k]
+  }
+  return hasil
+}
+
 let batasTampil = 40
 
 export function halamanBerita({ keadaan, isi }) {
@@ -81,6 +123,7 @@ export function halamanBerita({ keadaan, isi }) {
 
   const semua = keadaan.berita
   const hasil = terapkan(semua)
+  const tersimpan = bacaFilter()
 
   isi.innerHTML = kartu({
     rapat: true,
@@ -101,10 +144,23 @@ export function halamanBerita({ keadaan, isi }) {
           opsi: LINGKUP })}
         <div class="dorong baris gap-6">
           <span class="mini-teks samar-teks">${angka(hasil.length)} dari ${angka(semua.length)}</span>
+          ${adaSaringan() ? tombol({ label: 'Simpan filter', ikon: 'tambah', kecil: true, aksi: 'simpan-filter' }) : ''}
           ${adaSaringan() ? tombol({ label: 'Bersihkan', ikon: 'tutup', kecil: true, aksi: 'bersihkan-saring' }) : ''}
           ${tombolIkon({ ikon: 'unduh', aksi: 'unduh-csv', judul: 'Unduh hasil saringan sebagai CSV' })}
         </div>
       </div>
+
+      ${tersimpan.length ? `
+        <div class="bilah-alat" style="gap:8px" aria-label="Filter tersimpan">
+          <span class="mini-teks samar-teks">Filter tersimpan</span>
+          ${tersimpan.map((f, i) => `
+            <span class="baris gap-6">
+              <button class="tbl kecil" data-aksi="pakai-filter" data-i="${i}">${amankan(f.nama)}</button>
+              <button class="tbl ikon samar kecil" data-aksi="hapus-filter" data-i="${i}"
+                title="Hapus filter ${amankan(f.nama)}" aria-label="Hapus filter ${amankan(f.nama)}">${ikon('tutup')}</button>
+            </span>`).join('')}
+          <span class="mini-teks samar-teks dorong">Tersimpan di peramban ini saja.</span>
+        </div>` : ''}
 
       ${hasil.length ? tabel(hasil.slice(0, batasTampil)) : kosong(
         'Tidak ada berita yang cocok',
@@ -266,6 +322,25 @@ function pasangPenyimak(isi, semua, hasil) {
       // dan tombol "Bersihkan" diam-diam berhenti membersihkan seluruhnya.
       Object.assign(saring, NILAI_BAKU)
       batasTampil = 40
+      gambarUlang()
+    } else if (aksi === 'simpan-filter') {
+      const nama = (window.prompt('Beri nama filter ini:', '') || '').trim().slice(0, 40)
+      if (!nama) return
+      const daftar = bacaFilter().filter((f) => f.nama.toLowerCase() !== nama.toLowerCase())
+      daftar.unshift({ nama, saring: saringanBersih(saring) })
+      if (tulisFilter(daftar)) roti(`Filter "${nama}" disimpan.`, 'positif')
+      else roti('Filter tidak bisa disimpan: penyimpanan peramban menolak.', 'kritis', 5200)
+      gambarUlang()
+    } else if (aksi === 'pakai-filter') {
+      const f = bacaFilter()[Number(ev.target.closest('[data-i]')?.dataset.i)]
+      if (!f) return
+      Object.assign(saring, NILAI_BAKU, saringanBersih(f.saring))
+      batasTampil = 40
+      gambarUlang()
+    } else if (aksi === 'hapus-filter') {
+      const daftar = bacaFilter()
+      daftar.splice(Number(ev.target.closest('[data-i]')?.dataset.i), 1)
+      tulisFilter(daftar)
       gambarUlang()
     } else if (aksi === 'tampil-lagi') {
       batasTampil += 40

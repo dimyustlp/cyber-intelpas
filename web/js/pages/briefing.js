@@ -58,7 +58,7 @@ import { punyaIzin } from '../lib/peran.js'
 import { ikon } from '../lib/ikon.js'
 
 /** Pilihan periode. Bertahan selama sesi. */
-const pilihan = { hari: 7 }
+const pilihan = { hari: 7, rapat: false }
 
 const PERIODE = [
   { hari: 1, label: '24 jam' },
@@ -143,6 +143,12 @@ export function halamanBriefing({ keadaan, isi }) {
     })
     pasangPenyimak(isi)
     return { judul: 'Peringatan Dini', sub: 'Tidak ada data pada periode ini' }
+  }
+
+  if (pilihan.rapat) {
+    isi.innerHTML = tampilanRapat({ mulai, selesai, b, r, peristiwa, peringkat, nasional, unitNaik, isuNaik, rekapL })
+    pasangPenyimak(isi, { laju, peran: keadaan.profil?.role })
+    return { judul: 'Peringatan Dini', sub: `Mode Rapat · ${tanggal(mulai)} sampai ${tanggal(selesai)}` }
   }
 
   isi.innerHTML = `
@@ -337,6 +343,116 @@ function bilahPeriode() {
       ${PERIODE.map((p) => `
         <button class="tbl kecil${p.hari === pilihan.hari ? ' utama' : ''}"
           data-periode="${p.hari}">${amankan(p.label)}</button>`).join('')}
+      <span class="dorong baris gap-6 brief-alat">
+        <button class="tbl kecil${pilihan.rapat ? ' utama' : ''}" data-aksi="mode-rapat"
+          aria-pressed="${pilihan.rapat ? 'true' : 'false'}"
+          title="Tampilan tabel yang ringkas untuk dibahas bersama">${ikon('arsip')}Mode Rapat</button>
+        <button class="tbl kecil" data-aksi="unduh-pdf"
+          title="Buka dialog cetak; pilih Simpan sebagai PDF">${ikon('unduh')}Unduh PDF</button>
+      </span>
+    </div>`
+}
+
+/**
+ * Mode Rapat — tampilan tabel.
+ *
+ * Briefing biasa tidak memakai tabel dengan sengaja: pembacanya pimpinan yang
+ * punya enam puluh detik. Rapat berbeda. Beberapa orang membaca layar yang sama
+ * dan menunjuk baris yang sama, dan untuk itu tabel lebih berguna daripada
+ * kalimat. Angkanya tidak dihitung ulang di sini; semuanya berasal dari
+ * variabel yang sama dengan tampilan biasa, jadi kedua tampilan tidak bisa
+ * berselisih.
+ */
+function tampilanRapat({ mulai, selesai, b, r, peristiwa, peringkat, nasional, unitNaik, isuNaik, rekapL }) {
+  return `
+    <div class="tumpuk brief-rapat">
+      ${bilahPeriode()}
+
+      ${kartu({
+        judul: 'Ringkasan situasi',
+        ket: `${tanggalPanjang(mulai)} sampai ${tanggalPanjang(selesai)}.`,
+        rapat: true,
+        isi: `
+          <div class="tabel-bungkus">
+            <table class="tabel">
+              <thead><tr><th>Ukuran</th><th class="rata-kanan">Periode ini</th><th class="rata-kanan">Periode lalu</th></tr></thead>
+              <tbody>
+                <tr><td>Tingkat risiko nasional</td><td class="rata-kanan" colspan="2"><b>${amankan(nasional.kode)}</b></td></tr>
+                <tr><td>Publikasi dihitung</td><td class="rata-kanan angka">${angka(b.kini.publikasi)}</td><td class="rata-kanan angka">${angka(b.lalu.publikasi)}</td></tr>
+                <tr><td>Bersentimen negatif</td><td class="rata-kanan angka">${angka(b.kini.negatif)}</td><td class="rata-kanan angka">${angka(b.lalu.negatif)}</td></tr>
+                <tr><td>Peristiwa</td><td class="rata-kanan angka">${angka(peristiwa.length)}</td><td class="rata-kanan angka">—</td></tr>
+                <tr><td>Kejadian kritis</td><td class="rata-kanan angka">${angka(r.kritis.length)}</td><td class="rata-kanan angka">—</td></tr>
+                <tr><td>Pola terdeteksi</td><td class="rata-kanan angka">${angka(rekapL.total)}</td><td class="rata-kanan angka">—</td></tr>
+                <tr><td>Unit tersentuh</td><td class="rata-kanan angka">${angka(b.kini.unit)}</td><td class="rata-kanan angka">${angka(b.lalu.unit)}</td></tr>
+                <tr><td>Media</td><td class="rata-kanan angka">${angka(b.kini.media)}</td><td class="rata-kanan angka">${angka(b.lalu.media)}</td></tr>
+              </tbody>
+            </table>
+          </div>`,
+      })}
+
+      ${kartu({
+        judul: 'Peristiwa berisiko tertinggi',
+        ket: 'Lima belas peristiwa dengan skor tertinggi pada periode ini.',
+        rapat: true,
+        isi: peringkat.length ? `
+          <div class="tabel-bungkus">
+            <table class="tabel">
+              <thead><tr>
+                <th>No</th><th>Peristiwa</th><th>Unit</th>
+                <th class="rata-kanan">Terbitan</th><th class="rata-kanan">Media</th>
+                <th class="rata-kanan">Skor</th><th>Tingkat</th>
+              </tr></thead>
+              <tbody>
+                ${peringkat.slice(0, 15).map((p, i) => `
+                  <tr>
+                    <td class="angka">${i + 1}</td>
+                    <td>
+                      <button class="brief-temuan-judul" data-buka="${amankan(p.peristiwa.publikasi[0]?.id || '')}">
+                        ${amankan(ringkas(p.peristiwa.judul || 'Tanpa judul', 100))}</button>
+                    </td>
+                    <td class="kecil">${amankan(p.peristiwa.nama_upt || 'Belum terpetakan')}</td>
+                    <td class="rata-kanan angka">${angka(p.peristiwa.jumlah_publikasi)}</td>
+                    <td class="rata-kanan angka">${angka(p.peristiwa.jumlah_media)}</td>
+                    <td class="rata-kanan angka">${angka(p.skor)}</td>
+                    <td>${keping(p.tingkat.kode, p.tingkat.nada, true)}</td>
+                  </tr>`).join('')}
+              </tbody>
+            </table>
+          </div>`
+          : `<div style="padding:18px">${kosong('Tidak ada peristiwa negatif',
+            'Seluruh pemberitaan pada periode ini bersentimen positif atau netral.')}</div>`,
+      })}
+
+      <div class="kisi kisi-2">
+        ${kartu({
+          judul: 'Unit dengan pemberitaan terbanyak',
+          rapat: true,
+          isi: unitNaik.length ? `
+            <div class="tabel-bungkus"><table class="tabel">
+              <thead><tr><th>Unit</th><th class="rata-kanan">Berita</th><th class="rata-kanan">Periode lalu</th><th class="rata-kanan">Selisih</th></tr></thead>
+              <tbody>${unitNaik.map((u) => `
+                <tr><td class="kecil">${amankan(u.nama)}</td>
+                  <td class="rata-kanan angka">${angka(u.jumlah)}</td>
+                  <td class="rata-kanan angka">${angka(u.sebelum)}</td>
+                  <td class="rata-kanan angka">${u.delta > 0 ? '+' : ''}${angka(u.delta)}</td></tr>`).join('')}
+              </tbody></table></div>`
+            : `<div style="padding:18px" class="mini-teks samar-teks">Tidak ada unit yang naik dibanding periode lalu.</div>`,
+        })}
+        ${kartu({
+          judul: 'Isu yang naik',
+          rapat: true,
+          isi: isuNaik.length ? `
+            <div class="tabel-bungkus"><table class="tabel">
+              <thead><tr><th>Isu</th><th class="rata-kanan">Berita</th><th class="rata-kanan">Periode lalu</th><th class="rata-kanan">Selisih</th></tr></thead>
+              <tbody>${isuNaik.map((x) => `
+                <tr><td class="kecil">${amankan(x.nama)}</td>
+                  <td class="rata-kanan angka">${angka(x.jumlah)}</td>
+                  <td class="rata-kanan angka">${angka(x.sebelum)}</td>
+                  <td class="rata-kanan angka">+${angka(x.delta)}</td></tr>`).join('')}
+              </tbody></table></div>`
+            : `<div style="padding:18px" class="mini-teks samar-teks">Tidak ada isu yang naik dibanding periode lalu.</div>`,
+        })}
+      </div>
     </div>`
 }
 
@@ -515,6 +631,23 @@ function pasangPenyimak(isi, { laju = [], peran } = {}) {
     if (pola != null) {
       const a = laju[Number(pola)]
       if (a) bukaPola(a, peran)
+      return
+    }
+
+    const aksi = ev.target.closest('[data-aksi]')?.dataset.aksi
+    if (aksi === 'mode-rapat') {
+      pilihan.rapat = !pilihan.rapat
+      isi.dispatchEvent(new CustomEvent('gambar-ulang', { bubbles: true }))
+      return
+    }
+    if (aksi === 'unduh-pdf') {
+      /*
+         Dialog cetak peramban, dengan "Simpan sebagai PDF" sebagai tujuan.
+         Cara ini dipilih daripada membangun PDF sendiri karena hasilnya selalu
+         sama dengan yang tampak di layar, dan tidak menambah satu pun
+         pustaka ke aplikasi yang sengaja tanpa pihak ketiga.
+      */
+      window.print()
       return
     }
 

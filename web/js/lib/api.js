@@ -292,7 +292,7 @@ export async function muatProfil() {
     // sendiri, dan `must_change_password` untuk mengetahui kapan penanda sandi
     // awal boleh dihapus. Keduanya milik profil sendiri, bukan milik orang lain.
     select: 'id,username,full_name,role,jabatan,assigned_kanwil,assigned_upt,aktif,email,'
-      + 'last_login,auth_user_id,must_change_password',
+      + 'last_login,auth_user_id,must_change_password,pemilik_sistem',
     ...(uid ? { auth_user_id: `eq.${uid}` } : {}),
     limit: 1,
   })

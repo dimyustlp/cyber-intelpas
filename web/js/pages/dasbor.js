@@ -11,7 +11,7 @@ import { baganTren, baganSentimen, baganBatang, baganUrgensi } from '../ui/bagan
 import { sumberAsli, kelompokkanPeristiwa, validasiBanyak, rekapMutu } from '../lib/peristiwa.js'
 import { sebaran } from '../lib/demo.js'
 import {
-  angka, persen, delta, tanggalPanjang, jarakWaktu, ringkas,
+  angka, persen, delta, tanggalPanjang, tanggalJam, jarakWaktu, ringkas,
   nadaUrgensi, amankan, tanggal, tanggalIso,
 } from '../lib/format.js'
 import { ikon } from '../lib/ikon.js'
@@ -19,6 +19,7 @@ import { belumTerpetakan } from '../lib/unit-terpetakan.js'
 import { ringkasan, deretTren, bulanWib, dalamBulan } from '../lib/hitung.js'
 import { EMBER, BELUM } from '../lib/sentimen.js'
 import { punyaIzin } from '../lib/peran.js'
+import { acuanKunjungan, perubahanSejak } from '../lib/sejak-terakhir.js'
 
 /**
  * Bilah kesehatan aliran data.
@@ -71,6 +72,35 @@ function bilahKesehatan(k) {
   return pesanSistem(kabar.teks, kabar.nada, kabar.ikon)
 }
 
+/**
+ * Kartu "Sejak Terakhir Dibuka".
+ *
+ * Menjawab pertanyaan pertama setiap pimpinan yang kembali ke layar: apa yang
+ * baru sejak saya pergi. Kartu hanya muncul bila ada titik acuan dan ada yang
+ * berubah; kartu yang selalu tampil dengan angka nol belajar diabaikan.
+ */
+function kartuSejak(p) {
+  if (!p || !p.total) return ''
+  const bagian = [
+    { label: 'berita baru', nilai: p.total, nada: 'aksen' },
+    { label: 'negatif', nilai: p.negatif, nada: p.negatif ? 'tinggi' : 'netral' },
+    { label: 'mendesak', nilai: p.mendesak, nada: p.mendesak ? 'kritis' : 'netral' },
+    { label: 'masuk antrean telaah', nilai: p.antrean, nada: p.antrean ? 'sedang' : 'netral' },
+  ]
+  return kartu({
+    judul: 'Sejak terakhir dibuka',
+    ket: `Sejak ${tanggalJam(p.acuan)} (${jarakWaktu(p.acuan)}). Dihitung dari berita yang masuk setelah itu, `
+      + 'dan hanya mengingat kunjungan dari peramban ini.',
+    isi: `<div class="baris gap-12" style="flex-wrap:wrap">
+      ${bagian.map((b) => `
+        <span class="baris gap-6">
+          <b style="font-size:20px">${angka(b.nilai)}</b>
+          ${keping(b.label, b.nada, true)}
+        </span>`).join('')}
+    </div>`,
+  })
+}
+
 export function halamanDasbor({ keadaan, isi }) {
   /*
      Seluruh angka halaman ini berasal dari satu himpunan dasar yang sama,
@@ -104,6 +134,11 @@ export function halamanDasbor({ keadaan, isi }) {
   const r = ringkasan(bulanan)
   const antrean = ringkasan(semua)
   const berita = r.inti
+
+  const sejak = perubahanSejak(
+    semua,
+    keadaan.demo ? null : acuanKunjungan(keadaan.profil?.auth_user_id || keadaan.profil?.username),
+  )
 
   const jumlahHariIni = antrean.hariIni.length
   const jumlahKemarin = antrean.kemarin.length
@@ -183,6 +218,8 @@ export function halamanDasbor({ keadaan, isi }) {
       ${bilahKesehatan(keadaan.kesehatan)}
 
       ${garisKeadaan(mendesak, belumTelaah, takTerpetakan)}
+
+      ${kartuSejak(sejak)}
 
       <div class="kisi kisi-4">
         ${/*

@@ -1,5 +1,6 @@
 /**
- * Pemantauan Sistem — Aturan Peringatan dan Kesehatan Sistem.
+ * Pemantauan Sistem — Aturan Peringatan, Kesehatan Sistem, dan (khusus
+ * Pemilik Sistem) Log Akses.
  *
  * Digabung 23 September 2026 atas permintaan user: keduanya menjawab
  * "apakah sistem ini akan memberi tahu saya pada waktunya" — yang satu dari
@@ -14,11 +15,16 @@
 import { bingkaiTab } from '../ui/bingkai-tab.js'
 import { halamanAturan } from './aturan.js'
 import { halamanKesehatan } from './kesehatan.js'
+import { halamanLogAkses } from './log-akses.js'
 
 export const halamanPemantauanSistem = bingkaiTab({
   nama: 'Pemantauan Sistem',
   tab: [
     { id: 'aturan', label: 'Aturan Peringatan', ikon: 'gembok', bangun: halamanAturan },
     { id: 'kesehatan', label: 'Kesehatan Sistem', ikon: 'kesehatan', bangun: halamanKesehatan },
+    /* Log Akses hanya untuk Pemilik Sistem. Superadmin lain tidak melihat
+       tabnya; basis data pun menolak bacaannya (kebijakan `adalah_pemilik()`). */
+    { id: 'log-akses', label: 'Log Akses', ikon: 'gembok', bangun: halamanLogAkses,
+      syarat: (keadaan) => keadaan.profil?.pemilik_sistem === true },
   ],
 })

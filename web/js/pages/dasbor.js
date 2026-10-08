@@ -20,6 +20,7 @@ import { ringkasan, deretTren, bulanWib, dalamBulan } from '../lib/hitung.js'
 import { EMBER, BELUM } from '../lib/sentimen.js'
 import { punyaIzin } from '../lib/peran.js'
 import { acuanKunjungan, perubahanSejak } from '../lib/sejak-terakhir.js'
+import { unitNegatifTerbaru } from '../lib/unit-negatif-terbaru.js'
 
 /**
  * Bilah kesehatan aliran data.
@@ -262,6 +263,8 @@ export function halamanDasbor({ keadaan, isi }) {
         })}
       </div>
 
+      ${kartuUnitNegatif(unitNegatifTerbaru(semua))}
+
       ${barisRekonsiliasi(r, keadaan, bulan, semua.length)}
 
       <div id="dasbor-siklus"><div class="rangka" style="height:104px"></div></div>
@@ -494,6 +497,50 @@ function garisKeadaan(mendesak, belumTelaah, takTerpetakan) {
     'Tidak ada berita berstatus kritis. Pemeriksaan sumber berjalan setiap lima menit.',
     'positif', 'centang',
   )
+}
+
+/**
+ * Unit yang diberitakan negatif dalam 24 jam terakhir (lib/unit-negatif-terbaru.js).
+ * Tidak mengikuti pemilih bulan: yang ditanyakan adalah keadaan sekarang.
+ */
+function kartuUnitNegatif({ unit, tanpaUnit, totalBerita, jendelaJam }) {
+  const tampil = unit.slice(0, 8)
+  const catatan = [
+    unit.length > tampil.length ? `${angka(unit.length - tampil.length)} unit lain tidak ditampilkan.` : '',
+    tanpaUnit ? `${angka(tanpaUnit)} berita negatif belum terpetakan ke unit dan tidak masuk daftar ini.` : '',
+  ].filter(Boolean).join(' ')
+
+  return kartu({
+    judul: `Unit diberitakan negatif dalam ${jendelaJam} jam terakhir`,
+    ket: unit.length
+      ? `${angka(unit.length)} unit, ${angka(totalBerita - tanpaUnit)} berita bersentimen negatif menurut waktu terbit`
+      : `Menurut waktu terbit berita, ${jendelaJam} jam ke belakang dari sekarang`,
+    aksi: tombol({ label: 'Lihat berita negatif', ikon: 'panahKanan', kecil: true, halaman: 'negatif' }),
+    rapat: true,
+    isi: unit.length ? `
+      <div class="tabel-bungkus">
+        <table class="tabel">
+          <thead><tr>
+            <th>UPT</th><th style="width:70px" class="rata-kanan">Berita</th>
+            <th style="width:90px">Urgensi</th><th>Berita terbaru</th><th style="width:96px">Terbit</th>
+          </tr></thead>
+          <tbody>
+            ${tampil.map((u) => `
+              <tr>
+                <td style="font-weight:550">${amankan(u.nama)}</td>
+                <td class="angka rata-kanan">${angka(u.jumlah)}</td>
+                <td>${u.urgensi ? keping(u.urgensi, nadaUrgensi(u.urgensi), true) : '—'}</td>
+                <td><span class="judul-sel">${amankan(ringkas(u.contoh?.judul || 'Tanpa judul', 110))}</span>
+                  <span class="mini-teks samar-teks">${amankan(u.contoh?.media || sumberAsli(u.contoh || {}))}</span></td>
+                <td class="angka kecil">${amankan(jarakWaktu(new Date(u.terakhir).toISOString()))}</td>
+              </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+      ${catatan ? `<div class="mini-teks samar-teks" style="padding:10px 14px">${amankan(catatan)}</div>` : ''}`
+      : `<div style="padding:18px">${kosong('Tidak ada unit yang diberitakan negatif',
+        `Tidak ada berita bersentimen negatif yang terbit dalam ${jendelaJam} jam terakhir.${tanpaUnit ? ` ${angka(tanpaUnit)} berita negatif belum terpetakan ke unit.` : ''}`)}</div>`,
+  })
 }
 
 function daftarPrioritas(daftar) {

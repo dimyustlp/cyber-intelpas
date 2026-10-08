@@ -235,6 +235,25 @@ export function surelUntukUsername(username) {
  * satu lalu menyalahkan penggunanya adalah cara paling murah membuat orang
  * berhenti memakai sistem.
  */
+/**
+ * Melapor ke peladen bahwa sebuah percobaan masuk ditolak, supaya percobaan
+ * berulang bisa dikenali. Sengaja tidak ditunggu dan tidak pernah melempar:
+ * laporan yang gagal tidak boleh mengubah apa yang dilihat petugas yang
+ * memang salah ketik. Yang terlapor hanya penolakan kredensial; gangguan
+ * jaringan bukan percobaan masuk yang ditolak.
+ */
+function laporGagal(pengenal) {
+  if (KONFIG.mode === 'demo') return
+  try {
+    fetch(`${KONFIG.url}/functions/v1/pantau-keamanan`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', apikey: KONFIG.kunciPublik },
+      body: JSON.stringify({ aksi: 'lapor_gagal', username: String(pengenal || '').slice(0, 80) }),
+      keepalive: true,
+    }).catch(() => { /* laporan bersifat bantuan */ })
+  } catch { /* idem */ }
+}
+
 export async function masuk(pengenal, kataSandi) {
   const teks = String(pengenal || '').trim()
   const percobaan = tampakSurel(teks)
@@ -260,6 +279,7 @@ export async function masuk(pengenal, kataSandi) {
     }
   }
 
+  laporGagal(teks)
   throw galatTerakhir || new GalatApi('Username atau kata sandi tidak dikenali.', 400)
 }
 

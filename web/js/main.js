@@ -103,6 +103,7 @@ const HALAMAN = {
   tren: () => import('./pages/analisis.js').then((m) => m.halamanAnalisis),
   narasi: () => import('./pages/analisis.js').then((m) => m.halamanAnalisis),
   jaringan: () => import('./pages/analisis.js').then((m) => m.halamanAnalisis),
+  'profil-media': () => import('./pages/analisis.js').then((m) => m.halamanAnalisis),
   komando: () => import('./pages/analisis.js').then((m) => m.halamanAnalisis),
   ruang: () => import('./pages/ruang.js').then((m) => m.halamanRuang),
   cari: () => import('./pages/cari.js').then((m) => m.halamanCari),
@@ -279,6 +280,7 @@ const INDUK_HALAMAN = {
   tren: 'analisis',
   narasi: 'analisis',
   jaringan: 'analisis',
+  'profil-media': 'analisis',
   komando: 'analisis',
   telaah: 'siklus-kasus',
   kasus: 'siklus-kasus',
@@ -1087,6 +1089,8 @@ async function mulaiSesi(profil) {
      dibuka orang setiap hari, sedangkan sisanya sudah cukup terlayani oleh
      unduhan saat tetikus menyentuh menunya.
   */
+  if (!keadaan.demo) import('./lib/lokasi.js').then((m) => m.catatLokasiBilaDiizinkan(profil)).catch(() => {})
+
   const nganggur = globalThis.requestIdleCallback || ((f) => setTimeout(f, 1200))
   nganggur(() => {
     menuUntuk(profil.role)

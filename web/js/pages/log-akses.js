@@ -24,7 +24,8 @@ import { ikon } from '../lib/ikon.js'
 import { ambil, perbarui, panggilFungsi, pesanRamah } from '../lib/api.js'
 
 const KOLOM = 'id,waktu,auth_user_id,username,nama,peran,kanwil,upt,pemilik,ip,kota,wilayah,negara,'
-  + 'kode_negara,jaringan,asn,peramban,sistem_operasi,jenis_perangkat,tingkat,tanda,catatan,dibaca,telegram_terkirim'
+  + 'kode_negara,jaringan,asn,peramban,sistem_operasi,jenis_perangkat,tingkat,tanda,catatan,dibaca,telegram_terkirim,'
+  + 'gps_lintang,gps_bujur,gps_akurasi_m,gps_waktu'
 
 const NADA_TINGKAT = { bahaya: 'kritis', perhatian: 'tinggi', normal: 'positif' }
 const LABEL_TINGKAT = { bahaya: 'Bahaya', perhatian: 'Perhatian', normal: 'Normal' }
@@ -35,6 +36,8 @@ const status = {
   log: [],
   sesi: [],
   sesiGalat: null,
+  peringatan: [],
+  gagal: [],
   tingkat: 'Semua tingkat',
   cari: '',
   sibuk: false,
@@ -51,6 +54,13 @@ function dataPeragaan() {
         ip: '198.51.100.7', kota: 'Amsterdam', negara: 'Netherlands', kode_negara: 'NL', jaringan: 'DigitalOcean LLC', asn: 'AS14061',
         peramban: 'Chrome', sistem_operasi: 'Linux', jenis_perangkat: 'Komputer', tingkat: 'bahaya',
         tanda: ['VPN / proxy / anonim', 'Login dari luar Indonesia'], dibaca: false },
+    ],
+    peringatan: [
+      { id: 1, waktu: lalu(40), jenis: 'login_gagal_akun', tingkat: 'perhatian', judul: 'Percobaan login berulang pada satu akun',
+        rincian: { username: 'contoh.pengguna', jumlah: 7, jumlah_ip: 1, akun_dikenal: true }, pelaku: null, dibaca: false },
+    ],
+    gagal: [
+      { id: 1, waktu: lalu(41), username_dicoba: 'contoh.pengguna', ip: '198.51.100.7' },
     ],
     sesi: [
       { sesi_id: 's1', auth_user_id: 'u1', username: 'analis.media', nama: 'Analis Media', peran: 'media_intelligence_analyst',
@@ -71,10 +81,20 @@ async function muat(keadaan) {
      sedang hidup — dan justru daftar sesi itulah yang dibutuhkan saat ada
      sesuatu yang mencurigakan.
   */
-  const [log, sesi] = await Promise.allSettled([
+  const [log, sesi, peringatan, gagal] = await Promise.allSettled([
     ambil('log_masuk', { select: KOLOM, order: 'waktu.desc', limit: 300 }),
     panggilFungsi('sesi_aktif'),
+    ambil('peringatan_keamanan', {
+      select: 'id,waktu,jenis,tingkat,judul,rincian,pelaku,dibaca',
+      tingkat: 'neq.info', order: 'waktu.desc', limit: 50,
+    }),
+    ambil('login_gagal', {
+      select: 'id,waktu,username_dicoba,ip',
+      waktu: `gte.${new Date(Date.now() - 86_400_000).toISOString()}`, order: 'waktu.desc', limit: 500,
+    }),
   ])
+  status.peringatan = peringatan.status === 'fulfilled' && Array.isArray(peringatan.value) ? peringatan.value : []
+  status.gagal = gagal.status === 'fulfilled' && Array.isArray(gagal.value) ? gagal.value : []
 
   status.log = log.status === 'fulfilled' ? log.value : []
   status.galat = log.status === 'rejected' ? pesanRamah(log.reason) : null
@@ -103,6 +123,37 @@ function disaring() {
     return [b.username, b.nama, b.ip, b.kota, b.negara, b.jaringan]
       .some((v) => String(v || '').toLowerCase().includes(kata))
   })
+}
+
+const NAMA_BAGIAN = {
+  telegram_targets: 'tujuan Telegram', notifikasi_setelan: 'setelan notifikasi',
+  notifikasi_rute: 'rute notifikasi', integration_settings: 'integrasi', report_schedules: 'jadwal laporan',
+}
+
+function rincianPeringatan(p) {
+  const r = p.rincian || {}
+  if (p.jenis === 'login_gagal_akun') {
+    return `Akun ${r.username}${r.akun_dikenal ? '' : ' (tidak terdaftar)'} · ${r.jumlah} percobaan ditolak dalam 15 menit`
+  }
+  if (p.jenis === 'login_gagal_ip') return `Alamat ${r.ip} · ${r.jumlah} percobaan ditolak dalam 15 menit, ${r.jumlah_akun} nama akun`
+  if (p.jenis === 'ubah_pengaturan') {
+    return `${NAMA_BAGIAN[r.tabel] || r.tabel}${Array.isArray(r.kolom) && r.kolom.length ? ` · isian: ${r.kolom.join(', ')}` : ''}`
+  }
+  if (p.jenis === 'hapus_berita') return `${r.jumlah} berita dihapus dalam 10 menit`
+  return ''
+}
+
+function barisPeringatan(p) {
+  return `
+    <li class="siklus-butir">
+      <div class="siklus-butir-kop">
+        <b>${amankan(p.judul)}</b>
+        ${keping(p.tingkat === 'bahaya' ? 'Bahaya' : 'Perhatian', p.tingkat === 'bahaya' ? 'kritis' : 'tinggi', true)}
+        ${p.dibaca ? '' : keping('Baru', 'aksen', true)}
+        <span class="mini-teks samar-teks dorong">${amankan(jarakWaktu(p.waktu))}</span>
+      </div>
+      <span class="mini-teks samar-teks">${amankan(rincianPeringatan(p))}${p.pelaku ? ` · oleh ${amankan(p.pelaku)}` : ''}</span>
+    </li>`
 }
 
 function barisSesi(s) {
@@ -140,6 +191,7 @@ export function halamanLogAkses({ keadaan, isi }) {
     const perhatian = baru.filter((b) => b.tingkat === 'perhatian')
     const belumDibaca = status.log.filter((b) => b.dibaca === false && b.tingkat && b.tingkat !== 'normal')
     const hasil = disaring()
+    const peringatanBaru = status.peringatan.filter((p) => p.dibaca === false)
 
     isi.innerHTML = `
       <div class="tumpuk">
@@ -148,11 +200,21 @@ export function halamanLogAkses({ keadaan, isi }) {
             <div><b>Log gagal dibaca.</b> ${amankan(status.galat)}</div></div>` : ''}
 
         <div class="kisi kisi-4">
+          ${ubin({ label: 'Login gagal 24 jam', nilai: status.gagal.length, nada: status.gagal.length >= 10 ? 'tinggi' : undefined, kaki: 'ditolak di halaman masuk' })}
           ${ubin({ label: 'Login 24 jam', nilai: baru.length, kaki: 'dari log yang termuat' })}
           ${ubin({ label: 'Bahaya', nilai: bahaya.length, nada: bahaya.length ? 'kritis' : 'positif', kaki: 'VPN, hosting, luar negeri, jam janggal' })}
           ${ubin({ label: 'Perhatian', nilai: perhatian.length, nada: perhatian.length ? 'tinggi' : 'positif', kaki: 'IP, jaringan, atau kota baru' })}
           ${ubin({ label: 'Sesi aktif', nilai: status.sesi.length, kaki: '7 hari terakhir' })}
         </div>
+
+        ${kartu({
+          judul: 'Peringatan keamanan',
+          ket: 'Login gagal berulang, perubahan pengaturan notifikasi oleh akun selain Anda, dan penghapusan berita beruntun.',
+          aksi: peringatanBaru.length ? tombol({ label: `Tandai ${angka(peringatanBaru.length)} sudah dibaca`, ikon: 'centang', kecil: true, aksi: 'tandai-peringatan' }) : '',
+          isi: status.peringatan.length
+            ? `<ul class="siklus-daftar">${status.peringatan.slice(0, 20).map(barisPeringatan).join('')}</ul>`
+            : kosong('Tidak ada peringatan', 'Belum ada kejadian yang melewati ambang.'),
+        })}
 
         ${kartu({
           judul: 'Sesi aktif',
@@ -188,7 +250,8 @@ export function halamanLogAkses({ keadaan, isi }) {
                         ${b.pemilik ? keping('Anda', 'aksen', true) : ''}
                         <div class="mini-teks samar-teks">${amankan(b.username || '')}</div>
                       </td>
-                      <td class="kecil">${amankan(tempat(b))}<div class="mini-teks samar-teks mono">${amankan(b.ip || '—')}</div></td>
+                      <td class="kecil">${amankan(tempat(b))}<div class="mini-teks samar-teks mono">${amankan(b.ip || '—')}</div>${b.gps_lintang != null && b.gps_bujur != null
+                        ? `<div class="mini-teks"><a href="https://www.openstreetmap.org/?mlat=${Number(b.gps_lintang)}&amp;mlon=${Number(b.gps_bujur)}#map=16/${Number(b.gps_lintang)}/${Number(b.gps_bujur)}" target="_blank" rel="noopener noreferrer">GPS peramban</a>${b.gps_akurasi_m != null ? ` ±${angka(b.gps_akurasi_m)} m` : ''}</div>` : ''}</td>
                       <td class="kecil">${amankan(b.jaringan || '—')}${b.asn ? `<div class="mini-teks samar-teks">${amankan(b.asn)}</div>` : ''}</td>
                       <td class="kecil">${amankan(perangkat(b))}${b.jenis_perangkat ? `<div class="mini-teks samar-teks">${amankan(b.jenis_perangkat)}</div>` : ''}</td>
                       <td>
@@ -206,7 +269,7 @@ export function halamanLogAkses({ keadaan, isi }) {
         })}
 
         <div class="mini-teks samar-teks">
-          Log disimpan 180 hari. Peringatan merah juga dikirim ke Telegram pribadi Anda saat kejadiannya.
+          Log disimpan 180 hari, titik GPS 30 hari. Login gagal hanya terlihat bila dicoba lewat halaman masuk aplikasi ini. Peringatan merah juga dikirim ke Telegram pribadi Anda saat kejadiannya.
         </div>
       </div>`
   }
@@ -247,6 +310,19 @@ export function halamanLogAkses({ keadaan, isi }) {
     gambar()
   }
 
+  async function tandaiPeringatan() {
+    const id = status.peringatan.filter((p) => p.dibaca === false).map((p) => p.id)
+    if (!id.length) return
+    try {
+      if (!keadaan.demo) await perbarui('peringatan_keamanan', { id: `in.(${id.join(',')})` }, { dibaca: true })
+      for (const p of status.peringatan) if (id.includes(p.id)) p.dibaca = true
+      roti('Ditandai sudah dibaca.', 'positif')
+    } catch (galat) {
+      roti(pesanRamah(galat), 'kritis', 6000)
+    }
+    gambar()
+  }
+
   isi.addEventListener('click', (ev) => {
     const el = ev.target.closest('[data-aksi]')
     if (!el) return
@@ -254,6 +330,7 @@ export function halamanLogAkses({ keadaan, isi }) {
     if (aksi === 'akhiri') akhiri(uid, nama, false)
     if (aksi === 'akhiri-nonaktif') akhiri(uid, nama, true)
     if (aksi === 'tandai-baca') tandaiBaca()
+    if (aksi === 'tandai-peringatan') tandaiPeringatan()
   })
 
   isi.addEventListener('change', (ev) => {

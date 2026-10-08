@@ -19,6 +19,7 @@ import { halamanTren } from './tren.js'
 import { halamanNarasi } from './narasi.js'
 import { halamanJaringan } from './jaringan.js'
 import { halamanKomando } from './komando.js'
+import { halamanProfilMedia } from './profil-media.js'
 
 export const halamanAnalisis = bingkaiTab({
   nama: 'Analisis Pemberitaan',
@@ -26,6 +27,7 @@ export const halamanAnalisis = bingkaiTab({
     { id: 'tren', label: 'Tren', ikon: 'tren', bangun: halamanTren },
     { id: 'narasi', label: 'Narasi', ikon: 'laporan', bangun: halamanNarasi },
     { id: 'jaringan', label: 'Kaitan', ikon: 'kasus', bangun: halamanJaringan },
+    { id: 'profil-media', label: 'Profil Media', ikon: 'pengguna', bangun: halamanProfilMedia },
     { id: 'komando', label: 'Pusat Komando', ikon: 'dasbor', bangun: halamanKomando },
   ],
 })

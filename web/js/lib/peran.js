@@ -527,6 +527,7 @@ const SYARAT_TAMBAHAN = {
   tren: 'lihat_tren',
   narasi: 'lihat_tren',
   jaringan: 'lihat_tren',
+  'profil-media': 'lihat_tren',
   komando: 'lihat_dasbor',
   /* Tab tiga menu gabungan lainnya, dan dua halaman yang kehilangan butir
      menunya — semuanya dengan izin yang dulu tertulis pada butirnya. */

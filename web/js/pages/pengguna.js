@@ -18,12 +18,10 @@
  * itu bukan pengamanannya. Pengamanannya ada di peladen, dan tetap menolak
  * sekalipun seseorang menyusun permintaannya sendiri di luar halaman ini.
  *
- * Satu aturan yang mudah terlihat sewenang-wenang dan sebenarnya tidak:
- * **akun kantor wilayah wajib memakai alamat surel sebagai username.** Petugas
- * wilayah berganti-ganti orang, dan alamat surat dinas adalah satu-satunya
- * penanda yang masih bisa ditelusuri ketika sebuah akun perlu
- * dipertanggungjawabkan setahun kemudian. Akun internal diterbitkan untuk
- * jabatan, bukan untuk kotak surat, jadi ia tetap memakai username polos.
+ * Kolom identitas menerima dua bentuk untuk peran apa pun: alamat surel
+ * (Gmail kanwil atau surel dinas) dipakai apa adanya, sedangkan username pendek
+ * diberi surel bayangan oleh sistem. Petugas masuk dengan bentuk yang sama
+ * seperti yang ditulis penerbitnya.
  */
 
 import { kartu, keping, kosong, pesanSistem, tombol, roti, konfirmasi } from '../ui/komponen.js'
@@ -242,18 +240,14 @@ function formulirTerbit({ hanyaDaerah, wilayahTetap, daftarKanwil }) {
       */''}
       <div class="isian" style="margin-top:12px">
         <label for="t-username">
-          ${wilayah ? 'Alamat surel dinas' : 'Username'} <span class="wajib">wajib</span>
+          Email atau username <span class="wajib">wajib</span>
         </label>
-        <input class="masukan" id="t-username" type="${wilayah ? 'email' : 'text'}"
+        <input class="masukan" id="t-username" type="text"
                autocapitalize="none" spellcheck="false" autocomplete="off"
-               placeholder="${wilayah ? 'nama.petugas@kemenimipas.go.id' : 'budi.santoso'}">
+               placeholder="${wilayah ? 'kanwilpas.jabar@gmail.com' : 'nama@gmail.com atau budi.santoso'}">
         <div class="ket" id="t-ket-username">
-          ${wilayah
-            ? 'Akun kantor wilayah <b>wajib</b> memakai alamat surel. Alamat inilah yang '
-              + 'diketik petugas saat masuk, dan yang menjadi penanggung jawab akun ini.'
-            : `Huruf kecil, angka, titik, garis bawah, atau tanda hubung. Sistem menambahkan
-               <code>@${amankan(RANAH_USERNAME)}</code> sendiri sebagai identitas —
-               petugas cukup mengetik username-nya.`}
+          Boleh alamat surel (Gmail atau surel dinas), boleh juga username pendek seperti
+          <code>budi.santoso</code>. Petugas masuk dengan apa yang ditulis di sini.
         </div>
       </div>
 
@@ -477,18 +471,9 @@ export function halamanPengguna({ keadaan, isi }) {
 
     if (!username) { roti('Username wajib diisi.', 'sedang'); fokus('#t-username'); return }
 
-    if (wilayah && !tampakSurel(username)) {
-      roti('Akun kantor wilayah wajib memakai alamat surel sebagai username.', 'sedang', 6000)
-      fokus('#t-username'); return
-    }
-
-    if (!wilayah && tampakSurel(username)) {
-      roti('Akun internal memakai username polos, bukan alamat surel.', 'sedang', 6000)
-      fokus('#t-username'); return
-    }
-
-    if (!wilayah && !POLA_USERNAME.test(username)) {
-      roti('Username hanya boleh huruf kecil, angka, titik, garis bawah, atau tanda hubung (3–32 karakter).',
+    // Alamat surel diterima apa adanya untuk peran apa pun. Selain itu harus berupa username pendek.
+    if (!tampakSurel(username) && !POLA_USERNAME.test(username)) {
+      roti('Tulis alamat surel (contoh nama@gmail.com) atau username pendek tanpa spasi (contoh budi.santoso).',
         'sedang', 7000)
       fokus('#t-username'); return
     }
@@ -522,7 +507,7 @@ export function halamanPengguna({ keadaan, isi }) {
       judul: 'Terbitkan akun ini?',
       pesan: `${nama} akan dapat masuk sebagai ${PERAN[peran]?.nama || peran}`
         + `${wilayah && kanwil ? ` di ${kanwil}` : ''}, memakai `
-        + `${wilayah ? username : `username ${username}`} dan sandi yang Anda tetapkan.`,
+        + `${tampakSurel(username) ? username : `username ${username}`} dan sandi yang Anda tetapkan.`,
       tegas: 'Terbitkan',
     })
     if (!ya) return

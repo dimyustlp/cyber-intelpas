@@ -352,9 +352,8 @@ export const TANPA_MENU = {
     isi: 'Penerbitan akun beserta perannya, dan daftar akun yang sudah ada.',
     guna: 'Menerbitkan akun untuk petugas baru. Superadmin menerbitkan peran apa pun; '
       + 'Administrator Kantor Wilayah hanya Penelaah Berita UPT di wilayahnya sendiri.',
-    catatan: 'Akun kantor wilayah wajib memakai alamat surel sebagai nama pengguna. Petugas '
-      + 'wilayah berganti orang, dan alamat surat dinas adalah satu-satunya penanda yang '
-      + 'masih bisa ditelusuri kemudian.',
+    catatan: 'Kolom identitas boleh diisi alamat surel (misalnya Gmail kanwil) atau username '
+      + 'pendek, untuk peran apa pun. Petugas masuk dengan apa yang ditulis di kolom itu.',
   },
   koordinat: {
     isi: 'Satu unit pada satu waktu, dengan pratinjau titiknya di atas peta yang sama '

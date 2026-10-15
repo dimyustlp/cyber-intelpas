@@ -203,40 +203,24 @@ Deno.serve(async (permintaan: Request) => {
     const peranUnit = PERAN_UNIT.includes(peran)
 
     /*
-       Akun wilayah memakai alamat surel sungguhan sebagai identitasnya, atas
-       permintaan pengguna sistem: petugas wilayah berganti-ganti orang, dan
-       alamat surat resmi adalah satu-satunya penanda yang bisa ditelusuri
-       kembali ketika akun perlu dipertanggungjawabkan.
-
-       Akun internal tetap memakai username polos beserta surel bayangan, sebab
-       akun-akun itu diterbitkan untuk jabatan, bukan untuk kotak surat.
+       Identitas akun: alamat surel diterima apa adanya untuk peran apa pun
+       (Gmail kanwil, surel dinas, dan sebagainya), dan petugas masuk dengan
+       alamat itu. Username pendek tetap diterima; sistem menambahkan surel
+       bayangan sendiri. Sampai 15 Oktober 2026 akun internal dipaksa memakai
+       username dan akun wilayah dipaksa memakai surel — aturan yang hanya
+       menghambat penerbit tanpa menambah pengamanan apa pun.
     */
     let surel: string
-    if (peranWilayah) {
-      if (!POLA_SUREL.test(username)) {
-        return jawab({
-          ok: false,
-          pesan: 'Akun kantor wilayah wajib memakai alamat surel yang sah sebagai username, '
-            + 'misalnya nama.petugas@kemenimipas.go.id.',
-        }, 400)
-      }
+    if (POLA_SUREL.test(username)) {
       surel = username
-    } else {
-      if (POLA_SUREL.test(username)) {
-        return jawab({
-          ok: false,
-          pesan: 'Akun internal memakai username polos, bukan alamat surel. '
-            + 'Contoh: budi.santoso.',
-        }, 400)
-      }
-      if (!POLA_USERNAME.test(username)) {
-        return jawab({
-          ok: false,
-          pesan: 'Username hanya boleh berisi huruf kecil, angka, titik, garis bawah, '
-            + 'atau tanda hubung, sepanjang 3 sampai 32 karakter.',
-        }, 400)
-      }
+    } else if (POLA_USERNAME.test(username)) {
       surel = `${username}@${RANAH_USERNAME}`
+    } else {
+      return jawab({
+        ok: false,
+        pesan: 'Tulis alamat surel (contoh nama@gmail.com) atau username pendek tanpa spasi '
+          + '(contoh budi.santoso).',
+      }, 400)
     }
 
     // Wilayah tidak pernah diambil dari permintaan bagi admin kanwil.
@@ -412,7 +396,7 @@ Deno.serve(async (permintaan: Request) => {
       ok: true,
       pesan: `Akun ${username} diterbitkan.`,
       pengguna: profilBaru,
-      masuk_dengan: peranWilayah ? surel : username,
+      masuk_dengan: POLA_SUREL.test(username) ? surel : username,
     }, 201)
   } catch (galat) {
     console.error(galat)

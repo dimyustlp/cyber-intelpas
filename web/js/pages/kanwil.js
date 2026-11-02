@@ -36,6 +36,7 @@ import { belumTerpetakan } from '../lib/unit-terpetakan.js'
 import { punyaIzin, adalahUnit } from '../lib/peran.js'
 import { baganSentimen, baganTren, baganUrgensi } from '../ui/bagan.js'
 import { sebaran } from '../lib/demo.js'
+import { ambil } from '../lib/api.js'
 
 /* ------------------------------------------------------------- perkakas */
 
@@ -258,14 +259,80 @@ export function halamanKanwilDasbor({ keadaan, isi }) {
         rapat: true,
         isi: daftarRingkas(milikSendiri.slice(0, 5)),
       }) : ''}
+
+      <div id="kartu-lembar-kanwil"></div>
     </div>`
 
   pasangBagan(keadaan.berita || [], r)
+  if (!keadaan.demo && c.nama) pasangLembarKanwil(c.nama)
 
   return {
     judul: 'Ringkasan Wilayah',
     sub: c.nama ? `${c.nama} · ${tanggalPanjang(new Date())}` : tanggalPanjang(new Date()),
   }
+}
+
+/**
+ * Kartu lembar kanwil: tautan ke spreadsheet wilayah dan keadaan sinkronnya.
+ *
+ * Satu-satunya kueri tambahan di berkas ini, dan sengaja: yang ditarik bukan
+ * berita melainkan baris `sumber_sheet` milik wilayah ini sendiri (policy
+ * `sumber_sheet_baca` membatasinya ke `kanwil_saya()`). Tanpa kartu ini admin
+ * kanwil tidak punya cara mengetahui alamat lembarnya, apalagi bahwa
+ * sinkronnya sedang gagal — padahal hanya dialah yang bisa membetulkannya.
+ *
+ * Digambar sesudah halaman berdiri dan diam bila gagal: kartu tambahan tidak
+ * boleh menahan ringkasan wilayah.
+ */
+async function pasangLembarKanwil(kanwil) {
+  let baris = []
+  try {
+    baris = await ambil('sumber_sheet', {
+      select: 'nama,sheet_id,aktif,terakhir_status,terakhir_pesan,terakhir_sinkron_at,baris_terakhir',
+      kanwil: `eq.${kanwil}`,
+      lingkup: 'eq.kanwil',
+    }) || []
+  } catch { return }
+
+  const wadah = document.getElementById('kartu-lembar-kanwil')
+  if (!wadah) return
+  const s = baris.find((b) => b.aktif) || baris[0]
+
+  if (!s) {
+    wadah.innerHTML = kartu({
+      judul: 'Lembar kanwil',
+      ket: 'Spreadsheet wilayah belum terdaftar di pusat',
+      isi: kosong('Belum terdaftar',
+        'Lembar wilayah Anda sedang disiapkan pusat. Begitu terdaftar, tautannya muncul di sini '
+        + 'dan berita yang dijaringnya mengalir ke halaman ini tiap 30 menit.'),
+    })
+    return
+  }
+
+  const alamat = `https://docs.google.com/spreadsheets/d/${encodeURIComponent(s.sheet_id)}/edit`
+  const nada = s.terakhir_status === 'Berhasil' ? 'positif'
+    : s.terakhir_status === 'Gagal' ? 'kritis' : 'sedang'
+
+  wadah.innerHTML = kartu({
+    judul: 'Lembar kanwil',
+    ket: 'Spreadsheet wilayah — portal hiperlokal dan ragam nama unit',
+    aksi: `<a class="tbl kecil utama" href="${amankan(alamat)}" target="_blank" rel="noopener">
+      ${ikon('panahKanan')} Buka lembar</a>`,
+    isi: `
+      <dl class="kop-wilayah-angka">
+        <div><dt>Sinkron terakhir</dt>
+          <dd>${keping(s.terakhir_status || 'Belum pernah', nada)}</dd></div>
+        <div><dt>Waktu</dt>
+          <dd>${s.terakhir_sinkron_at ? amankan(jarakWaktu(s.terakhir_sinkron_at)) : '—'}</dd></div>
+        <div><dt>Baris terbaca</dt>
+          <dd class="angka">${angka(s.baris_terakhir || 0)}</dd></div>
+      </dl>
+      ${s.terakhir_status === 'Gagal' ? pesanSistem(amankan(ringkas(s.terakhir_pesan || '', 220)),
+        'kritis', 'peringatan') : ''}
+      <p class="ket">Dua isian yang hanya bisa dikerjakan petugas daerah: <b>Ragam Nama</b> di
+      lembar Target Unit (nama panggilan setempat seperti "Medaeng") dan <b>Portal Wilayah</b>
+      (portal berita kabupaten yang tidak terindeks Google).</p>`,
+  })
 }
 
 /* ------------------------------------------------------ ringkasan unit */

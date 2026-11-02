@@ -105,7 +105,57 @@ butir terbuang dalam satu jalan, menjadi nol sesudahnya.
 
 ---
 
-## 3. Menggelar satu kanwil
+## 2b. v3 — satu lembar induk untuk 33 kanwil (2 November 2026)
+
+**33 kanwil, bukan 38.** Data induk dulu menurunkan "kanwil" dari 38 provinsi.
+Struktur yang berlaku hanya 33: Kalimantan Utara diampu Kanwil Kalimantan
+Timur; Papua Pegunungan, Papua Selatan, dan Papua Tengah diampu Kanwil Papua;
+Papua Barat Daya diampu Kanwil Papua Barat. Tabel baru `public.kanwil` memuat
+ke-33 kanwil beserta tipe A/B dan provinsi yang diampu
+(migrasi `20261102010000`; salinannya `data/kanwil-33.json`).
+
+**Satu berkas, satu tempel.** `gas/induk-lembar-kanwil.gs` ditempel sekali ke
+lembar induk; `pasangSemua` menyalin lembar itu menjadi 32 lembar kanwil.
+Salinan spreadsheet ikut menyalin skripnya, sehingga setiap lembar memegang
+kode yang sama persis. Peran tiap lembar dibaca dari lembar tersembunyi
+`_Konfigurasi`, bukan dari kode. Panduan pasang: `docs/pasang-lembar-induk.md`.
+
+Tiga hal yang berhenti benar ketika v2.1 digandakan, dan jawabannya:
+
+| Masalah v2.1 kali 33 | v3 |
+| --- | --- |
+| Kuota pemicu Google dihitung **per akun** (90 menit/hari untuk semua skrip). 33 skrip dua kali sehari habis sebelum sore, dan pemicu yang berhenti tidak memberi tahu apa pun. | Penjaringan dari lembar induk saja, bergiliran, dua jam sekali, batas 60 menit/hari yang dihitung sendiri. |
+| Kolom **Nama UPT** kosong di setiap baris portal, padahal `kanwil_asal` di pusat diturunkan dari kolom itu — berita lembar kanwil tidak tampil di ruang kanwilnya sendiri. | Diisi bila judul menyebut **tepat satu** unit; dua unit = kosong (masuk antrean Pemetaan UPT). |
+| 33 berkas suntikan menyimpang satu per satu. | Kode satu; perbedaan hanya di `_Konfigurasi`. |
+
+**Nama tempat yang menjadi awalan nama tempat lain.** Diuji atas seluruh 531
+unit: "Lapas Kelas IIB Tanjung" (Kalsel) berbatas kata di dalam "Tanjung
+Pandan" (Babel) dan "Tanjung Redeb" (Kaltim); "Lapas Banjar" (Jabar) di dalam
+"Banjar Baru" (Kalsel); "Tanjung Balai" (Sumut) di tengah "Tanjung Balai
+Karimun" (Kepri). Batas kata saja meloloskannya — dengan Nama UPT terisi,
+jadi tampak sudah terpetakan. Pabrik menghitung `LANJUTAN_TERLARANG` dari
+seluruh data nasional dan `polaKata()` menolak kata lanjutan itu. Nama yang
+memang kembar (Kota Banjar dan Kabupaten Banjar) ditangani aturan kedua:
+berita yang menyebut unit kanwil lain dan tidak menyebut unit sendiri ditolak
+sebagai luar wilayah.
+
+**Pendaftaran otomatis.** `public.tarik_daftar_induk()` (cron tiap 10 menit,
+menit ke-4) membaca lembar Daftar Lembar milik induk lewat gviz CSV dan
+memanggil `daftarkan_lembar_kanwil()` untuk setiap lembar yang Siap. Dua fase
+karena pg_net asinkron. Selangnya 10 menit, bukan 15, sebab
+`bersihkan-jawaban-http` menghapus jawaban yang lebih tua dari 15 menit.
+
+**Portal benih untuk 11 kanwil yang tadinya kosong** — 24 umpan, masing-masing
+diuji terbaca pada 2 November 2026. Yang gagal lima kali berturut-turut
+dinonaktifkan sendiri oleh lembar.
+
+Uji: `node tools/uji-induk-kanwil.mjs` menjalankan berkas Apps Script
+sungguhan di atas tiruan layanan Google — dari `pasangSemua`, pembangunan yang
+terpotong batas waktu, sampai penjaringan bergilir dan suntingan petugas.
+
+---
+
+## 3. Menggelar satu kanwil (v2.1, hanya Jawa Timur)
 
 ```bash
 node tools/susun-lembar-kanwil.mjs --daftar

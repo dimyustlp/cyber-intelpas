@@ -92,7 +92,7 @@ periksa('kaki portal masih ada', templat.includes('function jaringPortal'),
   'Ia satu-satunya kaki yang pernah berhasil dari sini, dan satu-satunya jalan '
   + 'ke portal hiperlokal yang tidak terindeks Google.');
 
-/* ── 3. seluruh 38 kanwil menghasilkan berkas yang sah ─────────────────── */
+/* ── 3. seluruh 33 kanwil menghasilkan berkas yang sah ─────────────────── */
 
 console.log('\nPabrik');
 
@@ -100,7 +100,7 @@ const daftar = execFileSync(process.execPath,
   [join(AKAR, 'tools', 'susun-lembar-kanwil.mjs'), '--daftar'], { encoding: 'utf8' });
 
 const jumlahKanwil = Number((daftar.match(/^(\d+) kanwil/m) || [])[1] || 0);
-periksa('38 kanwil terbaca dari data induk', jumlahKanwil === 38,
+periksa('33 kanwil terbaca dari data induk', jumlahKanwil === 33,
   `Terbaca ${jumlahKanwil}. Kalau data induk memang berubah, perbarui angka di uji ini.`);
 
 execFileSync(process.execPath,

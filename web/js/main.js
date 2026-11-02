@@ -604,6 +604,11 @@ function gambarIsi(bangun, isi, ingatan) {
   }
 }
 
+/** Benar selama akun yang masuk masih memakai sandi awal. Lihat gambar(). */
+function wajibGantiSandi() {
+  return keadaan.profil?.must_change_password === true && !keadaan.demo
+}
+
 export function gambar() {
   if (!keadaan.profil) {
     akar.innerHTML = ''
@@ -612,6 +617,19 @@ export function gambar() {
   }
 
   const ingatan = ingatFokus()
+
+  /*
+     Akun yang masih bersandi awal hanya boleh membuka Profil.
+
+     33 akun kantor wilayah diterbitkan dengan sandi awal yang berpola sama.
+     Siapa pun yang tahu polanya bisa masuk sebagai kanwil mana pun — selama
+     sandinya belum diganti. Penanda `must_change_password` sudah ada sejak
+     migrasi auth_bridge, tetapi sampai 2 November 2026 ia hanya tampil sebagai
+     keping di halaman Pengguna; tidak ada yang memaksa siapa pun menggantinya,
+     jadi sandi awal berlaku selamanya. Penanda itu dihapus profil.js tepat saat
+     sandi baru berlaku.
+  */
+  if (wajibGantiSandi() && keadaan.halaman !== 'profil') keadaan.halaman = 'profil'
 
   akar.innerHTML = kerangka()
   const isi = document.getElementById('isi')
@@ -873,6 +891,11 @@ document.addEventListener('buka-halaman', (ev) => {
   */
   if (!bolehBuka(keadaan.profil?.role, halaman)) {
     roti('Halaman itu bukan kewenangan peran Anda.', 'sedang', 3600)
+    return
+  }
+
+  if (wajibGantiSandi() && halaman !== 'profil') {
+    roti('Ganti kata sandi awal Anda lebih dulu.', 'sedang', 3600)
     return
   }
 

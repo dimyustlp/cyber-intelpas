@@ -33,6 +33,13 @@ export function halamanProfil({ keadaan, isi }) {
         'sedang', 'info',
       ) : ''}
 
+      ${p.must_change_password && !demo ? pesanSistem(
+        '<b>Ganti kata sandi awal Anda lebih dulu.</b> Akun ini diterbitkan dengan sandi '
+        + 'awal yang polanya diketahui orang lain. Halaman lain terbuka begitu sandi baru '
+        + 'disimpan di bawah.',
+        'kritis', 'peringatan',
+      ) : ''}
+
       ${kartu({
         judul: 'Identitas',
         ket: 'Nama dan nama pengguna yang tampil di seluruh sistem',
@@ -144,6 +151,15 @@ export function halamanProfil({ keadaan, isi }) {
       galatSandi.innerHTML = pesanGalat('Kedua isian kata sandi tidak sama.')
       return
     }
+    // Sandi awal akun jabatan kanwil diturunkan dari nama wilayahnya. Sandi
+    // baru yang masih memuat nama itu hanya mengganti satu tebakan dengan
+    // tebakan berikutnya. Polanya sengaja tidak ditulis di sini: berkas ini
+    // terbaca siapa pun yang membuka situsnya.
+    const inti = String(p.username || '').toLowerCase().replace(/^kanwil_/, '')
+    if (inti.length >= 4 && baru.toLowerCase().includes(inti)) {
+      galatSandi.innerHTML = pesanGalat('Kata sandi tidak boleh memuat nama pengguna atau nama wilayah Anda.')
+      return
+    }
 
     keadaanForm.sibukSandi = true
     const tombolSimpan = borangSandi.querySelector('button[type="submit"]')
@@ -157,6 +173,7 @@ export function halamanProfil({ keadaan, isi }) {
       return
     }
 
+    const wajibTadi = p.must_change_password === true
     try {
       await gantiSandiSendiri(baru)
 
@@ -174,7 +191,9 @@ export function halamanProfil({ keadaan, isi }) {
         } catch { /* sandinya sudah berganti; penanda menyusul pada suntingan berikutnya */ }
       }
 
-      roti('Kata sandi baru sudah berlaku.', 'positif')
+      roti(wajibTadi && p.must_change_password === false
+        ? 'Kata sandi baru sudah berlaku. Menu lain kini terbuka.'
+        : 'Kata sandi baru sudah berlaku.', 'positif')
       borangSandi.reset()
     } catch (galat) {
       galatSandi.innerHTML = pesanGalat(pesanRamah(galat))

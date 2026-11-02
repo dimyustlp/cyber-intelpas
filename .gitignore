@@ -35,3 +35,4 @@ sumber-lama/
 # pada templat muncul sebagai 38 berkas berubah dan perubahan yang sungguhan
 # tidak lagi terbaca di diff. Yang ditinjau adalah templatnya.
 gas/kanwil-*.gs
+gas/induk-lembar-kanwil.gs

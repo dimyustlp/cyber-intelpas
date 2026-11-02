@@ -22,7 +22,7 @@
 
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const AKAR = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -44,7 +44,7 @@ const JALUR = {
  * itu tidak menimbulkan galat — ia hanya membuat kanwil terbaca dari kolom
  * koordinat, dan hasilnya lembar yang kosong tanpa sebab yang terlihat.
  */
-function bacaCsv(teks) {
+export function bacaCsv(teks) {
   const baris = [];
   let sel = '';
   let baris1 = [];
@@ -71,7 +71,7 @@ function bacaCsv(teks) {
   return baris;
 }
 
-function muatUpt() {
+export function muatUpt() {
   const baris = bacaCsv(readFileSync(JALUR.upt, 'utf8'));
   const judul = baris[0].map((h) => h.trim());
   const idx = (n) => {
@@ -114,7 +114,7 @@ const rapi = (s) => String(s || '').replace(/\s+/g, ' ').trim();
  * seluruh berita kota itu, dan penyaring relevansi di lembar memakai daftar ini
  * sebagai syarat lolos.
  */
-function ragamNama(u) {
+export function ragamNama(u) {
   const set = new Set();
   const nama = rapi(u.nama);
   set.add(nama);
@@ -140,7 +140,7 @@ function ragamNama(u) {
 
 /* ────────────────────────────────────────────────────────────── penyusun ── */
 
-const slug = (s) => s.replace(/^Kantor Wilayah Ditjenpas\s+/i, '')
+export const slug = (s) => s.replace(/^Kantor Wilayah Ditjenpas\s+/i, '')
   .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
 function susun(kanwil, semuaUpt, portal, tier, templat) {
@@ -192,58 +192,62 @@ function susun(kanwil, semuaUpt, portal, tier, templat) {
 
 /* ───────────────────────────────────────────────────────────────── utama ── */
 
-const arg = process.argv.slice(2);
-const ambil = (n) => { const i = arg.indexOf(n); return i >= 0 ? arg[i + 1] : null; };
+/* Hanya berjalan bila dipanggil langsung; pabrik induk v3 mengimpor
+   fungsi-fungsi di atas tanpa ingin berkas v2.1 ikut ditulis ulang. */
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  const arg = process.argv.slice(2);
+  const ambil = (n) => { const i = arg.indexOf(n); return i >= 0 ? arg[i + 1] : null; };
 
-const semuaUpt = muatUpt();
-const daftarKanwil = [...new Set(semuaUpt.map((u) => u.kanwil))].sort();
+  const semuaUpt = muatUpt();
+  const daftarKanwil = [...new Set(semuaUpt.map((u) => u.kanwil))].sort();
 
-if (arg.includes('--daftar') || !arg.length) {
-  console.log(`${daftarKanwil.length} kanwil, ${semuaUpt.length} unit aktif:\n`);
-  for (const k of daftarKanwil) {
-    console.log(`  ${String(semuaUpt.filter((u) => u.kanwil === k).length).padStart(3)}  ${k}`);
+  if (arg.includes('--daftar') || !arg.length) {
+    console.log(`${daftarKanwil.length} kanwil, ${semuaUpt.length} unit aktif:\n`);
+    for (const k of daftarKanwil) {
+      console.log(`  ${String(semuaUpt.filter((u) => u.kanwil === k).length).padStart(3)}  ${k}`);
+    }
+    console.log('\nPakai: node tools/susun-lembar-kanwil.mjs --kanwil "Jawa Timur"');
+    console.log('       node tools/susun-lembar-kanwil.mjs --semua');
+    process.exit(0);
   }
-  console.log('\nPakai: node tools/susun-lembar-kanwil.mjs --kanwil "Jawa Timur"');
-  console.log('       node tools/susun-lembar-kanwil.mjs --semua');
-  process.exit(0);
-}
 
-for (const j of [JALUR.portal, JALUR.tier, JALUR.templat]) {
-  if (!existsSync(j)) { console.error(`Berkas tidak ada: ${j}`); process.exit(1); }
-}
-
-const portal = JSON.parse(readFileSync(JALUR.portal, 'utf8'));
-const tier = JSON.parse(readFileSync(JALUR.tier, 'utf8'));
-const templat = readFileSync(JALUR.templat, 'utf8');
-
-let sasaran;
-if (arg.includes('--semua')) {
-  sasaran = daftarKanwil;
-} else {
-  const diminta = ambil('--kanwil');
-  if (!diminta) { console.error('Sebutkan --kanwil "<nama>" atau --semua'); process.exit(1); }
-
-  sasaran = daftarKanwil.filter((k) =>
-    k === diminta || k.toLowerCase().includes(String(diminta).toLowerCase()));
-
-  if (!sasaran.length) {
-    console.error(`Kanwil "${diminta}" tidak ditemukan. Jalankan --daftar untuk melihat pilihannya.`);
-    process.exit(1);
+  for (const j of [JALUR.portal, JALUR.tier, JALUR.templat]) {
+    if (!existsSync(j)) { console.error(`Berkas tidak ada: ${j}`); process.exit(1); }
   }
-  if (sasaran.length > 1) {
-    console.error(`"${diminta}" cocok pada lebih dari satu kanwil:\n  ${sasaran.join('\n  ')}`);
-    process.exit(1);
+
+  const portal = JSON.parse(readFileSync(JALUR.portal, 'utf8'));
+  const tier = JSON.parse(readFileSync(JALUR.tier, 'utf8'));
+  const templat = readFileSync(JALUR.templat, 'utf8');
+
+  let sasaran;
+  if (arg.includes('--semua')) {
+    sasaran = daftarKanwil;
+  } else {
+    const diminta = ambil('--kanwil');
+    if (!diminta) { console.error('Sebutkan --kanwil "<nama>" atau --semua'); process.exit(1); }
+
+    sasaran = daftarKanwil.filter((k) =>
+      k === diminta || k.toLowerCase().includes(String(diminta).toLowerCase()));
+
+    if (!sasaran.length) {
+      console.error(`Kanwil "${diminta}" tidak ditemukan. Jalankan --daftar untuk melihat pilihannya.`);
+      process.exit(1);
+    }
+    if (sasaran.length > 1) {
+      console.error(`"${diminta}" cocok pada lebih dari satu kanwil:\n  ${sasaran.join('\n  ')}`);
+      process.exit(1);
+    }
   }
+
+  mkdirSync(JALUR.keluar, { recursive: true });
+
+  for (const k of sasaran) {
+    const h = susun(k, semuaUpt, portal, tier, templat);
+    writeFileSync(h.berkas, h.isi, 'utf8');
+    const r = h.ringkas;
+    console.log(`${r.kanwil}\n  ${r.unit} unit · ${r.kota} kab/kota · ${r.portal} portal benih`);
+    console.log(`  -> ${h.berkas.replace(AKAR + '\\', '').replace(AKAR + '/', '')}\n`);
+  }
+
+  console.log(`Selesai: ${sasaran.length} berkas.`);
 }
-
-mkdirSync(JALUR.keluar, { recursive: true });
-
-for (const k of sasaran) {
-  const h = susun(k, semuaUpt, portal, tier, templat);
-  writeFileSync(h.berkas, h.isi, 'utf8');
-  const r = h.ringkas;
-  console.log(`${r.kanwil}\n  ${r.unit} unit · ${r.kota} kab/kota · ${r.portal} portal benih`);
-  console.log(`  -> ${h.berkas.replace(AKAR + '\\', '').replace(AKAR + '/', '')}\n`);
-}
-
-console.log(`Selesai: ${sasaran.length} berkas.`);

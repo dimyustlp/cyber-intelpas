@@ -1,0 +1,307 @@
+{
+ "_catatan": "Salinan daftar induk public.kanwil (migrasi 20261102010000). 33 kanwil Pemasyarakatan: tipe A/B dan provinsi pemekaran yang diampu. Sunting keduanya bersamaan.",
+ "kanwil": [
+  {
+   "nama": "Kantor Wilayah Ditjenpas Aceh",
+   "wilayah": "Aceh",
+   "tipe": "A",
+   "provinsi": [
+    "Aceh"
+   ],
+   "urutan": 1
+  },
+  {
+   "nama": "Kantor Wilayah Ditjenpas Sumatera Utara",
+   "wilayah": "Sumatera Utara",
+   "tipe": "A",
+   "provinsi": [
+    "Sumatera Utara"
+   ],
+   "urutan": 2
+  },
+  {
+   "nama": "Kantor Wilayah Ditjenpas Riau",
+   "wilayah": "Riau",
+   "tipe": "A",
+   "provinsi": [
+    "Riau"
+   ],
+   "urutan": 3
+  },
+  {
+   "nama": "Kantor Wilayah Ditjenpas Sumatera Selatan",
+   "wilayah": "Sumatera Selatan",
+   "tipe": "A",
+   "provinsi": [
+    "Sumatera Selatan"
+   ],
+   "urutan": 4
+  },
+  {
+   "nama": "Kantor Wilayah Ditjenpas Lampung",
+   "wilayah": "Lampung",
+   "tipe": "A",
+   "provinsi": [
+    "Lampung"
+   ],
+   "urutan": 5
+  },
+  {
+   "nama": "Kantor Wilayah Ditjenpas DKI Jakarta",
+   "wilayah": "DKI Jakarta",
+   "tipe": "A",
+   "provinsi": [
+    "DKI Jakarta"
+   ],
+   "urutan": 6
+  },
+  {
+   "nama": "Kantor Wilayah Ditjenpas Jawa Barat",
+   "wilayah": "Jawa Barat",
+   "tipe": "A",
+   "provinsi": [
+    "Jawa Barat"
+   ],
+   "urutan": 7
+  },
+  {
+   "nama": "Kantor Wilayah Ditjenpas Jawa Tengah",
+   "wilayah": "Jawa Tengah",
+   "tipe": "A",
+   "provinsi": [
+    "Jawa Tengah"
+   ],
+   "urutan": 8
+  },
+  {
+   "nama": "Kantor Wilayah Ditjenpas Jawa Timur",
+   "wilayah": "Jawa Timur",
+   "tipe": "A",
+   "provinsi": [
+    "Jawa Timur"
+   ],
+   "urutan": 9
+  },
+  {
+   "nama": "Kantor Wilayah Ditjenpas Bali",
+   "wilayah": "Bali",
+   "tipe": "A",
+   "provinsi": [
+    "Bali"
+   ],
+   "urutan": 10
+  },
+  {
+   "nama": "Kantor Wilayah Ditjenpas Kalimantan Selatan",
+   "wilayah": "Kalimantan Selatan",
+   "tipe": "A",
+   "provinsi": [
+    "Kalimantan Selatan"
+   ],
+   "urutan": 11
+  },
+  {
+   "nama": "Kantor Wilayah Ditjenpas Kalimantan Timur",
+   "wilayah": "Kalimantan Timur",
+   "tipe": "A",
+   "provinsi": [
+    "Kalimantan Timur",
+    "Kalimantan Utara"
+   ],
+   "urutan": 12
+  },
+  {
+   "nama": "Kantor Wilayah Ditjenpas Sulawesi Selatan",
+   "wilayah": "Sulawesi Selatan",
+   "tipe": "A",
+   "provinsi": [
+    "Sulawesi Selatan"
+   ],
+   "urutan": 13
+  },
+  {
+   "nama": "Kantor Wilayah Ditjenpas Papua",
+   "wilayah": "Papua",
+   "tipe": "A",
+   "provinsi": [
+    "Papua",
+    "Papua Pegunungan",
+    "Papua Selatan",
+    "Papua Tengah"
+   ],
+   "urutan": 14
+  },
+  {
+   "nama": "Kantor Wilayah Ditjenpas Sumatera Barat",
+   "wilayah": "Sumatera Barat",
+   "tipe": "B",
+   "provinsi": [
+    "Sumatera Barat"
+   ],
+   "urutan": 15
+  },
+  {
+   "nama": "Kantor Wilayah Ditjenpas Jambi",
+   "wilayah": "Jambi",
+   "tipe": "B",
+   "provinsi": [
+    "Jambi"
+   ],
+   "urutan": 16
+  },
+  {
+   "nama": "Kantor Wilayah Ditjenpas Bengkulu",
+   "wilayah": "Bengkulu",
+   "tipe": "B",
+   "provinsi": [
+    "Bengkulu"
+   ],
+   "urutan": 17
+  },
+  {
+   "nama": "Kantor Wilayah Ditjenpas Kepulauan Riau",
+   "wilayah": "Kepulauan Riau",
+   "tipe": "B",
+   "provinsi": [
+    "Kepulauan Riau"
+   ],
+   "urutan": 18
+  },
+  {
+   "nama": "Kantor Wilayah Ditjenpas Kepulauan Bangka Belitung",
+   "wilayah": "Kepulauan Bangka Belitung",
+   "tipe": "B",
+   "provinsi": [
+    "Kepulauan Bangka Belitung"
+   ],
+   "urutan": 19
+  },
+  {
+   "nama": "Kantor Wilayah Ditjenpas Banten",
+   "wilayah": "Banten",
+   "tipe": "B",
+   "provinsi": [
+    "Banten"
+   ],
+   "urutan": 20
+  },
+  {
+   "nama": "Kantor Wilayah Ditjenpas D.I. Yogyakarta",
+   "wilayah": "D.I. Yogyakarta",
+   "tipe": "B",
+   "provinsi": [
+    "D.I. Yogyakarta"
+   ],
+   "urutan": 21
+  },
+  {
+   "nama": "Kantor Wilayah Ditjenpas Kalimantan Barat",
+   "wilayah": "Kalimantan Barat",
+   "tipe": "B",
+   "provinsi": [
+    "Kalimantan Barat"
+   ],
+   "urutan": 22
+  },
+  {
+   "nama": "Kantor Wilayah Ditjenpas Kalimantan Tengah",
+   "wilayah": "Kalimantan Tengah",
+   "tipe": "B",
+   "provinsi": [
+    "Kalimantan Tengah"
+   ],
+   "urutan": 23
+  },
+  {
+   "nama": "Kantor Wilayah Ditjenpas Sulawesi Utara",
+   "wilayah": "Sulawesi Utara",
+   "tipe": "B",
+   "provinsi": [
+    "Sulawesi Utara"
+   ],
+   "urutan": 24
+  },
+  {
+   "nama": "Kantor Wilayah Ditjenpas Sulawesi Tengah",
+   "wilayah": "Sulawesi Tengah",
+   "tipe": "B",
+   "provinsi": [
+    "Sulawesi Tengah"
+   ],
+   "urutan": 25
+  },
+  {
+   "nama": "Kantor Wilayah Ditjenpas Sulawesi Tenggara",
+   "wilayah": "Sulawesi Tenggara",
+   "tipe": "B",
+   "provinsi": [
+    "Sulawesi Tenggara"
+   ],
+   "urutan": 26
+  },
+  {
+   "nama": "Kantor Wilayah Ditjenpas Gorontalo",
+   "wilayah": "Gorontalo",
+   "tipe": "B",
+   "provinsi": [
+    "Gorontalo"
+   ],
+   "urutan": 27
+  },
+  {
+   "nama": "Kantor Wilayah Ditjenpas Sulawesi Barat",
+   "wilayah": "Sulawesi Barat",
+   "tipe": "B",
+   "provinsi": [
+    "Sulawesi Barat"
+   ],
+   "urutan": 28
+  },
+  {
+   "nama": "Kantor Wilayah Ditjenpas Nusa Tenggara Barat",
+   "wilayah": "Nusa Tenggara Barat",
+   "tipe": "B",
+   "provinsi": [
+    "Nusa Tenggara Barat"
+   ],
+   "urutan": 29
+  },
+  {
+   "nama": "Kantor Wilayah Ditjenpas Nusa Tenggara Timur",
+   "wilayah": "Nusa Tenggara Timur",
+   "tipe": "B",
+   "provinsi": [
+    "Nusa Tenggara Timur"
+   ],
+   "urutan": 30
+  },
+  {
+   "nama": "Kantor Wilayah Ditjenpas Maluku",
+   "wilayah": "Maluku",
+   "tipe": "B",
+   "provinsi": [
+    "Maluku"
+   ],
+   "urutan": 31
+  },
+  {
+   "nama": "Kantor Wilayah Ditjenpas Maluku Utara",
+   "wilayah": "Maluku Utara",
+   "tipe": "B",
+   "provinsi": [
+    "Maluku Utara"
+   ],
+   "urutan": 32
+  },
+  {
+   "nama": "Kantor Wilayah Ditjenpas Papua Barat",
+   "wilayah": "Papua Barat",
+   "tipe": "B",
+   "provinsi": [
+    "Papua Barat",
+    "Papua Barat Daya"
+   ],
+   "urutan": 33
+  }
+ ]
+}

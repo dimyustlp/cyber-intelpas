@@ -18,7 +18,7 @@ import { ikon } from '../lib/ikon.js'
 import { belumTerpetakan } from '../lib/unit-terpetakan.js'
 import { ringkasan, deretTren, bulanWib, dalamBulan } from '../lib/hitung.js'
 import { EMBER, BELUM } from '../lib/sentimen.js'
-import { punyaIzin } from '../lib/peran.js'
+import { punyaIzin, adalahEksternal } from '../lib/peran.js'
 import { acuanKunjungan, perubahanSejak } from '../lib/sejak-terakhir.js'
 import { unitNegatifTerbaru } from '../lib/unit-negatif-terbaru.js'
 
@@ -379,7 +379,75 @@ export function halamanDasbor({ keadaan, isi }) {
   baganUrgensi(document.getElementById('bagan-urgensi'), sebaran(berita, 'urgensi'))
   baganBatang(document.getElementById('bagan-kategori'), sebaran(berita, 'kategori'))
 
-  return { judul: 'Dasbor Eksekutif', sub: `${tanggalPanjang(new Date())} · ${bulan.label}` }
+  /*
+     Admin kanwil membuka dasbor yang sama sejak 3 November 2026. Isinya sudah
+     terbatas pada wilayahnya — peladen yang memotong — jadi yang ditambahkan
+     di sini hanya nama wilayahnya di subjudul dan kotak Cari UPT, yang
+     menjawab pertanyaan pertama setiap kanwil: UPT ini di bawah kanwil mana,
+     dan sudah berapa kali diberitakan.
+  */
+  const wilayah = adalahEksternal(keadaan.profil?.role) ? keadaan.profil?.assigned_kanwil : null
+  pasangCariUpt(isi, semua, wilayah)
+
+  return {
+    judul: 'Dasbor Eksekutif',
+    sub: `${wilayah ? `${String(wilayah).replace(/^Kantor Wilayah Ditjenpass+/i, 'Kanwil ')} · ` : ''}${tanggalPanjang(new Date())} · ${bulan.label}`,
+  }
+}
+
+/* ------------------------------------------------------------- cari UPT */
+
+let indukUptDasbor = null
+
+/**
+ * Kotak Cari UPT: nama UPT → kanwilnya (data induk) dan jumlah beritanya di
+ * arsip yang termuat. Disisipkan di puncak dasbor, bukan bagian tata letak
+ * utamanya, supaya dasbor pusat tidak berubah bentuk.
+ */
+function pasangCariUpt(isi, semua, wilayah) {
+  const wadah = document.createElement('div')
+  wadah.className = 'cari-upt'
+  wadah.innerHTML = kartu({
+    judul: 'Cari UPT',
+    ket: wilayah ? 'UPT di wilayah Anda dan jumlah pemberitaannya.' : 'Ketik nama UPT untuk melihat kanwilnya dan jumlah pemberitaannya.',
+    isi: `<input class="masukan" type="search" data-peran="cari-upt" placeholder="mis. Lapas Kelas I Medan" aria-label="Cari UPT">
+      <div data-peran="hasil-upt" class="mini-teks" style="margin-top:8px"></div>`,
+  })
+  const tumpuk = isi.querySelector('.tumpuk') || isi
+  tumpuk.prepend(wadah)
+
+  const hitung = new Map()
+  for (const b of semua) {
+    if (belumTerpetakan(b.nama_upt)) continue
+    const h = hitung.get(b.nama_upt) || { total: 0, negatif: 0 }
+    h.total += 1
+    if (b.sentimen === 'Negatif') h.negatif += 1
+    hitung.set(b.nama_upt, h)
+  }
+
+  const masukan = wadah.querySelector('[data-peran="cari-upt"]')
+  const hasil = wadah.querySelector('[data-peran="hasil-upt"]')
+  const tampilkan = async () => {
+    const kata = masukan.value.trim().toLowerCase()
+    if (kata.length < 3) { hasil.innerHTML = '<span class="samar-teks">Ketik paling sedikit tiga huruf.</span>'; return }
+    if (!indukUptDasbor) {
+      try {
+        const { ambil } = await import('../lib/api.js')
+        indukUptDasbor = await ambil('upt', { select: 'nama_upt,kanwil,provinsi', limit: 1000 }) || []
+      } catch { indukUptDasbor = [] }
+    }
+    const sumber = indukUptDasbor.length ? indukUptDasbor : [...hitung.keys()].map((n) => ({ nama_upt: n, kanwil: wilayah || '-' }))
+    const cocok = sumber.filter((u) => u.nama_upt.toLowerCase().includes(kata)
+      && (!wilayah || u.kanwil === wilayah)).slice(0, 12)
+    hasil.innerHTML = cocok.length
+      ? `<table class="tabel"><thead><tr><th>UPT</th><th>Kantor Wilayah</th><th>Berita</th><th>Negatif</th></tr></thead><tbody>${cocok.map((u) => {
+        const h = hitung.get(u.nama_upt) || { total: 0, negatif: 0 }
+        return `<tr><td>${amankan(u.nama_upt)}</td><td>${amankan(u.kanwil || '-')}</td><td>${h.total}</td><td>${h.negatif}</td></tr>`
+      }).join('')}</tbody></table>`
+      : `<span class="samar-teks">Tidak ada UPT${wilayah ? ' di wilayah ini' : ''} yang cocok.</span>`
+  }
+  let tunda
+  masukan.addEventListener('input', () => { clearTimeout(tunda); tunda = setTimeout(tampilkan, 250) })
 }
 
 /* ------------------------------------------------------------- potongan */

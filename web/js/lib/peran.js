@@ -134,6 +134,7 @@ export const IZIN = {
     'lihat_saran_tindak', 'catat_tindak_berita',
     'setujui_laporan', 'publikasi_laporan', 'lihat_peringatan', 'lihat_tindak_lanjut',
     'kelola_tindak_lanjut', 'lihat_lonjakan',
+    'analisis_berita', 'lihat_penanganan', 'lihat_disposisi',
   ],
 
   media_intelligence_analyst: [
@@ -146,6 +147,7 @@ export const IZIN = {
     'lihat_laporan_lapangan', 'lihat_sinkronisasi',
     'lihat_ruang_analis', 'kelola_aturan', 'lihat_lonjakan',
     'lihat_saran_tindak', 'catat_tindak_berita',
+    'analisis_berita', 'lihat_penanganan', 'lihat_disposisi',
   ],
 
   news_data_operator: [
@@ -171,6 +173,7 @@ export const IZIN = {
     'lihat_tindak_lanjut', 'kelola_tindak_lanjut', 'perbarui_tindak_lanjut',
     'lihat_ruang_analis', 'kelola_aturan',
     'lihat_saran_tindak', 'catat_tindak_berita',
+    'analisis_berita', 'lihat_penanganan', 'lihat_disposisi',
   ],
 
   /*
@@ -191,6 +194,11 @@ export const IZIN = {
     // Menerbitkan akun penelaah unit di wilayahnya sendiri. Batasnya ditegakkan
     // Edge Function, bukan izin ini — izin ini hanya menentukan menunya muncul.
     'kelola_pengguna_wilayah',
+    /* Sejak 3 November 2026: Dasbor Eksekutif berisi berita wilayahnya sendiri
+       (yang memotong RLS, bukan halaman), analisis kasus per kasus, dan
+       Tindak Lanjut — meneruskan klarifikasi ke UPT dan mencatat disposisi
+       pimpinan wilayah. */
+    'lihat_dasbor_kanwil', 'analisis_berita', 'lihat_penanganan', 'lihat_disposisi',
   ],
 
   /*
@@ -205,6 +213,8 @@ export const IZIN = {
   upt_penelaah: [
     'lihat_panduan',
     'lihat_dasbor_unit', 'lihat_berita_unit', 'telaah_wilayah', 'tanggapi_berita_unit',
+    // Hanya Klarifikasi UPT; disposisi pimpinan bukan urusan unit.
+    'lihat_penanganan',
   ],
 }
 
@@ -310,6 +320,8 @@ export const MENU = [
     grup: 'Ruang Analis',
     butir: [
       { id: 'ruang', label: 'Ruang Analis', ikon: 'pengguna', izin: 'lihat_ruang_analis' },
+      // Analisis kasus per kasus; hasilnya masuk Tindak Lanjut (3 November 2026).
+      { id: 'analisis-berita', label: 'Analisis Berita', ikon: 'kasus', izin: 'analisis_berita' },
       { id: 'cari', label: 'Pencarian Lanjutan', ikon: 'cari', izin: 'lihat_berita' },
     ],
   },
@@ -348,7 +360,9 @@ export const MENU = [
       { id: 'lapangan', label: 'Verifikasi Lapangan', ikon: 'lapangan', izin: 'lihat_penugasan' },
       { id: 'evaluasi', label: 'Evaluasi dan Rekomendasi', ikon: 'tindak', izin: 'analisis_kasus' },
       { id: 'keputusan', label: 'Keputusan Pimpinan', ikon: 'keputusan', izin: 'putuskan_kasus' },
-      { id: 'tindak', label: 'Tindak Lanjut', ikon: 'tindak', izin: 'lihat_tindak_lanjut' },
+      /* Tiga tab sejak 3 November 2026: Klarifikasi UPT, Disposisi Pimpinan,
+         dan Tindak Lanjut Kasus yang lama (pages/tindak-lanjut.js). */
+      { id: 'tindak-lanjut', label: 'Tindak Lanjut', ikon: 'tindak', izin: 'lihat_tindak_lanjut' },
     ],
   },
   {
@@ -396,7 +410,11 @@ export const MENU_KANWIL = [
   {
     grup: 'Ruang Wilayah',
     butir: [
+      // Dasbor Eksekutif yang sama dengan pusat, berisi berita wilayah ini saja.
+      { id: 'dasbor', label: 'Dasbor Eksekutif', ikon: 'dasbor', izin: 'lihat_dasbor_kanwil' },
       { id: 'kanwil-dasbor', label: 'Ringkasan Wilayah', ikon: 'dasbor', izin: 'lihat_dasbor_wilayah' },
+      { id: 'analisis-berita', label: 'Analisis Berita', ikon: 'kasus', izin: 'analisis_berita' },
+      { id: 'tindak-lanjut', label: 'Tindak Lanjut', ikon: 'tindak', izin: 'lihat_penanganan', lencana: 'penanganan' },
       { id: 'input', label: 'Kirim Berita', ikon: 'tambah', izin: 'buat_berita' },
       { id: 'wilayah-telaah', label: 'Telaah Wilayah', ikon: 'centang', izin: 'telaah_wilayah', lencana: 'telaahWilayah' },
       { id: 'wilayah-berita', label: 'Berita Wilayah', ikon: 'berita', izin: 'lihat_berita_wilayah' },
@@ -428,6 +446,7 @@ export const MENU_UPT = [
     grup: 'Ruang Unit',
     butir: [
       { id: 'upt-dasbor', label: 'Ringkasan Unit', ikon: 'dasbor', izin: 'lihat_dasbor_unit' },
+      { id: 'klarifikasi', label: 'Klarifikasi UPT', ikon: 'centang', izin: 'lihat_penanganan', lencana: 'penanganan' },
       { id: 'wilayah-telaah', label: 'Telaah & Tanggapan', ikon: 'centang', izin: 'telaah_wilayah', lencana: 'telaahWilayah' },
       { id: 'wilayah-berita', label: 'Berita Unit', ikon: 'berita', izin: 'lihat_berita_unit' },
     ],
@@ -551,6 +570,11 @@ const SYARAT_TAMBAHAN = {
   sinkronisasi: 'lihat_sinkronisasi',
   /* Nama lama halaman berita daerah, dipertahankan untuk tautan tersimpan. */
   'kanwil-riwayat': 'lihat_berita_wilayah',
+  /* Tab Tindak Lanjut (pages/tindak-lanjut.js). `tindak` kehilangan butir
+     menunya pada 3 November 2026 dan tetap menuntut izin lamanya. */
+  tindak: 'lihat_tindak_lanjut',
+  klarifikasi: 'lihat_penanganan',
+  disposisi: 'lihat_disposisi',
 }
 
 /**

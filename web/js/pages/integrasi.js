@@ -285,6 +285,29 @@ function riwayat(baris) {
 
 /* ------------------------------------------------------------------ halaman */
 
+/* ------------------------------------------------- Telegram per kanwil */
+
+/** Singkatan baku kanwil untuk nama secret bot: TELEGRAM_BOT_TOKEN_<SINGKATAN>. */
+const SINGKATAN_KANWIL = {
+  'Aceh': 'ACEH', 'Sumatera Utara': 'SUMUT', 'Sumatera Barat': 'SUMBAR', 'Riau': 'RIAU',
+  'Kepulauan Riau': 'KEPRI', 'Jambi': 'JAMBI', 'Sumatera Selatan': 'SUMSEL',
+  'Kepulauan Bangka Belitung': 'BABEL', 'Bangka Belitung': 'BABEL', 'Bengkulu': 'BENGKULU',
+  'Lampung': 'LAMPUNG', 'DKI Jakarta': 'DKI', 'Jawa Barat': 'JABAR', 'Banten': 'BANTEN',
+  'Jawa Tengah': 'JATENG', 'DI Yogyakarta': 'DIY', 'Daerah Istimewa Yogyakarta': 'DIY',
+  'Jawa Timur': 'JATIM', 'Bali': 'BALI', 'Nusa Tenggara Barat': 'NTB', 'Nusa Tenggara Timur': 'NTT',
+  'Kalimantan Barat': 'KALBAR', 'Kalimantan Tengah': 'KALTENG', 'Kalimantan Selatan': 'KALSEL',
+  'Kalimantan Timur': 'KALTIM', 'Sulawesi Utara': 'SULUT', 'Gorontalo': 'GORONTALO',
+  'Sulawesi Tengah': 'SULTENG', 'Sulawesi Barat': 'SULBAR', 'Sulawesi Selatan': 'SULSEL',
+  'Sulawesi Tenggara': 'SULTRA', 'Maluku': 'MALUKU', 'Maluku Utara': 'MALUT', 'Papua': 'PAPUA',
+  'Papua Barat': 'PAPBAR',
+}
+
+export function secretBotKanwil(kanwil) {
+  const wilayah = String(kanwil || '').replace(/^Kantor Wilayah Ditjenpas\s+/i, '').trim()
+  const kode = SINGKATAN_KANWIL[wilayah] || wilayah.toUpperCase().replace(/[^A-Z0-9]/g, '')
+  return `TELEGRAM_BOT_TOKEN_${kode}`
+}
+
 export function halamanIntegrasi({ keadaan, isi }) {
   const demo = keadaan.demo
   const peran = keadaan.profil?.role
@@ -294,6 +317,9 @@ export function halamanIntegrasi({ keadaan, isi }) {
   // Diagnosa memanggil Telegram; menjalankannya ulang setiap kali layar
   // digambar berarti memanggil Telegram setiap kali seseorang mengetik.
   const lokal = { diagnosa: demo ? DIAGNOSA_DEMO : null, galat: null, sibuk: false, kiriman: demo ? KIRIMAN_DEMO : [] }
+  // Telegram per kanwil: daftar kanwil, rute yang sudah tercatat, dan hasil
+  // pemeriksaan bot kanwil yang sedang dipilih.
+  const perKanwil = { kanwil: [], rute: [], pilih: '', secret: '', hasil: null, sibuk: false }
 
   function gambar() {
     const d = lokal.diagnosa
@@ -333,12 +359,107 @@ export function halamanIntegrasi({ keadaan, isi }) {
         })}
 
         ${kartu({
+          judul: 'Grup Telegram per kanwil',
+          ket: 'Satu bot dan satu grup untuk tiap kanwil. Grup kanwil menerima pemberitahuan Klarifikasi UPT '
+            + '(belum/sudah menginput) dan pengingat pukul 08.00 dan 14.00 WIB.',
+          isi: panelKanwil(),
+        })}
+
+        ${kartu({
           judul: 'Riwayat pengiriman',
           ket: 'Tiga puluh pengiriman terakhir, berhasil maupun gagal',
           isi: riwayat(lokal.kiriman),
         })}
       </div>`
   }
+
+  function panelKanwil() {
+    const adaRute = new Set(perKanwil.rute.map((r) => r.kanwil))
+    const h = perKanwil.hasil
+    const pendek = (k) => String(k || '').replace(/^Kantor Wilayah Ditjenpas\s+/i, '')
+    return `
+      <ol class="mini-teks" style="margin:0 0 10px;padding-left:18px;line-height:1.6">
+        <li>Buat bot lewat <b>@BotFather</b> (/newbot), lalu salin kuncinya.</li>
+        <li>Tempel kuncinya di Supabase › Edge Functions › Secrets dengan nama yang tertera di bawah.
+          Jangan kirim kunci lewat obrolan.</li>
+        <li>Buat grup Telegram kanwil, masukkan botnya, lalu kirim satu pesan apa saja di grup itu.</li>
+        <li>Pilih kanwilnya di bawah, tekan <b>Periksa bot</b>, lalu <b>Daftarkan</b> grup yang terdeteksi.</li>
+      </ol>
+      <div class="sip-kisi">
+        <label><span class="label-mono">Kanwil</span>
+          <select class="pilihan" data-kanwil="pilih">
+            <option value="">Pilih kanwil</option>
+            ${perKanwil.kanwil.map((k) => `<option value="${amankan(k.nama)}"${k.nama === perKanwil.pilih ? ' selected' : ''}>${amankan(pendek(k.nama))}${adaRute.has(k.nama) ? ' ✓' : ''}</option>`).join('')}
+          </select></label>
+        <label><span class="label-mono">Nama secret bot</span>
+          <input class="masukan mono" data-kanwil="secret" value="${amankan(perKanwil.secret)}" placeholder="TELEGRAM_BOT_TOKEN_ACEH"></label>
+        <label><span class="label-mono">chat_id grup (bila tidak terdeteksi)</span>
+          <input class="masukan mono" data-kanwil="chat" placeholder="-100…"></label>
+      </div>
+      <div class="baris gap-6" style="margin-top:8px;flex-wrap:wrap">
+        ${tombol({ label: perKanwil.sibuk ? 'Memeriksa…' : 'Periksa bot', ikon: 'segar', gaya: 'utama', kecil: true, aksi: 'kanwil-periksa', nonaktif: perKanwil.sibuk || !perKanwil.pilih })}
+        ${tombol({ label: 'Daftarkan chat_id', ikon: 'tambah', kecil: true, aksi: 'kanwil-daftar-manual', nonaktif: !perKanwil.pilih })}
+      </div>
+      ${h ? `<div style="margin-top:10px">${h.galat
+        ? pesanSistem(`<b>${amankan(h.galat)}</b>${h.petunjuk ? ` ${amankan(h.petunjuk)}` : ''}`, 'kritis', 'peringatan')
+        : pesanSistem(`Bot <b>@${amankan(h.bot?.pengguna || '?')}</b> hidup (secret ${amankan(h.bot_dipakai)}). `
+          + `${(h.grup_terdeteksi || []).length ? 'Grup yang terdeteksi:' : 'Belum ada grup terdeteksi — kirim satu pesan di grup, lalu periksa lagi.'}`, 'positif', 'centang')}
+        ${(h.grup_terdeteksi || []).filter((g) => g.jenis !== 'private').map((g) => `
+          <div class="baris gap-6" style="margin-top:6px">
+            <span>${amankan(g.nama)} <span class="mono samar-teks">${amankan(g.chat_id)}</span></span>
+            ${tombol({ label: 'Daftarkan untuk kanwil ini', ikon: 'tambah', kecil: true, aksi: `kanwil-daftar:${g.chat_id}` })}
+          </div>`).join('')}</div>` : ''}
+      <table class="tabel" style="margin-top:12px">
+        <thead><tr><th>Kanwil</th><th>Grup (chat_id)</th><th>Bot</th><th>Status</th><th></th></tr></thead>
+        <tbody>${perKanwil.rute.length ? perKanwil.rute.map((r) => `<tr>
+          <td>${amankan(pendek(r.kanwil))}</td>
+          <td class="mono">${amankan(r.chat_id)}</td>
+          <td class="mono">${amankan(r.bot_secret || 'TELEGRAM_BOT_TOKEN')}</td>
+          <td>${r.aktif ? keping('Aktif', 'positif') : keping('Nonaktif', 'netral')}</td>
+          <td>${tombol({ label: 'Uji', ikon: 'kirim', kecil: true, aksi: `uji:${r.chat_id}` })}</td></tr>`).join('')
+          : '<tr><td colspan="5" class="samar-teks">Belum ada grup kanwil terdaftar.</td></tr>'}</tbody>
+      </table>`
+  }
+
+  async function muatKanwil() {
+    if (demo) return
+    try {
+      const [kanwil, rute] = await Promise.all([
+        ambil('kanwil', { select: 'nama,wilayah,urutan', order: 'urutan.asc' }),
+        ambil('notifikasi_rute', { select: 'id,kanwil,chat_id,bot_secret,aktif,keterangan', tingkat: 'eq.kanwil', order: 'kanwil.asc' }),
+      ])
+      perKanwil.kanwil = kanwil || []
+      perKanwil.rute = rute || []
+    } catch {
+      perKanwil.rute = []
+    }
+  }
+
+  async function periksaKanwil() {
+    perKanwil.sibuk = true; perKanwil.hasil = null; gambar()
+    try {
+      perKanwil.hasil = await panggilEdge('telegram-kirim', { aksi: 'diagnosa', bot_secret: perKanwil.secret })
+    } catch (galat) {
+      perKanwil.hasil = galat?.rinci && typeof galat.rinci === 'object' ? galat.rinci : { galat: pesanRamah(galat) }
+    } finally {
+      perKanwil.sibuk = false; gambar()
+    }
+  }
+
+  async function daftarKanwil(chatId) {
+    if (!perKanwil.pilih || !chatId) { roti('Pilih kanwil dan isi chat_id grupnya.', 'sedang'); return }
+    try {
+      const hasil = await panggilEdge('telegram-kirim', {
+        aksi: 'daftarkan_rute', kanwil: perKanwil.pilih, chat_id: chatId, bot_secret: perKanwil.secret,
+      })
+      roti(`Grup ${hasil?.grup || chatId} terdaftar untuk ${pendekKanwil(perKanwil.pilih)}.`, 'positif', 5000)
+      await muatKanwil(); gambar()
+    } catch (galat) {
+      roti(galat?.rinci?.galat || pesanRamah(galat), 'kritis', 7000)
+    }
+  }
+
+  function pendekKanwil(k) { return String(k || '').replace(/^Kantor Wilayah Ditjenpas\s+/i, 'Kanwil ') }
 
   /** Ringkasan sifat kunci. Sengaja tanpa satu pun karakter dari kuncinya. */
   function keteranganKunci(d) {
@@ -470,6 +591,22 @@ export function halamanIntegrasi({ keadaan, isi }) {
     else if (nama === 'daftarkan') daftarkan(arg)
     else if (nama === 'uji') kirimUji(arg)
     else if (nama === 'matikan') matikan(arg)
+    else if (nama === 'kanwil-periksa') periksaKanwil()
+    else if (nama === 'kanwil-daftar') daftarKanwil(aksi.slice('kanwil-daftar:'.length))
+    else if (nama === 'kanwil-daftar-manual') daftarKanwil(isi.querySelector('[data-kanwil="chat"]')?.value.trim())
+  })
+  isi.addEventListener('change', (ev) => {
+    const el = ev.target.closest('[data-kanwil]')
+    if (!el) return
+    if (el.dataset.kanwil === 'pilih') {
+      perKanwil.pilih = el.value
+      const ada = perKanwil.rute.find((r) => r.kanwil === el.value && r.bot_secret)
+      perKanwil.secret = ada?.bot_secret || (el.value ? secretBotKanwil(el.value) : '')
+      perKanwil.hasil = null
+      gambar()
+    } else if (el.dataset.kanwil === 'secret') {
+      perKanwil.secret = el.value.trim().toUpperCase()
+    }
   })
 
   gambar()
@@ -477,7 +614,7 @@ export function halamanIntegrasi({ keadaan, isi }) {
   // Pemeriksaan pertama dijalankan sendiri. Halaman yang membuka dengan
   // keadaan "belum diperiksa" memaksa setiap orang menekan satu tombol sebelum
   // melihat apa pun, dan tombol yang selalu ditekan lebih baik tidak ada.
-  if (!demo) { periksa() }
+  if (!demo) { periksa(); muatKanwil().then(gambar) }
 
   return {
     judul: 'Integrasi dan Kunci',

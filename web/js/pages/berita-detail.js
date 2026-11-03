@@ -498,6 +498,9 @@ export function halamanBeritaDetail({ keadaan, isi }) {
           ${bolehSaran ? kartu({
             judul: 'Rekomendasi tindak lanjut',
             ket: 'Perlu ditangani langsung, cukup diklarifikasi, atau diperiksa dulu.',
+            // Jalan ke analisis kasus per kasus: hasilnya diteruskan sebagai
+            // Klarifikasi UPT atau Disposisi Pimpinan (3 November 2026).
+            aksi: tombol({ label: 'Analisis & teruskan', ikon: 'kasus', kecil: true, gaya: 'utama', halaman: 'analisis-berita', data: { fokus: b.id } }),
             isi: `<div id="detail-tindak">${panelTindak(b, keadaan, peristiwa?.jumlah_media || 1)}</div>`,
           }) : ''}
 

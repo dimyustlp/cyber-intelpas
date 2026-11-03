@@ -112,7 +112,11 @@ const HALAMAN = {
   lapangan: () => import('./pages/lapangan.js').then((m) => m.halamanLapangan),
   evaluasi: () => import('./pages/evaluasi.js').then((m) => m.halamanEvaluasi),
   keputusan: () => import('./pages/keputusan.js').then((m) => m.halamanKeputusan),
-  tindak: () => import('./pages/tindak.js').then((m) => m.halamanTindak),
+  tindak: () => import('./pages/tindak-lanjut.js').then((m) => m.halamanTindakLanjut),
+  'tindak-lanjut': () => import('./pages/tindak-lanjut.js').then((m) => m.halamanTindakLanjut),
+  klarifikasi: () => import('./pages/tindak-lanjut.js').then((m) => m.halamanTindakLanjut),
+  disposisi: () => import('./pages/tindak-lanjut.js').then((m) => m.halamanTindakLanjut),
+  'analisis-berita': () => import('./pages/analisis-berita.js').then((m) => m.halamanAnalisisBerita),
   koordinat: () => import('./pages/pengguna-data.js').then((m) => m.halamanPenggunaData),
   audit: () => import('./pages/pengguna-data.js').then((m) => m.halamanPenggunaData),
   kesehatan: () => import('./pages/pemantauan-sistem.js').then((m) => m.halamanPemantauanSistem),
@@ -292,6 +296,9 @@ const INDUK_HALAMAN = {
   koordinat: 'pengguna-data',
   integrasi: 'pengguna-data',
   audit: 'pengguna-data',
+  tindak: 'tindak-lanjut',
+  klarifikasi: 'tindak-lanjut',
+  disposisi: 'tindak-lanjut',
 }
 
 function daftarMenu(peran) {
@@ -813,7 +820,8 @@ document.addEventListener('click', async (ev) => {
       try { saring = JSON.parse(nav.dataset.saring) } catch { saring = null }
     }
 
-    keHalaman(nav.dataset.halaman, { saring })
+    // `data-fokus` membawa satu baris tujuan, mis. berita yang akan dianalisis.
+    keHalaman(nav.dataset.halaman, { saring, fokus: nav.dataset.fokus || null })
     return
   }
 
@@ -1017,7 +1025,29 @@ async function muatBerita() {
 export function hitungUlang() {
   keadaan.dalamLingkup = keadaan.berita.filter((b) => b.kategori !== 'Di Luar Lingkup')
   keadaan.luarLingkup = keadaan.berita.length - keadaan.dalamLingkup.length
-  keadaan.hitungan = lencana(keadaan.berita)
+  // Lencana Tindak Lanjut dihitung dari tabel penanganan, bukan dari berita;
+  // nilainya dipertahankan sampai pemuatan berikutnya selesai.
+  keadaan.hitungan = { ...lencana(keadaan.berita), penanganan: keadaan.hitungan?.penanganan || 0 }
+}
+
+/**
+ * Lencana menu Tindak Lanjut / Klarifikasi UPT: pekerjaan yang sedang
+ * menunggu pemegang peran ini — UPT: klarifikasi yang belum diinput; kanwil
+ * dan pusat: yang belum diteruskan, klarifikasi yang menunggu dinilai, dan
+ * disposisi yang belum dicatat. Kegagalan memuatnya hanya mengosongkan
+ * lencana, tidak menjatuhkan layar.
+ */
+async function hitungPenangananLencana() {
+  if (!bolehBuka(keadaan.profil?.role, 'klarifikasi')) return
+  try {
+    const { muatPenanganan, hitungPenanganan } = await import('./lib/penanganan.js')
+    const daftar = await muatPenanganan({ paksa: true })
+    keadaan.hitungan = { ...keadaan.hitungan, penanganan: hitungPenanganan(daftar, { peran: keadaan.profil?.role }).tugasSaya }
+    // Hanya menu yang digambar ulang: halaman yang sedang diisi tidak boleh
+    // kehilangan isiannya karena sebuah lencana selesai dihitung.
+    const nav = document.querySelector('.nav')
+    if (nav && keadaan.profil) nav.innerHTML = daftarMenu(keadaan.profil.role)
+  } catch { /* lencana kosong */ }
 }
 
 async function segarkan() {
@@ -1086,6 +1116,7 @@ async function segarkan() {
   // kebetulan memuat kata "lapas" bukan pemberitaan sama sekali.
   hitungUlang()
   gambar()
+  hitungPenangananLencana()
 }
 
 async function mulaiSesi(profil) {

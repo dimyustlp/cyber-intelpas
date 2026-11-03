@@ -35,6 +35,39 @@
 
 const TELEGRAM = 'https://api.telegram.org'
 
+/**
+ * Satu bot per kanwil (3 November 2026).
+ *
+ * Bot pusat memakai TELEGRAM_BOT_TOKEN. Grup kanwil boleh memakai bot sendiri,
+ * supaya gangguan atau penggantian kunci daerah tidak menghentikan
+ * pemberitahuan nasional. Kuncinya disimpan sebagai secret Edge Function
+ * bernama TELEGRAM_BOT_TOKEN_<KODE> (mis. TELEGRAM_BOT_TOKEN_ACEH), dan NAMA
+ * secret-nya — bukan nilainya — dicatat di notifikasi_rute.bot_secret untuk
+ * grup itu. Sejak September 2026 pilihan bot Jatim ditulis langsung di kode
+ * menurut chat_id; aturan itu dipertahankan sebagai cadangan.
+ */
+const CHAT_ID_JATIM = '-5409449489'
+const POLA_SECRET = /^TELEGRAM_BOT_TOKEN(_[A-Z0-9]+)?$/
+
+async function pilihKunciBot(badan: Record<string, unknown>) {
+  const pakai = (nama: string) => ({ nilai: Deno.env.get(nama) ?? '', nama })
+  const diminta = String(badan.bot_secret ?? '').trim()
+  if (diminta) {
+    if (!POLA_SECRET.test(diminta)) throw new Error('Nama secret bot harus berbentuk TELEGRAM_BOT_TOKEN_<KODE>.')
+    return pakai(diminta)
+  }
+  const chatId = String(badan.chat_id ?? '').trim()
+  if (chatId) {
+    try {
+      const rute = await keDb(`notifikasi_rute?chat_id=eq.${encodeURIComponent(chatId)}&bot_secret=not.is.null&select=bot_secret&limit=1`)
+      const nama = String(rute?.[0]?.bot_secret ?? '')
+      if (POLA_SECRET.test(nama)) return pakai(nama)
+    } catch { /* jatuh ke aturan cadangan */ }
+    if (chatId === CHAT_ID_JATIM) return pakai('TELEGRAM_BOT_TOKEN_JATIM')
+  }
+  return pakai('TELEGRAM_BOT_TOKEN')
+}
+
 const kepalaCors = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-sync-token',
@@ -419,15 +452,22 @@ Deno.serve(async (permintaan) => {
     return jawab({ galat: `Peran Anda tidak berhak menjalankan aksi "${aksi}".` }, 403)
   }
 
-  const kunciBot = Deno.env.get('TELEGRAM_BOT_TOKEN') ?? ''
+  let pilihanBot: { nilai: string; nama: string }
+  try {
+    pilihanBot = await pilihKunciBot(badan)
+  } catch (galat) {
+    return jawab({ galat: String((galat as Error).message ?? galat) }, 400)
+  }
+  const kunciBot = pilihanBot.nilai
   if (!kunciBot) {
     return jawab({
-      galat: 'TELEGRAM_BOT_TOKEN belum diisi.',
+      galat: `${pilihanBot.nama} belum diisi.`,
+      bot_dipakai: pilihanBot.nama,
       terpasang: false,
       tersambung: false,
       petunjuk:
         'Tempelkan kunci bot pada Supabase → Project Settings → Edge Functions → Secrets '
-        + 'dengan nama TELEGRAM_BOT_TOKEN, lalu ulangi permintaan ini.',
+        + `dengan nama ${pilihanBot.nama}, lalu ulangi permintaan ini.`,
     }, 503)
   }
 
@@ -529,6 +569,24 @@ Deno.serve(async (permintaan) => {
         }),
       )
 
+      // Grup yang sedang disiapkan (belum tersimpan) bisa diperiksa langsung
+      // lewat chat_id, tanpa harus didaftarkan lebih dulu.
+      const chatDiminta = String(badan.chat_id ?? '').trim()
+      let grupDiminta: Record<string, unknown> | null = null
+      if (chatDiminta) {
+        try {
+          const obrolan = await telegram(kunciBot, `getChat?chat_id=${encodeURIComponent(chatDiminta)}`) as Record<string, any>
+          grupDiminta = {
+            chat_id: chatDiminta,
+            terjangkau: true,
+            nama_di_telegram: obrolan?.title ?? obrolan?.username ?? obrolan?.first_name ?? null,
+            jenis: obrolan?.type ?? null,
+          }
+        } catch (galat) {
+          grupDiminta = { chat_id: chatDiminta, terjangkau: false, sebab: sensor(String((galat as Error).message ?? galat), kunciBot) }
+        }
+      }
+
       const tidakTerjangkau = diperiksa.filter((t) => !t.terjangkau)
 
       return jawab({
@@ -537,6 +595,8 @@ Deno.serve(async (permintaan) => {
         bot: { nama: bot?.first_name, pengguna: bot?.username, id: bot?.id },
         pemeriksaan_kunci: bentuk,
         grup_terdeteksi: [...grup.values()],
+        bot_dipakai: pilihanBot.nama,
+        grup_diminta: grupDiminta,
         grup_tersimpan: diperiksa,
         /*
            Satu kalimat yang menyebut keadaan yang paling menentukan lebih
@@ -556,6 +616,34 @@ Deno.serve(async (permintaan) => {
                 + 'kirim satu pesan apa saja di grup itu, lalu ulangi diagnosa.'
               : 'Grup di atas sudah bisa dijangkau bot ini.',
       })
+    }
+
+    /* ------------------------------------------------- rute grup kanwil */
+    /*
+       Mendaftarkan grup Telegram sebuah kanwil sebagai tujuan pemberitahuan
+       kanwil (notifikasi_rute, tingkat kanwil), lengkap dengan nama secret
+       botnya. Grupnya diperiksa dulu lewat getChat dengan bot itu: grup yang
+       tidak terjangkau tidak didaftarkan, sebab rute yang tercatat tetapi
+       tidak pernah sampai lebih buruk daripada rute yang tidak ada.
+    */
+    if (aksi === 'daftarkan_rute') {
+      const chatId = String(badan.chat_id ?? '').trim()
+      const kanwil = String(badan.kanwil ?? '').trim()
+      if (!chatId || !kanwil) return jawab({ galat: 'chat_id dan kanwil wajib diisi.' }, 400)
+      const adaKanwil = await keDb(`kanwil?nama=eq.${encodeURIComponent(kanwil)}&select=nama&limit=1`)
+      if (!adaKanwil?.length) return jawab({ galat: `Kanwil "${kanwil}" tidak ada di data induk.` }, 400)
+      const obrolan = await telegram(kunciBot, `getChat?chat_id=${encodeURIComponent(chatId)}`) as Record<string, any>
+      const isi = {
+        tingkat: 'kanwil', kanwil, chat_id: chatId, aktif: badan.aktif ?? true,
+        bot_secret: pilihanBot.nama === 'TELEGRAM_BOT_TOKEN' ? null : pilihanBot.nama,
+        keterangan: String(badan.keterangan ?? `Grup ${obrolan?.title ?? chatId} — didaftarkan ${oleh}`),
+        updated_at: new Date().toISOString(),
+      }
+      const sudah = await keDb(`notifikasi_rute?chat_id=eq.${encodeURIComponent(chatId)}&tingkat=eq.kanwil&select=id`)
+      const hasil = sudah?.length
+        ? await keDb(`notifikasi_rute?id=eq.${sudah[0].id}`, { method: 'PATCH', body: JSON.stringify(isi) })
+        : await keDb('notifikasi_rute', { method: 'POST', body: JSON.stringify(isi) })
+      return jawab({ tersimpan: hasil?.[0] ?? isi, grup: obrolan?.title ?? null, bot_dipakai: pilihanBot.nama, oleh })
     }
 
     /* ---------------------------------------------------------- daftarkan */
@@ -668,7 +756,7 @@ Deno.serve(async (permintaan) => {
 
     return jawab({
       galat: `Aksi "${aksi}" tidak dikenal.`,
-      aksi_tersedia: ['diagnosa', 'daftarkan', 'hapus', 'uji', 'kirim'],
+      aksi_tersedia: ['diagnosa', 'daftarkan', 'daftarkan_rute', 'hapus', 'uji', 'kirim'],
     }, 400)
   } catch (galat) {
     return jawab({ galat: sensor(String((galat as Error).message ?? galat), kunciBot) }, 500)

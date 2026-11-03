@@ -63,8 +63,20 @@ export function halamanRuang({ keadaan, isi }) {
   const bolehTelaah = punyaIzin(keadaan.profil?.role, 'telaah_berita')
     || punyaIzin(keadaan.profil?.role, 'telaah_wilayah')
 
+  // Analisis kasus per kasus (3 November 2026): berita negatif yang belum
+  // dianalisis dan diteruskan ke Klarifikasi UPT atau Disposisi Pimpinan.
+  const negatifSemua = dalam.filter((b) => b.sentimen === 'Negatif')
+
   isi.innerHTML = `
     <div class="tumpuk">
+      ${punyaIzin(keadaan.profil?.role, 'analisis_berita') ? kartu({
+        judul: 'Analisis berita kasus per kasus',
+        ket: `${angka(negatifSemua.length)} berita negatif di arsip yang termuat. Pilih satu, analisis fakta 5W1H dan penilaiannya, `
+          + 'lalu teruskan sebagai Klarifikasi UPT atau Tindak lanjut disposisi pimpinan.',
+        aksi: `${tombol({ label: 'Mulai analisis', ikon: 'kasus', gaya: 'utama', halaman: 'analisis-berita' })}
+               ${tombol({ label: 'Lihat Tindak Lanjut', ikon: 'tindak', halaman: 'tindak-lanjut' })}`,
+        isi: '',
+      }) : ''}
       <div class="kisi kisi-4">
         ${ubin({
           label: 'Menunggu telaah', nilai: antrean.length, nada: antrean.length ? 'sedang' : 'positif',

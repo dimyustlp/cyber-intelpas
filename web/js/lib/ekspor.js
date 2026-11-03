@@ -32,6 +32,8 @@ import { KONFIG } from './konfig.js'
 import { tanggalJam, tanggalIso } from './format.js'
 import { bannerTingkat, labelTingkat, tingkatDari, bolehMembawa } from './klasifikasi-informasi.js'
 import { labelPeran } from './peran.js'
+import { tandaiProduk, klasifikasiDariTingkat, PERNYATAAN_PEMBATAS, JENIS_PRODUK } from './sip.js'
+import { susunXlsx, susunXlsxPadat, JENIS_XLSX } from './xlsx.js'
 
 /** Awalan nomor berkas. Sengaja pendek — ia dibacakan lewat telepon. */
 const AWALAN = 'TSP'
@@ -72,13 +74,19 @@ export function namaBerkas(judul, ekstensi, waktu = new Date()) {
  */
 export function susunKeterangan({
   judul, tingkat = 'internal', profil = null, kueri = '', jumlah = 0,
-  waktu = new Date(), catatan = '',
+  waktu = new Date(), catatan = '', sip = null, jenisProduk = JENIS_PRODUK.informasi,
 }) {
+  /* Penandaan SIP. Halaman yang tidak menanyakannya kepada pengguna tetap
+     mendapat penandaan yang sah, diturunkan dari tingkat internal berkasnya
+     dengan kode penyebarluasan E (tidak disebarluaskan, menunggu arahan). */
+  const penanda = sip || tandaiProduk({ minimum: klasifikasiDariTingkat(tingkat) })
   return {
     nomor: nomorEkspor(waktu),
     judul: String(judul || 'Keluaran Trans-Siber PAS'),
     tingkat,
     banner: bannerTingkat(tingkat),
+    sip: penanda,
+    jenisProduk,
     oleh: profil?.full_name || profil?.username || (KONFIG.mode === 'demo' ? 'Mode peragaan' : 'Tidak diketahui'),
     peran: profil?.role ? labelPeran(profil.role) : (KONFIG.mode === 'demo' ? 'Mode peragaan' : ''),
     waktu: tanggalJam(waktu),
@@ -90,25 +98,43 @@ export function susunKeterangan({
   }
 }
 
-/** Pasangan label dan nilai yang dicetak di kepala tiap berkas, berurutan. */
+/**
+ * Pasangan label dan nilai yang dicetak di kepala tiap berkas, berurutan.
+ *
+ * Sejak 3 November 2026 kepala ini mengikuti blok "Klasifikasi & Prioritas"
+ * formulir SIP 2023 (Lampiran I). Sebelumnya baris Klasifikasi memuat tingkat
+ * internal ("INTERNAL") dan baris Perlakuan memuat kalimat bebas — dua hal
+ * yang tidak dikenal satu pun petugas intelijen di luar sistem ini.
+ *
+ * Versi edaran (kode penyebarluasan B, C, atau D) mengaburkan nama pengunduh
+ * dan nomor berkas sesuai Lampiran VI huruf a dan d. Nomor aslinya tetap
+ * tercatat di register produk, jadi berkas edaran masih bisa dilacak dari
+ * dalam tanpa nomornya beredar di luar.
+ */
 function barisKeterangan(k) {
+  const s = k.sip
+  const pengunduh = k.peran ? `${k.oleh} (${k.peran})` : k.oleh
   return [
-    ['Klasifikasi', labelTingkat(k.tingkat).toUpperCase()],
-    ['Perlakuan', tingkatDari(k.tingkat).keterangan],
+    ['Produk', `PRODUK INTELIJEN PEMASYARAKATAN · ${k.jenisProduk}`],
+    ['Klasifikasi', `${s.klasifikasi} — ${s.klasifikasiLabel}`],
+    ['Prioritas', `${s.prioritasLabel} (${s.prioritas}) — ${s.batas}`],
+    ['Kode penyebarluasan', `${s.kodeSebar} — ${s.kodeSebarLabel}`],
+    ['Akses', s.akses],
+    ['Ditujukan kepada', s.ditujukan || '-'],
     /* Yang mengeluarkan berkas, bukan hanya yang mengunduhnya. CSV dan JSON
        tidak bisa membawa lambang, dan berkas berklasifikasi yang beredar tanpa
-       nama lembaga penerbitnya kehilangan separuh arti barisnya sendiri:
-       "Perlakuan" menyebut apa yang boleh dilakukan, tetapi tidak menyebut
-       kepada siapa berkas itu harus dikembalikan. */
+       nama lembaga penerbitnya tidak menyebut kepada siapa ia harus
+       dikembalikan. */
     ['Instansi', `${KONFIG.instansiSingkat} · ${KONFIG.induk}`],
     ['Judul', k.judul],
-    ['Nomor berkas', k.nomor],
-    ['Diunduh oleh', k.peran ? `${k.oleh} (${k.peran})` : k.oleh],
+    ['Nomor berkas', s.edaran ? '-' : k.nomor],
+    ['Diunduh oleh', s.edaran ? 'Petugas Intelijen Pemasyarakatan (identitas dikaburkan)' : pengunduh],
     ['Waktu unduh', `${k.waktu} WIB`],
     ['Saringan', k.kueri],
     ['Jumlah baris', String(k.jumlah)],
     ['Sistem', k.sistem],
     ...(k.catatan ? [['Catatan', k.catatan]] : []),
+    ['Pernyataan', PERNYATAAN_PEMBATAS],
   ]
 }
 
@@ -149,6 +175,65 @@ export function keJson({ kolom, baris, keterangan }) {
   }, null, 2)}\n`
 }
 
+/* ------------------------------------------------------------------ XLSX */
+
+/**
+ * Buku kerja: lembar "Daftar" lebih dulu (yang dicari orang yang membukanya),
+ * lalu lembar "Keterangan" berisi kepala berkas dan arti setiap kode, lalu
+ * lembar tambahan bila ada.
+ *
+ * Kolom boleh membawa `lebar` (lebar kolom Excel, dalam huruf) dan `gaya(b)`
+ * yang mengembalikan indeks gaya sel untuk baris itu — dipakai untuk
+ * menyorot baris negatif dan prioritas Segera.
+ *
+ * Kepala berkas TIDAK ditaruh di atas tabel seperti pada CSV: baris
+ * keterangan di atas tabel mematahkan Saring dan Urutkan Excel, yang menebak
+ * batas tabel dari baris pertama yang terisi.
+ */
+export function keXlsx(bahan) {
+  return susunXlsx(lembarXlsx(bahan), propertiXlsx(bahan.keterangan))
+}
+
+function propertiXlsx(keterangan) {
+  return {
+    judul: keterangan.judul,
+    pembuat: keterangan.sip.edaran ? KONFIG.nama : `${keterangan.oleh} · ${KONFIG.nama}`,
+  }
+}
+
+/** Lembar-lembar buku kerja, sebelum dibungkus menjadi berkas. */
+export function lembarXlsx({ kolom, baris, keterangan, lembarTambahan = [], penjelasan = [] }) {
+  const s = keterangan.sip
+  const pita = `${s.klasifikasi} · ${s.klasifikasiLabel.toUpperCase()} — ${s.prioritasLabel.toUpperCase()} — Kode sebar ${s.kodeSebar}`
+  const daftar = {
+    nama: 'Daftar',
+    baris: [
+      [{ v: pita, s: 4 }],
+      [{ v: `${keterangan.judul} · ${keterangan.jumlah} baris · ${s.edaran ? 'versi edaran' : keterangan.nomor}`, s: 7 }],
+      kolom.map((k) => ({ v: k.label, s: 1 })),
+      ...baris.map((b) => kolom.map((k) => {
+        const v = k.ambil(b)
+        return { v: v ?? '', s: (k.gaya ? k.gaya(b) : 0) || 2 }
+      })),
+    ],
+    lebar: kolom.map((k) => k.lebar || 16),
+    beku: 3,
+    autoSaring: { baris: 3, kolom: kolom.length },
+  }
+  const ket = {
+    nama: 'Keterangan',
+    baris: [
+      [{ v: 'PRODUK INTELIJEN PEMASYARAKATAN', s: 4 }],
+      [],
+      ...barisKeterangan(keterangan).map(([a, b]) => [{ v: a, s: 3 }, { v: b, s: 2 }]),
+      ...(penjelasan.length ? [[], [{ v: 'Arti kode dan kolom', s: 4 }]] : []),
+      ...penjelasan.map(([a, b]) => [{ v: a, s: 3 }, { v: b, s: 2 }]),
+    ],
+    lebar: [26, 110],
+  }
+  return [daftar, ket, ...lembarTambahan]
+}
+
 /* -------------------------------------------------------------- pengunduh */
 
 /**
@@ -185,8 +270,11 @@ export function unduh({ nama, isi, jenis = 'text/csv;charset=utf-8', bom = true 
   }
 
   // BOM di depan supaya Excel di Windows membaca UTF-8 dengan benar; tanpa itu,
-  // setiap "é" dan setiap tanda pisah panjang berubah menjadi sampah.
-  const berkas = new Blob([bom ? `﻿${isi}` : isi], { type: jenis })
+  // setiap "é" dan setiap tanda pisah panjang berubah menjadi sampah. Isi biner
+  // (buku kerja .xlsx) tidak pernah diberi BOM: tiga bait di depan arsip ZIP
+  // membuatnya tidak bisa dibuka.
+  const biner = isi instanceof Uint8Array
+  const berkas = new Blob([bom && !biner ? `﻿${isi}` : isi], { type: jenis })
   const alamat = URL.createObjectURL(berkas)
   const tautan = document.createElement('a')
   tautan.href = alamat
@@ -207,20 +295,42 @@ export function unduh({ nama, isi, jenis = 'text/csv;charset=utf-8', bom = true 
  * seperti penyaring tombol terpusat di main.js: halaman yang memeriksa sendiri
  * akan lupa memeriksa, dan yang lupa tidak meninggalkan jejak apa pun.
  */
-export function ekspor({
-  judul, kolom, baris, bentuk = 'csv', tingkat = 'internal',
-  profil = null, kueri = '', catatan = '', waktu = new Date(),
-}) {
-  if (!baris?.length) return { berhasil: false, alasan: 'Tidak ada baris untuk diunduh.' }
+/**
+ * Pemeriksaan bersama sebelum berkas apa pun disusun.
+ *
+ * Hak membawa diperiksa pada yang LEBIH TINGGI di antara tingkat isi dan
+ * klasifikasi SIP yang dipilih: menandai berkas sebagai R tidak boleh
+ * membuatnya bisa dibawa peran yang hanya berhak atas YPM.
+ */
+function siapkan({ judul, baris, tingkat, profil, kueri, catatan, waktu, sip, jenisProduk }) {
+  if (!baris?.length) return { gagal: { berhasil: false, alasan: 'Tidak ada baris untuk diunduh.' } }
 
-  if (profil?.role && !bolehMembawa(profil.role, tingkat)) {
+  const tingkatPeriksa = sip && tingkatDari(sip.tingkat).urutan > tingkatDari(tingkat).urutan
+    ? sip.tingkat : tingkat
+  if (profil?.role && !bolehMembawa(profil.role, tingkatPeriksa)) {
     return {
-      berhasil: false,
-      alasan: `Berkas ini berklasifikasi ${labelTingkat(tingkat)}. Peran Anda tidak berhak membawanya keluar.`,
+      gagal: {
+        berhasil: false,
+        alasan: `Berkas ini berklasifikasi ${sip ? sip.klasifikasiLabel : labelTingkat(tingkatPeriksa)}. Peran Anda tidak berhak membawanya keluar.`,
+      },
     }
   }
 
-  const keterangan = susunKeterangan({ judul, tingkat, profil, kueri, jumlah: baris.length, waktu, catatan })
+  return {
+    keterangan: susunKeterangan({
+      judul, tingkat, profil, kueri, jumlah: baris.length, waktu, catatan, sip, jenisProduk,
+    }),
+  }
+}
+
+export function ekspor({
+  judul, kolom, baris, bentuk = 'csv', tingkat = 'internal',
+  profil = null, kueri = '', catatan = '', waktu = new Date(),
+  sip = null, jenisProduk,
+}) {
+  const { gagal, keterangan } = siapkan({ judul, baris, tingkat, profil, kueri, catatan, waktu, sip, jenisProduk })
+  if (gagal) return gagal
+
   const isi = bentuk === 'json'
     ? keJson({ kolom, baris, keterangan })
     : keCsv({ kolom, baris, keterangan })
@@ -230,6 +340,27 @@ export function ekspor({
     isi,
     jenis: bentuk === 'json' ? 'application/json;charset=utf-8' : 'text/csv;charset=utf-8',
   })
+  return { ...hasil, keterangan }
+}
+
+/**
+ * Sama dengan `ekspor()`, untuk buku kerja Excel. Asinkron karena
+ * pemampatannya memakai CompressionStream peramban.
+ */
+export async function eksporXlsx({
+  judul, kolom, baris, tingkat = 'internal',
+  profil = null, kueri = '', catatan = '', waktu = new Date(),
+  sip = null, jenisProduk, lembarTambahan = [], penjelasan = [],
+}) {
+  const { gagal, keterangan } = siapkan({ judul, baris, tingkat, profil, kueri, catatan, waktu, sip, jenisProduk })
+  if (gagal) return gagal
+
+  const isi = await susunXlsxPadat(
+    lembarXlsx({ kolom, baris, keterangan, lembarTambahan, penjelasan }),
+    propertiXlsx(keterangan),
+    waktu,
+  )
+  const hasil = unduh({ nama: namaBerkas(judul, 'xlsx', waktu), isi, jenis: JENIS_XLSX })
   return { ...hasil, keterangan }
 }
 

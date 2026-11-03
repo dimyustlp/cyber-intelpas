@@ -966,7 +966,9 @@ document.addEventListener('hitung-ulang', () => {
 const KOLOM_BERITA = 'id,judul,nama_upt,kanwil_asal,media,platform,link,created_at,'
   + 'tanggal_publikasi,kategori,subkategori,subkategori_kode,sentimen,urgensi,'
   + 'tingkat_perhatian,status_verifikasi,source_type,ringkasan,rekomendasi,'
-  + 'ai_confidence,kata_kunci,ai_provider,ai_classified_at'
+  + 'ai_confidence,kata_kunci,ai_provider,ai_classified_at,'
+  // Tiga kolom kecil yang dibaca mesin saran tindak lanjut (lib/tindak-lanjut.js).
+  + 'tier_media,tanggapan_sikap,telaah_wilayah_status'
 
 /** Sekali tarik. Nilai ini di bawah batas baris bawaan PostgREST. */
 const UKURAN_TARIK = 500

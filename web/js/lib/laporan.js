@@ -27,6 +27,12 @@ import { KONFIG } from './konfig.js'
 /* Berkas laporan berdiri sendiri di luar aplikasi, jadi lambangnya harus ikut
    sebagai teks — sama seperti lembar infografis, dan dari sumber yang sama. */
 import { TRANS_SIBER, DITPAMINTEL } from '../ui/lambang-data.js'
+import {
+  tandaiProduk, klasifikasiDariTingkat, prioritasKumpulan, jenisProdukBerkala, evaluasiBerita,
+  KLASIFIKASI, PRIORITAS, KODE_SEBAR, EVALUASI_SUMBER, EVALUASI_INFORMASI, JENIS_PRODUK,
+  PERNYATAAN_PEMBATAS,
+} from './sip.js'
+import { tingkatKumpulan } from './klasifikasi-informasi.js'
 
 /* ------------------------------------------------------------------ dasar */
 
@@ -565,6 +571,67 @@ function bagianKop(d, opsi) {
       <span class="pil pil-${keadaan.nada}">${esc(keadaan.label)}</span>
     </div>
   </header>`
+}
+
+/**
+ * Blok "Produk Intelijen Pemasyarakatan", meniru kepala formulir Lampiran I
+ * SIP 2023: tanggal, institusi, nomor, tujuan, jenis laporan, klasifikasi
+ * dan prioritas, evaluasi, kode penyebarluasan, lalu kalimat pembatas.
+ *
+ * Evaluasi sumber dan informasi pada formulir kertas diisi SATU nilai untuk
+ * satu laporan. Laporan berkala menghimpun ratusan publikasi, jadi yang
+ * dicetak sebarannya: berapa publikasi bernilai B, C, E, dan seterusnya.
+ * Memilih satu nilai untuk seluruhnya akan menyembunyikan bahwa sebagian
+ * besar bahan berasal dari sumber yang belum diuji.
+ */
+function bagianSip(d, opsi) {
+  const sip = opsi.sip || tandaiProduk({
+    minimum: klasifikasiDariTingkat(tingkatKumpulan(d.publikasi)),
+    prioritasMesin: prioritasKumpulan(d.publikasi),
+  })
+  const jenisProduk = jenisProdukBerkala(opsi.jenis)
+  const kotak = (aktif, teks) => `<span class="sip-kotak${aktif ? ' aktif' : ''}">${aktif ? '■' : '□'} ${esc(teks)}</span>`
+
+  const sebaranSumber = {}
+  const sebaranInfo = {}
+  const mediaPer = new Map()
+  for (const p of d.peristiwa) for (const b of p.publikasi || []) mediaPer.set(b.id, p.jumlah_media || 1)
+  for (const b of d.publikasi) {
+    const e = evaluasiBerita(b, { media: mediaPer.get(b.id) || 1 })
+    sebaranSumber[e.sumber] = (sebaranSumber[e.sumber] || 0) + 1
+    sebaranInfo[e.informasi] = (sebaranInfo[e.informasi] || 0) + 1
+  }
+  const sel = (daftar, sebaran) => daftar.map((e) => `<td><b>${esc(e.kode)}</b><br><span>${esc(e.label)}</span><br><em>${angka(sebaran[e.kode] || 0)} publikasi</em></td>`).join('')
+
+  return `
+  <div class="sip-pita">${esc(sip.klasifikasi)} · ${esc(sip.klasifikasiLabel.toUpperCase())}</div>
+  <section class="sip-produk">
+    <div class="sip-judul">PRODUK INTELIJEN PEMASYARAKATAN</div>
+    <table class="sip-kepala">
+      <tr><td><b>Tanggal</b> ${esc(tanggalPanjang(d.periode.selesai))}</td>
+          <td><b>Institusi</b> ${esc(KONFIG.instansiSingkat)} · ${esc(KONFIG.induk)}</td>
+          <td><b>Nomor</b> ${esc(sip.edaran ? '-' : opsi.nomor)}</td></tr>
+      <tr><td><b>Lokasi</b> Jakarta</td>
+          <td><b>Penanggung jawab</b> ............................</td>
+          <td><b>Ditujukan kepada Yth.</b> ${esc(sip.ditujukan || '............................')}</td></tr>
+    </table>
+    <div class="sip-baris">${Object.values(JENIS_PRODUK).map((j) => kotak(j === jenisProduk, j)).join('')}</div>
+    <div class="sip-hitam">KLASIFIKASI &amp; PRIORITAS</div>
+    <div class="sip-baris">
+      ${KLASIFIKASI.slice().reverse().map((k) => kotak(k.kode === sip.klasifikasi, k.kode)).join('')}
+      <span class="sip-pisah"></span>
+      ${PRIORITAS.map((p) => kotak(p.kode === sip.prioritas, `${p.label.toUpperCase()} (${p.kode})`)).join('')}
+    </div>
+    <table class="sip-evaluasi">
+      <tr><th>Evaluasi sumber</th>${sel(EVALUASI_SUMBER, sebaranSumber)}</tr>
+      <tr><th>Evaluasi intelijen</th>${sel(EVALUASI_INFORMASI, sebaranInfo)}</tr>
+      <tr><th>Kode penyebarluasan</th>${KODE_SEBAR.map((k) => `<td class="${k.kode === sip.kodeSebar ? 'aktif' : ''}"><b>${k.kode === sip.kodeSebar ? '■' : '□'} ${esc(k.kode)}</b><br><span>${esc(k.label)}</span></td>`).join('')}</tr>
+    </table>
+    <p class="sip-catatan">Evaluasi disarankan mesin dari tier media, jumlah media yang memuat kejadian
+      yang sama, dan status telaah, kecuali yang sudah dinilai analis. Prioritas ${esc(sip.prioritasLabel)}:
+      ${esc(sip.batas.toLowerCase())}.</p>
+    <div class="sip-pembatas">${esc(PERNYATAAN_PEMBATAS)}</div>
+  </section>`
 }
 
 function ubin(label, nilai, kaki, nada) {
@@ -1116,7 +1183,8 @@ export function susunLaporan(snapshot, opsi = {}) {
   const d = olahLaporan(snapshot)
   const jenis = opsi.jenis || 'mingguan'
   const nomor = opsi.nomor || nomorLaporan(jenis, opsi.urutan || 1, d.periode.selesai)
-  const judul = `Laporan Intelijen Pemberitaan Negatif ${jenis === 'harian' ? 'Harian' : 'Mingguan'} — ${tanggalPanjang(d.periode.selesai)}`
+  const judul = `Laporan Intelijen Pemberitaan Negatif ${{ harian: 'Harian', bulanan: 'Bulanan' }[jenis] || 'Mingguan'} — ${tanggalPanjang(d.periode.selesai)}`
+  const sip = opsi.sip || null
 
   const kosong = !d.peristiwa.length
 
@@ -1150,11 +1218,12 @@ ${/*
    halus — bukan tata letaknya. Menanamkan woff2 sebagai data URI sempat
    dipertimbangkan dan ditolak: ia menambah 71 KiB pada tiap berkas laporan
    demi perbedaan yang tidak pernah dikeluhkan siapa pun.
-*/''}<style>${GAYA}${GAYA_NAIK}</style>
+*/''}<style>${GAYA}${GAYA_NAIK}${GAYA_SIP}</style>
 </head>
 <body>
 <div class="lembar">
   ${bagianKop(d, { ...opsi, jenis, nomor })}
+  ${bagianSip(d, { ...opsi, jenis, nomor, sip })}
   ${bagianIkhtisar(d)}
   ${kosong ? `<section class="bagian"><h2>Tidak Ada Peristiwa Negatif</h2>
       <p>Pada periode ini tidak terpantau publikasi bersentimen negatif dalam lingkup
@@ -1175,9 +1244,38 @@ ${/*
     Disusun otomatis oleh ${esc(KONFIG.nama)} pada ${esc(waktuSusun(d.dibuat_pada))}.
     Mesin klasifikasi aturan, tanpa penyedia AI luar.
   </footer>
+  <div class="sip-pembatas">${esc(PERNYATAAN_PEMBATAS)}</div>
+  <div class="sip-pita">${esc(sip?.klasifikasi || klasifikasiDariTingkat(tingkatKumpulan(d.publikasi)))}</div>
 </div>
 </body>
 </html>`
 }
 
-export const META_LAPORAN = { versi: 'laporan-v2.0', lingkup: 'negatif' }
+/* Blok formulir SIP. Hitam-putih dan berbingkai seperti formulir cetaknya,
+   sengaja berbeda dari kop biru di atasnya: yang ini dibaca sebagai dokumen
+   dinas, bukan sebagai bagian tampilan laporan. */
+const GAYA_SIP = `
+.sip-pita { text-align: center; font: 700 11px/1 "IBM Plex Mono", monospace; letter-spacing: .18em;
+  color: ${WARNA.kritis}; padding: 6px 0; border-top: 1px solid ${WARNA.garis}; border-bottom: 1px solid ${WARNA.garis}; margin: 10px 0; }
+.sip-produk { border: 1.5px solid #222; margin: 0 0 18px; font-size: 11px; color: #111; }
+.sip-judul { text-align: center; font: 700 15px/1.3 Georgia, "Times New Roman", serif; padding: 7px; border-bottom: 1.5px solid #222; letter-spacing: .02em; }
+.sip-kepala { width: 100%; border-collapse: collapse; }
+.sip-kepala td { border: 1px solid #999; padding: 4px 7px; vertical-align: top; }
+.sip-baris { display: flex; flex-wrap: wrap; gap: 4px 14px; justify-content: center; padding: 6px 8px; border-top: 1px solid #999; }
+.sip-kotak { font-weight: 600; color: #555; }
+.sip-kotak.aktif { color: #000; font-weight: 800; }
+.sip-pisah { width: 1px; background: #999; align-self: stretch; }
+.sip-hitam { background: #111; color: #fff; text-align: center; font-weight: 800; letter-spacing: .06em; padding: 4px; }
+.sip-evaluasi { width: 100%; border-collapse: collapse; table-layout: fixed; }
+.sip-evaluasi th { width: 17%; background: #B9ABA3; text-align: left; padding: 5px 7px; border: 1px solid #777; font-size: 11px; }
+.sip-evaluasi td { border: 1px solid #999; padding: 4px 5px; text-align: center; font-size: 9.5px; line-height: 1.35; }
+.sip-evaluasi td span { color: #444; }
+.sip-evaluasi td em { color: ${WARNA.aksen2}; font-style: normal; font-weight: 700; }
+.sip-evaluasi td.aktif { background: #FFF4CE; }
+.sip-catatan { margin: 0; padding: 6px 8px; font-size: 10px; color: #444; border-top: 1px solid #999; }
+.sip-pembatas { border: 1px solid #222; padding: 6px 8px; font-size: 9.5px; font-weight: 700; line-height: 1.4; text-align: justify; margin: 0; }
+.sip-produk .sip-pembatas { border-width: 1px 0 0; }
+@media print { .sip-produk, .sip-pita { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+`
+
+export const META_LAPORAN = { versi: 'laporan-v2.1', lingkup: 'negatif' }

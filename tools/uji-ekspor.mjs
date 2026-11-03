@@ -197,7 +197,12 @@ sama('keterangan tanpa kueri berbunyi seluruh baris',
   const csv = keCsv({ kolom: KOLOM_BERITA, baris: CONTOH, keterangan })
   const baris = csv.split('\r\n')
 
-  periksa('kepala diawali klasifikasi', baris[0].startsWith('"# Klasifikasi","RAHASIA"'))
+  // Sejak 3 November 2026 kepala mengikuti formulir SIP 2023: produk lebih
+  // dulu, lalu klasifikasi berkode SIP. Tingkat internal "rahasia" menjadi YB.
+  periksa('kepala diawali nama produk SIP', baris[0].startsWith('"# Produk","PRODUK INTELIJEN PEMASYARAKATAN'))
+  periksa('baris klasifikasi berkode SIP', csv.includes('"# Klasifikasi","YB — Yang Berkepentingan"'))
+  periksa('tanpa pilihan pengguna, kode sebar E', csv.includes('"# Kode penyebarluasan","E — '))
+  periksa('kalimat pembatas SIP ikut tercetak', csv.includes('tidak dapat digunakan, atau disebarluaskan'))
   periksa('kepala menyebut nomor berkas', csv.includes('"# Nomor berkas"'))
   periksa('kepala menyebut pengunduh beserta perannya',
     csv.includes('"Dimas Pratama (Analis Intelijen Media)"'))

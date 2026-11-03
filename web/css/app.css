@@ -1473,6 +1473,48 @@ table.tabel tbody td { border-bottom: 1px solid var(--line-3); }
 }
 @media (hover: hover) { .peristiwa:hover { box-shadow: var(--bayang-2); } }
 .peristiwa-kop { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+
+/* Penandaan SIP di Laporan Berkala. Empat isian sejajar di layar lebar,
+   bertumpuk di ponsel; pernyataan persetujuan di bawahnya selebar kartu. */
+.sip-kisi {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 12px;
+}
+.sip-kisi label { display: block; margin-bottom: 5px; }
+.sip-kisi .masukan { width: 100%; }
+.sip-kisi .mini-teks { margin-top: 4px; }
+.sip-setuju {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin-top: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-2);
+  font-size: 13px;
+  line-height: 1.5;
+  cursor: pointer;
+}
+.sip-setuju input { margin-top: 3px; flex: none; }
+
+/* Saran tindak lanjut pada kartu peristiwa. Pita di tepi kiri mengikuti
+   tindakannya, sama seperti kartu peristiwa mengikuti urgensinya: yang
+   memindai daftar membaca warna lebih dulu, tulisan sesudahnya. */
+.saran-tindak {
+  border-left: 3px solid var(--line-2);
+  padding: 6px 0 6px 10px;
+  display: grid;
+  gap: 4px;
+}
+.saran-tindak[data-tindak="sidak"] { border-left-color: var(--kritis, #D64545); }
+.saran-tindak[data-tindak="klarifikasi"] { border-left-color: var(--sedang, #D69E2E); }
+.saran-tindak[data-tindak="verifikasi"] { border-left-color: var(--rendah, #4A7FC1); }
+.saran-kop { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+.saran-tindak summary { cursor: pointer; font-size: 11.5px; color: var(--ink-3); }
+.saran-alasan, .saran-langkah { margin: 6px 0 0; padding-left: 18px; font-size: 12.5px; line-height: 1.5; color: var(--ink-2); }
+.saran-langkah { margin-bottom: 8px; }
+.saran-ringkas { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 0 0 12px; }
 .peristiwa-judul { font-size: 13.5px; font-weight: 650; line-height: 1.4; }
 .peristiwa-kaki {
   display: flex;
@@ -6574,3 +6616,9 @@ table.tabel button.judul-buka:hover { color: var(--accent); text-decoration: und
   .kartu { break-inside: avoid; box-shadow: none; }
   .brief-rapat table.tabel { font-size: 11px; }
 }
+
+/* Kartu rekomendasi di halaman detail berita. */
+.saran-besar { padding: 8px 0 8px 12px; }
+.saran-form { display: grid; gap: 10px; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line-3); }
+.saran-isian { display: grid; gap: 4px; font-size: 12.5px; color: var(--ink-2); }
+.saran-isian > span:first-child { font-weight: 600; }

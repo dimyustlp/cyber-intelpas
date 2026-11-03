@@ -131,6 +131,7 @@ export const IZIN = {
     'lihat_dasbor', 'lihat_briefing', 'lihat_berita', 'lihat_berita_terverifikasi',
     'lihat_peta', 'lihat_tren', 'lihat_kasus', 'lihat_laporan_lapangan',
     'lihat_rekomendasi', 'putuskan_kasus', 'lihat_laporan', 'unduh_laporan',
+    'lihat_saran_tindak', 'catat_tindak_berita',
     'setujui_laporan', 'publikasi_laporan', 'lihat_peringatan', 'lihat_tindak_lanjut',
     'kelola_tindak_lanjut', 'lihat_lonjakan',
   ],
@@ -144,6 +145,7 @@ export const IZIN = {
     'lihat_tindak_lanjut', 'unggah_lampiran', 'tugaskan_lapangan', 'lihat_penugasan',
     'lihat_laporan_lapangan', 'lihat_sinkronisasi',
     'lihat_ruang_analis', 'kelola_aturan', 'lihat_lonjakan',
+    'lihat_saran_tindak', 'catat_tindak_berita',
   ],
 
   news_data_operator: [
@@ -168,6 +170,7 @@ export const IZIN = {
     'sunting_draf_laporan', 'lihat_laporan', 'unduh_laporan', 'lihat_tren',
     'lihat_tindak_lanjut', 'kelola_tindak_lanjut', 'perbarui_tindak_lanjut',
     'lihat_ruang_analis', 'kelola_aturan',
+    'lihat_saran_tindak', 'catat_tindak_berita',
   ],
 
   /*

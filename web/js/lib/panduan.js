@@ -61,6 +61,16 @@ const PUSAT = {
       + 'dipinjam dari perhitungan yang sama dengan dasbor, sehingga keduanya tidak '
       + 'pernah berselisih.',
   },
+  'deteksi-lonjakan': {
+    isi: 'Dua daftar yang dibaca mesin di peladen tiap jam: unit yang mendadak diberitakan '
+      + 'buruk berkali-kali dalam sehari, dan isu yang diangkat banyak media sekaligus. '
+      + 'Ambang penandaannya tertulis di layar.',
+    guna: 'Peringatan Dini menilai berita satu per satu; halaman ini menilai pola. Sebuah unit '
+      + 'yang dibicarakan lima kali dengan urgensi sedang lolos dari penilaian per berita, '
+      + 'tetapi lima kali dalam satu hari adalah kabar yang harus dibaca malam itu juga.',
+    catatan: 'Halaman ini hanya membaca hasil mesin; ia tidak menghitung sendiri. Layar dinding '
+      + 'versinya, Situation Room, dibuka dari tombol di dalam halaman ini, bukan dari menu.',
+  },
   negatif: {
     isi: 'Seluruh pemberitaan yang merugikan institusi, disusun per PERISTIWA, bukan per '
       + 'publikasi. Delapan berita tentang satu narapidana yang kabur tampil sebagai satu '
@@ -158,13 +168,22 @@ const PUSAT = {
     catatan: 'Kemajuan diisi pelaksananya, bukan dihitung sistem.',
   },
   laporan: {
-    isi: 'Penyusun laporan intelijen berkala. Pilih periodenya, tekan satu tombol, dan '
-      + 'berkasnya jadi lengkap dengan diagram serta daftar sumbernya — siap dicetak atau '
-      + 'disimpan sebagai PDF lewat menu cetak peramban.',
-    guna: 'Ekspor mandiri, tanpa menunggu siapa pun menjalankan perintah di belakang layar. '
-      + 'Isinya pemberitaan negatif: daftar hal yang menuntut tindakan.',
+    isi: 'Dua keluaran untuk periode yang sama. Pertama, laporan intelijen berkala: pilih '
+      + 'periodenya, tekan satu tombol, dan berkasnya jadi lengkap dengan diagram serta '
+      + 'daftar sumbernya, siap dicetak atau disimpan sebagai PDF lewat menu cetak peramban. '
+      + 'Kedua, ekspor daftar berita: buku kerja Excel berisi berita pada periode itu, '
+      + 'seluruhnya atau hanya yang negatif, berurut negatif dan prioritas lebih dulu. Keduanya '
+      + 'ditandai menurut Standar Intelijen Pemasyarakatan 2023: klasifikasi (SR, R, YB, YPM), '
+      + 'prioritas (Mendesak, Segera, Rutin), kode penyebarluasan (A-E), serta evaluasi sumber '
+      + '(A-E) dan informasi (1-5) per berita.',
+    guna: 'Ekspor mandiri harian, mingguan, dan bulanan, tanpa menunggu siapa pun menjalankan '
+      + 'perintah di belakang layar. Laporan memuat pemberitaan negatif, yaitu daftar hal yang '
+      + 'menuntut tindakan; buku kerja Excel memuat daftar lengkapnya beserta peringatan dini '
+      + 'dan usulan pemecahan masalah tiap berita negatif.',
     catatan: 'Satu hari laporan berarti pukul 00.00 sampai 23.59 WIB, sama persis dengan '
-      + 'jendela yang dipakai laporan harian Telegram.',
+      + 'jendela yang dipakai laporan harian Telegram. Klasifikasi paling rendah dihitung dari '
+      + 'isi berkas dan tidak bisa diturunkan; kode penyebarluasan B, C, dan D menghasilkan '
+      + 'versi edaran yang identitas petugasnya dikaburkan. Setiap unduhan tercatat di Jejak Audit.',
   },
   infografis: {
     isi: 'Satu lembar gambar untuk laporan harian atau mingguan, memuat sisi baik dan sisi '
@@ -456,7 +475,11 @@ export const TANPA_MENU = {
   },
   'berita-detail': {
     isi: 'Satu berita utuh beserta dasar penilaiannya: kata kunci penentu, skor mesin, '
-      + 'catatan telaah analis, dan tanggapan unit bila sudah ada.',
+      + 'catatan telaah analis, dan tanggapan unit bila sudah ada. Berita negatif mendapat '
+      + 'kartu Rekomendasi tindak lanjut (sidak, klarifikasi, verifikasi, atau pantau) beserta '
+      + 'penilaian SIP 2023: evaluasi sumber A-E, evaluasi informasi 1-5, dan prioritas. Analis '
+      + 'berwenang bisa menetapkan keputusan dan penilaiannya sendiri; keputusan analis selalu '
+      + 'menang atas saran mesin.',
     guna: 'Menjawab pertanyaan yang paling sering ditanyakan dan paling sulit dijawab: '
       + 'kenapa berita ini dinilai begitu. Dibuka dari Pusat Data Berita dan dari palet '
       + 'perintah.',

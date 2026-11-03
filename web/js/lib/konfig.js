@@ -97,10 +97,16 @@ export const KONFIG = {
  * Sumber kebenarannya adalah data/master-upt.csv, yang disusun
  * tools/susun-master-upt.mjs dari daftar UPT nasional. Halaman yang sudah punya
  * sesi TIDAK memakai angka ini — mereka menghitung dari tabelnya sendiri.
+ *
+ * Sampai 3 November 2026 `kanwil` masih 38, padahal sejak lembar induk v3
+ * (2 November 2026) data induk dan tabel `upt` memuat 33 kantor wilayah.
+ * Halaman masuk menampilkan angka yang salah selama sehari tanpa ada yang
+ * berubah warna. tools/uji-induk-upt.mjs kini mencocokkan kedua angka ini
+ * dengan data/master-upt.csv.
  */
 export const INDUK_UPT = {
   jumlah: 531,
-  kanwil: 38,
+  kanwil: 33,
   /** Unit yang koordinatnya masih titik wilayah, bukan alamat gedung. */
   belumTerverifikasi: 530,
 }

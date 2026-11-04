@@ -53,6 +53,12 @@ export function pesanRamah(galat) {
     || /invalid login credentials/i.test(galat.rinci?.error_description || galat.rinci?.message || galat.rinci?.msg || ''))) {
     return 'Username atau kata sandi tidak cocok. Periksa kembali, atau hubungi administrator bila lupa sandi.'
   }
+  // Sesi yang sudah dicabut dijawab GoTrue dengan 403, bukan 401. Tanpa cabang
+  // ini petugas yang sedang mengganti sandi membaca "tidak memiliki hak" dan
+  // mencoba lagi berulang kali, padahal yang ia perlukan hanya masuk ulang.
+  if (galat.rinci?.error_code === 'session_not_found' || galat.rinci?.error_code === 'session_expired') {
+    return 'Sesi Anda sudah berakhir. Silakan keluar, lalu masuk kembali.'
+  }
   if (galat.status === 403 || galat.rinci?.code === '42501') {
     return 'Peran Anda tidak memiliki hak untuk tindakan ini.'
   }
@@ -286,8 +292,14 @@ export async function masuk(pengenal, kataSandi) {
   throw galatTerakhir || new GalatApi('Username atau kata sandi tidak dikenali.', 400)
 }
 
+/*
+   `scope=local` hanya menutup sesi peramban ini. Bawaan GoTrue adalah
+   `global`: semua sesi akun itu dicabut. Akun jabatan kanwil dipakai bersama,
+   jadi satu orang yang menekan Keluar memutus semua rekannya, termasuk yang
+   sedang mengganti sandi, dan mereka baru tahu ketika simpanannya ditolak.
+*/
 export async function keluar() {
-  try { await panggil('/auth/v1/logout', { method: 'POST' }) } catch { /* sesi lokal tetap dibersihkan */ }
+  try { await panggil('/auth/v1/logout?scope=local', { method: 'POST' }) } catch { /* sesi lokal tetap dibersihkan */ }
   profil = null
   simpanSesi(null)
 }

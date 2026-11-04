@@ -29,7 +29,7 @@ update public.berita
    and created_by <> 'sheet_sync:kanwil-1'
    -- last_synced_at, bukan created_at: baris lama yang isinya disunting
    -- petugas sesudah v7.2 tergelar sudah ditulis ulang dengan tanggal benar.
-   and coalesce(last_synced_at, created_at) < '__BATAS_V72__'::timestamptz
+   and coalesce(last_synced_at, created_at) < '2026-11-04 10:43:08+00'::timestamptz
    and tanggal_publikasi is not null;
 
 alter table public.berita enable trigger trg_berita_updated_at;

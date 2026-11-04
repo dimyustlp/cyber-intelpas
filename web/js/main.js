@@ -46,6 +46,13 @@ export const keadaan = {
   luarLingkup: 0,
   /** Benar bila arsip melewati batas pengaman penarikan dan tidak seluruhnya termuat. */
   terpotong: false,
+  /**
+   * Kalimat galat bila arsip berita gagal dimuat, atau null. Dibedakan dari
+   * arsip yang memang kosong: sebelum 4 November 2026 keduanya tergambar sama
+   * ("Belum ada berita yang masuk"), dan setiap kanwil yang kuerinya habis
+   * waktu disuruh memeriksa penjadwal yang tidak pernah rusak.
+   */
+  galatMuat: null,
   hitungan: { peringatan: 0, telaah: 0, pemetaan: 0, negatif: 0, telaahWilayah: 0 },
 }
 
@@ -605,6 +612,7 @@ function gambarIsi(bangun, isi, ingatan) {
     // boleh dibuka peran ini, dan penyaring itulah yang memutuskannya.
     const peran = keadaan.profil?.role
     pasangPengingatAlur(isi, keadaan.halaman, ruangPeran(adalahUnit(peran), adalahEksternal(peran)))
+    pasangPitaGalatMuat(isi)
     saringTombolTakBerhak(isi)
     amatiTombol(isi)
     // Gerak dipasang setelah isinya jadi, bukan sebelumnya. Kalau dipasang di
@@ -616,6 +624,27 @@ function gambarIsi(bangun, isi, ingatan) {
       <div><b>Halaman gagal ditampilkan.</b><br>${amankan(galat.message)}</div></div>`
     console.error(galat)
   }
+}
+
+/**
+ * Pita galat muat, di puncak SETIAP halaman selama arsip berita gagal ditarik.
+ *
+ * Hampir semua halaman membaca `keadaan.berita`, dan masing-masing punya
+ * kalimat kosongnya sendiri — "belum ada berita", "tidak ada yang menunggu",
+ * angka nol di ubin. Tanpa pita ini, satu kueri yang habis waktu terbaca di
+ * sepuluh halaman sebagai sepuluh wilayah yang sunyi. Dasbor punya kartunya
+ * sendiri yang lebih lengkap, jadi pita tidak dipasang dua kali di sana.
+ */
+function pasangPitaGalatMuat(isi) {
+  if (!keadaan.galatMuat || keadaan.halaman === 'dasbor') return
+  const pita = document.createElement('div')
+  pita.className = 'pesan'
+  pita.dataset.nada = 'kritis'
+  pita.style.marginBottom = '14px'
+  pita.innerHTML = `${ikon('peringatan')}<div><b>Berita belum berhasil dimuat.</b>
+    ${amankan(keadaan.galatMuat)} Angka dan daftar di halaman ini belum mencerminkan keadaan sebenarnya.
+    <button class="tbl kecil" data-aksi="muat-ulang" style="margin-left:8px">Muat ulang</button></div>`
+  isi.prepend(pita)
 }
 
 /** Benar selama akun yang masuk masih memakai sandi awal. Lihat gambar(). */
@@ -988,8 +1017,19 @@ const KOLOM_BERITA = 'id,judul,nama_upt,kanwil_asal,media,platform,link,created_
 /** Sekali tarik. Nilai ini di bawah batas baris bawaan PostgREST. */
 const UKURAN_TARIK = 500
 
-/** Batas pengaman. Arsip yang lebih panjang dari ini menuntut penyaringan di peladen. */
-const BATAS_TARIK = 4000
+/**
+ * Batas pengaman. Arsip yang lebih panjang dari ini menuntut penyaringan di peladen.
+ *
+ * Dinaikkan dari 4.000 pada 4 November 2026. Kanwil terbesar (Jawa Barat)
+ * sudah 5.330 baris, sehingga bulan lalunya terpotong diam-diam; dan di pusat
+ * 4.000 baris terbaru hanya menjangkau sembilan hari sejak penjaring menyetor
+ * 3–4 ribu berita sepekan. 12.000 memuat seluruh arsip setiap kanwil dan kira-
+ * kira tiga pekan arsip pusat.
+ */
+const BATAS_TARIK = 12000
+
+/** Berapa halaman ditarik bersamaan. Lebih dari ini hanya mengantre di peladen. */
+const TARIK_SEREMPAK = 4
 
 /**
  * Menarik arsip berita, berhalaman sampai habis.
@@ -1002,24 +1042,53 @@ const BATAS_TARIK = 4000
  */
 async function muatBerita() {
   const { ambil } = await import('./lib/api.js')
-  const kumpulan = []
   keadaan.terpotong = false
 
-  for (let dari = 0; dari < BATAS_TARIK; dari += UKURAN_TARIK) {
-    const halaman = await ambil('berita', {
-      select: KOLOM_BERITA,
-      deleted_at: 'is.null',
-      order: 'created_at.desc',
-    }, { jangkauan: `${dari}-${dari + UKURAN_TARIK - 1}` }) || []
+  /*
+     Urutan diberi pengikat `id`. Dengan `created_at` saja, baris yang
+     waktunya kembar (satu jalan sheet-sync menyetor puluhan baris pada
+     milidetik yang sama) boleh berganti tempat antarhalaman, sehingga satu
+     baris terbaca dua kali dan baris lain tidak sama sekali.
+  */
+  const tarik = (dari) => ambil('berita', {
+    select: KOLOM_BERITA,
+    deleted_at: 'is.null',
+    order: 'created_at.desc,id.desc',
+  }, { jangkauan: `${dari}-${dari + UKURAN_TARIK - 1}` })
+    .then((h) => h || [])
+    // Halaman sesudah ujung arsip: kosong, bukan kegagalan.
+    .catch((g) => (g?.status === 416 ? [] : Promise.reject(g)))
 
-    kumpulan.push(...halaman)
-    if (halaman.length < UKURAN_TARIK) return kumpulan
+  /*
+     Halaman pertama ditarik sendirian: kebanyakan ruang unit dan banyak kanwil
+     selesai di situ. Sesudahnya beberapa halaman diminta bersamaan — menarik
+     dua puluh empat halaman satu per satu membuat layar pusat menunggu dua
+     puluh empat kali perjalanan pulang-pergi.
+  */
+  const pertama = await tarik(0)
+  const kumpulan = [...pertama]
+  if (pertama.length < UKURAN_TARIK) return kumpulan
+
+  for (let dari = UKURAN_TARIK; dari < BATAS_TARIK; dari += UKURAN_TARIK * TARIK_SEREMPAK) {
+    const awal = []
+    for (let i = 0; i < TARIK_SEREMPAK && dari + i * UKURAN_TARIK < BATAS_TARIK; i++) {
+      awal.push(dari + i * UKURAN_TARIK)
+    }
+    const halaman = await Promise.all(awal.map(tarik))
+    for (const h of halaman) kumpulan.push(...h)
+    if (halaman.some((h) => h.length < UKURAN_TARIK)) return tanpaKembar(kumpulan)
   }
 
   // Sampai di sini berarti arsip melewati batas pengaman. Ditandai supaya
   // dasbor menyebutkannya, bukan diam-diam menampilkan sebagian.
   keadaan.terpotong = true
-  return kumpulan
+  return tanpaKembar(kumpulan)
+}
+
+/** Baris yang bergeser antarhalaman selama penarikan hanya dihitung sekali. */
+function tanpaKembar(daftar) {
+  const terlihat = new Set()
+  return daftar.filter((b) => (terlihat.has(b.id) ? false : (terlihat.add(b.id), true)))
 }
 
 /**
@@ -1101,8 +1170,19 @@ async function segarkan() {
   } else {
     try {
       keadaan.berita = await muatBerita()
+      keadaan.galatMuat = null
     } catch (galat) {
-      roti(pesanRamah(galat), 'kritis', 6000)
+      /*
+         Kegagalan memuat TIDAK sama dengan arsip kosong, dan layar harus bisa
+         membedakannya. Habis waktu (57014) diterjemahkan tersendiri: kalimat
+         mentahnya, "canceling statement due to statement timeout", terbaca
+         sebagai sistem rusak padahal yang terjadi hanya kueri yang lambat.
+      */
+      const kode = galat?.rinci?.code
+      keadaan.galatMuat = kode === '57014'
+        ? 'Peladen terlalu lama menjawab, sehingga penarikan berita dihentikan. Coba muat ulang beberapa saat lagi; bila terus berulang, laporkan ke administrator pusat.'
+        : pesanRamah(galat)
+      roti(keadaan.galatMuat, 'kritis', 6000)
       keadaan.berita = []
     }
 

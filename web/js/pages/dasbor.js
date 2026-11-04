@@ -152,7 +152,41 @@ export function halamanDasbor({ keadaan, isi }) {
   // Arsip yang sungguh kosong berbeda dari bulan yang belum berisi. Yang
   // pertama berarti penjadwal belum pernah berjalan; yang kedua keadaan biasa
   // setiap pagi tanggal 1, dan tidak pantas dibalas pesan gangguan.
+  const wilayahSaya = adalahEksternal(keadaan.profil?.role) ? keadaan.profil?.assigned_kanwil : null
+
+  /*
+     Gagal memuat lebih dulu daripada arsip kosong. Sampai 4 November 2026
+     keduanya jatuh ke kartu yang sama, sehingga setiap kanwil yang kuerinya
+     habis waktu membaca "Belum ada berita yang masuk" — padahal ribuan berita
+     wilayahnya tersimpan rapi di basis data.
+  */
+  if (keadaan.galatMuat) {
+    isi.innerHTML = kartu({
+      judul: 'Berita belum berhasil dimuat',
+      isi: kosong(
+        'Data tidak sampai ke layar ini',
+        `${amankan(keadaan.galatMuat)} Ini bukan berarti wilayah Anda tidak punya pemberitaan.`,
+        tombol({ label: 'Muat ulang', ikon: 'sinkron', gaya: 'utama', aksi: 'muat-ulang' }),
+      ),
+    })
+    return { judul: 'Dasbor Eksekutif', sub: tanggalPanjang(new Date()) }
+  }
+
   if (!antrean.inti.length) {
+    /* Ruang kanwil tidak bisa membuka Sinkronisasi Sumber; menyodorkan
+       tombolnya hanya membawa petugas ke layar "tidak berhak". Yang bisa ia
+       lakukan sendiri adalah memeriksa lembar wilayahnya. */
+    if (wilayahSaya) {
+      isi.innerHTML = kartu({
+        judul: 'Belum ada data wilayah',
+        isi: kosong(
+          'Belum ada berita yang terpetakan ke wilayah Anda',
+          'Berita masuk ke ruang ini bila UPT-nya berada di wilayah Anda, atau bila disetor lewat lembar kanwil Anda. Pastikan lembar kanwil sudah terisi; berita dari lembar itu muncul paling lambat 30 menit kemudian.',
+          tombol({ label: 'Muat ulang', ikon: 'sinkron', gaya: 'utama', aksi: 'muat-ulang' }),
+        ),
+      })
+      return { judul: 'Dasbor Eksekutif', sub: tanggalPanjang(new Date()) }
+    }
     isi.innerHTML = kartu({
       judul: 'Belum ada data',
       isi: kosong(
@@ -391,7 +425,7 @@ export function halamanDasbor({ keadaan, isi }) {
 
   return {
     judul: 'Dasbor Eksekutif',
-    sub: `${wilayah ? `${String(wilayah).replace(/^Kantor Wilayah Ditjenpass+/i, 'Kanwil ')} · ` : ''}${tanggalPanjang(new Date())} · ${bulan.label}`,
+    sub: `${wilayah ? `${String(wilayah).replace(/^Kantor Wilayah Ditjenpas\s+/i, 'Kanwil ')} · ` : ''}${tanggalPanjang(new Date())} · ${bulan.label}`,
   }
 }
 

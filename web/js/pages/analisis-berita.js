@@ -34,7 +34,8 @@ import { punyaIzin, adalahEksternal } from '../lib/peran.js'
 import { dasar } from '../lib/hitung.js'
 import { ember } from '../lib/sentimen.js'
 import { belumTerpetakan } from '../lib/unit-terpetakan.js'
-import { bangunIndeks, cocokkanUpt, normalkanUpt } from '../lib/pencocokan-upt.js'
+import { cocokkanUpt, normalkanUpt } from '../lib/pencocokan-upt.js'
+import { bangunPetaWilayah, wilayahBerita, KET_DASAR, KELOMPOK_TANPA } from '../lib/wilayah-berita.js'
 import {
   evaluasiBerita, prioritasBerita, prioritas, labelSumber, labelInformasi,
   EVALUASI_SUMBER, EVALUASI_INFORMASI,
@@ -53,6 +54,7 @@ const pilih = {
 }
 let indukUpt = null
 let indeksUpt = null
+let petaWilayah = null
 
 async function muatInduk() {
   if (indukUpt) return indukUpt
@@ -69,7 +71,8 @@ async function muatInduk() {
         limit: 1000,
       }) || []
     indukUpt = new Map(baris.map((u) => [u.nama_upt, u.kanwil]))
-    indeksUpt = bangunIndeks(baris)
+    petaWilayah = bangunPetaWilayah(baris)
+    indeksUpt = petaWilayah.indeks
   } catch { indukUpt = new Map() }
   return indukUpt
 }
@@ -189,9 +192,26 @@ function pulihkanDraf(borang, id) {
   }
 }
 
-function kanwilDari(b) {
-  return b.kanwil_asal || indukUpt?.get(b.nama_upt) || null
+/**
+ * Kanwil sebuah berita — pasti (lembar, UPT di data induk) atau terduga dari
+ * teksnya. Lihat lib/wilayah-berita.js; dugaan tidak pernah ditulis ke basis
+ * data dari halaman ini.
+ */
+function wilayahDari(b) {
+  return wilayahBerita(b, petaWilayah)
 }
+
+function kanwilDari(b) {
+  return wilayahDari(b).kanwil
+}
+
+/** Nama kelompok di daftar pusat: kanwil, atau "Lintas wilayah" / "Nasional / tanpa lokasi". */
+function kelompokDari(b) {
+  const w = wilayahDari(b)
+  return w.kanwil || KELOMPOK_TANPA[w.dasar] || KELOMPOK_TANPA['tanpa-lokasi']
+}
+
+const NAMA_TANPA = new Set(Object.values(KELOMPOK_TANPA))
 
 function gambarUlang() { document.dispatchEvent(new CustomEvent('gambar-ulang')) }
 
@@ -225,17 +245,20 @@ function kartuDaftar(keadaan, negatif, peta) {
   const kata = pilih.cari.trim().toLowerCase()
   let daftar = negatif.filter((b) => !kata
     || `${b.judul} ${b.nama_upt} ${b.media} ${kanwilDari(b) || ''}`.toLowerCase().includes(kata))
-  if (pilih.kanwil !== 'semua') daftar = daftar.filter((b) => (kanwilDari(b) || 'Tanpa kanwil') === pilih.kanwil)
+  if (pilih.kanwil !== 'semua') daftar = daftar.filter((b) => kelompokDari(b) === pilih.kanwil)
   if (pilih.hanyaBaru) daftar = daftar.filter((b) => !peta.has(b.id))
 
   const kelompok = new Map()
   for (const b of daftar) {
-    const k = pusat ? (kanwilDari(b) || 'Tanpa kanwil') : (kanwilDari(b) || keadaan.profil?.assigned_kanwil || 'Wilayah ini')
+    const k = pusat ? kelompokDari(b) : (kanwilDari(b) || keadaan.profil?.assigned_kanwil || 'Wilayah ini')
     if (!kelompok.has(k)) kelompok.set(k, [])
     kelompok.get(k).push(b)
   }
-  const urut = [...kelompok.entries()].sort((a, b) => b[1].length - a[1].length)
-  const semuaKanwil = [...new Set(negatif.map((b) => kanwilDari(b) || 'Tanpa kanwil'))].sort()
+  // Kelompok tanpa kanwil di bawah, berapa pun isinya: yang di atas adalah
+  // berita yang bisa langsung diteruskan ke satu kantor wilayah.
+  const urut = [...kelompok.entries()].sort((a, b) => (NAMA_TANPA.has(a[0]) - NAMA_TANPA.has(b[0])) || b[1].length - a[1].length)
+  const semuaKanwil = [...new Set(negatif.map(kelompokDari))]
+    .sort((a, b) => (NAMA_TANPA.has(a) - NAMA_TANPA.has(b)) || a.localeCompare(b))
 
   const baris = (b) => {
     const ada = peta.get(b.id) || []
@@ -247,15 +270,29 @@ function kartuDaftar(keadaan, negatif, peta) {
           ${keping(b.urgensi || 'Rendah', nadaUrgensi(b.urgensi), true)}
           <span class="mini-teks samar-teks">${amankan(belumTerpetakan(b.nama_upt) ? 'UPT belum terpetakan' : b.nama_upt)}</span>
           <span class="mini-teks samar-teks">· ${amankan(tanggalJam(b.created_at))}</span>
+          ${tandaWilayah(b)}
           ${ada.map((p) => keping(`${TUJUAN[p.tujuan].label}: ${infoStatus(p.status).pendek}`, infoStatus(p.status).nada, true)).join('')}
         </span>
       </button>`
   }
 
+  // Kanwil yang diduga dari teks ditandai di tiap baris, supaya tidak ada yang
+  // mengira kanwilnya sudah ditetapkan. Berita lintas wilayah menyebut kanwil
+  // mana saja yang tersebut.
+  function tandaWilayah(b) {
+    if (!pusat) return ''
+    const w = wilayahDari(b)
+    if (w.pasti) return ''
+    if (w.kanwil) return `<span title="${amankan(KET_DASAR[w.dasar] || '')}">${keping('kanwil terduga', 'sedang', true)}</span>`
+    if (w.dasar === 'lintas') return `<span class="mini-teks samar-teks">· ${amankan(w.kandidat.map(namaKanwilPendek).join(', '))}</span>`
+    return ''
+  }
+
   return kartu({
     judul: pusat ? 'Berita negatif per kanwil' : 'Berita negatif di wilayah Anda',
     ket: pusat
-      ? 'Seluruh berita negatif, dikelompokkan menurut kanwil UPT-nya. Pilih satu untuk dianalisis.'
+      ? 'Seluruh berita negatif, dikelompokkan menurut kanwil UPT-nya. Berita yang UPT-nya belum ditetapkan '
+        + 'dikelompokkan menurut daerah yang disebut di judulnya, dan ditandai "kanwil terduga".'
       : 'Berita negatif yang menyangkut UPT di wilayah Anda. Pilih satu untuk dianalisis.',
     isi: `
       <div class="bilah-alat" style="flex-wrap:wrap;gap:8px">
@@ -274,11 +311,12 @@ function kartuDaftar(keadaan, negatif, peta) {
       ${daftar.length ? urut.map(([k, isi]) => {
         const terbuka = !pusat || urut.length === 1 || pilih.buka.has(k) || isi.some((b) => b.id === pilih.id) || Boolean(kata)
         const dianalisis = isi.filter((b) => peta.has(b.id)).length
+        const terduga = pusat && !NAMA_TANPA.has(k) ? isi.filter((b) => !wilayahDari(b).pasti).length : 0
         return `
           <details class="analisis-kelompok" data-kanwil="${amankan(k)}"${terbuka ? ' open' : ''}>
             <summary>
               <b>${amankan(namaKanwilPendek(k))}</b>
-              <span class="mini-teks samar-teks">${angka(isi.length)} berita negatif · ${angka(dianalisis)} sudah dianalisis</span>
+              <span class="mini-teks samar-teks">${angka(isi.length)} berita negatif${terduga ? ` (${angka(terduga)} terduga)` : ''} · ${angka(dianalisis)} sudah dianalisis${NAMA_TANPA.has(k) ? ' · tidak menyebut satu kanwil' : ''}</span>
             </summary>
             <div class="analisis-daftar">${isi.slice(0, 60).map(baris).join('')}
               ${isi.length > 60 ? `<div class="mini-teks samar-teks">${angka(isi.length - 60)} lainnya — persempit dengan kotak cari.</div>` : ''}
@@ -289,7 +327,8 @@ function kartuDaftar(keadaan, negatif, peta) {
 }
 
 function kartuBorang(keadaan, b, peta) {
-  const kanwil = kanwilDari(b)
+  const wilayah = wilayahDari(b)
+  const kanwil = wilayah.kanwil
   const unitAda = !belumTerpetakan(b.nama_upt)
   const ev = evaluasiBerita(b)
   const prio = prioritas(prioritasBerita(b))
@@ -311,7 +350,8 @@ function kartuBorang(keadaan, b, peta) {
           <span class="mini-teks">${amankan(b.media || '-')} · ${amankan(tanggalJam(b.tanggal_publikasi || b.created_at))}</span>
         </div>
         <div class="mini-teks" style="margin-top:6px">
-          UPT: <b>${amankan(unitAda ? b.nama_upt : 'belum terpetakan')}</b> · Kanwil: <b>${amankan(namaKanwilPendek(kanwil))}</b>
+          UPT: <b>${amankan(unitAda ? b.nama_upt : 'belum terpetakan')}</b> · Kanwil: <b>${amankan(kanwil ? namaKanwilPendek(kanwil) : (KELOMPOK_TANPA[wilayah.dasar] || 'belum diketahui'))}</b>
+          ${wilayah.pasti ? '' : `<span class="samar-teks">(${amankan(KET_DASAR[wilayah.dasar] || '')}${wilayah.dasar === 'lintas' ? `: ${amankan(wilayah.kandidat.map(namaKanwilPendek).join(', '))}` : ''})</span>`}
         </div>
         ${panelUpt(keadaan, b, ada)}
         <div class="mini-teks samar-teks" style="margin-top:4px">

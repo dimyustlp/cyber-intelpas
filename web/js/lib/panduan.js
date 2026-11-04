@@ -680,6 +680,149 @@ export const JENDELA_LAPORAN = {
   ],
 }
 
+/* ------------------------------------------------------------ alur kerja */
+
+/**
+ * Alur kerja lintas halaman, sebagai langkah berurutan per ruang.
+ *
+ * Katalog di atas menjawab "layar ini untuk apa". Alur menjawab pertanyaan
+ * yang tidak bisa dijawab satu layar pun: "sesudah ini, saya ke mana". Analisis
+ * Berita menerbitkan permintaan yang dikerjakan kanwil di Tindak Lanjut, lalu
+ * oleh UPT di Klarifikasi UPT, lalu kembali dinilai di Tindak Lanjut — empat
+ * layar, tiga ruang, dan tidak satu pun dari layar itu memperlihatkan
+ * keseluruhannya.
+ *
+ * Dibaca dua tempat: halaman Panduan (seluruh alur, seluruh ruang) dan pita
+ * pengingat di puncak tiap halaman yang menjadi salah satu langkahnya
+ * (ui/pengingat-alur.js, hanya ruang si pembaca). Ditulis satu kali di sini
+ * supaya keduanya tidak pernah bercerita berbeda.
+ *
+ *   halaman  nama halaman tempat langkah itu dikerjakan; satu langkah boleh
+ *            menunjuk beberapa nama bila layarnya satu dengan beberapa alamat
+ *   judul    perintahnya, dalam kata kerja
+ *   isi      apa yang ditekan dan apa yang perlu diperiksa — teks polos
+ *
+ * tools/uji-panduan.mjs memeriksa bahwa setiap `halaman` di sini benar-benar
+ * ada, sehingga pengingat tidak menunjuk layar yang sudah dihapus.
+ */
+export const ALUR = {
+  penanganan: {
+    judul: 'Penanganan berita negatif',
+    ket: 'Dari analisis kasus per kasus sampai klarifikasi UPT dan disposisi pimpinan selesai.',
+    langkah: {
+      pusat: [
+        {
+          halaman: ['analisis-berita'],
+          judul: 'Pilih satu berita negatif',
+          isi: 'Daftar dikelompokkan per kanwil. Kanwil yang ditandai "terduga" dibaca dari '
+            + 'nama tempat di judul, belum ditetapkan siapa pun. Kelompok "Nasional / tanpa '
+            + 'lokasi" berisi berita yang memang tidak menyebut daerah; umumnya cukup '
+            + 'dijadikan disposisi pimpinan.',
+        },
+        {
+          halaman: ['analisis-berita'],
+          judul: 'Pastikan UPT-nya',
+          isi: 'Klarifikasi UPT hanya bisa diterbitkan untuk berita yang sudah ditempatkan ke '
+            + 'satu unit. Bila tertulis "UPT belum terpetakan", tetapkan unitnya lebih dulu '
+            + 'dari kandidat yang ditawarkan atau lewat pencarian. Kosongkan bila memang tidak '
+            + 'jelas; jangan menebak.',
+        },
+        {
+          halaman: ['analisis-berita'],
+          judul: 'Lengkapi analisisnya',
+          isi: 'Fakta 5W1H sudah terisi sebagian dari baris berita — lengkapi mengapa dan '
+            + 'bagaimana. Lalu analisis, prakiraan, rekomendasi, serta evaluasi sumber dan '
+            + 'informasi. Pisahkan fakta dari pendapat.',
+        },
+        {
+          halaman: ['analisis-berita'],
+          judul: 'Pilih tujuan, lalu simpan',
+          isi: 'Klarifikasi UPT, Disposisi Pimpinan, atau keduanya, beserta batas waktunya. '
+            + 'Tekan "Simpan analisis & teruskan". Permintaan klarifikasi masuk ke kanwil '
+            + 'untuk diteruskan, dan grup Telegram kanwil diberi tahu otomatis.',
+        },
+        {
+          halaman: ['klarifikasi', 'tindak-lanjut'],
+          judul: 'Pantau dan nilai klarifikasi',
+          isi: 'Di Tindak Lanjut, tab Klarifikasi UPT: status per kanwil — Belum diteruskan, '
+            + 'Belum menginput, Sudah menginput, Selesai. Klarifikasi yang sudah masuk dinilai '
+            + 'dengan "Terima klarifikasi" atau "Kembalikan untuk diperbaiki".',
+        },
+        {
+          halaman: ['disposisi'],
+          judul: 'Catat dan tuntaskan disposisi',
+          isi: 'Di tab Disposisi Pimpinan: "Catat disposisi" begitu pimpinan memberi arahan, '
+            + '"Simpan kemajuan" selama dikerjakan, dan "Tandai selesai" bila tuntas.',
+        },
+      ],
+      wilayah: [
+        {
+          halaman: ['klarifikasi', 'tindak-lanjut'],
+          judul: 'Teruskan permintaan dari pusat',
+          isi: 'Permintaan klarifikasi dari pusat berstatus "Belum diteruskan". Periksa unitnya, '
+            + 'lalu tekan "Teruskan ke UPT". Bila unitnya keliru, kabari pusat sebelum '
+            + 'meneruskan.',
+        },
+        {
+          halaman: ['analisis-berita'],
+          judul: 'Analisis berita wilayah sendiri',
+          isi: 'Kanwil juga boleh menganalisis berita negatif di wilayahnya. Permintaan yang '
+            + 'diterbitkan kanwil langsung sampai ke UPT tanpa perlu diteruskan lagi.',
+        },
+        {
+          halaman: ['klarifikasi', 'tindak-lanjut'],
+          judul: 'Tagih UPT yang belum menginput',
+          isi: 'Status "Belum menginput" yang melewati batas waktu ditandai. Pengingat Telegram '
+            + 'terkirim otomatis pukul 08.00 dan 14.00 WIB; hubungi unitnya bila tetap diam.',
+        },
+        {
+          halaman: ['klarifikasi', 'tindak-lanjut'],
+          judul: 'Nilai klarifikasi yang masuk',
+          isi: 'Baca berkasnya, lalu "Terima klarifikasi" atau "Kembalikan untuk diperbaiki" '
+            + 'dengan catatan apa yang kurang.',
+        },
+        {
+          halaman: ['disposisi'],
+          judul: 'Kerjakan disposisi kanwil',
+          isi: 'Disposisi Kepala Kantor Wilayah dicatat, dikerjakan, dan ditandai selesai di tab '
+            + 'Disposisi Pimpinan.',
+        },
+      ],
+      unit: [
+        {
+          halaman: ['klarifikasi', 'tindak-lanjut'],
+          judul: 'Buka permintaan klarifikasi',
+          isi: 'Permintaan berstatus "Belum menginput" menunggu unit Anda. Baca beritanya dan '
+            + 'instruksi dari kanwil atau pusat, serta batas waktunya.',
+        },
+        {
+          halaman: ['klarifikasi', 'tindak-lanjut'],
+          judul: 'Unggah berkas klarifikasi',
+          isi: 'Berkas PDF atau DOCX berisi klarifikasi tertulis, kronologi, dan bukti '
+            + 'pendukung. Nama dan jabatan pengirim wajib diisi. Tekan "Kirim klarifikasi"; '
+            + 'kanwil dan pusat diberi tahu otomatis.',
+        },
+        {
+          halaman: ['klarifikasi', 'tindak-lanjut'],
+          judul: 'Perbaiki bila dikembalikan',
+          isi: 'Klarifikasi yang dikembalikan berstatus "Perlu perbaikan" beserta catatannya. '
+            + 'Unggah berkas yang sudah diperbaiki dengan cara yang sama.',
+        },
+      ],
+    },
+  },
+}
+
+/** Alur beserta langkahnya yang menyangkut sebuah halaman, untuk satu ruang. */
+export function alurUntuk(halaman, ruang) {
+  const hasil = []
+  for (const [id, alur] of Object.entries(ALUR)) {
+    const langkah = alur.langkah[ruang] || []
+    if (langkah.some((l) => l.halaman.includes(halaman))) hasil.push({ id, ...alur, langkah })
+  }
+  return hasil
+}
+
 /** Ketiga ruang, dengan nama dan keterangannya. */
 export const RUANG = {
   pusat: {

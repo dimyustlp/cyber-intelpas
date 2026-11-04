@@ -16,6 +16,8 @@ import { hidupkan, denganPeralihan, lupakanNilai } from './lib/gerak.js'
 import { bukaPalet, paletTerbuka } from './ui/palet.js'
 import { langkahNyala, padamkanNyala } from './ui/nyala.js'
 import { pasangSorot, pitaMulai, pitaSelesai } from './ui/ambien.js'
+import { pasangPengingatAlur } from './ui/pengingat-alur.js'
+import { ruangPeran } from './lib/panduan.js'
 
 /*
    Dua halaman diimpor tetap, dan hanya dua.
@@ -598,6 +600,11 @@ function gambarIsi(bangun, isi, ingatan) {
     const hasil = bangun({ keadaan, isi })
     document.getElementById('bilah-judul').textContent = hasil?.judul || KONFIG.nama
     document.getElementById('bilah-sub').textContent = hasil?.sub || tanggalPanjang(new Date())
+    // Pengingat alur dipasang di sini, sesudah halaman mana pun, dan SEBELUM
+    // penyaring tombol — tombol "Berikutnya" menuju halaman yang belum tentu
+    // boleh dibuka peran ini, dan penyaring itulah yang memutuskannya.
+    const peran = keadaan.profil?.role
+    pasangPengingatAlur(isi, keadaan.halaman, ruangPeran(adalahUnit(peran), adalahEksternal(peran)))
     saringTombolTakBerhak(isi)
     amatiTombol(isi)
     // Gerak dipasang setelah isinya jadi, bukan sebelumnya. Kalau dipasang di

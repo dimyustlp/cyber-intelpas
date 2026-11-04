@@ -6655,3 +6655,21 @@ table.tabel button.judul-buka:hover { color: var(--accent); text-decoration: und
 .penanganan-masuk { margin-top: 8px; padding: 8px 10px; background: var(--surface-3); border-radius: var(--r-2); display: grid; gap: 4px; }
 .penanganan-rinci > summary { cursor: pointer; font-size: 12px; color: var(--ink-3); margin-top: 6px; }
 .pra { white-space: pre-wrap; font-size: 12.5px; line-height: 1.5; margin: 2px 0 8px; }
+
+/* Pengingat alur (ui/pengingat-alur.js) — pita langkah di puncak halaman yang
+   menjadi bagian sebuah alur kerja. Terlipat: satu baris; terbuka: daftar
+   langkah dengan langkah halaman ini ditandai. */
+.pengingat-wadah { display: grid; gap: 8px; margin-bottom: 14px; }
+.pengingat-alur { border: 1px solid var(--accent-tepi, var(--line-2)); background: var(--accent-soft, var(--surface-2)); border-radius: var(--r-2); padding: 0 13px; }
+.pengingat-alur > summary { display: flex; align-items: center; gap: 10px; padding: 10px 0; cursor: pointer; list-style: none; font-size: 13px; color: var(--ink-2); }
+.pengingat-alur > summary::-webkit-details-marker { display: none; }
+.pengingat-alur > summary svg { width: 17px; height: 17px; flex: none; color: var(--accent); }
+.pengingat-alur > summary > span:nth-child(2) { flex: 1; min-width: 0; }
+.pengingat-lipat { color: var(--accent); white-space: nowrap; }
+.pengingat-langkah { list-style: none; margin: 0; padding: 4px 0 10px; display: grid; gap: 8px; border-top: 1px dashed var(--line-2); }
+.pengingat-langkah li { display: flex; gap: 10px; align-items: flex-start; font-size: 13px; color: var(--ink-3); padding-top: 6px; }
+.pengingat-langkah li[data-di-sini] { color: var(--ink); }
+.pengingat-nomor { flex: none; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-size: 11.5px; font-weight: 600; background: var(--surface-3); color: var(--ink-3); }
+.pengingat-langkah li[data-di-sini] .pengingat-nomor { background: var(--accent); color: var(--accent-in, #fff); }
+.pengingat-kaki { flex-wrap: wrap; padding-bottom: 12px; }
+@media print { .pengingat-wadah { display: none; } }

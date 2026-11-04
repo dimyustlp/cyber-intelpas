@@ -38,7 +38,7 @@ import {
   MENU, MENU_KANWIL, MENU_UPT, adalahEksternal, adalahUnit, bolehBuka, labelPeran, PERAN, peranBaku,
 } from '../lib/peran.js'
 import {
-  RUANG, TANPA_MENU, MANUAL_KIRIM, JENDELA_LAPORAN, ruangPeran,
+  RUANG, TANPA_MENU, MANUAL_KIRIM, JENDELA_LAPORAN, ALUR, ruangPeran,
 } from '../lib/panduan.js'
 
 /** Susunan menu tiap ruang, dipakai mengambil label dan ikon tiap fitur. */
@@ -163,6 +163,32 @@ function panelManual(peran) {
   })
 }
 
+/**
+ * Alur kerja lintas halaman. Ruang si pembaca dibuka, dua ruang lain terlipat:
+ * kanwil perlu tahu apa yang dikerjakan UPT sesudah permintaannya diteruskan,
+ * tetapi bukan sebagai hal pertama yang dibacanya.
+ */
+function panelAlur(ruangSaya) {
+  return Object.values(ALUR).map((alur) => kartu({
+    judul: `Alur: ${alur.judul}`,
+    ket: alur.ket,
+    isi: Object.entries(alur.langkah)
+      .sort(([a], [b]) => (a === ruangSaya ? -1 : b === ruangSaya ? 1 : 0))
+      .map(([ruang, langkah]) => `
+        <details class="panduan-lain"${ruang === ruangSaya ? ' open' : ''}>
+          <summary>${ikon('panahKanan')}<span>${amankan(RUANG[ruang].label)}</span>
+            <span class="ket">${langkah.length} langkah${ruang === ruangSaya ? ' · ruang Anda' : ''}</span></summary>
+          <ol class="langkah" style="margin-top:8px">
+            ${langkah.map((l, i) => `
+              <li class="langkah-butir">
+                <span class="langkah-nomor">${i + 1}</span>
+                <div><b>${amankan(l.judul)}</b><p>${amankan(l.isi)}</p></div>
+              </li>`).join('')}
+          </ol>
+        </details>`).join(''),
+  })).join('')
+}
+
 /** Jendela pelaporan harian — satu aturan, dan contohnya. */
 function panelJendela() {
   const j = JENDELA_LAPORAN
@@ -261,6 +287,7 @@ export function halamanPanduan({ keadaan, isi }) {
 
         ${panelRuang(ruangSaya, peran, { sendiri: true, cari })}
 
+        ${cari ? '' : panelAlur(ruangSaya)}
         ${cari ? '' : panelManual(peran)}
         ${cari ? '' : panelJendela()}
 

@@ -130,6 +130,12 @@ export const SEBUTAN_POPULER = [
   // sementara unitnya bernama Payakumbuh. Kedua nama itu dipakai bergantian
   // dalam berita yang sama.
   ['tanjung pati', 'Lapas Kelas IIB Payakumbuh'],
+  // Ejaan media yang berbeda lebih dari satu huruf dari data induk — terlalu
+  // jauh untuk miripSatuHuruf(). Ditemukan 4 November 2026 di antara berita
+  // negatif yang tidak terpetakan ke kanwil mana pun.
+  ['mentok', 'Rutan Kelas IIB Muntok'],
+  ['pasir pengaraian', 'Lapas Kelas IIB Pasir Pangarayan'],
+  ['pasirpengaraian', 'Lapas Kelas IIB Pasir Pangarayan'],
   ['nusakambangan', null],
   ['pekanbaru', null],
 ]
@@ -396,8 +402,19 @@ export function bangunIndeks(daftarUpt) {
   // Nusakambangan" menang atas UPT lain yang hanya bertoken "nusakambangan".
   entri.sort((a, b) => b.kunci.length - a.kunci.length)
 
+  // Seluruh token nama tempat, untuk satu pertanyaan di ambilJendela(): apakah
+  // nama tempat sebuah unit sudah disebut sebelum sebutan lembaga lain. Arah
+  // mata angin tidak ikut: "Rutan Timur Polda Metro" tidak menyebut tempat.
+  const ARAH = new Set(['utara', 'selatan', 'barat', 'timur', 'tengah', 'pusat', 'baru'])
+  const tokenTempat = new Set()
+  for (const e of entri) {
+    for (const t of e.token) if (!ARAH.has(t)) tokenTempat.add(t)
+    for (const s of e.sebutan) for (const t of s.split(' ')) if (!ARAH.has(t)) tokenTempat.add(t)
+  }
+
   return {
     entri,
+    tokenTempat,
     jumlah: entri.length,
     // Berapa unit dari daftar induk yang tidak masuk indeks sama sekali. Angka
     // ini dilaporkan supaya sebuah unit yang hilang punya tempat untuk terlihat,
@@ -421,9 +438,11 @@ function tebakJenis(nama) {
 
 /**
  * Mengumpulkan jendela teks di sekitar setiap penanda jenis UPT.
+ * @param {string} teksNormal
+ * @param {Set<string>} [tempatDikenal] token nama tempat seluruh unit (indeks.tokenTempat)
  * @returns {Array<{jenis:string, jendela:string, posisi:number}>}
  */
-export function ambilJendela(teksNormal) {
+export function ambilJendela(teksNormal, tempatDikenal = null) {
   const hasil = []
   // Penanda yang sudah terpakai, dikelompokkan MENURUT JENIS.
   //
@@ -463,8 +482,26 @@ export function ambilJendela(teksNormal) {
       // Sebutan lembaga lain diperiksa pada potongan pendek tepat setelah
       // penanda jenis. Lebih jauh dari itu, kata "polri" atau "kejaksaan" bisa
       // saja milik kalimat lain yang tidak ada hubungannya dengan unitnya.
+      //
+      // Tetapi sebutan itu hanya menunjuk lembaga lain bila ia datang SEBELUM
+      // nama tempat unit mana pun. "Lapas Kediri Dibongkar Polres Tulungagung"
+      // dan "Lapas Kerobokan, Polda Bali Buru Pemasok" menyebut Polres/Polda
+      // sebagai pelaku pengungkapan, bukan pemilik rutannya — dan sampai 4
+      // November 2026 keduanya dibuang utuh, sehingga berita narkoba di dalam
+      // Lapas yang diungkap polisi, jenis yang paling sering muncul, berakhir
+      // "Belum Teridentifikasi" tanpa satu pun kandidat. "Rutan Polda Bali" dan
+      // "Rutan Gedung Merah Putih KPK" tetap ditolak: tidak ada nama tempat
+      // unit di depan sebutan lembaganya.
       const dekat = teksNormal.slice(posisi + penanda.length, posisi + penanda.length + JENDELA_LEMBAGA)
-      if (PENANDA_BUKAN_PAS.some((l) => cocokKata(dekat, l))) continue
+      const lembagaLain = PENANDA_BUKAN_PAS
+        .map((l) => posisiKata(dekat, l))
+        .filter((p) => p >= 0)
+      if (lembagaLain.length) {
+        const awalLembaga = Math.min(...lembagaLain)
+        const tempatDulu = tempatDikenal
+          && dekat.slice(0, awalLembaga).split(' ').some((k) => k.length > 2 && tempatDikenal.has(k))
+        if (!tempatDulu) continue
+      }
 
       const jendela = teksNormal.slice(posisi, posisi + penanda.length + JENDELA)
 
@@ -510,7 +547,7 @@ export function cocokkanUpt(teks, indeks, opsi = {}) {
 
   if (!teksNormal) return kosong('Teks kosong')
 
-  const jendela = ambilJendela(teksNormal)
+  const jendela = ambilJendela(teksNormal, indeks.tokenTempat)
   if (!jendela.length) {
     return kosong('Tidak ada penyebutan Lapas, Rutan, LPKA, atau Bapas dalam teks')
   }

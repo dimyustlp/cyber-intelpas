@@ -29,7 +29,7 @@
  */
 
 import { MENU, MENU_KANWIL, MENU_UPT } from '../web/js/lib/peran.js'
-import { RUANG, TANPA_MENU, MANUAL_KIRIM, JENDELA_LAPORAN } from '../web/js/lib/panduan.js'
+import { RUANG, TANPA_MENU, MANUAL_KIRIM, JENDELA_LAPORAN, ALUR } from '../web/js/lib/panduan.js'
 import { readFileSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -151,6 +151,29 @@ if (!JENDELA_LAPORAN.kirim.startsWith('05.30')) {
   lapor(`Panduan menyebut jam kirim ${JENDELA_LAPORAN.kirim}, sedangkan penjadwalnya 05.30 WIB.`)
 }
 
+/* --- 6: alur kerja ---------------------------------------------------- */
+
+/*
+   Setiap langkah alur menunjuk halaman yang benar-benar ada. Pengingat alur
+   menggambar tombol "Berikutnya" ke halaman itu; nama yang salah ketik
+   menghasilkan tombol yang tidak membuka apa pun, dan langkah yang halamannya
+   salah tidak pernah tampil di layar mana pun.
+*/
+for (const [id, alur] of Object.entries(ALUR)) {
+  for (const [ruang, langkah] of Object.entries(alur.langkah)) {
+    if (!RUANG[ruang]) lapor(`Alur ${id}: ruang "${ruang}" tidak dikenal.`)
+    for (const [i, l] of langkah.entries()) {
+      if (!l.judul || !l.isi || !l.halaman?.length) lapor(`Alur ${id}/${ruang} langkah ${i + 1}: judul, isi, atau halamannya kosong.`)
+      for (const h of l.halaman || []) {
+        if (!TERDAFTAR.has(h)) lapor(`Alur ${id}/${ruang} langkah ${i + 1}: halaman "${h}" tidak ada di main.js.`)
+      }
+      for (const bidang of ['judul', 'isi']) {
+        if (/<[a-z/]/i.test(l[bidang] || '')) lapor(`Alur ${id}/${ruang} langkah ${i + 1}: "${bidang}" memuat tanda HTML.`)
+      }
+    }
+  }
+}
+
 /* ------------------------------------------------------------- keluaran */
 
 const jumlahFitur = Object.values(RUANG).reduce((n, r) => n + Object.keys(r.butir).length, 0)
@@ -163,4 +186,5 @@ if (temuan.length) {
 }
 
 console.log(`Panduan lengkap: ${jumlahFitur} fitur di ${Object.keys(RUANG).length} ruang, `
-  + `${Object.keys(TANPA_MENU).length} layar tanpa menu, ${MANUAL_KIRIM.length} langkah manual.`)
+  + `${Object.keys(TANPA_MENU).length} layar tanpa menu, ${MANUAL_KIRIM.length} langkah manual, `
+  + `${Object.keys(ALUR).length} alur kerja.`)

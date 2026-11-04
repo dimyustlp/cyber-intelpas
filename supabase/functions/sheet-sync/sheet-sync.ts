@@ -1,27 +1,24 @@
 /**
- * Edge Function: sheet-sync (v7)
+ * Edge Function: sheet-sync (v7.1 — hemat egress)
  *
  * Menyalin baris spreadsheet menjadi baris tabel `berita`.
  *
- * Yang berubah dari v6: sumbernya tidak lagi satu alamat yang tertanam di dalam
- * berkas ini, melainkan daftar di tabel `sumber_sheet`. Kantor wilayah akan
- * mengumpulkan data lewat spreadsheet masing-masing, dan menambahkan satu
- * wilayah tidak boleh berarti menggelar ulang fungsi.
+ * v7.1 (20 September 2026): sebelumnya setiap jalan menarik SELURUH baris
+ * berita (±8.000 baris, ±3 MB) hanya untuk mengenali baris yang sudah ada.
+ * Itu salah satu penyebab kuota egress Supabase habis. Sekarang fungsi
+ * menghitung kunci tiap baris spreadsheet lebih dulu, lalu meminta basis data
+ * (RPC sheet_sync_saring) menjawab baris mana yang baru atau berubah. Yang
+ * kembali ke fungsi hanya baris yang perlu dikerjakan.
  *
- * Prinsip yang menentukan seluruh bentuk berkas ini: satu sumber yang rusak
- * tidak boleh menjatuhkan sumber lain. Spreadsheet kanwil bisa dihapus,
- * ditutup aksesnya, diganti judul kolomnya, atau diisi tanggal yang tidak
- * terbaca — dan ketika itu terjadi, penyalinan pusat harus tetap selesai
- * seperti biasa. Karena itu tiap sumber punya blok galatnya sendiri, barisnya
- * sendiri di `sheet_sync_log`, dan kegagalannya berhenti di dirinya sendiri.
- *
- * Balasan HTTP mengikuti aturan lama: 200 bila seluruhnya berhasil, 207 bila
- * sebagian, 500 hanya bila gagal sebelum satu sumber pun sempat dikerjakan.
+ * Prinsip lama tetap: satu sumber yang rusak tidak boleh menjatuhkan sumber
+ * lain. Tiap sumber punya blok galat, baris sheet_sync_log, dan kegagalannya
+ * berhenti di dirinya sendiri. Balasan HTTP: 200 bila seluruhnya berhasil,
+ * 207 bila sebagian, 500 bila gagal sebelum satu sumber pun dikerjakan.
  */
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const VERSI = "7.0.0";
+const VERSI = "7.2.0";
 
 const jsonHeaders = {
   "Content-Type": "application/json; charset=utf-8",
@@ -33,14 +30,6 @@ const jsonHeaders = {
 
 const DEFAULT_UNMAPPED_UPT = "Belum Teridentifikasi";
 
-/**
- * Alamat sumber pusat yang lama.
- *
- * Masih dipakai sebagai jaring pengaman: bila tabel `sumber_sheet` belum ada
- * atau kosong, penyalin tetap menarik sumber ini seperti sebelumnya. Fungsi
- * yang berhenti bekerja hanya karena sebuah tabel belum dibuat adalah fungsi
- * yang menukar satu kegagalan dengan kegagalan lain.
- */
 const DEFAULT_PUBLIC_CSV_URL =
   "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ0-o2qi5vHXxjnwxPAB4wxtAo8ZdmmVjG-wMvOLSXKjNWXOLCyyR0-1F4aOUn9SnFY8NtFvZeSzaft/pub?output=csv";
 
@@ -68,15 +57,6 @@ type SyncCounters = {
 };
 
 type HeaderMap = Record<string, number>;
-
-type ExistingRow = {
-  id: string;
-  source_type: string | null;
-  source_external_id: string | null;
-  content_hash: string | null;
-  link: string | null;
-  link_normalized: string | null;
-};
 
 type PendingRow = {
   payload: Record<string, unknown>;
@@ -179,7 +159,6 @@ function parseCsv(text: string): string[][] {
   );
 }
 
-/** Penanda dokumen Google dari alamat apa pun, termasuk tautan /edit biasa. */
 function idDokumen(url: string): { id: string; terbit: boolean } | null {
   const terbit = url.match(/\/spreadsheets\/d\/e\/([a-zA-Z0-9_-]+)/);
   if (terbit) return { id: terbit[1], terbit: true };
@@ -190,15 +169,7 @@ function idDokumen(url: string): { id: string; terbit: boolean } | null {
   return null;
 }
 
-/**
- * Daftar alamat yang dicoba berurutan untuk satu sumber.
- *
- * Alasan ada lebih dari satu: petugas kantor wilayah akan menempelkan tautan
- * yang mereka lihat di bilah alamat — tautan /edit — bukan alamat ekspor CSV
- * yang tidak pernah mereka temui. Menolak tautan itu berarti memindahkan
- * pekerjaan menerjemahkan alamat kepada orang yang paling tidak punya alasan
- * mengetahuinya.
- */
+/** Alamat yang dicoba berurutan; tautan /edit biasa pun diterima. */
 function alamatKandidat(sumber: Sumber): string[] {
   const url = sumber.csv_url.trim();
   const daftar: string[] = [];
@@ -222,15 +193,7 @@ function alamatKandidat(sumber: Sumber): string[] {
   return [...new Set(daftar)];
 }
 
-/**
- * Membaca CSV sebuah sumber.
- *
- * Google tidak membalas 403 untuk lembar tertutup; ia membalas halaman masuk
- * berbentuk HTML dengan status 200 atau 401. Tanpa pemeriksaan bentuk isi,
- * halaman itu akan diurai sebagai CSV dan menghasilkan galat "kolom wajib
- * tidak ditemukan" — pesan yang menyesatkan orang mencari kolom yang
- * sebenarnya baik-baik saja.
- */
+/** Membaca CSV sebuah sumber; halaman masuk Google (HTML) ditolak. */
 async function bacaCsv(sumber: Sumber): Promise<{ nilai: string[][]; alamat: string }> {
   const kandidat = alamatKandidat(sumber);
   const kegagalan: string[] = [];
@@ -247,9 +210,6 @@ async function bacaCsv(sumber: Sumber): Promise<{ nilai: string[][]; alamat: str
       });
 
       const jenis = (jawab.headers.get("content-type") || "").toLowerCase();
-      // Penanda urutan bita di kepala berkas dibuang lewat kode angkanya, bukan
-      // lewat karakternya sendiri — karakter tak tampak di dalam kode sumber
-      // adalah hal yang paling mudah hilang saat berkas berpindah tangan.
       const buangBom = (t: string) => (t.charCodeAt(0) === 0xFEFF ? t.slice(1) : t);
       const teks = buangBom(await jawab.text());
 
@@ -288,15 +248,6 @@ function normalizeHeader(value: unknown): string {
   return String(value ?? "").trim().toLowerCase().replace(/\s+/g, " ");
 }
 
-/**
- * Nama kolom yang dikenali.
- *
- * Lembar kanwil tidak akan memakai judul kolom yang sama persis dengan lembar
- * pusat, dan menuntut keseragaman lebih dulu berarti menunda seluruh pekerjaan
- * sampai tiga puluh delapan wilayah sepakat. Alias di bawah menerima bentuk
- * yang wajar; yang benar-benar di luar dugaan bisa dipetakan per sumber lewat
- * kolom `kolom_alias` pada tabel `sumber_sheet`.
- */
 const ALIAS_BAWAAN: Record<string, string[]> = {
   detected: ["waktu terdeteksi", "tanggal terdeteksi", "waktu deteksi", "timestamp",
     "tanggal", "tanggal berita", "tanggal publikasi", "tanggal terbit"],
@@ -317,7 +268,6 @@ const ALIAS_BAWAAN: Record<string, string[]> = {
 function resolveColumns(headers: string[], tambahan: Record<string, string[]> | null): HeaderMap {
   const aliases: Record<string, string[]> = { ...ALIAS_BAWAAN };
 
-  // Alias khusus sumber ditaruh di depan supaya menang atas bawaan.
   for (const [kunci, nilai] of Object.entries(tambahan || {})) {
     const daftar = (Array.isArray(nilai) ? nilai : [nilai]).map(normalizeHeader);
     aliases[kunci] = [...daftar, ...(aliases[kunci] || [])];
@@ -363,14 +313,6 @@ function normalizeRisk(value: unknown): string {
   return "Rendah";
 }
 
-/**
- * Penanda yang hanya menerangkan DARI MANA pembaca datang, bukan artikel apa
- * yang dibukanya. Diperluas dari empat menjadi dua puluh empat pada
- * 6 September 2026, bersamaan dengan hadirnya sumber ketiga: perayap yang
- * berbeda menempelkan penanda yang berbeda pada alamat artikel yang sama
- * persis, dan dengan tiga perayap yang saling bertumpang tindih, perbedaan itu
- * berhenti menjadi perkara tampilan.
- */
 const PENANDA_PELACAK = new Set([
   "fbclid", "gclid", "dclid", "msclkid", "igsh", "igshid", "mibextid",
   "ref", "ref_src", "refsrc", "source", "src", "spm", "scm",
@@ -379,18 +321,8 @@ const PENANDA_PELACAK = new Set([
 ]);
 
 /**
- * Menyeragamkan tautan.
- *
- * PERHATIAN: yang berwenang bukan fungsi ini. Sejak 6 September 2026 bentuk
- * tersimpan sebuah tautan ditentukan public.normalkan_tautan() di basis data,
- * dipanggil pemicu berita_seragamkan_tautan, dan apa pun yang dikirim dari
- * sini akan ditimpa di sana.
- *
- * Fungsi ini tetap ada karena penyalin memakainya untuk MENYARING lebih dulu —
- * mengenali baris yang tautannya sudah ada tanpa mengirim satu pun permintaan
- * yang pasti ditolak. Kalau ia berbeda dari aturan basis data, yang terjadi
- * bukan berita kembar melainkan pekerjaan sia-sia; tools/uji-tautan.mjs
- * menahan keduanya tetap sepaham.
+ * Menyeragamkan tautan. Yang berwenang tetap public.normalkan_tautan() di
+ * basis data; fungsi ini hanya dipakai untuk menyaring lebih dulu.
  */
 function normalizeUrl(value: unknown): string {
   let url = clean(value);
@@ -402,8 +334,6 @@ function normalizeUrl(value: unknown): string {
 
     parsed.hash = "";
     parsed.protocol = "https:";
-    // Inang dikecilkan hurufnya, jalurnya TIDAK: pengenal video YouTube dan
-    // sebagian jalur peladen peka besar-kecil huruf.
     parsed.hostname = parsed.hostname.toLowerCase().replace(/^www\./, "");
 
     for (const key of [...parsed.searchParams.keys()]) {
@@ -449,6 +379,34 @@ function parseAnalysis(text: string): { analysis: string; recommendation: string
   };
 }
 
+/**
+ * Penguraian tanggal LAMA, dipertahankan HANYA untuk kunci baris dan hash isi.
+ *
+ * Kunci baris (externalId, bila tautan kosong) dan content_hash dihitung dari
+ * tanggal yang sudah diurai. Bila penguraiannya dibetulkan begitu saja, hash
+ * setiap berita lembar kanwil ikut berubah, sheet_sync_saring menganggap
+ * ratusan baris "berubah", dan upsert menimpa seluruhnya — termasuk
+ * status_verifikasi kembali "Belum Ditelaah" dan klasifikasinya kosong. Jadi
+ * yang dibetulkan hanya tanggal yang DISIMPAN; identitas baris tetap memakai
+ * bentuk lama. Arsip yang sudah tersimpan dibetulkan sekali lewat migrasi
+ * 20261104070000.
+ */
+function parseDateLama(value: unknown): string | null {
+  const text = clean(value).replace(/\.(?=\d{2}(?:\D|$))/g, ":");
+  if (!text) return null;
+  const match = text.match(
+    /^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})(?:[,\s]+(\d{1,2})[:.](\d{2}))?/
+  );
+  if (match) {
+    return new Date(Date.UTC(
+      Number(match[3]), Number(match[2]) - 1, Number(match[1]),
+      Number(match[4] || 0) - 7, Number(match[5] || 0),
+    )).toISOString();
+  }
+  const parsed = new Date(text);
+  return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString();
+}
+
 function parseDate(value: unknown): string | null {
   const text = clean(value).replace(/\.(?=\d{2}(?:\D|$))/g, ":");
   if (!text) return null;
@@ -465,6 +423,24 @@ function parseDate(value: unknown): string | null {
     const minute = Number(match[5] || 0);
 
     return new Date(Date.UTC(year, month, day, hour - 7, minute)).toISOString();
+  }
+
+  /*
+    Bentuk ISO TANPA zona — "2026-11-04 13:16" — juga jam WIB. Lembar kanwil
+    (gas/lembar-kanwil-v3.template.gs) memformat kolom waktunya
+    'yyyy-mm-dd hh:mm', dan gviz mengirimkannya apa adanya. Sampai 4 November
+    2026 bentuk ini jatuh ke `new Date(text)`, yang di Edge Function (zona UTC)
+    membacanya sebagai UTC: 312 dari 313 berita lembar kanwil per provinsi
+    tercatat terbit rata-rata 6,7 jam SESUDAH ditangkap, dan berita malam hari
+    jatuh ke "besok" di jendela hari WIB. Bentuk yang membawa Z atau +hh:mm
+    tetap diserahkan ke Date, sebab zonanya sudah tertulis.
+  */
+  const iso = text.match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:[T\s]+(\d{1,2}):(\d{2})(?::(\d{2}))?)?$/);
+  if (iso) {
+    return new Date(Date.UTC(
+      Number(iso[1]), Number(iso[2]) - 1, Number(iso[3]),
+      Number(iso[4] || 0) - 7, Number(iso[5] || 0), Number(iso[6] || 0),
+    )).toISOString();
   }
 
   const parsed = new Date(text);
@@ -513,14 +489,6 @@ async function fetchAll<T>(
 
 /* -------------------------------------------------------------- sumber */
 
-/**
- * Daftar sumber yang akan ditarik.
- *
- * Kegagalan membaca tabelnya tidak dianggap fatal: penyalinan pusat tetap
- * berjalan dengan alamat bawaan. Sumber data yang berhenti diam-diam adalah
- * kegagalan yang paling lama tidak ketahuan, dan tidak pantas dipicu oleh
- * sebuah tabel daftar.
- */
 async function daftarSumber(
   supabase: ReturnType<typeof createClient>,
 ): Promise<{ sumber: Sumber[]; catatan: string | null }> {
@@ -579,7 +547,6 @@ async function updateSyncLog(
   if (error) throw new Error(`Gagal memperbarui sheet_sync_log: ${safeError(error)}`);
 }
 
-/** Menandai keadaan terakhir sebuah sumber. Kegagalannya tidak pernah fatal. */
 async function tandaiSumber(
   supabase: ReturnType<typeof createClient>,
   sumber: Sumber,
@@ -593,6 +560,28 @@ async function tandaiSumber(
   }
 }
 
+/**
+ * Menanyakan ke basis data baris mana yang perlu dikerjakan.
+ *
+ * Kembali hanya baris yang BARU atau BERUBAH (hash berbeda). Baris yang tidak
+ * kembali berarti sudah ada dengan isi yang sama, jadi dilewati. Inilah yang
+ * menggantikan penarikan seluruh tabel berita pada versi 7.0.
+ */
+async function saring(
+  supabase: ReturnType<typeof createClient>,
+  item: Array<{ e: string; u: string; h: string }>,
+): Promise<Map<string, { ada: boolean; link_lain: boolean }>> {
+  const hasil = new Map<string, { ada: boolean; link_lain: boolean }>();
+  for (let i = 0; i < item.length; i += 500) {
+    const { data, error } = await supabase.rpc("sheet_sync_saring", { p_item: item.slice(i, i + 500) });
+    if (error) throw new Error(`Penyaringan basis data gagal: ${safeError(error)}`);
+    for (const r of (data || []) as Array<{ e: string; ada: boolean; link_lain: boolean }>) {
+      hasil.set(String(r.e), { ada: Boolean(r.ada), link_lain: Boolean(r.link_lain) });
+    }
+  }
+  return hasil;
+}
+
 /* ------------------------------------------------------ satu sumber */
 
 async function kerjakanSumber(
@@ -600,8 +589,6 @@ async function kerjakanSumber(
   sumber: Sumber,
   konteks: {
     uptNames: { name: string; key: string }[];
-    existingByExternalId: Map<string, ExistingRow>;
-    existingByUrl: Map<string, ExistingRow>;
     queuedUrls: Set<string>;
     triggerType: string;
   },
@@ -611,12 +598,7 @@ async function kerjakanSumber(
   const rowErrors: string[] = [];
   let logId: string | null = null;
 
-  /*
-     Penanda baris sumber pusat sengaja mempertahankan bentuk lamanya, "gs:".
-     Menambahkan kode sumber ke depannya akan membuat tujuh ratus lebih berita
-     yang sudah tersimpan tidak dikenali lagi, lalu masuk ulang sebagai berita
-     baru — arsip berlipat dua dalam satu kali jalan.
-  */
+  // Penanda baris sumber pusat mempertahankan bentuk lamanya, "gs:".
   const awalan = sumber.kode === "pusat" ? "gs:" : `gs:${sumber.kode}:`;
   const sourceType = sumber.lingkup === "kanwil" ? "google_sheet_kanwil" : "google_sheet";
 
@@ -673,12 +655,15 @@ async function kerjakanSumber(
     const headers = values[0].map(normalizeHeader);
     const columns = resolveColumns(headers, sumber.kolom_alias);
 
-    const now = new Date().toISOString();
-    const pendingRows: PendingRow[] = [];
+    /* Tahap 1: hitung kunci dan hash setiap baris, tanpa menyentuh basis data. */
+    type Calon = {
+      index: number; row: string[]; title: string; normalizedUrl: string; detected: string | null;
+      media: string; risk: string; rawAnalysis: string; externalId: string; contentHash: string;
+    };
+    const calon: Calon[] = [];
 
     for (let index = 1; index < values.length; index++) {
       counters.seen++;
-
       try {
         const row = values[index] || [];
         const title = clean(cell(row, columns.title));
@@ -690,18 +675,17 @@ async function kerjakanSumber(
         }
 
         const detected = parseDate(cell(row, columns.detected));
-        const media = clean(cell(row, columns.media))
-          || hostFromUrl(normalizedUrl)
-          || "Tidak diketahui";
+        // Identitas baris tetap memakai penguraian lama; lihat parseDateLama.
+        const detectedKunci = parseDateLama(cell(row, columns.detected));
+        const media = clean(cell(row, columns.media)) || hostFromUrl(normalizedUrl) || "Tidak diketahui";
         const risk = normalizeRisk(cell(row, columns.risk));
         const rawAnalysis = cleanMultiline(cell(row, columns.analysis));
-        const parsed = parseAnalysis(rawAnalysis);
 
-        const identityRaw = normalizedUrl || [detected, title, media].join("|");
+        const identityRaw = normalizedUrl || [detectedKunci, title, media].join("|");
         const externalId = `${awalan}${await sha256(identityRaw.toLowerCase())}`;
 
         const contentHash = await sha256([
-          detected, title, media, risk, rawAnalysis, normalizedUrl,
+          detectedKunci, title, media, risk, rawAnalysis, normalizedUrl,
           cell(row, columns.followup),
           cell(row, columns.officer),
           cell(row, columns.responseTime),
@@ -709,43 +693,41 @@ async function kerjakanSumber(
           cell(row, columns.kanwil),
         ].join("|"));
 
-        const existingSourceRow = konteks.existingByExternalId.get(externalId);
-        if ((existingSourceRow?.content_hash || "") === contentHash) {
-          counters.skipped++;
-          continue;
-        }
+        calon.push({ index, row, title, normalizedUrl, detected, media, risk, rawAnalysis, externalId, contentHash });
+      } catch (rowError) {
+        counters.failed++;
+        const message = `Baris ${index + 1}: ${safeError(rowError)}`;
+        rowErrors.push(message);
+        console.error(message);
+      }
+    }
 
-        /*
-          Trigger database menolak link identik, termasuk berita yang dahulu
-          dimasukkan manual dan belum memiliki source_external_id. Karena itu,
-          link yang sudah ada tidak dimasukkan ulang dan dihitung sebagai skip.
-          Aturan ini sekarang juga yang menjaga agar berita yang sama, dikirim
-          oleh pusat dan oleh kanwil, tidak tercatat dua kali.
-        */
-        const existingLinkRow = normalizedUrl ? konteks.existingByUrl.get(normalizedUrl) : undefined;
-        if (existingLinkRow && existingLinkRow.source_external_id !== externalId) {
-          counters.skipped++;
-          continue;
-        }
+    /* Tahap 2: basis data menjawab baris mana yang baru atau berubah. */
+    const perlu = await saring(
+      supabase,
+      calon.map((c) => ({ e: c.externalId, u: c.normalizedUrl, h: c.contentHash })),
+    );
 
-        if (normalizedUrl && konteks.queuedUrls.has(normalizedUrl)) {
-          counters.skipped++;
-          continue;
-        }
+    const now = new Date().toISOString();
+    const pendingRows: PendingRow[] = [];
 
-        /* Nama unit dari kolomnya sendiri bila lembar menyediakannya; kalau
-           tidak, dicocokkan dari teks seperti sebelumnya. Kolom yang diisi
-           petugas wilayah lebih dapat dipercaya daripada tebakan mesin atas
-           judul berita. */
+    for (const c of calon) {
+      const status = perlu.get(c.externalId);
+      if (!status) { counters.skipped++; continue; }          // sudah ada, isi sama
+      if (status.link_lain) { counters.skipped++; continue; } // tautan milik baris lain
+      if (c.normalizedUrl && konteks.queuedUrls.has(c.normalizedUrl)) { counters.skipped++; continue; }
+
+      try {
+        const { row, index, title, normalizedUrl, detected, media, risk, rawAnalysis, externalId, contentHash } = c;
+        const parsed = parseAnalysis(rawAnalysis);
+
         const uptTertulis = clean(cell(row, columns.upt));
         const matchedUpt = (uptTertulis && matchUpt(uptTertulis, konteks.uptNames))
           || matchUpt(`${title} ${rawAnalysis}`, konteks.uptNames);
 
         const kanwilBaris = clean(cell(row, columns.kanwil)) || sumber.kanwil || null;
         const pelapor = clean(cell(row, columns.reporter))
-          || (sumber.lingkup === "kanwil"
-            ? `Kiriman ${sumber.nama}`
-            : "Sinkronisasi Spreadsheet Publik");
+          || (sumber.lingkup === "kanwil" ? `Kiriman ${sumber.nama}` : "Sinkronisasi Spreadsheet Publik");
 
         if (normalizedUrl) konteks.queuedUrls.add(normalizedUrl);
 
@@ -761,9 +743,6 @@ async function kerjakanSumber(
           sync_status: "synced",
           sync_error: "",
           content_hash: contentHash,
-          // Nama unit yang tidak dikenali data induk UPT tidak pernah ditulis apa
-          // adanya ke kolom ini. Nama yang salah ketik akan tampak "sudah
-          // terpetakan" di layar dan tidak pernah masuk antrean Pemetaan UPT.
           nama_upt: matchedUpt || DEFAULT_UNMAPPED_UPT,
           kanwil_asal: kanwilBaris,
           nama_petugas: pelapor,
@@ -799,27 +778,21 @@ async function kerjakanSumber(
           updated_at: now,
         };
 
-        pendingRows.push({
-          operation: existingSourceRow ? "update" : "insert",
-          rowNumber: index + 1,
-          payload,
-        });
+        pendingRows.push({ operation: status.ada ? "update" : "insert", rowNumber: index + 1, payload });
       } catch (rowError) {
         counters.failed++;
-        const message = `Baris ${index + 1}: ${safeError(rowError)}`;
+        const message = `Baris ${c.index + 1}: ${safeError(rowError)}`;
         rowErrors.push(message);
         console.error(message);
       }
     }
 
-    /*
-      Simpan satu per satu. Cara ini sengaja dipilih agar satu link duplikat
-      tidak menggagalkan seluruh batch berita lainnya.
-    */
+    /* Disimpan satu per satu agar satu tautan kembar tidak menggagalkan yang lain.
+       returning: minimal supaya basis data tidak mengirim balik baris yang disimpan. */
     for (const item of pendingRows) {
       const { error } = await supabase
         .from("berita")
-        .upsert(item.payload, { onConflict: "source_record_key", ignoreDuplicates: false });
+        .upsert(item.payload, { onConflict: "source_record_key", ignoreDuplicates: false, returning: "minimal" } as never);
 
       if (error) {
         if (isDuplicateLinkError(error)) {
@@ -875,12 +848,6 @@ async function kerjakanSumber(
 
     return { kode: sumber.kode, nama: sumber.nama, status, counters, pesan, errors: rowErrors.slice(0, 10) };
   } catch (galat) {
-    /*
-       Kegagalan berhenti di sini — di dalam blok milik satu sumber. Sumber
-       berikutnya tetap dikerjakan, dan itulah seluruh alasan fungsi ini ditulis
-       ulang: spreadsheet kanwil yang belum dibuka aksesnya tidak boleh
-       menghentikan penyalinan pusat yang berjalan setiap lima menit.
-    */
     const pesan = safeError(galat);
     const selesai = new Date();
     console.error(`Sumber ${sumber.kode} gagal: ${pesan}`);
@@ -954,8 +921,6 @@ Deno.serve(async (request: Request) => {
 
     const triggerType = request.headers.get("x-trigger-type") || "scheduled";
 
-    // Sumber tertentu saja, bila diminta. Berguna untuk mencoba satu
-    // spreadsheet kanwil yang baru didaftarkan tanpa menunggu jadwal.
     let hanyaKode = "";
     if (request.method === "POST") {
       try {
@@ -979,7 +944,6 @@ Deno.serve(async (request: Request) => {
       );
     }
 
-    // Data induk ditarik sekali untuk seluruh sumber, bukan sekali per sumber.
     const uptRows = await fetchAll<{ nama_upt: string }>((from, to) =>
       supabase.from("upt").select("nama_upt").eq("aktif", true).range(from, to)
     );
@@ -989,37 +953,7 @@ Deno.serve(async (request: Request) => {
       .filter((row) => row.key)
       .sort((a, b) => b.key.length - a.key.length);
 
-    const existingRows = await fetchAll<ExistingRow>((from, to) =>
-      supabase
-        .from("berita")
-        .select("id,source_type,source_external_id,content_hash,link,link_normalized")
-        .range(from, to)
-    );
-
-    const existingByExternalId = new Map<string, ExistingRow>();
-    const existingByUrl = new Map<string, ExistingRow>();
-
-    for (const existingRow of existingRows) {
-      // Penanda baris dipetakan tanpa memandang jenis sumbernya: sejak ada
-      // lebih dari satu spreadsheet, jenis sumber tidak lagi cukup menjadi
-      // syarat pengenalan baris yang sama.
-      if (existingRow.source_external_id) {
-        existingByExternalId.set(existingRow.source_external_id, existingRow);
-      }
-
-      const existingUrl = normalizeUrl(existingRow.link_normalized || existingRow.link || "");
-      if (existingUrl && !existingByUrl.has(existingUrl)) {
-        existingByUrl.set(existingUrl, existingRow);
-      }
-    }
-
-    const konteks = {
-      uptNames,
-      existingByExternalId,
-      existingByUrl,
-      queuedUrls: new Set<string>(),
-      triggerType,
-    };
+    const konteks = { uptNames, queuedUrls: new Set<string>(), triggerType };
 
     const hasil: HasilSumber[] = [];
     for (const s of sumber) {
@@ -1060,12 +994,10 @@ Deno.serve(async (request: Request) => {
           counters: h.counters, pesan: h.pesan,
         })),
         errors: hasil.flatMap((h) => h.errors).slice(0, 20),
-      }, null, 2),
+      }),
       { status: status === "Berhasil" ? 200 : seluruhnyaGagal ? 500 : 207, headers: jsonHeaders },
     );
   } catch (error) {
-    // Sampai di sini berarti gagal sebelum satu sumber pun sempat dikerjakan:
-    // token, kunci layanan, atau data induk UPT.
     const errorText = safeError(error);
     console.error(errorText);
 

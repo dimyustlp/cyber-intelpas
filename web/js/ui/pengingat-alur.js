@@ -38,13 +38,21 @@ function tulis(id, terlipat) {
   try { localStorage.setItem(KUNCI, JSON.stringify(isi)) } catch { /* lipatan hanya diingat sampai dimuat ulang */ }
 }
 
+function layarSempit() {
+  try { return matchMedia('(max-width: 720px)').matches } catch { return false }
+}
+
 function pita(alur, halaman) {
   const di = alur.langkah.map((l) => l.halaman.includes(halaman))
   const terakhirDiSini = di.lastIndexOf(true)
   const berikut = alur.langkah.slice(terakhirDiSini + 1).find((l) => !l.halaman.includes(halaman))
   const nomorDiSini = di.map((ya, i) => (ya ? i + 1 : null)).filter(Boolean)
   const rentang = nomorDiSini.length > 1 ? `${nomorDiSini[0]}–${nomorDiSini.at(-1)}` : String(nomorDiSini[0])
-  const terlipat = baca()[alur.id] === true
+  /* Pilihan petugas menang. Tanpa pilihan, pita terbuka di layar lebar dan
+     terlipat di ponsel: terbuka, ia memakan satu layar ponsel penuh sebelum
+     angka pertama halaman sempat terlihat. */
+  const pilihan = baca()[alur.id]
+  const terlipat = pilihan === undefined ? layarSempit() : pilihan === true
 
   return `
     <details class="pengingat-alur" data-alur="${amankan(alur.id)}"${terlipat ? '' : ' open'}>
@@ -82,8 +90,13 @@ export function pasangPengingatAlur(isi, halaman, ruang) {
   wadah.className = 'pengingat-wadah'
   wadah.innerHTML = daftar.map((a) => pita(a, halaman)).join('')
   isi.prepend(wadah)
+  wadah.querySelectorAll('details.pengingat-alur > summary').forEach((s) => s.addEventListener('click', () => {
+    s.parentElement.dataset.disentuh = '1'
+  }))
   wadah.querySelectorAll('details.pengingat-alur').forEach((d) => d.addEventListener('toggle', () => {
-    tulis(d.dataset.alur, !d.open)
+    // Peramban juga memicu toggle untuk details yang lahir terbuka. Yang
+    // diingat hanya lipatan yang dipilih petugas, lewat klik pada judulnya.
+    if (d.dataset.disentuh) tulis(d.dataset.alur, !d.open)
     const label = d.querySelector('.pengingat-lipat')
     if (label) label.textContent = d.open ? 'Sembunyikan' : 'Tampilkan'
   }))

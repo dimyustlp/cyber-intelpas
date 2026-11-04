@@ -1565,6 +1565,11 @@ table.tabel tbody td { border-bottom: 1px solid var(--line-3); }
 
 .segmen {
   display: inline-flex;
+  /* Di ponsel deretan saring status (Tindak Lanjut: lima status) lebih lebar
+     dari layar; tanpa bungkus tombol terakhirnya terdorong keluar dan seluruh
+     halaman ikut bergeser ke samping. */
+  flex-wrap: wrap;
+  max-width: 100%;
   background: var(--surface-3);
   border: 1px solid var(--line-2);
   border-radius: var(--r-2);

@@ -14,17 +14,27 @@
  * Bagi pusat daftarnya dikelompokkan per kanwil — permintaan user 3 November
  * 2026 — dengan kanwil ditentukan dari kanwil asal lembar, atau kanwil UPT-nya
  * di data induk bila berita itu masuk lewat jalur pusat.
+ *
+ * Penempatan UPT (permintaan user 4 November 2026): Klarifikasi UPT menuntut
+ * berita yang sudah terpetakan ke satu unit, dan sampai hari itu satu-satunya
+ * jalan memetakannya adalah meninggalkan analisis dan membuka halaman Pemetaan
+ * UPT. Panel analisis kini memuat kandidat dari mesin pencocokan yang sama dan
+ * pencarian bebas ke data induk. Yang ditulis hanya `berita.nama_upt` — kolom
+ * yang sama yang ditulis Pemetaan UPT — dan `terapkan_klasifikasi` hanya
+ * mengisi kolom itu bila masih kosong, sehingga penetapan manusia tidak
+ * ditimpa mesin pada penilaian ulang.
  */
 
 import { kartu, keping, kosong, tombol, pesanSistem, roti } from '../ui/komponen.js'
 import { amankan, angka, tanggalJam, ringkas, nadaUrgensi } from '../lib/format.js'
 import { ikon } from '../lib/ikon.js'
-import { ambil, pesanRamah } from '../lib/api.js'
+import { ambil, perbarui, pesanRamah } from '../lib/api.js'
 import { KONFIG } from '../lib/konfig.js'
 import { punyaIzin, adalahEksternal } from '../lib/peran.js'
 import { dasar } from '../lib/hitung.js'
 import { ember } from '../lib/sentimen.js'
 import { belumTerpetakan } from '../lib/unit-terpetakan.js'
+import { bangunIndeks, cocokkanUpt, normalkanUpt } from '../lib/pencocokan-upt.js'
 import {
   evaluasiBerita, prioritasBerita, prioritas, labelSumber, labelInformasi,
   EVALUASI_SUMBER, EVALUASI_INFORMASI,
@@ -34,16 +44,149 @@ import {
   muatPenanganan, penangananSaatIni, buatPenanganan, infoStatus, namaKanwilPendek, TUJUAN,
 } from '../lib/penanganan.js'
 
-const pilih = { id: null, cari: '', kanwil: 'semua', hanyaBaru: false, sibuk: false, buka: new Set() }
+const pilih = {
+  id: null, cari: '', kanwil: 'semua', hanyaBaru: false, sibuk: false, buka: new Set(),
+  // Penempatan UPT: berita yang pemilihnya terbuka, dan isi borang yang
+  // sedang diketik — supaya menetapkan UPT tidak menghapus analisis yang
+  // belum disimpan saat panel digambar ulang.
+  uptBuka: null, cariUpt: '', simpanUpt: false, draf: null,
+}
 let indukUpt = null
+let indeksUpt = null
 
 async function muatInduk() {
-  if (indukUpt || KONFIG.mode === 'demo') return indukUpt || new Map()
+  if (indukUpt) return indukUpt
   try {
-    const baris = await ambil('upt', { select: 'nama_upt,kanwil', limit: 1000 }) || []
+    // Mode peragaan tidak punya peladen; potret data induk yang dipakai Peta
+    // Sebaran cukup untuk memperagakan penempatan UPT, dan dimuat dinamis
+    // supaya peramban petugas tidak pernah mengunduhnya.
+    const baris = KONFIG.mode === 'demo'
+      ? (await import('../lib/peta-upt-contoh.js')).UNIT_CONTOH
+        .map(([nama_upt, jenis_upt, kanwil, provinsi, kabupaten_kota]) => ({ nama_upt, jenis_upt, kanwil, provinsi, kabupaten_kota }))
+      : await ambil('upt', {
+        select: 'nama_upt,jenis_upt,kelas_upt,subjenis_upt,provinsi,kanwil,kabupaten_kota,location_hint',
+        aktif: 'eq.true',
+        limit: 1000,
+      }) || []
     indukUpt = new Map(baris.map((u) => [u.nama_upt, u.kanwil]))
+    indeksUpt = bangunIndeks(baris)
   } catch { indukUpt = new Map() }
   return indukUpt
+}
+
+/**
+ * Unit yang boleh dipilih pemegang peran ini. Admin kanwil hanya unit di
+ * wilayahnya: policy `berita_update_telaah_kanwil` menolak baris yang sesudah
+ * diubah jatuh ke luar wilayahnya, dan pilihan yang pasti ditolak tidak perlu
+ * ditawarkan.
+ */
+function entriBoleh(keadaan) {
+  if (!indeksUpt) return []
+  const kanwil = adalahEksternal(keadaan.profil?.role) ? keadaan.profil?.assigned_kanwil : null
+  return kanwil ? indeksUpt.entri.filter((e) => e.kanwil === kanwil) : indeksUpt.entri
+}
+
+function calonUpt(keadaan, b) {
+  const boleh = entriBoleh(keadaan)
+  const namaBoleh = new Set(boleh.map((e) => e.nama))
+  const teks = [b.judul, b.ringkasan, b.raw_analysis, b.caption_manual, b.media].filter(Boolean).join(' . ')
+  const saran = indeksUpt
+    ? cocokkanUpt(teks, indeksUpt, { maksSaran: 6 }).saran.filter((s) => namaBoleh.has(s.nama) && s.nama !== b.nama_upt)
+    : []
+  // Setiap kata yang diketik harus ada di nama, kabupaten/kota, atau kanwil —
+  // "rumbai narkotika" menemukan "Lapas Narkotika Kelas IIB Rumbai", yang
+  // tidak ditemukan pencarian satu untai utuh.
+  const kata = normalkanUpt(pilih.cariUpt).split(' ').filter(Boolean)
+  const cari = kata.length && pilih.cariUpt.trim().length >= 2
+    ? boleh.filter((e) => {
+      const ladang = `${e.namaNormal} ${e.kabkota} ${normalkanUpt(e.kanwil)} ${normalkanUpt(e.provinsi)}`
+      return kata.every((k) => ladang.includes(k))
+    }).slice(0, 8)
+    : []
+  return { saran, cari }
+}
+
+function barisCalon(nama, ket, skor = null) {
+  return `
+    <button class="kandidat-baris" data-tetapkan-upt="${amankan(nama)}">
+      ${skor === null ? '' : `<span class="kandidat-skor" data-kuat="${skor >= 0.72}">${Math.round(skor * 100)}%</span>`}
+      <span class="kandidat-teks">
+        <span class="kandidat-nama">${amankan(nama)}</span>
+        <span class="kandidat-ket">${amankan(ket)}</span>
+      </span>
+      <span class="kandidat-panah">${ikon('panahKanan')}</span>
+    </button>`
+}
+
+function hasilCariUpt(keadaan, b) {
+  const { cari } = calonUpt(keadaan, b)
+  if (pilih.cariUpt.trim().length < 2) return ''
+  if (!cari.length) return '<p class="mini-teks samar-teks" style="margin:6px 0 0">Tidak ada unit yang cocok.</p>'
+  return `<div class="kandidat-daftar" style="margin-top:8px">${cari.map((e) =>
+    barisCalon(e.nama, [e.kabkota && e.kabkota.replace(/\b\w/g, (h) => h.toUpperCase()), namaKanwilPendek(e.kanwil)].filter(Boolean).join(' · '))).join('')}</div>`
+}
+
+/** Pemilih UPT di panel analisis. */
+function panelUpt(keadaan, b, ada) {
+  const unitAda = !belumTerpetakan(b.nama_upt)
+  const klarifikasi = ada.find((p) => p.tujuan === 'klarifikasi_upt')
+  // Klarifikasi yang sudah diterbitkan ditujukan ke satu unit, dan unit itu
+  // sudah diberi tahu. Memindahkan beritanya diam-diam akan membuat unit lama
+  // mengklarifikasi berita yang bukan lagi miliknya.
+  if (unitAda && klarifikasi) {
+    return `<div class="mini-teks samar-teks" style="margin-top:6px">UPT terkunci: klarifikasi sudah ditujukan ke ${amankan(klarifikasi.nama_upt || b.nama_upt)}.</div>`
+  }
+  const buka = !unitAda || pilih.uptBuka === b.id
+  if (!buka) {
+    return `<div style="margin-top:6px">${tombol({ label: 'Ganti UPT', ikon: 'peta', kecil: true, aksi: 'buka-upt' })}</div>`
+  }
+  if (!indeksUpt) {
+    return '<div class="mini-teks samar-teks" style="margin-top:8px">Memuat data induk UPT…</div>'
+  }
+  const { saran } = calonUpt(keadaan, b)
+  return `
+    <div class="analisis-upt" data-peran="panel-upt">
+      <div class="baris gap-6" style="justify-content:space-between;align-items:center">
+        <span class="label-mono">${unitAda ? 'Ganti UPT berita ini' : 'Tetapkan UPT berita ini'}</span>
+        ${unitAda ? tombol({ label: 'Batal', kecil: true, aksi: 'tutup-upt' }) : ''}
+      </div>
+      <span class="mini-teks samar-teks">${unitAda
+        ? 'Pilih unit yang benar bila mesin keliru memetakannya.'
+        : 'Klarifikasi UPT baru bisa diterbitkan setelah beritanya ditempatkan ke satu unit.'}</span>
+      ${saran.length ? `
+        <span class="mini-teks" style="margin-top:6px">Kandidat dari teks berita</span>
+        <div class="kandidat-daftar">${saran.map((s) =>
+          barisCalon(s.nama, [s.provinsi, namaKanwilPendek(s.kanwil)].filter(Boolean).join(' · '), s.skor)).join('')}</div>` : ''}
+      <label class="cari" style="margin-top:8px">
+        ${ikon('cari')}
+        <input class="masukan" type="search" data-peran="cari-upt" value="${amankan(pilih.cariUpt)}"
+               placeholder="Cari unit: nama, kota, atau kanwil" autocomplete="off" aria-label="Cari UPT">
+      </label>
+      <div data-peran="hasil-upt">${hasilCariUpt(keadaan, b)}</div>
+      ${pilih.simpanUpt ? '<div class="mini-teks samar-teks">Menyimpan…</div>' : ''}
+    </div>`
+}
+
+/** Mengambil isi borang yang sedang diketik, sebelum panel digambar ulang. */
+function rekamDraf(borang, id) {
+  if (!borang) return
+  const nilai = {}
+  borang.querySelectorAll('[data-bidang]').forEach((el) => {
+    nilai[el.dataset.bidang] = el.type === 'checkbox' ? el.checked : el.value
+  })
+  pilih.draf = { id, nilai }
+}
+
+function pulihkanDraf(borang, id) {
+  if (!borang || pilih.draf?.id !== id) return
+  for (const [nama, v] of Object.entries(pilih.draf.nilai)) {
+    // Centang Klarifikasi UPT mengikuti keadaan unit yang baru, bukan yang lama:
+    // sebelum UPT ditetapkan ia mati dan tidak tercentang.
+    if (nama === 'klarifikasi') continue
+    const el = borang.querySelector(`[data-bidang="${nama}"]`)
+    if (!el) continue
+    if (el.type === 'checkbox') el.checked = Boolean(v); else el.value = v
+  }
 }
 
 function kanwilDari(b) {
@@ -58,10 +201,17 @@ function besokLusa(hari = 2) {
 }
 
 /** Draf awal fakta: unsur 5W1H yang sudah diketahui dari baris berita. */
+function barisSiapa(b) {
+  // `belumTerpetakan`, bukan `b.nama_upt ||`: penjaring menulis "Belum
+  // Teridentifikasi", dan teks itu dulu masuk ke fakta seolah nama unit.
+  const kanwil = b.kanwil_asal || indukUpt?.get(b.nama_upt)
+  return `Siapa/di mana: ${belumTerpetakan(b.nama_upt) ? 'UPT belum terpetakan' : b.nama_upt}${kanwil ? `, ${namaKanwilPendek(kanwil)}` : ''}`
+}
+
 function drafFakta(b) {
   const bagian = [
     `Apa: ${b.judul || '-'}`,
-    `Siapa/di mana: ${b.nama_upt || 'UPT belum terpetakan'}${b.kanwil_asal ? `, ${namaKanwilPendek(b.kanwil_asal)}` : ''}`,
+    barisSiapa(b),
     `Kapan: terbit ${tanggalJam(b.tanggal_publikasi || b.created_at)}`,
     `Sumber: ${b.media || '-'}${b.link ? ` (${b.link})` : ''}`,
     'Mengapa: ',
@@ -163,6 +313,7 @@ function kartuBorang(keadaan, b, peta) {
         <div class="mini-teks" style="margin-top:6px">
           UPT: <b>${amankan(unitAda ? b.nama_upt : 'belum terpetakan')}</b> · Kanwil: <b>${amankan(namaKanwilPendek(kanwil))}</b>
         </div>
+        ${panelUpt(keadaan, b, ada)}
         <div class="mini-teks samar-teks" style="margin-top:4px">
           Penilaian SIP: nilai <b>${amankan(ev.nilai)}</b> (sumber ${amankan(labelSumber(ev.sumber).toLowerCase())},
           informasi ${amankan(labelInformasi(ev.informasi).toLowerCase())}) · prioritas <b>${amankan(prio.label)}</b>
@@ -295,10 +446,65 @@ export function halamanAnalisisBerita({ keadaan, isi }) {
     gambarUlang()
     requestAnimationFrame(() => document.querySelector('[data-peran="panel-analisis"]')?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
   }))
-  isi.querySelector('[data-aksi="tutup-analisis"]')?.addEventListener('click', () => { pilih.id = null; gambarUlang() })
+  isi.querySelector('[data-aksi="tutup-analisis"]')?.addEventListener('click', () => { pilih.id = null; pilih.uptBuka = null; pilih.cariUpt = ''; pilih.draf = null; gambarUlang() })
 
   const borang = isi.querySelector('[data-peran="borang-analisis"]')
+  const segarPanel = () => { rekamDraf(borang, terpilih?.id); gambarUlang() }
+
+  isi.querySelector('[data-aksi="buka-upt"]')?.addEventListener('click', () => { pilih.uptBuka = terpilih.id; segarPanel() })
+  isi.querySelector('[data-aksi="tutup-upt"]')?.addEventListener('click', () => { pilih.uptBuka = null; pilih.cariUpt = ''; segarPanel() })
+  // Hasil cari digambar di tempat, bukan lewat gambar ulang seluruh halaman:
+  // fokus kotak dan isi borang tetap utuh selama orang mengetik.
+  isi.querySelector('[data-peran="cari-upt"]')?.addEventListener('input', (ev) => {
+    pilih.cariUpt = ev.target.value
+    const wadah = isi.querySelector('[data-peran="hasil-upt"]')
+    if (wadah) wadah.innerHTML = hasilCariUpt(keadaan, terpilih)
+  })
+  isi.querySelector('[data-peran="panel-upt"]')?.addEventListener('click', async (ev) => {
+    const nama = ev.target.closest('[data-tetapkan-upt]')?.dataset.tetapkanUpt
+    if (!nama || pilih.simpanUpt || !terpilih) return
+    const lama = terpilih.nama_upt
+    const id = terpilih.id
+    let ganti = false
+    rekamDraf(borang, id)
+    pilih.simpanUpt = true
+    gambarUlang()
+    try {
+      if (KONFIG.mode !== 'demo') {
+        const hasil = await perbarui('berita', { id: `eq.${terpilih.id}` }, { nama_upt: nama }, { pilih: 'id,nama_upt' })
+        // PATCH yang ditolak RLS tidak melempar galat: jawabannya 200 dengan
+        // daftar kosong. Tanpa pemeriksaan ini layar mengumumkan berhasil
+        // sementara basis data tidak berubah.
+        if (!Array.isArray(hasil) || !hasil.length) {
+          throw new Error('Penempatan UPT ditolak: peran Anda tidak berhak mengubah berita ini, atau unitnya di luar wilayah Anda.')
+        }
+      }
+      for (const daftar of [keadaan.berita, keadaan.dalamLingkup]) {
+        for (const b of daftar || []) if (b.id === id) b.nama_upt = nama
+      }
+      terpilih.nama_upt = nama
+      ganti = true
+      pilih.uptBuka = null
+      pilih.cariUpt = ''
+      roti(belumTerpetakan(lama) ? `Berita ditempatkan ke ${nama}.` : `UPT diganti: ${lama} → ${nama}.`, 'positif', 4500)
+    } catch (galat) {
+      roti(pesanRamah(galat), 'kritis', 7000)
+    } finally {
+      // Direkam ulang dari borang yang sedang tampil: yang diketik selama
+      // menyimpan ikut terbawa ke gambar berikutnya.
+      rekamDraf(document.querySelector('[data-peran="borang-analisis"]'), id)
+      // Baris "Siapa/di mana" pada draf fakta ikut diperbarui; baris lain yang
+      // sudah disunting analis dibiarkan.
+      if (ganti && pilih.draf?.nilai?.fakta) {
+        pilih.draf.nilai.fakta = pilih.draf.nilai.fakta.replace(/^Siapa\/di mana:.*$/m, barisSiapa(terpilih))
+      }
+      pilih.simpanUpt = false
+      gambarUlang()
+    }
+  })
+
   if (borang) {
+    pulihkanDraf(borang, terpilih?.id)
     const segarSub = () => {
       for (const nama of ['klarifikasi', 'disposisi']) {
         const centang = borang.querySelector(`[data-bidang="${nama}"]`)
@@ -337,6 +543,7 @@ export function halamanAnalisisBerita({ keadaan, isi }) {
         })
         roti('Analisis tersimpan dan sudah masuk Tindak Lanjut.', 'positif', 4500)
         pilih.id = null
+        pilih.draf = null
         pilih.sibuk = false
         document.dispatchEvent(new CustomEvent('buka-halaman', { detail: { halaman: klarifikasi ? 'klarifikasi' : 'disposisi' } }))
       } catch (galat) {

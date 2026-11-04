@@ -6647,6 +6647,8 @@ table.tabel button.judul-buka:hover { color: var(--accent); text-decoration: und
 .tujuan-pilih input { margin-top: 3px; flex: none; }
 .tujuan-pilih.mati { opacity: .6; cursor: not-allowed; }
 .analisis-sub { display: grid; gap: 8px; padding: 0 0 4px 30px; }
+.analisis-upt { display: grid; gap: 6px; margin-top: 10px; padding: 10px 12px; border: 1px dashed var(--accent-tepi, var(--line-2)); border-radius: var(--r-2); background: var(--surface-3); }
+.analisis-upt .cari { max-width: none; }
 .penanganan-butir { border: 1px solid var(--line-2); border-radius: var(--r-2); padding: 12px 14px; display: grid; gap: 4px; }
 .penanganan-butir.lewat { border-left: 3px solid var(--kritis, #D64545); }
 .penanganan-aksi { margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--line-2); display: grid; gap: 4px; }

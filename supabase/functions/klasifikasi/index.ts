@@ -14,18 +14,19 @@
  * taksonomi.js, klasifikasi.js, dan pencocokan-upt.js di sebelah berkas ini
  * adalah salinan yang sama dengan yang ada di web/js/lib/.
  *
- * Kanwil terduga (4 November 2026): berita yang UPT-nya tidak dikenali dan
- * belum berkanwil diberi kanwil hasil dugaan wilayah-berita.js — modul yang
- * sama dengan yang dipakai layar Analisis Berita — lewat RPC
- * terapkan_dugaan_kanwil. Hanya kanwil_asal yang kosong yang diisi.
+ * Kanwil terduga (4 November 2026): mode "wilayah" memberi berita yang UPT-nya
+ * tidak dikenali dan belum berkanwil kanwil hasil dugaan wilayah-berita.js —
+ * modul yang sama dengan yang dipakai layar Analisis Berita — lewat RPC
+ * terapkan_dugaan_kanwil. Hanya kanwil_asal yang kosong yang diisi. Mode ini
+ * dipanggil penjadwal duga-kanwil, tidak pernah dari klasifikasi rutin.
  *
  * Cara memanggil:
  *   POST /functions/v1/klasifikasi
  *   header: x-sync-token: <SHEET_SYNC_TOKEN>
  *   body  : { "hanya_belum": true, "batas": 1000, "kering": false }
  *
- * Mode pengisian arsip (sekali jalan, tidak menilai ulang klasifikasi apa pun):
- *   body  : { "mode": "wilayah", "batas": 20000, "kering": false }
+ * Mode penduga kanwil (tidak menilai ulang klasifikasi apa pun):
+ *   body  : { "mode": "wilayah", "batas": 200, "kering": false }
  */
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
@@ -72,8 +73,9 @@ async function muatUpt(supabase: Klien): Promise<Record<string, unknown>[]> {
 }
 
 /**
- * Menulis dugaan kanwil. Lintas wilayah dan tanpa lokasi tidak pernah sampai
- * ke sini: menebak salah satu dari dua kanwil lebih buruk daripada diam.
+ * Menulis hasil penduga. Lintas wilayah dan tanpa lokasi dikirim dengan kanwil
+ * kosong: RPC hanya mencatat dasarnya supaya tidak dicoba ulang, tanpa
+ * menebak salah satu kanwil — menebak di situ lebih buruk daripada diam.
  */
 async function tulisDugaan(supabase: Klien, dugaan: Dugaan[], sentuh: boolean) {
   let ditulis = 0
@@ -125,36 +127,54 @@ Deno.serve(async (permintaan: Request) => {
 
     // ------------------------------------------- mode pengisian arsip wilayah
 
+    /*
+       Penduga kanwil berjalan di mode tersendiri, BUKAN di dalam klasifikasi
+       rutin. Satu panggilan untuk 5.646 berita habis jatah komputasi Edge
+       Function (WORKER_RESOURCE_LIMIT, 4 November 2026): penduga membaca
+       ribuan nama tempat untuk setiap berita. Di dalam klasifikasi rutin,
+       satu lonjakan berita akan ikut menjatuhkan penilaian sentimennya.
+
+       Penjadwal duga-kanwil memanggil mode ini berpotongan kecil. Setiap
+       baris yang sudah dicoba diberi kanwil_dasar — termasuk 'lintas' dan
+       'tanpa-lokasi' yang kanwilnya tetap kosong — sehingga saringan
+       `kanwil_dasar is null` tidak membaca baris yang sama dua kali.
+       `setelah` (id) hanya untuk uji kering, yang tidak menulis tanda apa pun.
+    */
     if (opsi.mode === 'wilayah') {
-      const batasArsip = Math.min(Number(opsi.batas) || 20000, 50000)
-      const tanpaKanwil: Record<string, unknown>[] = []
-      for (let dari = 0; dari < batasArsip; dari += 1000) {
-        const { data, error } = await supabase
-          .from('berita')
-          .select('id,judul,ringkasan,nama_upt,kanwil_asal')
-          .is('deleted_at', null)
-          .is('kanwil_asal', null)
-          .order('created_at', { ascending: false })
-          .order('id', { ascending: false })
-          .range(dari, dari + 999)
-        if (error) throw new Error(`Gagal membaca berita tanpa kanwil: ${error.message}`)
-        const kumpulan = data || []
-        tanpaKanwil.push(...kumpulan)
-        if (kumpulan.length < 1000) break
+      const batasArsip = Math.min(Number(opsi.batas) || 200, 1000)
+      let q = supabase
+        .from('berita')
+        .select('id,judul,ringkasan,nama_upt,kanwil_asal')
+        .is('deleted_at', null)
+        .is('kanwil_asal', null)
+        .is('kanwil_dasar', null)
+        .order('id', { ascending: true })
+        .limit(batasArsip)
+      if (opsi.setelah) q = q.gt('id', String(opsi.setelah))
+      const { data, error } = await q
+      if (error) throw new Error(`Gagal membaca berita tanpa kanwil: ${error.message}`)
+      const tanpaKanwil: Record<string, unknown>[] = data || []
+      const berikut = tanpaKanwil.length === batasArsip ? String(tanpaKanwil[tanpaKanwil.length - 1].id) : null
+      if (!tanpaKanwil.length) {
+        return jawab({ ok: true, kering, mode: 'wilayah', dibaca: 0, pesan: 'Tidak ada berita yang perlu diduga.', durasi_ms: Date.now() - mulai })
       }
 
       const peta = bangunPetaWilayah(await muatUpt(supabase))
-      const dugaan: Dugaan[] = []
+      const hasilDuga: Dugaan[] = []
       const rekapDasar: Record<string, number> = {}
+      let terduga = 0
       for (const b of tanpaKanwil) {
         const w = wilayahBerita(b, peta)
         rekapDasar[w.dasar] = (rekapDasar[w.dasar] || 0) + 1
-        if (w.kanwil && !w.pasti) dugaan.push({ id: String(b.id), kanwil: w.kanwil, dasar: w.dasar })
+        // Yang 'pasti' di sini mustahil (kanwil_asal kosong); dijaga juga.
+        if (w.pasti) continue
+        if (w.kanwil) terduga += 1
+        hasilDuga.push({ id: String(b.id), kanwil: w.kanwil || '', dasar: w.dasar })
       }
-      const tulis = kering ? { ditulis: 0, ditolak: 0 } : await tulisDugaan(supabase, dugaan, false)
+      const tulis = kering ? { ditulis: 0, ditolak: 0 } : await tulisDugaan(supabase, hasilDuga, true)
       return jawab({
         ok: true, kering, mode: 'wilayah',
-        dibaca: tanpaKanwil.length, terduga: dugaan.length, ...tulis,
+        dibaca: tanpaKanwil.length, terduga, ...tulis, berikut,
         rekap_dasar: rekapDasar, durasi_ms: Date.now() - mulai,
       })
     }
@@ -186,8 +206,6 @@ Deno.serve(async (permintaan: Request) => {
     const daftarUpt = await muatUpt(supabase)
 
     const indeks = bangunIndeks(daftarUpt)
-    const peta = bangunPetaWilayah(daftarUpt)
-    const dugaanKanwil: Dugaan[] = []
 
     // -------------------------------------------------------------- proses
 
@@ -210,14 +228,6 @@ Deno.serve(async (permintaan: Request) => {
             [b.judul, b.ringkasan, b.raw_analysis, b.caption_manual, b.media].filter(Boolean).join(' . '),
             indeks,
           )
-
-      /* Berita dalam lingkup yang UPT-nya tidak dikenali dan belum berkanwil
-         diberi dugaan kanwil. Yang UPT-nya dikenali tidak perlu: pemicu
-         basis data mengisi kanwilnya dari data induk begitu nama_upt ditulis. */
-      if (k.dalam_lingkup !== false && !upt.otomatis && !b.kanwil_asal) {
-        const w = wilayahBerita(b, peta)
-        if (w.kanwil && !w.pasti) dugaanKanwil.push({ id: String(b.id), kanwil: w.kanwil, dasar: w.dasar })
-      }
 
       if (k.dalam_lingkup === false) luarLingkup += 1
       if (upt.otomatis) uptTerpetakan += 1
@@ -250,7 +260,6 @@ Deno.serve(async (permintaan: Request) => {
 
     let diperbarui = 0
     let uptDitulis = 0
-    let kanwilTerduga = { ditulis: 0, ditolak: 0 }
 
     if (!kering) {
       for (let i = 0; i < hasil.length; i += UKURAN_KIRIM) {
@@ -261,9 +270,6 @@ Deno.serve(async (permintaan: Request) => {
         diperbarui += Number(baris?.diperbarui || 0)
         uptDitulis += Number(baris?.upt_dipetakan || 0)
       }
-      // Sesudah klasifikasi, bukan sebelumnya: kanwil dari UPT yang baru
-      // ditulis harus menang, dan RPC dugaan hanya mengisi yang masih kosong.
-      if (dugaanKanwil.length) kanwilTerduga = await tulisDugaan(supabase, dugaanKanwil, true)
     }
 
     return jawab({
@@ -275,7 +281,6 @@ Deno.serve(async (permintaan: Request) => {
       luar_lingkup: luarLingkup,
       diperbarui,
       upt: { dipetakan_otomatis: uptTerpetakan, ditulis: uptDitulis, perlu_putusan_analis: uptPerluPutusan },
-      kanwil_terduga: { diduga: dugaanKanwil.length, ...kanwilTerduga },
       rekap: { kategori: rekapKategori, sentimen: rekapSentimen, urgensi: rekapUrgensi, penerbit: rekapPenerbit },
       durasi_ms: Date.now() - mulai,
     })

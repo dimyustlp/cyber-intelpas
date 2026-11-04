@@ -32,8 +32,9 @@
  * Sejak 4 November 2026 dugaan DITULIS ke basis data, atas keputusan user:
  * berita tanpa UPT tidak sampai ke dasbor kanwil mana pun, dan itu lebih
  * merugikan daripada sesekali salah wilayah. Edge Function klasifikasi
- * memanggil modul ini untuk setiap berita baru dan mengisi kanwil_asal yang
- * masih kosong dengan `kanwil_terduga = true` (migrasi 20261104030000).
+ * (mode "wilayah", dipanggil penyapu duga-kanwil) memanggil modul ini dan
+ * mengisi kanwil_asal yang masih kosong dengan `kanwil_terduga = true`
+ * (migrasi 20261104030000 dan 20261104040000).
  * Kanwil dari lembar dan dari UPT tidak pernah ditimpa, dan begitu UPT-nya
  * ditetapkan, pemicu basis data mengganti dugaan dengan kanwil UPT itu.
  * Lintas wilayah dan tanpa lokasi tetap tidak disalurkan.

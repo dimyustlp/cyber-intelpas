@@ -46,8 +46,11 @@ export function pesanRamah(galat) {
   if (galat.status === 401) return 'Sesi Anda sudah berakhir. Silakan masuk kembali.'
   // GoTrue menjawab penolakan kredensial dengan 400 dan kalimat berbahasa
   // Inggris. Petugas yang salah ketik username berhak membaca sebabnya dalam
-  // bahasa yang ia pakai bekerja.
-  if (galat.status === 400 && /invalid login credentials/i.test(galat.rinci?.error_description || galat.rinci?.message || '')) {
+  // bahasa yang ia pakai bekerja. GoTrue versi baru menaruh kalimatnya di
+  // `msg` dan kodenya di `error_code`; tanpa keduanya penolakan sandi biasa
+  // terbaca sebagai "kesalahan pada peladen", dan petugas mengira sistemnya rusak.
+  if (galat.status === 400 && (galat.rinci?.error_code === 'invalid_credentials'
+    || /invalid login credentials/i.test(galat.rinci?.error_description || galat.rinci?.message || galat.rinci?.msg || ''))) {
     return 'Username atau kata sandi tidak cocok. Periksa kembali, atau hubungi administrator bila lupa sandi.'
   }
   if (galat.status === 403 || galat.rinci?.code === '42501') {
@@ -56,7 +59,7 @@ export function pesanRamah(galat) {
   if (galat.rinci?.code === '23505') return 'Data dengan penanda yang sama sudah tersimpan.'
   if (galat.rinci?.code === '23503') return 'Data yang dirujuk tidak ditemukan.'
   if (galat.status === 0) return 'Tidak dapat menghubungi peladen. Periksa sambungan jaringan.'
-  return galat.rinci?.message || galat.message || 'Terjadi kesalahan pada peladen.'
+  return galat.rinci?.message || galat.rinci?.msg || galat.message || 'Terjadi kesalahan pada peladen.'
 }
 
 // -------------------------------------------------------------------- sesi
@@ -128,7 +131,7 @@ async function panggil(jalur, opsi = {}) {
   if (teks) { try { isi = JSON.parse(teks) } catch { isi = teks } }
 
   if (!jawab.ok) {
-    throw new GalatApi(isi?.message || isi?.error_description || jawab.statusText, jawab.status, isi)
+    throw new GalatApi(isi?.message || isi?.error_description || isi?.msg || jawab.statusText, jawab.status, isi)
   }
   return isi
 }

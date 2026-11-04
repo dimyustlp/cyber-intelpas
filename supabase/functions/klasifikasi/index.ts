@@ -5,27 +5,19 @@
  * menuliskan kembali kategori, subkategori, sentimen, urgensi, tingkat
  * perhatian, kata kunci, dan nama UPT hasil pencocokan.
  *
- * Alasan fungsi ini ada: crawler menulis setiap berita dengan sentimen
- * "Tidak diketahui", kategori "Lainnya", dan urgensi "Sedang". Tidak ada satu
- * pun proses yang pernah menggantinya. Akibatnya laporan mingguan melaporkan
- * nol publikasi negatif pada pekan yang jelas-jelas memuat berita negatif —
- * bukan karena beritanya tidak ada, melainkan karena tidak pernah ada yang
- * menilainya.
+ * Hemat egress (20 September 2026): berita yang perlu dinilai dibaca LEBIH
+ * DULU. Bila tidak ada, fungsi langsung pulang tanpa menarik data induk UPT
+ * (±100 KB). Penjadwal memanggil fungsi ini berkali-kali sehari dan sebagian
+ * besar panggilan tidak menemukan berita baru.
  *
  * Mesin yang dipakai sama persis dengan yang berjalan di peramban. Berkas
  * taksonomi.js, klasifikasi.js, dan pencocokan-upt.js di sebelah berkas ini
- * adalah salinan yang sama dengan yang ada di web/js/lib/. Satu sumber aturan,
- * dua tempat menjalankan.
+ * adalah salinan yang sama dengan yang ada di web/js/lib/.
  *
  * Cara memanggil:
  *   POST /functions/v1/klasifikasi
  *   header: x-sync-token: <SHEET_SYNC_TOKEN>
  *   body  : { "hanya_belum": true, "batas": 1000, "kering": false }
- *
- *     hanya_belum  true  = hanya berita yang belum pernah dinilai mesin
- *                  false = seluruh arsip dinilai ulang
- *     batas        jumlah baris maksimum yang diproses sekali jalan
- *     kering       true  = hanya menghitung, tidak menulis apa pun
  */
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
@@ -39,7 +31,6 @@ const KEPALA = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
 
-/** Sekali kirim ke basis data. Ditahan di angka ini supaya tidak melebihi batas ukuran permintaan. */
 const UKURAN_KIRIM = 150
 
 function env(nama: string): string {
@@ -47,7 +38,7 @@ function env(nama: string): string {
 }
 
 function jawab(isi: unknown, status = 200): Response {
-  return new Response(JSON.stringify(isi, null, 2), { status, headers: KEPALA })
+  return new Response(JSON.stringify(isi), { status, headers: KEPALA })
 }
 
 Deno.serve(async (permintaan: Request) => {
@@ -83,6 +74,28 @@ Deno.serve(async (permintaan: Request) => {
       auth: { persistSession: false, autoRefreshToken: false },
     })
 
+    // ----------------------------------------------------------- ambil berita
+
+    let kueri = supabase
+      .from('berita')
+      .select('id,judul,ringkasan,raw_analysis,caption_manual,media,nama_upt,urgensi,catatan,status_verifikasi')
+      .is('deleted_at', null)
+      .neq('status_verifikasi', 'Terverifikasi')
+      // Yang paling lama dinilai didahulukan; yang belum pernah dinilai bernilai NULL.
+      .order('ai_classified_at', { ascending: true, nullsFirst: true })
+      .limit(batas)
+
+    if (hanyaBelum) kueri = kueri.is('ai_classified_at', null)
+
+    const { data: berita, error: galatBerita } = await kueri
+    if (galatBerita) throw new Error(`Gagal membaca berita: ${galatBerita.message}`)
+
+    const daftarBerita = berita || []
+
+    if (!daftarBerita.length) {
+      return jawab({ ok: true, kering, diproses: 0, diperbarui: 0, pesan: 'Tidak ada berita yang perlu dinilai.', durasi_ms: Date.now() - mulai })
+    }
+
     // ------------------------------------------------------- data induk UPT
 
     const daftarUpt: Record<string, unknown>[] = []
@@ -100,37 +113,6 @@ Deno.serve(async (permintaan: Request) => {
 
     const indeks = bangunIndeks(daftarUpt)
 
-    // ----------------------------------------------------------- ambil berita
-
-    let kueri = supabase
-      .from('berita')
-      .select('id,judul,ringkasan,raw_analysis,caption_manual,media,nama_upt,urgensi,catatan,status_verifikasi')
-      .is('deleted_at', null)
-      .neq('status_verifikasi', 'Terverifikasi')
-      /*
-         Urut menurut YANG PALING LAMA DINILAI, bukan menurut yang terbaru.
-
-         Sampai 6 September 2026 urutannya `created_at desc`, dan itu membuat
-         penilaian ulang seluruh arsip mustahil diselesaikan: PostgREST membatasi
-         satu permintaan pada 1.000 baris, sehingga tiap panggilan mengambil
-         seribu baris TERBARU yang sama — dan 46 baris tertua tidak pernah
-         tersentuh berapa kali pun fungsinya dipanggil. Terukur langsung: dua
-         panggilan berturut-turut meninggalkan 46 baris yang sama di versi lama.
-
-         Dengan urutan ini tiap panggilan mengambil yang paling tertinggal,
-         sehingga panggilan berulang menyapu seluruh arsip sampai habis. Baris
-         yang belum pernah dinilai tetap didahulukan — nilainya NULL.
-      */
-      .order('ai_classified_at', { ascending: true, nullsFirst: true })
-      .limit(batas)
-
-    if (hanyaBelum) kueri = kueri.is('ai_classified_at', null)
-
-    const { data: berita, error: galatBerita } = await kueri
-    if (galatBerita) throw new Error(`Gagal membaca berita: ${galatBerita.message}`)
-
-    const daftarBerita = berita || []
-
     // -------------------------------------------------------------- proses
 
     const hasil: Record<string, unknown>[] = []
@@ -145,9 +127,7 @@ Deno.serve(async (permintaan: Request) => {
     for (const b of daftarBerita) {
       const k = klasifikasikan(b)
 
-      // Berita di luar lingkup tidak dicocokkan ke unit mana pun. Memetakan
-      // perkara Rutan KPK ke salah satu UPT berarti membebankan angka negatif
-      // kepada unit yang tidak ada hubungannya dengan perkara itu.
+      // Berita di luar lingkup tidak dicocokkan ke unit mana pun.
       const upt = k.dalam_lingkup === false
         ? { otomatis: false, nama: null, saran: [] }
         : cocokkanUpt(

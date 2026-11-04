@@ -44,6 +44,9 @@ export const SEBUTAN_POPULER = [
 ['ujung pandang', 'Lapas Kelas I Makassar'],
 ['ujung pandang', 'Rutan Kelas I Makassar'],
 ['tanjung pati', 'Lapas Kelas IIB Payakumbuh'],
+['mentok', 'Rutan Kelas IIB Muntok'],
+['pasir pengaraian', 'Lapas Kelas IIB Pasir Pangarayan'],
+['pasirpengaraian', 'Lapas Kelas IIB Pasir Pangarayan'],
 ['nusakambangan', null],
 ['pekanbaru', null],
 ]
@@ -187,8 +190,15 @@ target.sebutan.push(normalkanUpt(alias))
 sebutanTerpasang += 1
 }
 entri.sort((a, b) => b.kunci.length - a.kunci.length)
+const ARAH = new Set(['utara', 'selatan', 'barat', 'timur', 'tengah', 'pusat', 'baru'])
+const tokenTempat = new Set()
+for (const e of entri) {
+for (const t of e.token) if (!ARAH.has(t)) tokenTempat.add(t)
+for (const s of e.sebutan) for (const t of s.split(' ')) if (!ARAH.has(t)) tokenTempat.add(t)
+}
 return {
 entri,
+tokenTempat,
 jumlah: entri.length,
 jumlahMasukan: daftarUpt.length,
 tidakTerindeks: daftarUpt.length - entri.length,
@@ -205,7 +215,7 @@ if (n.startsWith('lpka') || n.includes('pembinaan khusus anak')) return 'LPKA'
 if (n.startsWith('bapas') || n.includes('balai pemasyarakatan')) return 'Bapas'
 return 'Lapas'
 }
-export function ambilJendela(teksNormal) {
+export function ambilJendela(teksNormal, tempatDikenal = null) {
 const hasil = []
 const terpakai = new Map()
 for (const [penanda, jenis] of PENANDA_JENIS) {
@@ -221,7 +231,15 @@ if (/[a-z0-9]/.test(sebelum)) continue
 if (rentang.some(([a, b]) => posisi >= a && posisi < b)) continue
 rentang.push([posisi, posisi + penanda.length])
 const dekat = teksNormal.slice(posisi + penanda.length, posisi + penanda.length + JENDELA_LEMBAGA)
-if (PENANDA_BUKAN_PAS.some((l) => cocokKata(dekat, l))) continue
+const lembagaLain = PENANDA_BUKAN_PAS
+.map((l) => posisiKata(dekat, l))
+.filter((p) => p >= 0)
+if (lembagaLain.length) {
+const awalLembaga = Math.min(...lembagaLain)
+const tempatDulu = tempatDikenal
+&& dekat.slice(0, awalLembaga).split(' ').some((k) => k.length > 2 && tempatDikenal.has(k))
+if (!tempatDulu) continue
+}
 const jendela = teksNormal.slice(posisi, posisi + penanda.length + JENDELA)
 hasil.push({
 jenis,
@@ -238,7 +256,7 @@ export function cocokkanUpt(teks, indeks, opsi = {}) {
 const maksSaran = opsi.maksSaran ?? 5
 const teksNormal = normalkanUpt(teks)
 if (!teksNormal) return kosong('Teks kosong')
-const jendela = ambilJendela(teksNormal)
+const jendela = ambilJendela(teksNormal, indeks.tokenTempat)
 if (!jendela.length) {
 return kosong('Tidak ada penyebutan Lapas, Rutan, LPKA, atau Bapas dalam teks')
 }

@@ -1,8 +1,9 @@
 -- Jadwal penyapu kanwil terduga untuk berita BARU.
 --
--- Belum diterapkan per 4 November 2026: pengaman auto-mode menolaknya sebagai
--- aturan berjalan, dan ia menunggu izin user. Tanpa jadwal ini berita baru
--- tanpa UPT tetap tidak berkanwil sampai mode wilayah dipanggil manual.
+-- Diterapkan 4 November 2026 atas izin user (jobid 23). Jalan pertama 08.23
+-- UTC: 4 berita baru tanpa kanwil, 2 diberi kanwil terduga, 806 md. Tanpa
+-- jadwal ini berita baru tanpa UPT tidak berkanwil sampai mode wilayah
+-- dipanggil manual.
 --
 -- Tiap 10 menit, 200 berita: ±25 berita tanpa UPT masuk per jam, dan 200
 -- berita = 1,6 detik. Menit 3, 13, ... supaya tidak bertabrakan dengan

@@ -1012,7 +1012,10 @@ const KOLOM_BERITA = 'id,judul,nama_upt,kanwil_asal,media,platform,link,created_
   + 'tingkat_perhatian,status_verifikasi,source_type,ringkasan,rekomendasi,'
   + 'ai_confidence,kata_kunci,ai_provider,ai_classified_at,'
   // Tiga kolom kecil yang dibaca mesin saran tindak lanjut (lib/tindak-lanjut.js).
-  + 'tier_media,tanggapan_sikap,telaah_wilayah_status'
+  + 'tier_media,tanggapan_sikap,telaah_wilayah_status,'
+  // Penanda kanwil hasil dugaan (migrasi 20261104030000), dibaca lib/wilayah-berita.js
+  // dan keping "wilayah terduga" di halaman kanwil.
+  + 'kanwil_terduga,kanwil_dasar'
 
 /** Sekali tarik. Nilai ini di bawah batas baris bawaan PostgREST. */
 const UKURAN_TARIK = 500

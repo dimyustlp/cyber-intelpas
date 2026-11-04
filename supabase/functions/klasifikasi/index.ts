@@ -14,15 +14,24 @@
  * taksonomi.js, klasifikasi.js, dan pencocokan-upt.js di sebelah berkas ini
  * adalah salinan yang sama dengan yang ada di web/js/lib/.
  *
+ * Kanwil terduga (4 November 2026): berita yang UPT-nya tidak dikenali dan
+ * belum berkanwil diberi kanwil hasil dugaan wilayah-berita.js — modul yang
+ * sama dengan yang dipakai layar Analisis Berita — lewat RPC
+ * terapkan_dugaan_kanwil. Hanya kanwil_asal yang kosong yang diisi.
+ *
  * Cara memanggil:
  *   POST /functions/v1/klasifikasi
  *   header: x-sync-token: <SHEET_SYNC_TOKEN>
  *   body  : { "hanya_belum": true, "batas": 1000, "kering": false }
+ *
+ * Mode pengisian arsip (sekali jalan, tidak menilai ulang klasifikasi apa pun):
+ *   body  : { "mode": "wilayah", "batas": 20000, "kering": false }
  */
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { klasifikasikan, META_MESIN } from './klasifikasi.js'
 import { bangunIndeks, cocokkanUpt, META_PENCOCOK } from './pencocokan-upt.js'
+import { bangunPetaWilayah, wilayahBerita } from './wilayah-berita.js'
 
 const KEPALA = {
   'Content-Type': 'application/json; charset=utf-8',
@@ -39,6 +48,46 @@ function env(nama: string): string {
 
 function jawab(isi: unknown, status = 200): Response {
   return new Response(JSON.stringify(isi), { status, headers: KEPALA })
+}
+
+// deno-lint-ignore no-explicit-any
+type Klien = any
+type Dugaan = { id: string, kanwil: string, dasar: string }
+
+/** Data induk UPT aktif, lengkap dengan kolom tempat yang dibaca penduga wilayah. */
+async function muatUpt(supabase: Klien): Promise<Record<string, unknown>[]> {
+  const daftarUpt: Record<string, unknown>[] = []
+  for (let dari = 0; ; dari += 1000) {
+    const { data, error } = await supabase
+      .from('upt')
+      .select('nama_upt,jenis_upt,kelas_upt,subjenis_upt,provinsi,kanwil,kabupaten_kota,location_hint')
+      .eq('aktif', true)
+      .range(dari, dari + 999)
+    if (error) throw new Error(`Gagal membaca data induk UPT: ${error.message}`)
+    const kumpulan = data || []
+    daftarUpt.push(...kumpulan)
+    if (kumpulan.length < 1000) break
+  }
+  return daftarUpt
+}
+
+/**
+ * Menulis dugaan kanwil. Lintas wilayah dan tanpa lokasi tidak pernah sampai
+ * ke sini: menebak salah satu dari dua kanwil lebih buruk daripada diam.
+ */
+async function tulisDugaan(supabase: Klien, dugaan: Dugaan[], sentuh: boolean) {
+  let ditulis = 0
+  let ditolak = 0
+  for (let i = 0; i < dugaan.length; i += 500) {
+    const { data, error } = await supabase.rpc('terapkan_dugaan_kanwil', {
+      p_hasil: dugaan.slice(i, i + 500), p_sentuh: sentuh,
+    })
+    if (error) throw new Error(`Gagal menulis dugaan kanwil: ${error.message}`)
+    const baris = Array.isArray(data) ? data[0] : data
+    ditulis += Number(baris?.ditulis || 0)
+    ditolak += Number(baris?.ditolak || 0)
+  }
+  return { ditulis, ditolak }
 }
 
 Deno.serve(async (permintaan: Request) => {
@@ -74,11 +123,47 @@ Deno.serve(async (permintaan: Request) => {
       auth: { persistSession: false, autoRefreshToken: false },
     })
 
+    // ------------------------------------------- mode pengisian arsip wilayah
+
+    if (opsi.mode === 'wilayah') {
+      const batasArsip = Math.min(Number(opsi.batas) || 20000, 50000)
+      const tanpaKanwil: Record<string, unknown>[] = []
+      for (let dari = 0; dari < batasArsip; dari += 1000) {
+        const { data, error } = await supabase
+          .from('berita')
+          .select('id,judul,ringkasan,nama_upt,kanwil_asal')
+          .is('deleted_at', null)
+          .is('kanwil_asal', null)
+          .order('created_at', { ascending: false })
+          .order('id', { ascending: false })
+          .range(dari, dari + 999)
+        if (error) throw new Error(`Gagal membaca berita tanpa kanwil: ${error.message}`)
+        const kumpulan = data || []
+        tanpaKanwil.push(...kumpulan)
+        if (kumpulan.length < 1000) break
+      }
+
+      const peta = bangunPetaWilayah(await muatUpt(supabase))
+      const dugaan: Dugaan[] = []
+      const rekapDasar: Record<string, number> = {}
+      for (const b of tanpaKanwil) {
+        const w = wilayahBerita(b, peta)
+        rekapDasar[w.dasar] = (rekapDasar[w.dasar] || 0) + 1
+        if (w.kanwil && !w.pasti) dugaan.push({ id: String(b.id), kanwil: w.kanwil, dasar: w.dasar })
+      }
+      const tulis = kering ? { ditulis: 0, ditolak: 0 } : await tulisDugaan(supabase, dugaan, false)
+      return jawab({
+        ok: true, kering, mode: 'wilayah',
+        dibaca: tanpaKanwil.length, terduga: dugaan.length, ...tulis,
+        rekap_dasar: rekapDasar, durasi_ms: Date.now() - mulai,
+      })
+    }
+
     // ----------------------------------------------------------- ambil berita
 
     let kueri = supabase
       .from('berita')
-      .select('id,judul,ringkasan,raw_analysis,caption_manual,media,nama_upt,urgensi,catatan,status_verifikasi')
+      .select('id,judul,ringkasan,raw_analysis,caption_manual,media,nama_upt,kanwil_asal,urgensi,catatan,status_verifikasi')
       .is('deleted_at', null)
       .neq('status_verifikasi', 'Terverifikasi')
       // Yang paling lama dinilai didahulukan; yang belum pernah dinilai bernilai NULL.
@@ -98,20 +183,11 @@ Deno.serve(async (permintaan: Request) => {
 
     // ------------------------------------------------------- data induk UPT
 
-    const daftarUpt: Record<string, unknown>[] = []
-    for (let dari = 0; ; dari += 1000) {
-      const { data, error } = await supabase
-        .from('upt')
-        .select('nama_upt,jenis_upt,kelas_upt,subjenis_upt,provinsi,kanwil,kabupaten_kota,location_hint')
-        .eq('aktif', true)
-        .range(dari, dari + 999)
-      if (error) throw new Error(`Gagal membaca data induk UPT: ${error.message}`)
-      const kumpulan = data || []
-      daftarUpt.push(...kumpulan)
-      if (kumpulan.length < 1000) break
-    }
+    const daftarUpt = await muatUpt(supabase)
 
     const indeks = bangunIndeks(daftarUpt)
+    const peta = bangunPetaWilayah(daftarUpt)
+    const dugaanKanwil: Dugaan[] = []
 
     // -------------------------------------------------------------- proses
 
@@ -134,6 +210,14 @@ Deno.serve(async (permintaan: Request) => {
             [b.judul, b.ringkasan, b.raw_analysis, b.caption_manual, b.media].filter(Boolean).join(' . '),
             indeks,
           )
+
+      /* Berita dalam lingkup yang UPT-nya tidak dikenali dan belum berkanwil
+         diberi dugaan kanwil. Yang UPT-nya dikenali tidak perlu: pemicu
+         basis data mengisi kanwilnya dari data induk begitu nama_upt ditulis. */
+      if (k.dalam_lingkup !== false && !upt.otomatis && !b.kanwil_asal) {
+        const w = wilayahBerita(b, peta)
+        if (w.kanwil && !w.pasti) dugaanKanwil.push({ id: String(b.id), kanwil: w.kanwil, dasar: w.dasar })
+      }
 
       if (k.dalam_lingkup === false) luarLingkup += 1
       if (upt.otomatis) uptTerpetakan += 1
@@ -166,6 +250,7 @@ Deno.serve(async (permintaan: Request) => {
 
     let diperbarui = 0
     let uptDitulis = 0
+    let kanwilTerduga = { ditulis: 0, ditolak: 0 }
 
     if (!kering) {
       for (let i = 0; i < hasil.length; i += UKURAN_KIRIM) {
@@ -176,6 +261,9 @@ Deno.serve(async (permintaan: Request) => {
         diperbarui += Number(baris?.diperbarui || 0)
         uptDitulis += Number(baris?.upt_dipetakan || 0)
       }
+      // Sesudah klasifikasi, bukan sebelumnya: kanwil dari UPT yang baru
+      // ditulis harus menang, dan RPC dugaan hanya mengisi yang masih kosong.
+      if (dugaanKanwil.length) kanwilTerduga = await tulisDugaan(supabase, dugaanKanwil, true)
     }
 
     return jawab({
@@ -187,6 +275,7 @@ Deno.serve(async (permintaan: Request) => {
       luar_lingkup: luarLingkup,
       diperbarui,
       upt: { dipetakan_otomatis: uptTerpetakan, ditulis: uptDitulis, perlu_putusan_analis: uptPerluPutusan },
+      kanwil_terduga: { diduga: dugaanKanwil.length, ...kanwilTerduga },
       rekap: { kategori: rekapKategori, sentimen: rekapSentimen, urgensi: rekapUrgensi, penerbit: rekapPenerbit },
       durasi_ms: Date.now() - mulai,
     })

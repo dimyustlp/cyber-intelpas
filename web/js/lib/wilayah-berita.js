@@ -29,11 +29,14 @@
  *   lintas        nama tempat menunjuk lebih dari satu kanwil          —
  *   tanpa-lokasi  tidak ada petunjuk wilayah sama sekali               —
  *
- * "Terduga" tidak pernah ditulis ke basis data dari sini. Ia hanya
- * mengelompokkan dan menyarankan; yang menetapkan tetap analis, lewat
- * pemetaan UPT. Sebabnya sederhana: kanwil asal menentukan siapa yang boleh
- * membaca berita itu (can_access_berita), dan tebakan tidak boleh membuka
- * berita ke kantor wilayah yang salah.
+ * Sejak 4 November 2026 dugaan DITULIS ke basis data, atas keputusan user:
+ * berita tanpa UPT tidak sampai ke dasbor kanwil mana pun, dan itu lebih
+ * merugikan daripada sesekali salah wilayah. Edge Function klasifikasi
+ * memanggil modul ini untuk setiap berita baru dan mengisi kanwil_asal yang
+ * masih kosong dengan `kanwil_terduga = true` (migrasi 20261104030000).
+ * Kanwil dari lembar dan dari UPT tidak pernah ditimpa, dan begitu UPT-nya
+ * ditetapkan, pemicu basis data mengganti dugaan dengan kanwil UPT itu.
+ * Lintas wilayah dan tanpa lokasi tetap tidak disalurkan.
  *
  * Modul ES murni; mesin pencocoknya diimpor, tidak disalin.
  */
@@ -206,7 +209,13 @@ function bacaTempat(teks, peta) {
  *            uptSaran:Array<{nama:string, kanwil:string}>, bukti:string}}
  */
 export function wilayahBerita(b, peta) {
-  if (b.kanwil_asal) return hasil(b.kanwil_asal, 'lembar', true)
+  /* Kanwil yang ditulis mesin sebagai dugaan tetap dugaan di layar: tanpa
+     cabang ini ia terbaca "dari lembar kanwil pengirim", dan analis pusat
+     kehilangan satu-satunya tanda bahwa wilayahnya belum dipastikan. */
+  if (b.kanwil_asal && b.kanwil_terduga) {
+    return hasil(b.kanwil_asal, KET_DASAR[b.kanwil_dasar] ? b.kanwil_dasar : 'nama-tempat', false)
+  }
+  if (b.kanwil_asal) return hasil(b.kanwil_asal, b.kanwil_dasar === 'upt' ? 'upt' : 'lembar', true)
   if (!peta) return hasil(null, 'tanpa-lokasi', false)
   if (!belumTerpetakan(b.nama_upt) && peta.kanwilUpt.has(b.nama_upt)) {
     return hasil(peta.kanwilUpt.get(b.nama_upt), 'upt', true, { bukti: b.nama_upt })

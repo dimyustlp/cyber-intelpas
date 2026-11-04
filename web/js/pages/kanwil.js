@@ -37,6 +37,20 @@ import { punyaIzin, adalahUnit } from '../lib/peran.js'
 import { baganSentimen, baganTren, baganUrgensi } from '../ui/bagan.js'
 import { sebaran } from '../lib/demo.js'
 import { ambil } from '../lib/api.js'
+/**
+ * Sel unit di daftar berita wilayah.
+ *
+ * Sejak 4 November 2026 berita tanpa UPT ikut disalurkan ke kanwil hasil
+ * dugaan teks. Petugas kanwil berhak tahu mana yang sampai ke mejanya karena
+ * UPT-nya jelas dan mana yang karena judulnya menyebut daerahnya — yang kedua
+ * bisa saja milik wilayah tetangga. Kepingnya tidak menuduh; ia hanya berkata
+ * wilayahnya belum dipastikan.
+ */
+function selUnit(b) {
+  const unit = amankan(belumTerpetakan(b.nama_upt) ? 'Belum terpetakan' : b.nama_upt)
+  if (!b.kanwil_terduga) return unit
+  return `${unit}<br><span title="Kanwil diduga dari isi berita karena UPT-nya belum dikenali. Akan dipastikan begitu analis pusat menetapkan UPT-nya.">${keping('wilayah terduga', 'sedang', true)}</span>`
+}
 
 /* ------------------------------------------------------------- perkakas */
 
@@ -526,7 +540,7 @@ function daftarRingkas(daftar) {
               <span class="judul-sel">${amankan(ringkas(b.judul || 'Tanpa judul', 110))}</span>
               <span class="mini-teks samar-teks">${amankan(b.subkategori || b.kategori || 'Belum dikelompokkan')}</span>
             </td>
-            <td class="kecil">${amankan(belumTerpetakan(b.nama_upt) ? 'Belum terpetakan' : b.nama_upt)}</td>
+            <td class="kecil">${selUnit(b)}</td>
             <td class="angka kecil">${amankan(jarakWaktu(b.created_at))}</td>
           </tr>`).join('')}
       </tbody>
@@ -758,7 +772,7 @@ function tabelBerita(daftar) {
                 ${sudahDitanggapi(b) ? ` · <span class="positif-teks">sudah ditanggapi unit</span>` : ''}
               </span>
             </td>
-            <td class="kecil">${amankan(belumTerpetakan(b.nama_upt) ? 'Belum terpetakan' : b.nama_upt)}</td>
+            <td class="kecil">${selUnit(b)}</td>
             <td>${keping(b.sentimen || 'Belum dinilai', nadaSentimen(b.sentimen), true)}</td>
             <td>${keping(putusan || 'Belum ditelaah', nada, true)}</td>
             <td>${keping(b.status_verifikasi || 'Belum Ditelaah', nadaStatus(b.status_verifikasi), true)}</td>

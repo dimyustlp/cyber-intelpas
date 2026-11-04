@@ -22,7 +22,7 @@ import { fileURLToPath } from 'node:url'
  * layar untuk hari yang sama.
  */
 export const KEBUTUHAN = {
-  klasifikasi: ['unit-terpetakan.js', 'teks.js', 'taksonomi.js', 'penerbit.js', 'klasifikasi.js', 'pencocokan-upt.js'],
+  klasifikasi: ['unit-terpetakan.js', 'teks.js', 'taksonomi.js', 'penerbit.js', 'klasifikasi.js', 'pencocokan-upt.js', 'wilayah-berita.js'],
   /*
      laporan-harian menyusun DUA hal dari modul yang sama dengan layar:
      uraian peristiwa (peristiwa.js) dan lembar infografis (infografis.js

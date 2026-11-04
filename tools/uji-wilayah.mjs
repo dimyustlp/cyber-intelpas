@@ -98,5 +98,18 @@ kanwilnya('Pungli di Lapas Terungkap, Ombudsman Soroti Bayaran Rp250 Juta - Rada
   periksa('beberapa kanwil berbeda → lintas', y.kanwil === null && y.dasar === 'lintas' && y.kandidat.length === 2, `didapat ${y.kanwil} (${y.dasar})`)
 }
 
+console.log('\nKanwil yang sudah tertulis di basis data (sejak 4 November 2026)')
+{
+  const pasti = wilayah('Apa pun', { kanwil_asal: K('Bali') })
+  periksa('kanwil_asal tanpa penanda → pasti dari lembar', pasti.pasti && pasti.dasar === 'lembar', `didapat ${pasti.dasar} ${pasti.pasti}`)
+  const dariUpt = wilayah('Apa pun', { kanwil_asal: K('Bali'), kanwil_dasar: 'upt' })
+  periksa('kanwil_dasar upt → pasti dari UPT', dariUpt.pasti && dariUpt.dasar === 'upt', `didapat ${dariUpt.dasar} ${dariUpt.pasti}`)
+  const duga = wilayah('Napi Kabur dari Lapas Jayapura', { kanwil_asal: K('Papua'), kanwil_terduga: true, kanwil_dasar: 'kandidat-upt' })
+  periksa('kanwil_terduga → tetap terduga, dasarnya terbawa',
+    !duga.pasti && duga.kanwil === K('Papua') && duga.dasar === 'kandidat-upt', `didapat ${duga.dasar} ${duga.pasti}`)
+  const dasarAneh = wilayah('X', { kanwil_asal: K('Papua'), kanwil_terduga: true, kanwil_dasar: 'entah' })
+  periksa('dasar tak dikenal → tetap terduga, bukan lembar', !dasarAneh.pasti && dasarAneh.dasar === 'nama-tempat', `didapat ${dasarAneh.dasar}`)
+}
+
 console.log(`\n${lulus} lulus, ${gagal} gagal`)
 process.exit(gagal ? 1 : 0)

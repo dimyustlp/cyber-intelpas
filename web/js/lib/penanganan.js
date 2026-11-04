@@ -159,23 +159,27 @@ export function teruskanKeUpt(id, { instruksi = '', batas = null } = {}) {
 }
 
 /**
- * Mengunggah berkas klarifikasi lalu mencatatnya. Dua langkah: berkasnya ke
- * bucket privat, jalurnya ke basis data. Bila langkah kedua ditolak, berkas
- * yatim tertinggal di bucket — lebih baik daripada catatan yang menunjuk ke
- * berkas yang tidak pernah ada.
+ * Mengirim klarifikasi: laporan terstruktur (lib/laporan-klarifikasi.js),
+ * berkas lampiran, atau keduanya — paling sedikit salah satu.
+ *
+ * Bila ada berkas, dua langkah: berkasnya ke bucket privat, jalurnya ke basis
+ * data. Bila langkah kedua ditolak, berkas yatim tertinggal di bucket — lebih
+ * baik daripada catatan yang menunjuk ke berkas yang tidak pernah ada.
  */
-export async function kirimKlarifikasi(id, { berkas, pengirim, jabatan, ringkasan = '' }) {
-  if (!berkas) throw new Error('Pilih berkas klarifikasi (PDF atau DOCX).')
-  if (!/\.(pdf|docx)$/i.test(berkas.name)) throw new Error('Berkas klarifikasi harus PDF atau DOCX.')
-  if (berkas.size > 10 * 1024 * 1024) throw new Error('Berkas melebihi 10 MB.')
+export async function kirimKlarifikasi(id, { berkas = null, pengirim, jabatan, ringkasan = '', laporan = null }) {
+  if (!berkas && !laporan) throw new Error('Isi laporan klarifikasi atau unggah berkas klarifikasi.')
+  if (berkas && !/\.(pdf|docx)$/i.test(berkas.name)) throw new Error('Berkas klarifikasi harus PDF atau DOCX.')
+  if (berkas && berkas.size > 10 * 1024 * 1024) throw new Error('Berkas melebihi 10 MB.')
   if (String(pengirim || '').trim().length < 3) throw new Error('Nama pengirim wajib diisi.')
   if (String(jabatan || '').trim().length < 2) throw new Error('Jabatan pengirim wajib diisi.')
-  const { jalur } = await unggahBerkas(BUCKET_KLARIFIKASI, id, berkas)
+  const jalur = berkas ? (await unggahBerkas(BUCKET_KLARIFIKASI, id, berkas)).jalur : null
   return ubah('penanganan_kirim_klarifikasi', {
-    p_id: id, p_jalur: jalur, p_nama_berkas: berkas.name, p_pengirim: pengirim, p_jabatan: jabatan, p_ringkasan: ringkasan || null,
+    p_id: id, p_jalur: jalur, p_nama_berkas: berkas?.name || null, p_pengirim: pengirim, p_jabatan: jabatan,
+    p_ringkasan: ringkasan || null, p_laporan: laporan,
   }, {
-    status: 'klarifikasi_masuk', berkas_jalur: jalur, berkas_nama: berkas.name, pengirim_nama: pengirim,
-    pengirim_jabatan: jabatan, ringkasan_klarifikasi: ringkasan, diunggah_pada: new Date().toISOString(), diunggah_oleh: 'peragaan',
+    status: 'klarifikasi_masuk', berkas_jalur: jalur, berkas_nama: berkas?.name || null, pengirim_nama: pengirim,
+    pengirim_jabatan: jabatan, ringkasan_klarifikasi: ringkasan || laporan?.fakta || '', laporan_klarifikasi: laporan,
+    diunggah_pada: new Date().toISOString(), diunggah_oleh: 'peragaan',
   })
 }
 

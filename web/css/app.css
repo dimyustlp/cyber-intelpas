@@ -6673,3 +6673,18 @@ table.tabel button.judul-buka:hover { color: var(--accent); text-decoration: und
 .pengingat-langkah li[data-di-sini] .pengingat-nomor { background: var(--accent); color: var(--accent-in, #fff); }
 .pengingat-kaki { flex-wrap: wrap; padding-bottom: 12px; }
 @media print { .pengingat-wadah { display: none; } }
+
+/* Laporan klarifikasi berita (pages/penanganan.js, lib/laporan-klarifikasi.js):
+   tiga lembar format resmi sebagai kelompok isian; bidang teks panjang
+   selebar kisi supaya fakta dan draf tanggapan tidak terjepit sepertiga layar. */
+.laporan-isi > summary { cursor: pointer; display: flex; gap: 6px; align-items: center; flex-wrap: wrap; font-weight: 600; font-size: 13px; padding: 6px 0; }
+.laporan-isi > summary svg { width: 15px; height: 15px; }
+.laporan-lembar { border: 1px solid var(--line-2); border-radius: var(--r-2); padding: 10px 12px 12px; margin: 8px 0 0; min-width: 0; }
+.laporan-lembar > legend { font-size: 12px; font-weight: 700; padding: 0 6px; color: var(--ink-2); }
+.laporan-kisi { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; margin-top: 8px; }
+.laporan-kisi .bidang.lebar { grid-column: 1 / -1; }
+.laporan-kisi .masukan { width: 100%; }
+.laporan-dl { display: grid; grid-template-columns: minmax(140px, 32%) 1fr; gap: 2px 12px; margin: 4px 0 0; font-size: 12.5px; }
+.laporan-dl dt { color: var(--ink-3); }
+.laporan-dl dd { margin: 0; }
+@media (max-width: 560px) { .laporan-dl { grid-template-columns: 1fr; } .laporan-dl dd { margin-bottom: 6px; } }

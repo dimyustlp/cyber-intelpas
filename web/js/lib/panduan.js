@@ -176,9 +176,11 @@ const PUSAT = {
       + 'atas kasus intelijen, lengkap dengan pelaksana dan tenggat.',
     guna: 'Menjawab apakah UPT sudah menjawab pemberitaan tentang dirinya, dan apakah yang '
       + 'diputuskan pimpinan sudah dikerjakan — tanpa menelepon.',
-    catatan: 'Klarifikasi wajib berupa PDF atau DOCX dan wajib menyebut nama serta jabatan '
-      + 'pengirimnya. Pengingat UPT yang belum menginput dikirim ke grup Telegram kanwil pukul '
-      + '08.00 dan 14.00 WIB.',
+    catatan: 'Klarifikasi UPT mengikuti Format Laporan Klarifikasi Berita (Laporan Insidental, '
+      + 'Berita Acara Verifikasi Isu, Draft Tanggapan): dibaca langsung di tiap butir dan bisa diunduh '
+      + 'sebagai .docx; format kosongnya diunduh dari kartu di atas daftar. Klarifikasi wajib menyebut '
+      + 'nama serta jabatan pengirimnya. Pengingat UPT yang belum menginput dikirim ke grup Telegram '
+      + 'kanwil pukul 08.00 dan 14.00 WIB.',
   },
   laporan: {
     isi: 'Dua keluaran untuk periode yang sama. Pertama, laporan intelijen berkala: pilih '
@@ -334,8 +336,12 @@ const UNIT = {
   klarifikasi: {
     isi: 'Pemberitaan negatif tentang unit Anda yang diminta klarifikasinya oleh kanwil, beserta '
       + 'instruksi dan batas waktunya.',
-    guna: 'Unggah berkas klarifikasi (PDF atau DOCX, paling besar 10 MB), isi nama dan jabatan '
-      + 'pengirim, lalu kirim. Kanwil dan pusat langsung diberi tahu.',
+    guna: 'Buka "Isi laporan klarifikasi" dan isi menurut format resmi: Berita Acara Verifikasi '
+      + 'Isu (hasil konfirmasi, fakta sebenarnya, dan tingkat isu wajib), Laporan Insidental, dan Draft '
+      + 'Tanggapan. Tombol "Unduh laporan (.docx)" menyusun berkasnya untuk dicetak dan ditandatangani; '
+      + 'hasil pindaian bertanda tangan boleh dilampirkan (PDF/DOCX, opsional). Isi nama dan jabatan '
+      + 'pengirim, lalu kirim. Kanwil dan pusat langsung diberi tahu. Format kosong (termasuk Buku '
+      + 'Kontrol, Rekapitulasi, dan Laporan Mingguan) diunduh dari kartu di puncak halaman.',
     catatan: 'Klarifikasi yang dikembalikan kanwil muncul lagi dengan catatan perbaikannya.',
   },
   'upt-dasbor': {

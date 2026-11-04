@@ -8,8 +8,13 @@
  *           menilai, dan mencatat disposisi atas kanwil mana pun
  *   kanwil  wilayahnya sendiri; meneruskan ke UPT, menilai klarifikasi,
  *           mencatat disposisi pimpinan wilayah
- *   UPT     hanya klarifikasi untuk unitnya; mengunggah berkas (PDF/DOCX)
- *           dan WAJIB menyebut nama serta jabatan pengirimnya
+ *   UPT     hanya klarifikasi untuk unitnya; mengisi laporan klarifikasi
+ *           menurut format resmi (lib/laporan-klarifikasi.js) dan/atau
+ *           mengunggah berkas (PDF/DOCX), dan WAJIB menyebut nama serta
+ *           jabatan pengirimnya
+ *
+ * Ketiga peran membaca laporan yang sama dalam bentuk yang sama, bisa
+ * mengunduhnya sebagai .docx, dan bisa mengunduh format kosongnya.
  *
  * Tombol yang tidak berhak ditekan tidak digambar, tetapi yang menolak
  * tetap basis data (fungsi penanganan_*): halaman ini hanya menghemat satu
@@ -26,8 +31,18 @@ import {
   muatPenanganan, penangananSaatIni, galatPenanganan, infoStatus, lewatBatas, namaKanwilPendek,
   teruskanKeUpt, kirimKlarifikasi, nilaiKlarifikasi, catatDisposisi, tautanKlarifikasi, hitungPenanganan,
 } from '../lib/penanganan.js'
+import {
+  LEMBAR, ZONA_WAKTU, FORMAT_KOSONG, LOGO_KOP, JENIS_DOCX, HASIL, TINGKAT,
+  laporanBawaan, bersihkanLaporan, periksaLaporan, labelPilihan, kalimatWaktuKonfirmasi, susunDocxKlarifikasi, namaBerkasLaporan,
+} from '../lib/laporan-klarifikasi.js'
 
-const keadaanTab = { dimuat: false, saring: 'semua', sibuk: null, buka: new Set() }
+/*
+   `draf` menyimpan isian laporan per permintaan selama halaman terbuka:
+   halaman ini digambar ulang pada setiap perubahan keadaan (termasuk saat
+   tombol kirim ditekan), dan formulir dua puluh bidang yang kosong kembali
+   setelah satu penolakan adalah cara tercepat membuat UPT berhenti mengisi.
+*/
+const keadaanTab = { dimuat: false, saring: 'semua', sibuk: null, buka: new Set(), draf: new Map(), bukaForm: new Set() }
 
 function gambarUlang() { document.dispatchEvent(new CustomEvent('gambar-ulang')) }
 
@@ -79,6 +94,113 @@ function rincianAnalisis(p) {
     </details>`
 }
 
+/* ------------------------------------------------- laporan klarifikasi */
+
+function drafUntuk(p) {
+  if (!keadaanTab.draf.has(p.id)) {
+    keadaanTab.draf.set(p.id, {
+      ...laporanBawaan(p),
+      ...(p.laporan_klarifikasi || {}),
+      pengirim: p.pengirim_nama || '', jabatan: p.pengirim_jabatan || '',
+    })
+  }
+  return keadaanTab.draf.get(p.id)
+}
+
+/** Laporan dianggap diisi bila salah satu butir penentu artinya terisi. */
+function laporanDiisi(d) {
+  return Boolean(d.hasil_konfirmasi || d.tingkat || String(d.fakta || '').trim())
+}
+
+function masukanBidang(b, nilai) {
+  const atr = `class="masukan${b.jenis === 'area' ? ' area' : ''}" data-lap="${b.k}"`
+  if (b.jenis === 'area') return `<textarea ${atr} rows="${b.baris || 2}" maxlength="4000">${amankan(nilai)}</textarea>`
+  if (b.jenis === 'pilih') {
+    const opsi = Array.isArray(b.pilihan) ? b.pilihan.map((x) => [x, x]) : Object.entries(b.pilihan)
+    return `<select ${atr}><option value="">— pilih —</option>${opsi.map(([k, l]) =>
+      `<option value="${amankan(k)}"${k === nilai ? ' selected' : ''}>${amankan(l)}</option>`).join('')}</select>`
+  }
+  return `<input ${atr} maxlength="300" value="${amankan(nilai)}">`
+}
+
+function formulirLaporan(p) {
+  const d = drafUntuk(p)
+  const bidang = (b) => b.jenis === 'waktu'
+    ? `<label class="bidang"><span class="label-mono">${amankan(b.label)}</span>
+        <span class="baris gap-6"><input class="masukan" type="datetime-local" data-lap="${b.k}" value="${amankan(d[b.k] || '')}">
+        <select class="masukan" data-lap="zona" style="width:90px" aria-label="Zona waktu">${ZONA_WAKTU.map((z) =>
+          `<option${z === d.zona ? ' selected' : ''}>${z}</option>`).join('')}</select></span></label>`
+    : `<label class="bidang${b.jenis === 'area' ? ' lebar' : ''}"><span class="label-mono">${amankan(b.label)}${b.wajib ? ' (wajib)' : ''}</span>
+        ${masukanBidang(b, d[b.k] || '')}</label>`
+  return LEMBAR.map((l) => `
+    <fieldset class="laporan-lembar">
+      <legend>${amankan(l.judul)}</legend>
+      <div class="mini-teks samar-teks">${amankan(l.ket)}</div>
+      <div class="laporan-kisi">${l.bidang.map(bidang).join('')}</div>
+    </fieldset>`).join('')
+}
+
+function waktuBaca(l) {
+  const w = kalimatWaktuKonfirmasi(l)
+  return `${w.hari}, ${w.tanggal} pukul ${w.pukul} ${w.zona}`
+}
+
+/** Tampilan baca: hanya butir yang terisi, dalam urutan lembar. */
+function tampilanLaporan(p) {
+  const l = p.laporan_klarifikasi
+  if (!l) return ''
+  const hasil = HASIL[l.hasil_konfirmasi]
+  const tingkat = TINGKAT[l.tingkat]
+  return `
+    <details class="penanganan-rinci laporan-baca"${keadaanTab.bukaForm.has(`baca-${p.id}`) ? ' open' : ''} data-buka-kunci="baca-${amankan(p.id)}">
+      <summary>Laporan klarifikasi${hasil ? ` — hasil konfirmasi <b>${amankan(hasil)}</b>` : ''}${tingkat ? ` · tingkat ${amankan(tingkat)}` : ''}</summary>
+      ${LEMBAR.map((lembar) => {
+        const isi = lembar.bidang.filter((b) => String(l[b.k] || '').trim())
+        if (!isi.length) return ''
+        return `<div class="label-mono" style="margin-top:8px">${amankan(lembar.judul)}</div>
+          <dl class="laporan-dl">${isi.map((b) => `<dt>${amankan(b.label)}</dt><dd class="pra">${amankan(
+            b.k === 'waktu_konfirmasi' ? waktuBaca(l) : labelPilihan(b, l[b.k]))}</dd>`).join('')}</dl>`
+      }).join('')}
+      <div style="margin-top:6px"><button class="tbl kecil" data-unduh-laporan="${amankan(p.id)}">${ikon('unduh')}Unduh laporan (.docx)</button></div>
+    </details>`
+}
+
+async function ambilLogo() {
+  try {
+    const r = await fetch(LOGO_KOP)
+    return r.ok ? new Uint8Array(await r.arrayBuffer()) : null
+  } catch { return null }
+}
+
+/**
+ * Unduh .docx tiga lembar. Tidak lewat lib/ekspor.js `unduh`: berkas ini
+ * isian UPT sendiri, bukan petikan data berklasifikasi, dan harus bisa
+ * diunduh juga di mode peragaan untuk latihan mengisi.
+ */
+async function unduhLaporan(p, laporan, waktuLaporan) {
+  const isi = susunDocxKlarifikasi(laporan, { p, logo: await ambilLogo(), waktuLaporan })
+  const alamat = URL.createObjectURL(new Blob([isi], { type: JENIS_DOCX }))
+  const a = document.createElement('a')
+  a.href = alamat
+  a.download = namaBerkasLaporan(p, new Date(waktuLaporan))
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  setTimeout(() => URL.revokeObjectURL(alamat), 10_000)
+}
+
+function kartuFormat(unit) {
+  return kartu({
+    judul: 'Format Laporan Klarifikasi Berita',
+    ket: unit
+      ? 'Isi laporan langsung di setiap permintaan di bawah; berkas .docx tersusun otomatis. Format kosong untuk Buku Kontrol, Rekapitulasi, dan Laporan Mingguan ada di berkas yang sama.'
+      : 'Format resmi yang diisi UPT: Laporan Insidental, Berita Acara Verifikasi Isu, dan Draft Tanggapan. Laporan yang masuk bisa dibaca di setiap butir dan diunduh sebagai .docx.',
+    aksi: `<a class="tbl kecil" href="${FORMAT_KOSONG}" download="Format Laporan Klarifikasi Berita.docx">${ikon('unduh')}Unduh format kosong (.docx)</a>`,
+    isi: `<div class="mini-teks samar-teks">${LEMBAR.map((l) => amankan(l.judul)).join(' · ')}
+      · Buku Kontrol Patroli Siber · Rekapitulasi Klarifikasi Isu · Laporan Hasil Patroli Siber (mingguan)</div>`,
+  })
+}
+
 /* ---------------------------------------------------------- klarifikasi UPT */
 
 function butirKlarifikasi(p, { peran, unit, bolehKelola }) {
@@ -100,33 +222,40 @@ function butirKlarifikasi(p, { peran, unit, bolehKelola }) {
       <div class="penanganan-aksi" data-id="${amankan(p.id)}">
         ${p.status === 'perlu_perbaikan' && p.catatan_penilaian
           ? pesanSistem(`<b>Perlu diperbaiki:</b> ${amankan(p.catatan_penilaian)}`, 'sedang', 'peringatan') : ''}
-        <div class="label-mono">${unit ? 'Kirim hasil klarifikasi' : `Unggah klarifikasi atas nama ${amankan(p.nama_upt)}`}</div>
+        <details class="laporan-isi"${keadaanTab.bukaForm.has(p.id) ? ' open' : ''} data-buka-kunci="${amankan(p.id)}">
+          <summary>${ikon('arsip')}${unit ? 'Isi laporan klarifikasi' : `Isi laporan klarifikasi atas nama ${amankan(p.nama_upt)}`}
+            <span class="mini-teks samar-teks">— format resmi: Laporan Insidental, Berita Acara Verifikasi Isu, Draft Tanggapan</span></summary>
+          ${formulirLaporan(p)}
+        </details>
         <div class="sip-kisi" style="margin-top:6px">
-          <label><span class="label-mono">Berkas (PDF/DOCX, maks 10 MB)</span>
-            <input class="masukan" type="file" data-isian="berkas" accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"></label>
           <label><span class="label-mono">Nama pengirim (wajib)</span>
-            <input class="masukan" data-isian="pengirim" maxlength="120" placeholder="Nama lengkap yang mengirim"></label>
+            <input class="masukan" data-lap="pengirim" maxlength="120" value="${amankan(drafUntuk(p).pengirim || '')}" placeholder="Nama lengkap yang mengirim"></label>
           <label><span class="label-mono">Jabatan pengirim (wajib)</span>
-            <input class="masukan" data-isian="jabatan" maxlength="120" placeholder="mis. Kepala KPLP"></label>
+            <input class="masukan" data-lap="jabatan" maxlength="120" value="${amankan(drafUntuk(p).jabatan || '')}" placeholder="mis. Kepala KPLP"></label>
+          <label><span class="label-mono">Lampiran bertanda tangan (PDF/DOCX, opsional)</span>
+            <input class="masukan" type="file" data-isian="berkas" accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"></label>
         </div>
-        <label class="bidang" style="margin-top:6px"><span class="label-mono">Ringkasan klarifikasi</span>
-          <textarea class="masukan area" data-isian="ringkasan" rows="2" maxlength="2000" placeholder="Pokok klarifikasi dalam dua-tiga kalimat"></textarea></label>
-        <div style="margin-top:6px">${tombol({ label: sibuk ? 'Mengirim…' : 'Kirim klarifikasi', ikon: 'kirim', gaya: 'utama', kecil: true, aksi: 'kirim-klarifikasi', nonaktif: sibuk })}</div>
+        <div class="mini-teks samar-teks">Isi laporan di atas, unggah berkas, atau keduanya. Hasil konfirmasi, fakta sebenarnya, dan tingkat isu wajib bila laporan diisi.</div>
+        <div class="baris gap-6" style="margin-top:6px;flex-wrap:wrap">
+          ${tombol({ label: sibuk ? 'Mengirim…' : 'Kirim klarifikasi', ikon: 'kirim', gaya: 'utama', kecil: true, aksi: 'kirim-klarifikasi', nonaktif: sibuk })}
+          ${tombol({ label: 'Unduh laporan (.docx)', ikon: 'unduh', kecil: true, aksi: 'unduh-draf', nonaktif: sibuk })}
+        </div>
       </div>`
   }
 
   let masuk = ''
-  if (p.berkas_jalur) {
+  if (p.berkas_jalur || p.laporan_klarifikasi) {
     masuk = `
       <div class="penanganan-masuk">
-        <div class="baris gap-6" style="flex-wrap:wrap">
+        ${p.berkas_jalur ? `<div class="baris gap-6" style="flex-wrap:wrap">
           ${ikon('arsip')}
           <b>${amankan(p.berkas_nama || 'berkas')}</b>
           <button class="tbl kecil" data-buka-berkas="${amankan(p.berkas_jalur)}">${ikon('unduh')}Buka berkas</button>
-        </div>
+        </div>` : ''}
         <div class="mini-teks">Dikirim oleh <b>${amankan(p.pengirim_nama)}</b> (${amankan(p.pengirim_jabatan)})
           · ${amankan(tanggalJam(p.diunggah_pada))} · akun ${amankan(p.diunggah_oleh || '-')}</div>
-        ${p.ringkasan_klarifikasi ? `<p class="pra" style="margin:6px 0 0">${amankan(p.ringkasan_klarifikasi)}</p>` : ''}
+        ${p.ringkasan_klarifikasi && !p.laporan_klarifikasi ? `<p class="pra" style="margin:6px 0 0">${amankan(p.ringkasan_klarifikasi)}</p>` : ''}
+        ${tampilanLaporan(p)}
         ${p.status === 'diterima' ? `<div class="mini-teks samar-teks">Diterima ${amankan(p.dinilai_oleh || '')} · ${amankan(tanggalJam(p.dinilai_pada))}${p.catatan_penilaian ? ` — ${amankan(p.catatan_penilaian)}` : ''}</div>` : ''}
       </div>`
     if (p.status === 'klarifikasi_masuk' && bolehKelola) {
@@ -206,6 +335,14 @@ function pasangPenyimak(isi, keadaan) {
       else roti('Tautan berkas tidak bisa dibuat.', 'sedang')
     } catch (e) { roti(pesanRamah(e), 'kritis') }
   }))
+  isi.querySelectorAll('details[data-buka-kunci]').forEach((d) => d.addEventListener('toggle', () => {
+    if (d.open) keadaanTab.bukaForm.add(d.dataset.bukaKunci); else keadaanTab.bukaForm.delete(d.dataset.bukaKunci)
+  }))
+  isi.querySelectorAll('[data-unduh-laporan]').forEach((b) => b.addEventListener('click', async () => {
+    const p = penangananSaatIni().find((x) => x.id === b.dataset.unduhLaporan)
+    if (!p?.laporan_klarifikasi) return
+    try { await unduhLaporan(p, p.laporan_klarifikasi, p.diunggah_pada || new Date()) } catch (e) { roti(pesanRamah(e), 'kritis') }
+  }))
 
   isi.querySelectorAll('.penanganan-aksi').forEach((wadah) => {
     const id = wadah.dataset.id
@@ -226,15 +363,32 @@ function pasangPenyimak(isi, keadaan) {
     wadah.querySelector('[data-aksi="teruskan"]')?.addEventListener('click', () => jalankan(
       () => teruskanKeUpt(id, { instruksi: ambilIsian('instruksi')?.value, batas: keIso(ambilIsian('batas')?.value) }),
       'Diteruskan ke UPT. Grup Telegram kanwil diberi tahu.'))
+    const draf = keadaanTab.draf.get(id)
+    wadah.querySelectorAll('[data-lap]').forEach((m) => {
+      const simpan = () => { if (draf) draf[m.dataset.lap] = m.value }
+      m.addEventListener('input', simpan)
+      m.addEventListener('change', simpan)
+    })
+    const pTerpilih = () => penangananSaatIni().find((x) => x.id === id)
+    wadah.querySelector('[data-aksi="unduh-draf"]')?.addEventListener('click', async () => {
+      try { await unduhLaporan(pTerpilih(), bersihkanLaporan(draf), new Date()) } catch (e) { roti(pesanRamah(e), 'kritis') }
+    })
     wadah.querySelector('[data-aksi="kirim-klarifikasi"]')?.addEventListener('click', () => {
-      const berkas = ambilIsian('berkas')?.files?.[0]
-      const pengirim = ambilIsian('pengirim')?.value?.trim()
-      const jabatan = ambilIsian('jabatan')?.value?.trim()
-      if (!berkas) { roti('Pilih berkas klarifikasi (PDF atau DOCX).', 'sedang'); return }
-      if (!pengirim || pengirim.length < 3) { roti('Nama pengirim wajib diisi.', 'sedang'); return }
-      if (!jabatan || jabatan.length < 2) { roti('Jabatan pengirim wajib diisi.', 'sedang'); return }
-      jalankan(() => kirimKlarifikasi(id, { berkas, pengirim, jabatan, ringkasan: ambilIsian('ringkasan')?.value }),
-        'Klarifikasi terkirim. Kanwil dan pusat diberi tahu otomatis.')
+      const berkas = ambilIsian('berkas')?.files?.[0] || null
+      const pengirim = String(draf?.pengirim || '').trim()
+      const jabatan = String(draf?.jabatan || '').trim()
+      const diisi = draf && laporanDiisi(draf)
+      if (!berkas && !diisi) { roti('Isi laporan klarifikasi atau unggah berkas klarifikasi.', 'sedang'); keadaanTab.bukaForm.add(id); gambarUlang(); return }
+      if (diisi) {
+        const galat = periksaLaporan(draf)
+        if (galat) { roti(galat, 'sedang'); keadaanTab.bukaForm.add(id); gambarUlang(); return }
+      }
+      if (pengirim.length < 3) { roti('Nama pengirim wajib diisi.', 'sedang'); return }
+      if (jabatan.length < 2) { roti('Jabatan pengirim wajib diisi.', 'sedang'); return }
+      jalankan(async () => {
+        await kirimKlarifikasi(id, { berkas, pengirim, jabatan, laporan: diisi ? bersihkanLaporan(draf) : null })
+        keadaanTab.draf.delete(id)
+      }, 'Klarifikasi terkirim. Kanwil dan pusat diberi tahu otomatis.')
     })
     wadah.querySelector('[data-aksi="terima"]')?.addEventListener('click', () => jalankan(
       () => nilaiKlarifikasi(id, { terima: true, catatan: ambilIsian('catatan')?.value }), 'Klarifikasi diterima.'))
@@ -280,7 +434,8 @@ export function halamanKlarifikasi({ keadaan, isi }) {
     <div class="tumpuk">
       ${bagianGalat()}
       ${unit ? pesanSistem('<b>Klarifikasi UPT.</b> Pemberitaan negatif tentang unit Anda yang diminta klarifikasinya oleh kanwil. '
-        + 'Unggah berkas klarifikasi (PDF/DOCX) dan isi nama serta jabatan pengirimnya. Kanwil dan pusat diberi tahu otomatis.', 'aksen', 'info') : ''}
+        + 'Isi laporan klarifikasi menurut format resmi (atau unggah berkasnya), lalu isi nama serta jabatan pengirim. Kanwil dan pusat diberi tahu otomatis.', 'aksen', 'info') : ''}
+      ${unit ? kartuFormat(unit) : ''}
       <div class="kisi kisi-4">
         ${unit
           ? ubin({ label: 'Permintaan', nilai: semua.length, kaki: 'untuk unit Anda', nada: 'netral' })
@@ -289,6 +444,7 @@ export function halamanKlarifikasi({ keadaan, isi }) {
         ${ubin({ label: 'Sudah menginput', nilai: h.sudahMenginput, kaki: 'menunggu dinilai', nada: h.sudahMenginput ? 'aksen' : 'netral' })}
         ${ubin({ label: 'Selesai', nilai: h.diterima, kaki: `dari ${angka(semua.length)} permintaan`, nada: 'positif' })}
       </div>
+      ${unit ? '' : kartuFormat(unit)}
       <div class="segmen" role="group" aria-label="Saring status">
         ${SARING_KLARIFIKASI.filter(([k]) => !(unit && k === 'menunggu_kanwil')).map(([k, l]) =>
           `<button data-saring-penanganan="${k}" aria-pressed="${keadaanTab.saring === k}">${amankan(l)}</button>`).join('')}

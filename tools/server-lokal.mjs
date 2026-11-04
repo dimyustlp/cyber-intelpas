@@ -118,6 +118,7 @@ const JENIS = {
   '.webp': 'image/webp',
   '.woff2': 'font/woff2',
   '.ico': 'image/x-icon',
+  '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
   // Laporan harian diterbitkan sebagai PDF. Tanpa baris ini peladen
   // mengirimkannya sebagai octet-stream, dan peramban mengunduhnya alih-alih
   // menampilkannya — yang membuat hasil laporan tidak bisa diperiksa mata.

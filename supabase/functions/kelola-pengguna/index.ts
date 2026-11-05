@@ -167,7 +167,10 @@ async function setelSandi(
     }, 409)
   }
 
-  const { error: galatSetel } = await admin.auth.admin.updateUser(String(target.auth_user_id), { password: sandi })
+  // updateUserById — bukan updateUser. Di supabase-js v2, auth.admin hanya
+  // punya updateUserById(uid, attrs); updateUser adalah method klien pengguna
+  // yang sedang masuk, dan tidak ada di sini (service role).
+  const { error: galatSetel } = await admin.auth.admin.updateUserById(String(target.auth_user_id), { password: sandi })
   if (galatSetel) {
     return jawab({ ok: false, pesan: `Kata sandi gagal disetel: ${galatSetel.message}` }, 500)
   }

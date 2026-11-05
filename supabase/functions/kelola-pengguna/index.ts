@@ -38,6 +38,10 @@ const RANAH_USERNAME = 'pengguna.cyber-intelpas.id'
 
 const PERAN_INTERNAL = [
   'super_admin',
+  // Administrator: tingkat di bawah Superadmin, pekerjaan operasional penuh
+  // tanpa kewenangan pemilik. Hak bacanya ditegakkan di basis data (has_role
+  // memperlakukan 'admin' sebagai pewaris peran pusat; is_super_admin tidak).
+  'admin',
   'media_intelligence_analyst',
   'news_data_operator',
   'field_verification_officer',

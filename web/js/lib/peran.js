@@ -16,6 +16,31 @@ export const PERAN = {
     lingkup: 'internal',
     tugas: 'Mengelola hak akses, parameter mesin klasifikasi, dan kesehatan sistem.',
   },
+  /*
+     Administrator — tingkat di bawah Superadmin (5 November 2026).
+
+     Satu lapisan baru: bisa SELURUH pekerjaan operasional dan analisis
+     (memasukkan, menelaah, memverifikasi, menyusun kasus & laporan, memutuskan,
+     verifikasi lapangan, melihat seluruh berita nasional), TETAPI tidak
+     memegang kewenangan pemilik — mengelola pengguna, integrasi dan kunci,
+     jejak audit, kesehatan sistem, koordinat induk, dan peran. Itu tetap milik
+     Superadmin/Pemilik Sistem.
+
+     Hak bacanya ditegakkan di basis data lewat satu titik: has_role()
+     memperlakukan 'admin' sebagai pewaris seluruh peran pusat operasional, dan
+     is_super_admin() TIDAK, sehingga kewenangan pemilik tertutup rapat.
+     Izinnya di bawah dihitung sebagai gabungan izin kelima peran pusat
+     operasional — otomatis tanpa izin pemilik (IZIN_ADMIN) dan tanpa izin
+     daerah.
+  */
+  admin: {
+    nama: 'Administrator',
+    ringkas: 'Admin',
+    lingkup: 'internal',
+    tugas: 'Menjalankan seluruh pekerjaan operasional dan analisis pusat — kecuali '
+      + 'kelola pengguna, integrasi, audit, kesehatan sistem, dan peran, yang tetap '
+      + 'milik Superadmin.',
+  },
   news_data_operator: {
     nama: 'Operator Pengumpulan Data',
     ringkas: 'Puldata',
@@ -223,6 +248,23 @@ export const IZIN_ADMIN = [
   'kelola_pengguna', 'kelola_pengaturan', 'lihat_audit', 'lihat_kesehatan',
   'kelola_integrasi', 'kelola_koordinat', 'kelola_peran',
 ]
+
+/*
+   Izin Administrator = gabungan izin kelima peran pusat operasional.
+
+   Dihitung, bukan ditulis tangan, supaya ia tidak pernah tertinggal ketika
+   salah satu peran pusat memperoleh izin baru. Gabungan ini dengan sendirinya
+   TIDAK memuat izin pemilik (IZIN_ADMIN tidak dipegang peran mana pun di
+   bawah) dan TIDAK memuat izin daerah (peran daerah tidak ikut digabung).
+   Lihat PERAN.admin dan has_role() di basis data.
+*/
+IZIN.admin = [...new Set([
+  ...IZIN.media_intelligence_analyst,
+  ...IZIN.evaluation_recommendation_analyst,
+  ...IZIN.executive_decision_maker,
+  ...IZIN.news_data_operator,
+  ...IZIN.field_verification_officer,
+])]
 
 /*
    Seluruh fungsi di bawah menerjemahkan nama peran lebih dulu lewat

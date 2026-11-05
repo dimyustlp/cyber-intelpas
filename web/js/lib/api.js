@@ -89,7 +89,11 @@ export function muatSesi() {
     if (!mentah) return null
     const isi = JSON.parse(mentah)
     if (!isi?.access_token) return null
-    if (isi.expires_at && isi.expires_at * 1000 < Date.now() + 30_000) return null
+    // Token kedaluwarsa masih boleh dimuat ASAL ada refresh token: pemanggil
+    // pertama akan menyegarkannya sendiri. Hanya sesi tanpa jalan pulih yang
+    // dibuang di sini, supaya tab yang dibuka kembali esok hari tidak memaksa
+    // masuk ulang padahal refresh token-nya masih sah.
+    if (isi.expires_at && isi.expires_at * 1000 < Date.now() + 30_000 && !isi.refresh_token) return null
     sesi = isi
     profil = isi.profil || null
     return isi
@@ -113,8 +117,62 @@ export function profilSekarang() { return profil }
 
 // --------------------------------------------------------------- pemanggil
 
-async function panggil(jalur, opsi = {}) {
+/**
+ * Menyegarkan access token dengan refresh token yang tersimpan.
+ *
+ * Token akses GoTrue hidup singkat (biasanya satu jam); tanpa penyegaran, sebuah
+ * tab yang dibiarkan terbuka mulai dijawab "JWT expired" di tengah kerja —
+ * persis yang terlihat pada uji petik di halaman Tindak Lanjut. Penyegaran
+ * dilakukan lewat `fetch` langsung, bukan `panggil()`, supaya tidak memanggil
+ * dirinya sendiri; dan di-dedup dengan satu promise, supaya sepuluh permintaan
+ * yang gagal berbarengan tidak menukar refresh token sepuluh kali (yang kedua
+ * dan seterusnya akan ditolak GoTrue karena token sekali-pakai sudah terpakai).
+ */
+let promiseSegar = null
+async function segarkanSesi() {
+  if (!sesi?.refresh_token) return false
+  if (promiseSegar) return promiseSegar
+  promiseSegar = (async () => {
+    try {
+      const jawab = await fetch(`${KONFIG.url}/auth/v1/token?grant_type=refresh_token`, {
+        method: 'POST',
+        headers: { apikey: KONFIG.kunciPublik, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refresh_token: sesi.refresh_token }),
+      })
+      if (!jawab.ok) return false
+      const baru = await jawab.json()
+      if (!baru?.access_token) return false
+      // `profil` dipertahankan: jawaban token tidak memuatnya.
+      simpanSesi({ ...baru, profil })
+      return true
+    } catch {
+      return false
+    } finally {
+      promiseSegar = null
+    }
+  })()
+  return promiseSegar
+}
+
+/** Benar bila galat PostgREST/GoTrue ini berarti token kedaluwarsa. */
+function tokenHabis(status, isi) {
+  if (status !== 401) return false
+  const pesan = `${isi?.message || ''} ${isi?.msg || ''} ${isi?.error_description || ''}`.toLowerCase()
+  return pesan.includes('jwt') || pesan.includes('expired') || isi?.code === 'PGRST301'
+}
+
+async function panggil(jalur, opsi = {}, _ulang = false) {
   if (KONFIG.mode === 'demo') throw new GalatApi('Mode demo tidak terhubung ke peladen.', 0)
+
+  const auth = jalur.startsWith('/auth/v1/')
+
+  // Proaktif: bila token tinggal menghitung detik, segarkan sebelum dipakai.
+  // Lebih murah daripada membiarkannya gagal lalu mengulang, dan menghindari
+  // satu permintaan yang terlanjur 401 di layar.
+  if (!auth && !_ulang && sesi?.refresh_token && sesi?.expires_at
+      && sesi.expires_at * 1000 < Date.now() + 30_000) {
+    await segarkanSesi()
+  }
 
   const kepala = {
     apikey: KONFIG.kunciPublik,
@@ -137,6 +195,12 @@ async function panggil(jalur, opsi = {}) {
   if (teks) { try { isi = JSON.parse(teks) } catch { isi = teks } }
 
   if (!jawab.ok) {
+    // Reaktif: token kedaluwarsa di tengah sesi. Segarkan sekali, lalu ulangi
+    // permintaan yang sama persis — tepat satu kali, supaya token yang benar-
+    // benar dicabut tidak memicu putaran tak berujung.
+    if (!auth && !_ulang && tokenHabis(jawab.status, isi) && sesi?.refresh_token) {
+      if (await segarkanSesi()) return panggil(jalur, opsi, true)
+    }
     throw new GalatApi(isi?.message || isi?.error_description || isi?.msg || jawab.statusText, jawab.status, isi)
   }
   return isi

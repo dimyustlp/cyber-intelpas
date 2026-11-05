@@ -24,7 +24,7 @@
 import { ubin, kartu, keping, kosong, pesanSistem, tombol, bidangCari } from '../ui/komponen.js'
 import {
   amankan, angka, persen, jarakWaktu, tanggalJam, tanggalPanjang, ringkas,
-  nadaUrgensi, nadaSentimen, nadaStatus, asalTautan,
+  nadaUrgensi, nadaSentimen, nadaStatus, asalTautan, tanggalIso,
 } from '../lib/format.js'
 import { ikon } from '../lib/ikon.js'
 import {
@@ -37,6 +37,7 @@ import { punyaIzin, adalahUnit } from '../lib/peran.js'
 import { baganSentimen, baganTren, baganUrgensi } from '../ui/bagan.js'
 import { sebaran } from '../lib/demo.js'
 import { ambil } from '../lib/api.js'
+import { bukaDetailDaerah } from '../ui/detail-daerah.js'
 /**
  * Sel unit di daftar berita wilayah.
  *
@@ -81,6 +82,29 @@ function periksaCakupan(c) {
     + `urusan Anda. Hubungi administrator ${c.unit ? 'kantor wilayah' : 'sistem'} Anda.`,
     'kritis', 'peringatan',
   )
+}
+
+/**
+ * Pemberitahuan klarifikasi di dasbor daerah.
+ *
+ * Diminta pada uji petik: ketika kanwil meneruskan klarifikasi ke UPT, operator
+ * UPT harus langsung tahu saat login — bukan hanya lewat lencana kecil di menu.
+ * Angkanya `keadaan.hitungan.penanganan` (tugasSaya untuk peran ini), yang sudah
+ * dihitung saat masuk dan ikut menyusut begitu laporannya dinilai selesai —
+ * sehingga pemberitahuan ini hilang sendiri ketika tidak ada lagi yang menunggu.
+ */
+function bannerKlarifikasi(keadaan, unit) {
+  const n = keadaan.hitungan?.penanganan || 0
+  if (!n || !punyaIzin(keadaan.profil?.role, 'lihat_penanganan')) return ''
+  const tbl = tombol({ label: 'Buka Tindak Lanjut', ikon: 'tindak', kecil: true, gaya: 'utama', halaman: 'tindak-lanjut' })
+  return pesanSistem(
+    unit
+      ? `<b>${angka(n)} permintaan klarifikasi menunggu unit Anda.</b> Isi dan kirim `
+        + `klarifikasinya di Tindak Lanjut. Pemberitahuan ini hilang begitu laporannya `
+        + `dinilai selesai. ${tbl}`
+      : `<b>${angka(n)} tindak lanjut menunggu Anda.</b> Ada klarifikasi yang perlu `
+        + `diteruskan ke UPT atau dinilai di Tindak Lanjut. ${tbl}`,
+    'tinggi', 'peringatan')
 }
 
 /**
@@ -180,6 +204,7 @@ export function halamanKanwilDasbor({ keadaan, isi }) {
   isi.innerHTML = `
     <div class="tumpuk">
       ${periksaCakupan(c)}
+      ${bannerKlarifikasi(keadaan, false)}
       ${kop(c, r)}
 
       <div class="kisi kisi-4">
@@ -215,6 +240,8 @@ export function halamanKanwilDasbor({ keadaan, isi }) {
         + 'menumpuk berarti pusat memutuskan tanpa pernah mendengar daerah. '
         + `${tombol({ label: 'Buka antrean', ikon: 'centang', kecil: true, gaya: 'utama', halaman: 'wilayah-telaah' })}`,
         'sedang', 'peringatan') : ''}
+
+      ${rekapWilayah(r.inti)}
 
       <div class="kisi kisi-utama-samping">
         ${kartu({
@@ -361,6 +388,7 @@ export function halamanUptDasbor({ keadaan, isi }) {
   isi.innerHTML = `
     <div class="tumpuk">
       ${periksaCakupan(c)}
+      ${bannerKlarifikasi(keadaan, true)}
       ${kop(c, r)}
 
       <div class="kisi kisi-4">
@@ -465,6 +493,67 @@ function sebaranSikap(daftar) {
     </div>`
 }
 
+/* ------------------------------------------------------- rekap periode */
+
+/**
+ * Rekap harian, mingguan, dan bulanan untuk ruang wilayah.
+ *
+ * Diminta pada uji petik: user kanwil belum punya rekap per periode. Dihitung
+ * dari himpunan dasar yang sama dengan seluruh angka lain (r.inti), menurut
+ * tanggal MASUK beritanya dalam hari WIB — sama dengan "masuk hari ini" di kop,
+ * supaya angkanya tidak bertengkar dengan angka di kartu lain pada halaman ini.
+ */
+function rekapWilayah(berita) {
+  const hariIniIso = tanggalIso(new Date())
+  const tujuhLaluIso = tanggalIso(new Date(Date.now() - 6 * 86_400_000))
+  const bulanPrefix = hariIniIso.slice(0, 7)
+
+  const periode = [
+    { label: 'Hari ini', cocok: (d) => d === hariIniIso },
+    { label: '7 hari terakhir', cocok: (d) => d >= tujuhLaluIso && d <= hariIniIso },
+    { label: 'Bulan ini', cocok: (d) => d.startsWith(bulanPrefix) },
+  ]
+
+  const baris = periode.map((p) => {
+    const sub = berita.filter((b) => p.cocok(tanggalIso(b.created_at)))
+    return {
+      label: p.label,
+      total: sub.length,
+      negatif: sub.filter((b) => ember(b) === 'negatif').length,
+      mendesak: sub.filter((b) => ['Tinggi', 'Kritis'].includes(b.urgensi)).length,
+      ditelaah: sub.filter((b) => b.telaah_wilayah_status && b.telaah_wilayah_status !== 'Belum Ditelaah').length,
+    }
+  })
+
+  return kartu({
+    judul: 'Rekap wilayah',
+    ket: 'Berita yang masuk, menurut hari WIB',
+    rapat: true,
+    isi: `
+      <div class="tabel-bungkus">
+        <table class="tabel">
+          <thead><tr>
+            <th>Periode</th>
+            <th style="width:90px" class="rata-kanan">Total</th>
+            <th style="width:96px" class="rata-kanan">Negatif</th>
+            <th style="width:100px" class="rata-kanan">Mendesak</th>
+            <th style="width:120px" class="rata-kanan">Sudah ditelaah</th>
+          </tr></thead>
+          <tbody>
+            ${baris.map((b) => `
+              <tr>
+                <td style="font-weight:550">${amankan(b.label)}</td>
+                <td class="angka rata-kanan">${angka(b.total)}</td>
+                <td class="angka rata-kanan">${b.negatif ? `<span style="color:var(--kritis)">${angka(b.negatif)}</span>` : '—'}</td>
+                <td class="angka rata-kanan">${b.mendesak ? `<span style="color:var(--tinggi);font-weight:650">${angka(b.mendesak)}</span>` : '—'}</td>
+                <td class="angka rata-kanan">${b.ditelaah ? angka(b.ditelaah) : '—'}</td>
+              </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>`,
+  })
+}
+
 /* --------------------------------------------------------- tabel unit */
 
 function tabelUnit(berita) {
@@ -537,7 +626,8 @@ function daftarRingkas(daftar) {
           <tr>
             <td>${keping(b.urgensi || '—', nadaUrgensi(b.urgensi))}</td>
             <td>
-              <span class="judul-sel">${amankan(ringkas(b.judul || 'Tanpa judul', 110))}</span>
+              <button class="cari-judul" data-aksi="buka-berita-daerah" data-id="${amankan(b.id)}"
+                title="Buka rincian berita ini">${amankan(ringkas(b.judul || 'Tanpa judul', 110))}</button>
               <span class="mini-teks samar-teks">${amankan(b.subkategori || b.kategori || 'Belum dikelompokkan')}</span>
             </td>
             <td class="kecil">${selUnit(b)}</td>
@@ -554,6 +644,9 @@ const saring = {
   lingkup: 'semua',
   telaah: 'Semua putusan',
   sentimen: 'semua',
+  periode: 'semua',   // 'semua' | 'hari-ini'
+  mendesak: false,    // hanya urgensi Tinggi/Kritis
+  urut: 'terbaru',    // 'terbaru' | 'unit' (kelompok per UPT)
   cari: '',
 }
 
@@ -575,12 +668,28 @@ export function halamanWilayahBerita({ keadaan, isi }) {
   const bolehKirim = punyaIzin(keadaan.profil?.role, 'buat_berita')
   const bolehTelaah = punyaIzin(keadaan.profil?.role, 'telaah_wilayah')
 
+  /*
+     Saringan titipan dari Dasbor Eksekutif (sekali pakai saat mendarat). Ubin
+     "Berita masuk hari ini", "Peristiwa negatif", dan "Perlu respons segera"
+     membawa saringan ini supaya daftar yang terbuka berjumlah sama persis
+     dengan angka yang barusan ditekan.
+  */
+  if (keadaan.saringMasuk) {
+    const m = keadaan.saringMasuk
+    keadaan.saringMasuk = null
+    saring.periode = m.hariIni ? 'hari-ini' : 'semua'
+    saring.mendesak = !!m.mendesak
+    if (m.sentimen) saring.sentimen = m.sentimen
+    if (m.hariIni || m.mendesak || m.sentimen) { saring.telaah = 'Semua putusan'; saring.lingkup = 'semua' }
+  }
+
   const semua = (keadaan.berita || []).filter((b) => !b.deleted_at)
 
   const dasarDaftar = bolehKirim && saring.lingkup === 'sendiri'
     ? semua.filter((b) => b.created_by === username)
     : semua
 
+  const hariIniIso = tanggalIso(new Date())
   const kata = saring.cari.trim().toLowerCase()
   const daftar = dasarDaftar
     .filter((b) => saring.telaah.startsWith('Semua')
@@ -588,11 +697,22 @@ export function halamanWilayahBerita({ keadaan, isi }) {
         ? menungguTelaahWilayah(b)
         : b.telaah_wilayah_status === saring.telaah))
     .filter((b) => saring.sentimen === 'semua' || ember(b) === saring.sentimen)
+    .filter((b) => saring.periode !== 'hari-ini' || tanggalIso(b.created_at) === hariIniIso)
+    .filter((b) => !saring.mendesak || ['Tinggi', 'Kritis'].includes(b.urgensi))
     .filter((b) => !kata
       || String(b.judul || '').toLowerCase().includes(kata)
       || String(b.nama_upt || '').toLowerCase().includes(kata)
       || String(b.media || '').toLowerCase().includes(kata))
-    .sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')))
+    .sort((a, b) => {
+      // Urut "unit": kelompokkan per UPT (abjad), lalu yang terbaru di tiap
+      // kelompok. Memudahkan membaca "berita apa saja per UPT" tanpa menyusuri
+      // seluruh daftar — persis yang diminta pada uji petik.
+      if (saring.urut === 'unit') {
+        const u = String(a.nama_upt || 'zzz').localeCompare(String(b.nama_upt || 'zzz'), 'id')
+        if (u) return u
+      }
+      return String(b.created_at || '').localeCompare(String(a.created_at || ''))
+    })
 
   const menunggu = dasarDaftar.filter(menungguTelaahWilayah)
   const ditelaah = dasarDaftar.filter((b) => b.telaah_wilayah_status && b.telaah_wilayah_status !== 'Belum Ditelaah')
@@ -645,11 +765,26 @@ export function halamanWilayahBerita({ keadaan, isi }) {
                 .map((s) => `<option${s === saring.telaah ? ' selected' : ''}>${s}</option>`).join('')}
             </select>
 
+            <select class="pilihan" data-saring="urut" aria-label="Urutkan daftar berita"
+                    style="width:auto;min-width:150px">
+              <option value="terbaru"${saring.urut === 'terbaru' ? ' selected' : ''}>Terbaru dulu</option>
+              <option value="unit"${saring.urut === 'unit' ? ' selected' : ''}>Kelompokkan per UPT</option>
+            </select>
+
+            <select class="pilihan" data-saring="periode" aria-label="Saring periode masuk"
+                    style="width:auto;min-width:130px">
+              <option value="semua"${saring.periode === 'semua' ? ' selected' : ''}>Semua waktu</option>
+              <option value="hari-ini"${saring.periode === 'hari-ini' ? ' selected' : ''}>Masuk hari ini</option>
+            </select>
+
             <div class="segmen" data-peran="sentimen">
               <button data-sentimen="semua" aria-pressed="${saring.sentimen === 'semua'}">Semua</button>
               ${EMBER.map((e) => `
                 <button data-sentimen="${e.kode}" aria-pressed="${saring.sentimen === e.kode}">${amankan(e.label)}</button>`).join('')}
             </div>
+
+            <button class="tbl kecil${saring.mendesak ? ' utama' : ''}" data-alih="mendesak"
+                    aria-pressed="${saring.mendesak}" title="Hanya urgensi Tinggi atau Kritis">Mendesak saja</button>
 
             ${bidangCari(saring.cari, 'Cari judul, unit, atau media')}
 
@@ -676,9 +811,16 @@ export function halamanWilayahBerita({ keadaan, isi }) {
 
   /* ------------------------------------------------------------ penyimak */
 
-  for (const s of isi.querySelectorAll('[data-saring="telaah"]')) {
+  for (const s of isi.querySelectorAll('select[data-saring]')) {
     s.addEventListener('change', (ev) => {
-      saring.telaah = ev.target.value
+      saring[ev.target.dataset.saring] = ev.target.value
+      document.dispatchEvent(new CustomEvent('gambar-ulang'))
+    })
+  }
+
+  for (const b of isi.querySelectorAll('[data-alih="mendesak"]')) {
+    b.addEventListener('click', () => {
+      saring.mendesak = !saring.mendesak
       document.dispatchEvent(new CustomEvent('gambar-ulang'))
     })
   }
@@ -765,7 +907,8 @@ function tabelBerita(daftar) {
           return `
           <tr>
             <td>
-              <span class="judul-sel">${amankan(ringkas(b.judul || 'Tanpa judul', 110))}</span>
+              <button class="cari-judul" data-aksi="buka-berita-daerah" data-id="${amankan(b.id)}"
+                title="Buka rincian berita ini">${amankan(ringkas(b.judul || 'Tanpa judul', 110))}</button>
               <span class="mini-teks samar-teks">
                 ${amankan(b.media || asalTautan(b.link || '') || 'Tidak tercatat')}
                 ${b.link ? ` · <a href="${amankan(b.link)}" target="_blank" rel="noopener noreferrer">sumber</a>` : ''}

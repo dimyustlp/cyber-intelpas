@@ -245,7 +245,8 @@ export function halamanWilayahUnit({ keadaan, isi }) {
           <ul class="peta-berita">
             ${terbaru.map((b) => `
               <li>
-                <span class="peta-berita-judul">${amankan(ringkas(b.judul || 'Tanpa judul', 92))}</span>
+                <button class="cari-judul peta-berita-judul" data-aksi="buka-berita-daerah"
+                  data-id="${amankan(b.id)}" title="Buka rincian berita ini">${amankan(ringkas(b.judul || 'Tanpa judul', 92))}</button>
                 <span class="mini-teks samar-teks">
                   ${keping(b.urgensi || '—', nadaUrgensi(b.urgensi), true)}
                   ${amankan(b.media || '')} · ${amankan(jarakWaktu(b.created_at))}

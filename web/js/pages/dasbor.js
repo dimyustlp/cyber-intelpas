@@ -152,7 +152,20 @@ export function halamanDasbor({ keadaan, isi }) {
   // Arsip yang sungguh kosong berbeda dari bulan yang belum berisi. Yang
   // pertama berarti penjadwal belum pernah berjalan; yang kedua keadaan biasa
   // setiap pagi tanggal 1, dan tidak pantas dibalas pesan gangguan.
-  const wilayahSaya = adalahEksternal(keadaan.profil?.role) ? keadaan.profil?.assigned_kanwil : null
+  const eks = adalahEksternal(keadaan.profil?.role)
+  const wilayahSaya = eks ? keadaan.profil?.assigned_kanwil : null
+
+  /*
+     Admin kanwil membuka dasbor yang sama dengan pusat (3 November 2026), tetapi
+     kartu dan tombol di sini menunjuk halaman INTERNAL pusat — berita,
+     peringatan, telaah, negatif — yang tidak berhak ia buka. Penyapu tombol
+     mencabut `data-halaman` dari butir yang tak berhak, sehingga bagi kanwil
+     kartunya berubah menjadi angka mati: dari luar tampak "belum ter-link".
+     Maka tujuannya dialihkan ke halaman wilayah yang setara dan berhak ia buka.
+  */
+  const keBerita = eks ? 'wilayah-berita' : 'berita'
+  const kePeringatan = eks ? 'wilayah-berita' : 'peringatan'
+  const keTelaah = eks ? 'wilayah-telaah' : 'telaah'
 
   /*
      Gagal memuat lebih dulu daripada arsip kosong. Sampai 4 November 2026
@@ -215,7 +228,7 @@ export function halamanDasbor({ keadaan, isi }) {
             'Bagan dan sebaran di dasbor ini dimulai ulang setiap tanggal 1. Antrean kerja '
               + 'yang belum selesai tetap dihitung dari seluruh arsip dan terbuka lewat menu '
               + 'Antrean Telaah serta tombol di bawah.',
-            tombol({ label: 'Lihat semua peringatan', ikon: 'peringatan', halaman: 'peringatan' }),
+            tombol({ label: eks ? 'Lihat berita wilayah' : 'Lihat semua peringatan', ikon: 'peringatan', halaman: kePeringatan }),
           ),
         })}
       </div>`
@@ -271,29 +284,31 @@ export function halamanDasbor({ keadaan, isi }) {
           nada: 'aksen',
           delta: delta(jumlahHariIni, jumlahKemarin),
           kaki: 'dibanding kemarin',
-          halaman: 'berita',
-          saring: { periode: 'Masuk hari ini', lingkup: 'Yang dihitung' },
+          halaman: keBerita,
+          saring: eks ? { hariIni: true } : { periode: 'Masuk hari ini', lingkup: 'Yang dihitung' },
         })}
         ${ubin({
           label: 'Perlu respons segera',
           nilai: mendesak.length,
           nada: mendesak.length ? 'kritis' : 'netral',
           kaki: `${uptMendesak.size} UPT terdampak`,
-          halaman: 'peringatan',
+          halaman: kePeringatan,
+          saring: eks ? { mendesak: true } : undefined,
         })}
         ${ubin({
           label: 'Menunggu telaah analis',
           nilai: belumTelaah.length,
           nada: belumTelaah.length > 20 ? 'sedang' : 'netral',
           kaki: persen(belumTelaah.length, antrean.inti.length) + ' dari seluruh arsip',
-          halaman: 'telaah',
+          halaman: keTelaah,
         })}
         ${ubin({
           label: 'Peristiwa negatif',
           nilai: peristiwaNegatif.length,
           nada: 'tinggi',
           kaki: `dari ${angka(negatif.length)} publikasi ${bulan.label}`,
-          halaman: 'negatif',
+          halaman: keBerita,
+          saring: eks ? { sentimen: 'negatif' } : undefined,
         })}
       </div>
 
@@ -375,7 +390,7 @@ export function halamanDasbor({ keadaan, isi }) {
       ${kartu({
         judul: 'Daftar prioritas',
         ket: `${mendesak.length} berita berurgensi tinggi atau kritis yang belum ditutup`,
-        aksi: tombol({ label: 'Lihat semua', ikon: 'panahKanan', kecil: true, halaman: 'peringatan' }),
+        aksi: tombol({ label: 'Lihat semua', ikon: 'panahKanan', kecil: true, halaman: kePeringatan, data: eks ? { saring: JSON.stringify({ mendesak: true }) } : null }),
         rapat: true,
         isi: mendesak.length
           ? daftarPrioritas(mendesak.slice(0, 7))

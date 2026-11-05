@@ -12,6 +12,7 @@ import { lencana } from './lib/hitung.js'
 import { ikon } from './lib/ikon.js'
 import { amankan, tanggalPanjang, inisial } from './lib/format.js'
 import { roti, tombolIkon } from './ui/komponen.js'
+import { bukaDetailDaerah } from './ui/detail-daerah.js'
 import { hidupkan, denganPeralihan, lupakanNilai } from './lib/gerak.js'
 import { bukaPalet, paletTerbuka } from './ui/palet.js'
 import { langkahNyala, padamkanNyala } from './ui/nyala.js'
@@ -861,9 +862,19 @@ document.addEventListener('click', async (ev) => {
     return
   }
 
-  const aksi = ev.target.closest('[data-aksi]')?.dataset.aksi
+  const simpulAksi = ev.target.closest('[data-aksi]')
+  const aksi = simpulAksi?.dataset.aksi
   if (!aksi) return
 
+  if (aksi === 'buka-berita-daerah') {
+    // Detail aman-daerah: dibuka dari daftar berita di ruang wilayah/unit, yang
+    // tidak boleh menuju halaman `berita-detail` milik pusat. Beritanya dicari
+    // dari salinan yang sudah termuat; id-nya menempel di tombol barisnya.
+    const id = simpulAksi.dataset.id
+    const b = (keadaan.berita || []).find((x) => String(x.id) === String(id))
+    if (b) bukaDetailDaerah(b)
+    return
+  }
   if (aksi === 'tema') putarTema()
   else if (aksi === 'ulangi-halaman') gambar()
   else if (aksi === 'menu') bukaMenu()

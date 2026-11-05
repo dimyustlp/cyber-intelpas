@@ -85,6 +85,36 @@ function kemajuan(sisa, awal) {
     </div>`
 }
 
+/**
+ * Daftar antrean yang bisa digulir dan dilompati.
+ *
+ * Diminta pada uji petik: menelaah satu per satu lewat "Lewati" menyulitkan
+ * ketika yang dicari ada di tengah antrean. Daftar ini menampilkan seluruh
+ * antrean sekaligus — berita yang sedang dibuka ditandai — dan menekan salah
+ * satunya melompat langsung ke sana tanpa harus melewati yang di depannya.
+ */
+function daftarAntrean(antrean, aktifId) {
+  if (antrean.length < 2) return ''
+  return kartu({
+    judul: 'Antrean telaah',
+    ket: `${angka(antrean.length)} berita menunggu — tekan salah satu untuk melompat ke sana`,
+    rapat: true,
+    isi: `
+      <ol class="telaah-daftar" style="list-style:none;margin:0;padding:0;max-height:320px;overflow:auto;display:flex;flex-direction:column;gap:4px">
+        ${antrean.map((b, i) => `
+          <li>
+            <button type="button" data-ke-nomor="${i}"
+              style="width:100%;text-align:left;display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;border:1px solid ${b.id === aktifId ? 'var(--aksen,#5ed6c4)' : 'var(--garis,transparent)'};background:${b.id === aktifId ? 'color-mix(in srgb, var(--aksen,#5ed6c4) 12%, transparent)' : 'transparent'};cursor:pointer;color:inherit">
+              <span style="opacity:.55;min-width:22px;font-variant-numeric:tabular-nums">${i + 1}.</span>
+              ${keping(b.urgensi || '—', nadaUrgensi(b.urgensi), true)}
+              <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${amankan(ringkas(b.judul || 'Tanpa judul', 90))}</span>
+              <span class="mini-teks samar-teks" style="flex-shrink:0">${amankan(belumTerpetakan(b.nama_upt) ? 'Belum terpetakan' : (b.nama_upt || ''))}</span>
+            </button>
+          </li>`).join('')}
+      </ol>`,
+  })
+}
+
 /** Penilaian mesin, ditampilkan apa adanya beserta dasarnya. */
 function panelMesin(b) {
   const yakin = Number(b.ai_confidence) || 0
@@ -307,6 +337,8 @@ export function halamanWilayahTelaah({ keadaan, isi }) {
       <div class="tumpuk">
         ${kemajuan(antrean.length, Math.max(awal, 1))}
 
+        ${daftarAntrean(antrean, b.id)}
+
         ${kartu({
           judul: 'Berita yang ditelaah',
           ket: `Nomor ${keadaanTelaah.nomor + 1} dari ${angka(antrean.length)} dalam antrean`,
@@ -340,6 +372,15 @@ export function halamanWilayahTelaah({ keadaan, isi }) {
               </div>
             </div>`,
         })}
+
+        ${keadaanTelaah.panel === null ? `
+          <div class="telaah-urgensi" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:4px">
+            <span class="label-mono">Atur tingkat urgensi</span>
+            <div class="segmen" data-peran="atur-urgensi">
+              ${URGENSI.map((u) => `<button type="button" data-urgensi="${amankan(u)}" aria-pressed="${b.urgensi === u}">${amankan(u)}</button>`).join('')}
+            </div>
+            <span class="mini-teks samar-teks">Tercatat atas nama Anda; tidak mengeluarkan berita dari antrean.</span>
+          </div>` : ''}
 
         <div class="telaah-aksi">
           ${keadaanTelaah.panel === 'revisi'
@@ -543,6 +584,20 @@ export function halamanWilayahTelaah({ keadaan, isi }) {
     if (berhasil && baru) keadaanTelaah.ditanggapi += 1
   }
 
+  /**
+   * Instrumen urgensi: mengatur tingkat urgensi dalam satu tekan.
+   *
+   * Berbeda dari "Revisi penilaian" yang menuntut kategori dan alasan — ini
+   * khusus untuk menaikkan/menurunkan urgensi berita (terutama yang negatif)
+   * dengan cepat. Perubahannya tetap tercatat (siapa dan kapan) dan tidak
+   * mengeluarkan berita dari antrean telaah.
+   */
+  async function aturUrgensi(nilai) {
+    const b = beritaSekarang()
+    if (!b || !URGENSI.includes(nilai) || b.urgensi === nilai) return
+    await tulis(b, { urgensi: nilai, ...jejak() }, `Urgensi diatur ke “${nilai}”.`, { keluarAntrean: false })
+  }
+
   function lewati() {
     const antrean = susunAntrean(semua)
     keadaanTelaah.nomor = (keadaanTelaah.nomor + 1) % Math.max(antrean.length, 1)
@@ -553,6 +608,19 @@ export function halamanWilayahTelaah({ keadaan, isi }) {
   /* ------------------------------------------------------------ penyimak */
 
   isi.addEventListener('click', (ev) => {
+    // Lompatan dari daftar antrean: pindah ke nomor itu, tutup panel yang
+    // mungkin terbuka, lalu gambar ulang.
+    const ke = ev.target.closest('[data-ke-nomor]')
+    if (ke) {
+      keadaanTelaah.nomor = Number(ke.dataset.keNomor) || 0
+      keadaanTelaah.panel = null
+      gambar()
+      return
+    }
+
+    const urg = ev.target.closest('[data-urgensi]')
+    if (urg) { aturUrgensi(urg.dataset.urgensi); return }
+
     const aksi = ev.target.closest('[data-aksi]')?.dataset.aksi
     if (!aksi) return
 

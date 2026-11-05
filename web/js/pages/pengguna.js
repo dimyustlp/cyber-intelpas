@@ -193,6 +193,39 @@ function barisPengguna(u, sedangDisunting, kanwil, bolehSunting) {
               nonaktif: keadaanPengguna.sibuk })}
             ${tombol({ label: 'Batal', aksi: 'batal-sunting' })}
           </div>
+
+          ${tertaut ? `
+          <div class="setel-sandi" style="margin-top:16px;padding-top:14px;border-top:1px solid var(--line-2)">
+            <div class="baris gap-6" style="margin-bottom:4px">
+              <b>${ikon('gembok')} Setel ulang kata sandi</b>
+              ${u.must_change_password ? keping('Masih sandi awal', 'sedang', true) : keping('Sudah diganti sendiri', 'positif', true)}
+            </div>
+            <p class="mini-teks samar-teks" style="margin:0 0 10px">
+              Sandi lama tidak dapat dilihat siapa pun — ia tersimpan sebagai sidik satu arah.
+              Yang bisa dilakukan hanyalah menimpanya dengan sandi baru, lalu Anda sampaikan
+              langsung kepada yang bersangkutan.
+            </p>
+            <div class="kisi kisi-2" style="gap:12px">
+              <div class="isian">
+                <label for="ps-baru">Kata sandi baru</label>
+                <input class="masukan" id="ps-baru" type="password" autocomplete="new-password"
+                       placeholder="Minimal 8 karakter">
+              </div>
+              <div class="isian">
+                <label for="ps-ulang">Ulangi kata sandi baru</label>
+                <input class="masukan" id="ps-ulang" type="password" autocomplete="new-password"
+                       placeholder="Ketik ulang">
+              </div>
+            </div>
+            <label class="baris gap-6" style="margin-top:10px;cursor:pointer;font-size:13px">
+              <input type="checkbox" id="ps-wajib" checked>
+              Minta pengguna ini mengganti sandinya sendiri saat berikutnya masuk
+            </label>
+            <div class="baris gap-6" style="margin-top:12px">
+              ${tombol({ label: 'Setel ulang sandi', ikon: 'gembok', aksi: 'setel-sandi',
+                nonaktif: keadaanPengguna.sibuk })}
+            </div>
+          </div>` : ''}
         </div>
       </td>
     </tr>`
@@ -426,18 +459,22 @@ export function halamanPengguna({ keadaan, isi }) {
             ),
         })}
 
-        ${kartu({
-          judul: 'Yang tetap dikerjakan dari panel Supabase',
-          ket: 'Dua hal yang sengaja tidak ada tombolnya di sini',
+        ${bolehSemua ? kartu({
+          judul: 'Tentang kata sandi',
+          ket: `${angka(daftar.filter((u) => u.auth_user_id && u.must_change_password).length)} akun masih memakai sandi awal`,
           isi: `
             <ul class="kecil-teks" style="margin:0;padding-left:20px;line-height:1.7;color:var(--ink-2)">
-              <li><b>Mengatur ulang kata sandi orang lain.</b> Supabase → Authentication →
-                pilih penggunanya → <i>Reset password</i>. Pengguna yang masih ingat sandinya
-                dapat menggantinya sendiri di halaman Profil Saya.</li>
-              <li><b>Menghapus akun secara permanen.</b> Di sini akun cukup dinonaktifkan —
-                jejak siapa memasukkan berita apa tidak boleh ikut hilang bersama akunnya.</li>
+              <li><b>Sandi asli tidak dapat dilihat — termasuk oleh Anda.</b> Sistem hanya
+                menyimpan sidik satu arahnya (bcrypt), bukan teksnya. Yang bisa dilakukan adalah
+                <i>menyetel ulang</i>: tekan <b>Sunting</b> pada sebuah akun, lalu isi sandi barunya.
+                Lencana <b>Masih sandi awal</b> menandai akun yang belum pernah diganti pemiliknya.</li>
+              <li><b>Setiap pengguna dapat mengganti sandinya sendiri kapan pun</b> dari
+                <b>Profil dan kata sandi saya</b> di sudut kiri bawah layarnya.</li>
+              <li><b>Menghapus akun secara permanen tetap dari panel Supabase.</b> Di sini akun
+                cukup dinonaktifkan — jejak siapa memasukkan berita apa tidak boleh ikut hilang
+                bersama akunnya.</li>
             </ul>`,
-        })}
+        }) : ''}
       </div>`
   }
 
@@ -615,6 +652,58 @@ export function halamanPengguna({ keadaan, isi }) {
     }
   }
 
+  /* ------------------------------------------------- setel ulang sandi */
+
+  async function setelSandiAkun(id) {
+    if (keadaanPengguna.sibuk) return
+    const u = keadaanPengguna.daftar.find((x) => x.id === id)
+    if (!u) return
+
+    const baru = isi.querySelector('#ps-baru')?.value ?? ''
+    const ulang = isi.querySelector('#ps-ulang')?.value ?? ''
+    const wajib = isi.querySelector('#ps-wajib')?.checked !== false
+
+    if (baru.length < 8) { roti('Kata sandi baru minimal 8 karakter.', 'sedang'); isi.querySelector('#ps-baru')?.focus(); return }
+    if (baru !== ulang) { roti('Kedua kata sandi belum sama.', 'sedang'); isi.querySelector('#ps-ulang')?.focus(); return }
+
+    const ya = await konfirmasi({
+      judul: `Setel ulang kata sandi ${u.username}?`,
+      pesan: `Sandi lama ${u.full_name || u.username} akan ditimpa. Sampaikan sandi baru ini langsung `
+        + 'kepada yang bersangkutan — sistem tidak mengirim surel.'
+        + (wajib ? ' Ia akan diminta menggantinya sendiri saat berikutnya masuk.' : ''),
+      tegas: 'Setel ulang',
+    })
+    if (!ya) return
+
+    keadaanPengguna.sibuk = true
+    gambar()
+
+    if (keadaan.demo) {
+      roti('Mode peragaan: kata sandi tidak benar-benar diubah.', 'sedang', 5000)
+      keadaanPengguna.sibuk = false
+      gambar()
+      return
+    }
+
+    try {
+      const hasil = await panggilEdge('kelola-pengguna', {
+        aksi: 'setel_sandi',
+        target_id: id,
+        password: baru,
+        wajib_ganti: wajib,
+      })
+      if (!hasil?.ok) throw new Error(hasil?.pesan || 'Kata sandi gagal disetel.')
+      u.must_change_password = wajib
+      keadaanPengguna.sunting = null
+      roti(hasil.pesan || 'Kata sandi disetel ulang.', 'positif', 6000)
+    } catch (galat) {
+      roti(galat?.rinci?.pesan || galat?.message || pesanRamah(galat), 'kritis', 8000)
+    } finally {
+      keadaanPengguna.sibuk = false
+      gambar()
+    }
+  }
+
   /* ---------------------------------------------------------- penyimak */
 
   isi.addEventListener('change', (ev) => {
@@ -680,6 +769,9 @@ export function halamanPengguna({ keadaan, isi }) {
     } else if (aksi === 'simpan-pengguna') {
       const wadah = tombolAksi.closest('.sunting-pengguna')
       if (wadah) simpan(wadah.dataset.id)
+    } else if (aksi === 'setel-sandi') {
+      const wadah = tombolAksi.closest('.sunting-pengguna')
+      if (wadah) setelSandiAkun(wadah.dataset.id)
     }
   })
 

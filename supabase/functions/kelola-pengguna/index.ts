@@ -74,6 +74,140 @@ function bakukanPeran(peran: string): string {
   return PERAN_LAMA[peran] ?? peran
 }
 
+/**
+ * Menyetel ulang kata sandi akun lain.
+ *
+ * Diminta user 5 November 2026 supaya "user tertinggi" tidak perlu lagi membuka
+ * panel Supabase hanya untuk mengganti sandi orang. Yang DISIMPAN Supabase
+ * tetap hanya hash bcrypt satu arah — sandi lama tidak bisa dibaca di mana pun,
+ * dan fungsi ini tidak membacanya; ia hanya MENIMPA dengan sandi baru.
+ *
+ * Kewenangannya meniru persis `buat`:
+ *   super_admin  → akun mana pun.
+ *   kanwil_admin → hanya Penelaah Berita UPT di wilayahnya sendiri.
+ *
+ * Peran dan wilayah sasaran SELALU dibaca dari basis data, tidak pernah dari
+ * badan permintaan — kalau tidak, satu baris yang diubah pada permintaan cukup
+ * untuk menyetel ulang sandi akun di wilayah atau peran lain.
+ *
+ * Akun Pemilik Sistem dijaga khusus: hanya dirinya sendiri atau sesama Pemilik
+ * Sistem yang boleh menyetel ulang sandinya, supaya seorang super_admin biasa
+ * tidak bisa mengunci pemiliknya keluar dari sistemnya sendiri.
+ */
+async function setelSandi(
+  // deno-lint-ignore no-explicit-any
+  admin: any,
+  // deno-lint-ignore no-explicit-any
+  pemohon: any,
+  badan: Record<string, unknown>,
+): Promise<Response> {
+  const sandi = String(badan.password ?? '')
+  if (sandi.length < 8) {
+    return jawab({ ok: false, pesan: 'Kata sandi baru minimal 8 karakter.' }, 400)
+  }
+  const wajibGanti = badan.wajib_ganti !== false
+
+  const targetId = bersih(badan.target_id)
+  const targetUsername = bersih(badan.target_username).toLowerCase()
+  if (!targetId && !targetUsername) {
+    return jawab({ ok: false, pesan: 'Akun sasaran tidak disebutkan.' }, 400)
+  }
+
+  let kueri = admin
+    .from('app_users')
+    .select('id,username,full_name,role,assigned_kanwil,assigned_upt,auth_user_id,aktif,deleted_at,pemilik_sistem')
+    .is('deleted_at', null)
+  kueri = targetId ? kueri.eq('id', targetId) : kueri.eq('username', targetUsername)
+
+  const { data: target, error: galatTarget } = await kueri.maybeSingle()
+  if (galatTarget) {
+    return jawab({ ok: false, pesan: `Akun sasaran gagal dibaca: ${galatTarget.message}` }, 500)
+  }
+  if (!target) {
+    return jawab({ ok: false, pesan: 'Akun sasaran tidak ditemukan.' }, 404)
+  }
+
+  const peranPemohon = String(pemohon.role)
+  const bolehSemua = peranPemohon === 'super_admin'
+  const bolehWilayah = peranPemohon === 'kanwil_admin'
+
+  if (!bolehSemua) {
+    if (!bolehWilayah) {
+      return jawab({ ok: false, pesan: 'Peran Anda tidak berhak menyetel ulang kata sandi.' }, 403)
+    }
+    const peranSasaran = bakukanPeran(String(target.role))
+    const seWilayah = target.assigned_kanwil && pemohon.assigned_kanwil
+      && target.assigned_kanwil === pemohon.assigned_kanwil
+    if (peranSasaran !== 'upt_penelaah' || !seWilayah) {
+      return jawab({
+        ok: false,
+        pesan: 'Administrator Kantor Wilayah hanya boleh menyetel ulang kata sandi '
+          + 'Penelaah Berita UPT di wilayahnya sendiri.',
+      }, 403)
+    }
+  }
+
+  // Pemilik Sistem: hanya dirinya sendiri atau sesama pemilik yang boleh.
+  if (target.pemilik_sistem && !pemohon.pemilik_sistem && pemohon.id !== target.id) {
+    return jawab({
+      ok: false,
+      pesan: 'Kata sandi akun Pemilik Sistem hanya dapat disetel ulang oleh pemiliknya sendiri.',
+    }, 403)
+  }
+
+  if (!target.auth_user_id) {
+    return jawab({
+      ok: false,
+      pesan: `Akun ${target.username} belum punya identitas masuk, sehingga sandinya belum bisa disetel. `
+        + 'Terbitkan ulang akunnya lebih dulu.',
+    }, 409)
+  }
+
+  const { error: galatSetel } = await admin.auth.admin.updateUser(String(target.auth_user_id), { password: sandi })
+  if (galatSetel) {
+    return jawab({ ok: false, pesan: `Kata sandi gagal disetel: ${galatSetel.message}` }, 500)
+  }
+
+  /*
+     must_change_password dinyalakan kembali secara bawaan: sandi yang disetel
+     admin diketahui admin, jadi pemiliknya sepatutnya menggantinya sekali saat
+     masuk. Penyetel boleh mematikannya (wajib_ganti: false) untuk akun yang
+     memang ia pegang sendiri.
+  */
+  const { error: galatProfil } = await admin
+    .from('app_users')
+    .update({ must_change_password: wajibGanti, updated_at: new Date().toISOString() })
+    .eq('id', target.id)
+  if (galatProfil) {
+    // Sandinya sudah berganti; kegagalan menandai hanya soal paksaan ganti.
+    console.error('Penanda sandi awal gagal disetel:', galatProfil.message)
+  }
+
+  try {
+    await admin.from('audit_log').insert({
+      actor_username: pemohon.username,
+      actor_role: peranPemohon,
+      action: 'setel_sandi',
+      entity: 'app_users',
+      entity_id: String(target.id),
+      metadata: {
+        target_username: target.username,
+        target_role: target.role,
+        wajib_ganti: wajibGanti,
+        oleh: pemohon.username,
+      },
+    })
+  } catch (galatJejak) {
+    console.error('Jejak audit setel_sandi gagal ditulis:', galatJejak)
+  }
+
+  return jawab({
+    ok: true,
+    pesan: `Kata sandi ${target.username} berhasil disetel ulang.`,
+    pengguna: { id: target.id, username: target.username, must_change_password: wajibGanti },
+  })
+}
+
 const POLA_SUREL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
 const POLA_USERNAME = /^[a-z0-9][a-z0-9._-]{2,31}$/
 
@@ -137,7 +271,7 @@ Deno.serve(async (permintaan: Request) => {
 
     const { data: pemohon, error: galatPemohon } = await admin
       .from('app_users')
-      .select('id,username,full_name,role,assigned_kanwil,aktif,deleted_at')
+      .select('id,username,full_name,role,assigned_kanwil,aktif,deleted_at,pemilik_sistem')
       .eq('auth_user_id', sesi.user.id)
       .is('deleted_at', null)
       .maybeSingle()
@@ -166,6 +300,13 @@ Deno.serve(async (permintaan: Request) => {
     try { badan = await permintaan.json() } catch { /* ditangani di bawah */ }
 
     const aksi = bersih(badan.aksi) || 'buat'
+
+    // Setel ulang sandi punya aturan kewenangannya sendiri (super_admin: semua;
+    // kanwil_admin: penelaah unit di wilayahnya), ditegakkan di dalam setelSandi.
+    if (aksi === 'setel_sandi') {
+      return await setelSandi(admin, pemohon, badan)
+    }
+
     if (aksi !== 'buat') {
       return jawab({ ok: false, pesan: `Aksi "${aksi}" tidak dikenali.` }, 400)
     }

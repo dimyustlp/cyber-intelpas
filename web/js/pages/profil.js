@@ -34,9 +34,8 @@ export function halamanProfil({ keadaan, isi }) {
       ) : ''}
 
       ${p.must_change_password && !demo ? pesanSistem(
-        '<b>Ganti kata sandi awal Anda lebih dulu.</b> Akun ini diterbitkan dengan sandi '
-        + 'awal yang polanya diketahui orang lain. Halaman lain terbuka begitu sandi baru '
-        + 'disimpan di bawah.',
+        '<b>Akun ini masih memakai kata sandi awal.</b> Akun ini diterbitkan dengan sandi '
+        + 'awal yang polanya diketahui orang lain, jadi sebaiknya segera diganti di bawah.',
         'kritis', 'peringatan',
       ) : ''}
 
@@ -204,7 +203,7 @@ export function halamanProfil({ keadaan, isi }) {
       }
 
       roti(wajibTadi && p.must_change_password === false
-        ? 'Kata sandi baru sudah berlaku. Menu lain kini terbuka.'
+        ? 'Kata sandi baru sudah berlaku. Pengingat sandi awal sudah hilang.'
         : 'Kata sandi baru sudah berlaku.', 'positif')
       borangSandi.reset()
     } catch (galat) {

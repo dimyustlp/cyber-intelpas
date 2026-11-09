@@ -614,6 +614,7 @@ function gambarIsi(bangun, isi, ingatan) {
     const peran = keadaan.profil?.role
     pasangPengingatAlur(isi, keadaan.halaman, ruangPeran(adalahUnit(peran), adalahEksternal(peran)))
     pasangPitaGalatMuat(isi)
+    pasangPitaSandiAwal(isi)
     saringTombolTakBerhak(isi)
     amatiTombol(isi)
     // Gerak dipasang setelah isinya jadi, bukan sebelumnya. Kalau dipasang di
@@ -653,27 +654,46 @@ function wajibGantiSandi() {
   return keadaan.profil?.must_change_password === true && !keadaan.demo
 }
 
+/**
+ * Pengingat ganti sandi awal — hanya mengingatkan, tidak menghalangi.
+ *
+ * Tidak dipasang di halaman Profil sendiri: di sana sudah ada pesan yang
+ * sama, tepat di atas borang sandinya.
+ */
+function pasangPitaSandiAwal(isi) {
+  if (!wajibGantiSandi() || keadaan.halaman === 'profil') return
+  const pita = document.createElement('div')
+  pita.className = 'pesan'
+  pita.dataset.nada = 'sedang'
+  pita.style.marginBottom = '14px'
+  pita.innerHTML = `${ikon('peringatan')}<div><b>Akun ini masih memakai kata sandi awal.</b>
+    Sebaiknya segera diganti agar akun tidak bisa dipakai orang lain.
+    <button class="tbl kecil" data-halaman="profil" style="margin-left:8px">Ganti sekarang</button></div>`
+  isi.prepend(pita)
+}
+
 export function gambar() {
   if (!keadaan.profil) {
     akar.innerHTML = ''
-    akar.appendChild(halamanMasuk({ onMasuk: mulaiSesi }))
+    akar.appendChild(halamanMasuk({ onMasuk: (profil) => mulaiSesi(profil, { baruMasuk: true }) }))
     return
   }
 
   const ingatan = ingatFokus()
 
   /*
-     Akun yang masih bersandi awal hanya boleh membuka Profil.
+     Akun bersandi awal TIDAK lagi dikunci di halaman Profil.
 
-     33 akun kantor wilayah diterbitkan dengan sandi awal yang berpola sama.
-     Siapa pun yang tahu polanya bisa masuk sebagai kanwil mana pun — selama
-     sandinya belum diganti. Penanda `must_change_password` sudah ada sejak
-     migrasi auth_bridge, tetapi sampai 2 November 2026 ia hanya tampil sebagai
-     keping di halaman Pengguna; tidak ada yang memaksa siapa pun menggantinya,
-     jadi sandi awal berlaku selamanya. Penanda itu dihapus profil.js tepat saat
-     sandi baru berlaku.
+     2–9 November 2026 akun yang masih ditandai `must_change_password`
+     dipaksa tinggal di Profil, dan setiap klik menu dilempar balik ke sana.
+     Di atas kertas itu pengaman; di lapangan 51 akun terkunci, sebab penanda
+     itu tidak bisa dihapus (policy app_users_update_self rekursif, diperbaiki
+     migrasi 20261109030000) — petugas yang sudah patuh mengganti sandi tetap
+     tidak bisa membuka apa pun. Atas arahan pemilik sistem, semua akun kini
+     langsung bekerja dari dasbornya. Pengingat ganti sandi tetap tampil
+     sebagai pita di puncak setiap halaman (pasangPitaSandiAwal), sampai
+     penandanya terhapus.
   */
-  if (wajibGantiSandi() && keadaan.halaman !== 'profil') keadaan.halaman = 'profil'
 
   akar.innerHTML = kerangka()
   const isi = document.getElementById('isi')
@@ -949,11 +969,6 @@ document.addEventListener('buka-halaman', (ev) => {
     return
   }
 
-  if (wajibGantiSandi() && halaman !== 'profil') {
-    roti('Ganti kata sandi awal Anda lebih dulu.', 'sedang', 3600)
-    return
-  }
-
   /*
      `saring` ikut diteruskan, dan sempat tidak.
 
@@ -1220,11 +1235,21 @@ async function segarkan() {
   hitungPenangananLencana()
 }
 
-async function mulaiSesi(profil) {
+async function mulaiSesi(profil, { baruMasuk = false } = {}) {
   keadaan.profil = profil
-  const { halaman, fokus } = bacaAlamat(location.hash)
-  keadaan.halaman = halaman || halamanAwal(profil.role)
+  /*
+     Masuk lewat layar masuk SELALU mendarat di dasbor peran itu.
+
+     Alamat yang tertinggal di peramban (`#profil` dari masa penguncian sandi
+     awal, atau halaman terakhir sebelum keluar) dulu ikut dipakai, sehingga
+     petugas yang baru masuk bisa langsung terdampar di layar yang tidak ia
+     minta. Alamat hanya dihormati saat sesi lama dipulihkan — memuat ulang
+     halaman, atau membuka tautan berita yang dibagikan rekan.
+  */
+  const { halaman, fokus } = baruMasuk ? { halaman: null, fokus: null } : bacaAlamat(location.hash)
+  keadaan.halaman = (halaman && bolehBuka(profil.role, halaman)) ? halaman : halamanAwal(profil.role)
   keadaan.fokus = fokus
+  if (baruMasuk) history.replaceState(null, '', `#${keadaan.halaman}`)
 
   /*
      Modul halaman pertama diunduh berbarengan dengan datanya, bukan sesudahnya.

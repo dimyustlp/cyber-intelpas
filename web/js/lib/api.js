@@ -56,8 +56,25 @@ export function pesanRamah(galat) {
   // Sesi yang sudah dicabut dijawab GoTrue dengan 403, bukan 401. Tanpa cabang
   // ini petugas yang sedang mengganti sandi membaca "tidak memiliki hak" dan
   // mencoba lagi berulang kali, padahal yang ia perlukan hanya masuk ulang.
-  if (galat.rinci?.error_code === 'session_not_found' || galat.rinci?.error_code === 'session_expired') {
-    return 'Sesi Anda sudah berakhir. Silakan keluar, lalu masuk kembali.'
+  // `bad_jwt` adalah jawaban GoTrue untuk token yang sudah kedaluwarsa, juga
+  // dengan status 403. Tanpa cabang ini, petugas yang menekan "Ganti kata sandi"
+  // di tab yang sudah lama terbuka membaca "Peran Anda tidak memiliki hak" —
+  // pesan yang membuatnya mengira akunnya dicabut (uji lapangan 9 November 2026).
+  if (['session_not_found', 'session_expired', 'bad_jwt', 'refresh_token_not_found',
+    'refresh_token_already_used'].includes(galat.rinci?.error_code)) {
+    return 'Sesi Anda sudah berakhir. Silakan masuk kembali.'
+  }
+  // PostgREST menjawab policy yang rusak dengan 500 dan kode 42P17. Petugas
+  // tidak bisa berbuat apa-apa terhadapnya, tetapi pesannya harus jujur bahwa
+  // yang gagal adalah peladen, bukan isian atau haknya.
+  if (galat.rinci?.error_code === 'same_password') {
+    return 'Kata sandi baru tidak boleh sama dengan kata sandi yang sedang dipakai.'
+  }
+  if (galat.rinci?.error_code === 'weak_password') {
+    return 'Kata sandi baru terlalu lemah. Pakai paling sedikit 8 karakter campuran huruf dan angka.'
+  }
+  if (galat.rinci?.code === '42P17') {
+    return 'Peladen menolak penyimpanan karena aturan aksesnya bermasalah. Laporkan ke administrator.'
   }
   if (galat.status === 403 || galat.rinci?.code === '42501') {
     return 'Peran Anda tidak memiliki hak untuk tindakan ini.'
@@ -133,13 +150,25 @@ async function segarkanSesi() {
   if (!sesi?.refresh_token) return false
   if (promiseSegar) return promiseSegar
   promiseSegar = (async () => {
+    const tokenDipakai = sesi.refresh_token
     try {
       const jawab = await fetch(`${KONFIG.url}/auth/v1/token?grant_type=refresh_token`, {
         method: 'POST',
         headers: { apikey: KONFIG.kunciPublik, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refresh_token: sesi.refresh_token }),
+        body: JSON.stringify({ refresh_token: tokenDipakai }),
       })
-      if (!jawab.ok) return false
+      if (!jawab.ok) {
+        // Tab lain di peramban yang sama mungkin sudah lebih dulu menukar
+        // refresh token ini. Token barunya ada di localStorage; pakai itu
+        // sebelum menyatakan sesinya mati.
+        if (ambilAlihSesiTabLain(tokenDipakai)) return true
+        // 400/401/403 dari titik token berarti refresh token-nya sudah tidak
+        // dikenal GoTrue. Tidak ada jalan pulih selain masuk ulang, jadi sesi
+        // lokal dibuang dan aplikasi diberi tahu — bukan dibiarkan berjalan
+        // dengan profil simpanan yang setiap tindakannya akan ditolak.
+        if ([400, 401, 403].includes(jawab.status)) matikanSesi()
+        return false
+      }
       const baru = await jawab.json()
       if (!baru?.access_token) return false
       // `profil` dipertahankan: jawaban token tidak memuatnya.
@@ -154,8 +183,33 @@ async function segarkanSesi() {
   return promiseSegar
 }
 
+/** Memakai sesi yang sudah diperbarui tab lain, bila memang ada yang lebih baru. */
+function ambilAlihSesiTabLain(tokenLama) {
+  try {
+    const isi = JSON.parse(localStorage.getItem(SIMPAN_SESI) || 'null')
+    if (isi?.access_token && isi.refresh_token && isi.refresh_token !== tokenLama
+        && isi.user?.id === sesi?.user?.id) {
+      sesi = isi
+      return true
+    }
+  } catch { /* penyimpanan tidak terbaca */ }
+  return false
+}
+
+/**
+ * Sesi yang tidak bisa dipulihkan lagi. Dibersihkan di sini, lalu main.js
+ * mengembalikan petugas ke layar masuk lewat peristiwa `sesi-berakhir`.
+ */
+function matikanSesi() {
+  profil = null
+  simpanSesi(null)
+  try { dispatchEvent(new CustomEvent('sesi-berakhir')) } catch { /* bukan peramban */ }
+}
+
 /** Benar bila galat PostgREST/GoTrue ini berarti token kedaluwarsa. */
 function tokenHabis(status, isi) {
+  // GoTrue menjawab token kedaluwarsa dengan 403 `bad_jwt`, bukan 401.
+  if (status === 403 && isi?.error_code === 'bad_jwt') return true
   if (status !== 401) return false
   const pesan = `${isi?.message || ''} ${isi?.msg || ''} ${isi?.error_description || ''}`.toLowerCase()
   return pesan.includes('jwt') || pesan.includes('expired') || isi?.code === 'PGRST301'
@@ -164,7 +218,13 @@ function tokenHabis(status, isi) {
 async function panggil(jalur, opsi = {}, _ulang = false) {
   if (KONFIG.mode === 'demo') throw new GalatApi('Mode demo tidak terhubung ke peladen.', 0)
 
-  const auth = jalur.startsWith('/auth/v1/')
+  // Hanya titik token dan keluar yang tidak boleh menyegarkan sesi: keduanya
+  // memang tidak memakai access token, atau sedang membuangnya. Titik lain di
+  // bawah /auth/v1/ — terutama PUT /auth/v1/user untuk mengganti sandi — butuh
+  // token yang masih hidup sama seperti PostgREST. Dulu seluruh /auth/v1/
+  // dikecualikan, sehingga penggantian sandi di tab yang sudah lama terbuka
+  // selalu ditolak 403 dan terbaca sebagai "tidak memiliki hak".
+  const auth = jalur.startsWith('/auth/v1/token') || jalur.startsWith('/auth/v1/logout')
 
   // Proaktif: bila token tinggal menghitung detik, segarkan sebelum dipakai.
   // Lebih murah daripada membiarkannya gagal lalu mengulang, dan menghindari
@@ -403,6 +463,10 @@ export async function muatProfil() {
 export async function perbaruiProfilSendiri(perubahan) {
   const hasil = await perbarui('app_users', { auth_user_id: `eq.${sesi?.user?.id}` }, perubahan)
   const baru = Array.isArray(hasil) ? hasil[0] : hasil
+  // PATCH yang disaring RLS tidak melempar galat; ia hanya mengembalikan nol
+  // baris. Tanpa pemeriksaan ini, perubahan yang tidak pernah tersimpan
+  // dilaporkan berhasil.
+  if (!baru) throw new GalatApi('Perubahan profil tidak tersimpan di peladen.', 403, { code: '42501' })
   if (baru) {
     profil = { ...profil, ...baru }
     if (sesi) simpanSesi({ ...sesi, profil })

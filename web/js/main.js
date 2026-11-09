@@ -1368,16 +1368,48 @@ async function mulai() {
   const sesi = muatSesi()
   if (!sesi) { gambar(); return }
 
+  /*
+     Profil selalu ditarik ulang dari peladen saat aplikasi dibuka.
+
+     Sampai 9 November 2026 profil yang tersimpan di peramban langsung dipakai
+     bila ada. Akibatnya dua: (1) sesi yang refresh token-nya sudah mati tetap
+     tampil "masuk", tetapi setiap tindakan ditolak; (2) profil simpanan dari
+     versi lama — ketika kueri profil belum disaring per akun — bisa milik orang
+     lain dan membawa penanda sandi awal orang itu, sehingga pemilik peramban
+     terkunci di halaman Profil akun yang bukan miliknya. Simpanan hanya dipakai
+     sebagai cadangan bila peladen tidak terjangkau sama sekali.
+  */
   try {
-    const profil = profilSekarang() || await muatProfil()
+    let profil = null
+    try {
+      profil = await muatProfil()
+    } catch (galat) {
+      if (galat?.status !== 0) throw galat
+      const simpanan = profilSekarang()
+      if (simpanan?.auth_user_id && simpanan.auth_user_id === sesi.user?.id) profil = simpanan
+      else throw galat
+    }
     if (!profil) throw new Error('Profil pengguna tidak ditemukan.')
     await mulaiSesi(profil)
   } catch (galat) {
     console.warn('Sesi tersimpan tidak dapat dipulihkan:', galat)
+    await keluar().catch(() => {})
     keadaan.profil = null
     gambar()
   }
 }
+
+/*
+   Refresh token yang ditolak GoTrue berarti sesi ini sudah selesai. api.js
+   membersihkan simpanannya; di sini petugas dikembalikan ke layar masuk dengan
+   penjelasan, bukan dibiarkan di layar yang setiap tombolnya gagal.
+*/
+addEventListener('sesi-berakhir', () => {
+  if (!keadaan.profil || keadaan.demo) return
+  keadaan.profil = null
+  gambar()
+  roti('Sesi Anda sudah berakhir. Silakan masuk kembali.', 'sedang', 6000)
+})
 
 mulai()
   .then(() => {

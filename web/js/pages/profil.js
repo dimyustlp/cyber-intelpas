@@ -188,7 +188,19 @@ export function halamanProfil({ keadaan, isi }) {
         try {
           await perbaruiProfilSendiri({ must_change_password: false })
           p.must_change_password = false
-        } catch { /* sandinya sudah berganti; penanda menyusul pada suntingan berikutnya */ }
+        } catch (galatPenanda) {
+          /*
+             Dulu kegagalan di sini ditelan diam-diam dengan anggapan "menyusul
+             pada suntingan berikutnya". Tidak pernah menyusul: penandanya
+             tertahan, dan pada masuk berikutnya petugas diminta mengganti sandi
+             lagi tanpa tahu sebabnya. Sandinya sudah berlaku, jadi itu yang
+             dikatakan lebih dulu, lalu apa yang belum.
+          */
+          borangSandi.reset()
+          galatSandi.innerHTML = pesanGalat('Kata sandi baru sudah berlaku, tetapi penanda sandi awal '
+            + 'belum terhapus: ' + pesanRamah(galatPenanda) + ' Gunakan sandi baru saat masuk berikutnya.')
+          return
+        }
       }
 
       roti(wajibTadi && p.must_change_password === false

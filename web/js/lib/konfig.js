@@ -50,7 +50,7 @@ export const KONFIG = {
      bisa mengambil berkas dari mana pun. Alasannya di kepala berkas itu.
   */
   lencana: {
-    /** Lencana sistem: Trans-Siber Pemasyarakatan · Database Pamintel. */
+    /** Lencana sistem: Trans-Siber PAS · Patroli Siber Pemasyarakatan. */
     sistem: 'assets/lambang-trans-siber.png',
     /** Lencana Direktorat Pengamanan dan Intelijen Republik Indonesia. */
     direktorat: 'assets/lambang-ditpamintel.png',

@@ -43,7 +43,7 @@ const LAMBANG = [
   {
     nama: 'TRANS_SIBER',
     berkas: 'web/assets/lambang-trans-siber-lembar.jpg',
-    keterangan: 'Lencana Trans-Siber Pemasyarakatan — Database Pamintel.',
+    keterangan: 'Lencana Trans-Siber PAS — Transformasi Pengawasan melalui Patroli Siber Pemasyarakatan.',
   },
   {
     nama: 'DITPAMINTEL',

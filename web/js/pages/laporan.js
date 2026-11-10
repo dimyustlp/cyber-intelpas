@@ -23,7 +23,7 @@ import { ikon } from '../lib/ikon.js'
 import { baganUptMuncul } from '../ui/bagan.js'
 import { uptNaik, hariBerita } from '../lib/hitung.js'
 import { ekspor, eksporXlsx } from '../lib/ekspor.js'
-import { punyaIzin } from '../lib/peran.js'
+import { punyaIzin, adalahEksternal } from '../lib/peran.js'
 import { muatKeputusan, keputusanSaatIni } from '../lib/keputusan-tindak.js'
 import { susunDaftarSip, penjelasanSip } from '../lib/daftar-sip.js'
 import { tingkatKumpulan } from '../lib/klasifikasi-informasi.js'
@@ -103,7 +103,11 @@ async function buat(isi, keadaan) {
     // dihitung ulang dari bahan yang sungguh dipakai.
     const sip = penandaanSaatIni(keadaan, data.publikasi || [])
     const nomor = nomorLaporan(pilihan.jenis, 1, pilihan.selesai)
-    const html = susunLaporan(data, { jenis: pilihan.jenis, urutan: 1, nomor, sip })
+    // Admin kanwil membuka laporan yang sama dengan pusat, tetapi RLS sudah
+    // membatasi isinya pada wilayahnya. Nama wilayahnya dibawa ke kop supaya
+    // berkas yang tercetak menyebut jelas ini laporan kanwil mana.
+    const wilayah = adalahEksternal(keadaan?.profil?.role) ? keadaan?.profil?.assigned_kanwil : null
+    const html = susunLaporan(data, { jenis: pilihan.jenis, urutan: 1, nomor, sip, wilayah })
 
     pilihan.hasil = { html, olahan, sip, nomor, dibuat: new Date().toISOString() }
     roti(`Laporan tersusun: ${angka(olahan.peristiwa.length)} peristiwa dari ${angka(olahan.publikasi.length)} publikasi.`, 'positif', 4000)

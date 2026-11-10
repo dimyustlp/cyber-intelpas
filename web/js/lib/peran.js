@@ -224,6 +224,13 @@ export const IZIN = {
        Tindak Lanjut — meneruskan klarifikasi ke UPT dan mencatat disposisi
        pimpinan wilayah. */
     'lihat_dasbor_kanwil', 'analisis_berita', 'lihat_penanganan', 'lihat_disposisi',
+    /* Sejak 10 November 2026: Laporan Berkala wilayah — halaman laporan yang
+       sama dengan pusat, tetapi RLS membatasi isinya pada berita wilayahnya
+       sendiri (snapshot_negatif berjalan sebagai pemanggil, bukan definer).
+       `unduh_laporan` membuka kartu unduh berkasnya; izin menu dipisah sebagai
+       `lihat_laporan_kanwil` supaya tidak sekaligus membuka Lembar Infografis
+       dan Distribusi Telegram pusat yang bersyarat `lihat_laporan`. */
+    'lihat_laporan_kanwil', 'unduh_laporan',
   ],
 
   /*
@@ -456,6 +463,10 @@ export const MENU_KANWIL = [
       { id: 'dasbor', label: 'Dasbor Eksekutif', ikon: 'dasbor', izin: 'lihat_dasbor_kanwil' },
       { id: 'kanwil-dasbor', label: 'Ringkasan Wilayah', ikon: 'dasbor', izin: 'lihat_dasbor_wilayah' },
       { id: 'analisis-berita', label: 'Analisis Berita', ikon: 'kasus', izin: 'analisis_berita' },
+      // Laporan Berkala yang sama dengan pusat, berisi berita wilayah ini saja —
+      // yang membatasi datanya RLS di snapshot_negatif, bukan halaman. Izinnya
+      // `lihat_laporan_kanwil`, terpisah dari `lihat_laporan` pusat.
+      { id: 'laporan', label: 'Laporan Berkala', ikon: 'laporan', izin: 'lihat_laporan_kanwil' },
       { id: 'tindak-lanjut', label: 'Tindak Lanjut', ikon: 'tindak', izin: 'lihat_penanganan', lencana: 'penanganan' },
       { id: 'input', label: 'Kirim Berita', ikon: 'tambah', izin: 'buat_berita' },
       { id: 'wilayah-telaah', label: 'Telaah Wilayah', ikon: 'centang', izin: 'telaah_wilayah', lencana: 'telaahWilayah' },

@@ -563,7 +563,7 @@ function bagianKop(d, opsi) {
     <div class="kop-teks">
       <div class="kop-lembaga">${esc(KONFIG.kementerian)}<br>${esc(KONFIG.induk)}</div>
       <h1>Laporan Intelijen Pemberitaan Negatif</h1>
-      <div class="kop-sub">Laporan ${esc(jenis)} · ${esc(KONFIG.instansi)}</div>
+      <div class="kop-sub">Laporan ${esc(jenis)} · ${esc(KONFIG.instansi)}${opsi.wilayah ? ` · ${esc(String(opsi.wilayah).replace(/^Kantor Wilayah Ditjenpas\s+/i, 'Kanwil '))}` : ''}</div>
     </div>
     <div class="kop-kanan">
       <div class="kop-nomor">${esc(opsi.nomor || nomorLaporan(opsi.jenis, opsi.urutan || 1, d.periode.selesai))}</div>

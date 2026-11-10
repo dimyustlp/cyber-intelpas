@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Buku Panduan Peran Kanwil — Trans-Siber PAS</title>
+<style>
+  @page { size: A4; margin: 20mm 18mm 18mm 18mm; }
+  * { box-sizing: border-box; }
+  html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body {
+    font-family: "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+    color: #15233a; line-height: 1.55; font-size: 10.6pt; margin: 0;
+  }
+  h1, h2, h3 { color: #0f2347; line-height: 1.25; }
+  h1 { font-size: 20pt; margin: 0 0 4px; }
+  h2 {
+    font-size: 13.5pt; margin: 22px 0 8px; padding-bottom: 5px;
+    border-bottom: 2px solid #1d4ed8;
+  }
+  h3 { font-size: 11.4pt; margin: 14px 0 4px; color: #1d3a6b; }
+  p { margin: 5px 0; }
+  a { color: #1d4ed8; }
+  .sampul {
+    background: linear-gradient(135deg, #0f2347, #1d4ed8); color: #fff;
+    padding: 30px 26px; border-radius: 10px; margin-bottom: 18px;
+  }
+  .sampul h1 { color: #fff; }
+  .sampul .sub { font-size: 11.5pt; opacity: .92; margin-top: 6px; }
+  .sampul .meta { font-size: 9.2pt; opacity: .8; margin-top: 14px; }
+  .pita { display:inline-block; background:#13c296; color:#04291f; font-weight:700;
+          font-size:8.5pt; padding:2px 9px; border-radius:20px; letter-spacing:.3px; }
+  .kartu { border:1px solid #d9e1ef; border-radius:8px; padding:12px 14px; margin:10px 0; background:#fbfcff; }
+  .kartu.baru { border-color:#13c296; background:#f2fdf9; }
+  .label { display:inline-block; font-size:8.3pt; font-weight:700; text-transform:uppercase;
+           letter-spacing:.4px; color:#5a6b86; margin-right:6px; }
+  .menu-judul { font-weight:700; color:#0f2347; font-size:11.6pt; }
+  .menu-judul .ikonteks { color:#1d4ed8; }
+  ol, ul { margin:5px 0 5px 20px; padding:0; }
+  li { margin:3px 0; }
+  table { border-collapse: collapse; width:100%; margin:8px 0; font-size:9.6pt; }
+  th, td { border:1px solid #d3ddee; padding:5px 8px; text-align:left; vertical-align:top; }
+  th { background:#eef3fb; color:#0f2347; }
+  .catatan { background:#fff7ed; border-left:3px solid #f59e0b; padding:7px 11px; margin:7px 0;
+             font-size:9.7pt; border-radius:0 6px 6px 0; }
+  .ingat { background:#eff6ff; border-left:3px solid #1d4ed8; padding:7px 11px; margin:7px 0;
+           font-size:9.7pt; border-radius:0 6px 6px 0; }
+  .toc { columns:2; column-gap:26px; font-size:10pt; }
+  .toc div { margin:3px 0; break-inside:avoid; }
+  .toc .no { color:#1d4ed8; font-weight:700; }
+  .pecah { break-before: page; }
+  .kaki { margin-top:26px; padding-top:10px; border-top:1px solid #d9e1ef; font-size:8.6pt; color:#64748b; }
+  svg { max-width:100%; }
+  .alur-ket { font-size:9.3pt; color:#475569; margin:4px 0 0; }
+  code { background:#eef2f9; padding:1px 5px; border-radius:4px; font-size:9.3pt; }
+</style>
+</head>
+<body>
+
+<div class="sampul">
+  <div class="pita">BUKU PANDUAN PENGGUNA</div>
+  <h1>Peran Administrator Kantor Wilayah</h1>
+  <div class="sub">Sistem Monitoring &amp; Intelijen Pemberitaan Pemasyarakatan — Trans-Siber PAS</div>
+  <div class="meta">Direktorat Pengamanan dan Intelijen · Direktorat Jenderal Pemasyarakatan · www.trans-siber.id<br>Edisi 10 November 2026</div>
+</div>
+
+<p>Buku ini menjelaskan seluruh menu dan fitur yang tersedia bagi <b>Administrator Kantor Wilayah</b> (akun <code>kanwil_&lt;provinsi&gt;</code>) di aplikasi Trans-Siber PAS. Setiap bagian menjawab tiga hal: apa isinya, untuk apa dipakai, dan langkah memakainya. Seluruh data yang Anda lihat terbatas pada wilayah Anda sendiri — pembatasan ini ditegakkan oleh server, bukan sekadar disembunyikan di layar, sehingga berita wilayah lain tidak pernah sampai ke perangkat Anda.</p>
+
+<h2>Daftar Isi</h2>
+<div class="toc">
+  <div><span class="no">A.</span> Masuk ke aplikasi</div>
+  <div><span class="no">B.</span> Gambaran peran &amp; Ruang Wilayah</div>
+  <div><span class="no">1.</span> Dasbor Eksekutif</div>
+  <div><span class="no">2.</span> Ringkasan Wilayah</div>
+  <div><span class="no">3.</span> Analisis Berita (+ tab Tindak Lanjut)</div>
+  <div><span class="no">4.</span> Laporan Berkala</div>
+  <div><span class="no">5.</span> Tindak Lanjut</div>
+  <div><span class="no">6.</span> Kirim Berita</div>
+  <div><span class="no">7.</span> Telaah Wilayah</div>
+  <div><span class="no">8.</span> Berita Wilayah</div>
+  <div><span class="no">9.</span> Unit di Wilayah</div>
+  <div><span class="no">10.</span> Pengguna Wilayah</div>
+  <div><span class="no">C.</span> Alur klarifikasi berita (inti)</div>
+  <div><span class="no">D.</span> Pertanyaan yang sering muncul</div>
+</div>
+
+<h2>A. Masuk ke aplikasi</h2>
+<ol>
+  <li>Buka <b>www.trans-siber.id</b> di peramban (Chrome disarankan).</li>
+  <li>Masukkan <b>username</b> kanwil Anda, berbentuk <code>kanwil_&lt;provinsi&gt;</code> — misalnya <code>kanwil_jawabarat</code>. Sistem menambahkan sendiri bagian di belakangnya, jadi Anda cukup mengetik username itu.</li>
+  <li>Masukkan <b>password</b> yang diberikan saat sosialisasi, lalu tekan Masuk.</li>
+  <li>Setelah masuk, layar pertama yang terbuka adalah <b>Dasbor Eksekutif</b> wilayah Anda.</li>
+</ol>
+<div class="catatan"><b>Keamanan.</b> Ganti password bawaan setelah login pertama bila fitur ganti sandi tersedia, dan jangan bagikan akun kanwil ke pihak di luar kewenangan. Setiap unit (UPT) memakai akunnya sendiri, bukan akun kanwil.</div>
+
+<h2>B. Gambaran peran &amp; Ruang Wilayah</h2>
+<p>Sebagai Administrator Kantor Wilayah, Anda memegang seluruh unit (Lapas, Rutan, LPKA) di wilayah Anda. Menu Anda berada dalam satu ruang bernama <b>Ruang Wilayah</b>. Dari sini Anda memantau pemberitaan, menganalisis berita negatif, meminta klarifikasi kepada UPT, menilai hasilnya, menyusun laporan berkala, memasukkan berita, dan menerbitkan akun bagi penelaah di tiap unit.</p>
+<table>
+  <tr><th>Menu</th><th>Fungsi singkat</th></tr>
+  <tr><td>Dasbor Eksekutif</td><td>Ringkasan pemberitaan sebulan untuk wilayah Anda.</td></tr>
+  <tr><td>Ringkasan Wilayah</td><td>Layar kerja harian: apa yang mendesak dan apa yang menunggu.</td></tr>
+  <tr><td>Analisis Berita</td><td>Analisis kasus per kasus + tab Tindak Lanjut (klarifikasi).</td></tr>
+  <tr><td>Laporan Berkala</td><td>Laporan intelijen harian/mingguan/bulanan wilayah Anda.</td></tr>
+  <tr><td>Tindak Lanjut</td><td>Klarifikasi UPT &amp; Disposisi Pimpinan.</td></tr>
+  <tr><td>Kirim Berita</td><td>Memasukkan berita yang belum tertangkap sistem.</td></tr>
+  <tr><td>Telaah Wilayah</td><td>Menyetujui/merevisi penilaian mesin atas berita wilayah.</td></tr>
+  <tr><td>Berita Wilayah</td><td>Arsip seluruh berita unit di wilayah Anda.</td></tr>
+  <tr><td>Unit di Wilayah</td><td>Daftar seluruh unit yang Anda bawahi.</td></tr>
+  <tr><td>Pengguna Wilayah</td><td>Menerbitkan akun Penelaah Berita UPT.</td></tr>
+</table>
+
+<h2 class="pecah">1. Dasbor Eksekutif</h2>
+<div class="kartu">
+  <p><span class="label">Apa ini</span> Dasbor Eksekutif yang sama dengan pusat, tetapi berisi berita UPT di wilayah Anda saja: angka sebulan, isu teratas, unit yang diberitakan negatif, dan kotak Cari UPT untuk melihat unit mana berada di bawah wilayah mana beserta jumlah beritanya.</p>
+  <p><span class="label">Untuk apa</span> Layar pertama setiap kali masuk. Berita dihitung sebagai milik wilayah Anda bila datang dari lembar kanwil Anda, atau bila UPT-nya tercatat di bawah kanwil Anda pada data induk.</p>
+  <div class="catatan">Semua angka di sini hanya wilayah Anda; tidak ada angka nasional di ruang kanwil.</div>
+</div>
+
+<h2>2. Ringkasan Wilayah</h2>
+<div class="kartu">
+  <p><span class="label">Apa ini</span> Empat ubin di puncak — berita wilayah, yang perlu respons segera, yang menunggu telaah Anda, dan yang menunggu telaah pusat — lalu grafik empat belas hari terakhir, keseimbangan pemberitaan, unit yang paling banyak disorot, dan sebaran urgensi. Di bawahnya: berita negatif yang belum ditanggapi unit, yang mendesak, dan kiriman Anda sendiri.</p>
+  <p><span class="label">Untuk apa</span> Menjawab keadaan pemberitaan seluruh unit di wilayah ini hari ini, dan apa yang menunggu dikerjakan. Tekan angka pada ubin untuk membuka daftar di baliknya.</p>
+</div>
+
+<h2>3. Analisis Berita <span class="pita">ADA TAB BARU</span></h2>
+<div class="kartu">
+  <p><span class="label">Apa ini</span> Kini sebuah fitur dengan dua tab:</p>
+  <ul>
+    <li><b>Tab “Analisis”</b> — analisis kasus per kasus atas berita negatif di wilayah Anda. Pilih satu berita, lengkapi fakta 5W1H, penilaian, prakiraan, rekomendasi, dan evaluasi SIP.</li>
+    <li><b>Tab “Tindak Lanjut”</b> — antrean Klarifikasi UPT yang sama dengan menu Tindak Lanjut, dibawa masuk ke sini supaya Anda tidak perlu berpindah menu untuk menindaklanjuti berita yang baru saja Anda kirim ke UPT.</li>
+  </ul>
+  <p><span class="label">Untuk apa / cara memicu klarifikasi</span> Di tab Analisis, pada bagian tujuan tindak lanjut, centang <b>Klarifikasi UPT</b>, lalu isi kolom “Hal yang perlu diklarifikasi” (sudah terisi format standar: <i>“Mohon klarifikasi tertulis atas pemberitaan ini disertai kronologi dan bukti pendukung.”</i> — boleh Anda sesuaikan) dan tentukan batas waktunya. Tekan <b>Simpan analisis &amp; teruskan</b>. Permintaan langsung diteruskan ke UPT-nya, dan grup Telegram kanwil diberi tahu otomatis.</p>
+  <div class="catatan">Klarifikasi hanya bisa diminta untuk berita yang <b>sudah terpetakan ke satu UPT</b>. Bila belum, tetapkan unitnya lebih dulu dari panel di samping (pencarian ke data induk). UPT baru bisa menjawab bila sudah punya akun — terbitkan di menu <b>Pengguna Wilayah</b>.</div>
+</div>
+
+<h2>4. Laporan Berkala <span class="pita">FITUR BARU</span></h2>
+<div class="kartu baru">
+  <p><span class="label">Apa ini</span> Laporan intelijen berkala untuk wilayah Anda. Pilih periode (harian, mingguan, atau bulanan), tekan satu tombol, dan berkasnya tersusun lengkap dengan diagram serta daftar sumbernya, siap dicetak atau disimpan sebagai PDF lewat menu cetak peramban. Isinya memuat pemberitaan negatif di wilayah Anda, ditandai menurut Standar Intelijen Pemasyarakatan (klasifikasi, prioritas, kode penyebarluasan, serta evaluasi sumber dan informasi).</p>
+  <p><span class="label">Untuk apa</span> Menyusun laporan mandiri tanpa menunggu proses di belakang layar. Nama wilayah Anda ikut tercetak di kop laporan, sehingga berkasnya jelas milik kanwil mana.</p>
+  <h3>Langkah</h3>
+  <ol>
+    <li>Buka menu <b>Laporan Berkala</b>.</li>
+    <li>Pilih jenis periode: Harian / Mingguan / Bulanan.</li>
+    <li>Tekan tombol buat laporan; tunggu beberapa detik hingga tersusun.</li>
+    <li>Centang pernyataan penandaan produk intelijen, lalu tekan <b>Unduh</b> untuk menyimpan berkasnya (HTML); buka dan cetak/simpan sebagai PDF dari menu cetak peramban.</li>
+  </ol>
+  <div class="catatan">Satu hari laporan berarti pukul 00.00–23.59 WIB. Setiap unduhan tercatat pada Jejak Audit.</div>
+</div>
+
+<h2>5. Tindak Lanjut</h2>
+<div class="kartu">
+  <p><span class="label">Apa ini</span> Klarifikasi UPT dan Disposisi Pimpinan untuk wilayah Anda. Teruskan permintaan dari pusat ke UPT, nilai berkas klarifikasi yang masuk, dan catat disposisi pimpinan beserta hasilnya. (Isi tab Klarifikasi UPT sama persis dengan tab Tindak Lanjut di dalam Analisis Berita.)</p>
+  <p><span class="label">Untuk apa</span> Satu tempat untuk memantau UPT mana yang belum dan sudah menginput klarifikasi, tanpa perlu menelepon.</p>
+  <h3>Menilai klarifikasi yang masuk dari UPT</h3>
+  <ol>
+    <li>Pada butir berstatus <b>Klarifikasi masuk</b>, buka berkas yang diunggah UPT dan baca ringkasannya.</li>
+    <li>Bila sudah benar, tekan <b>Terima klarifikasi</b>. Berita dianggap selesai ditangani dan pusat dapat melihatnya.</li>
+    <li>Bila perlu diperbaiki, isi kolom <b>catatan penilaian</b> (wajib), lalu tekan <b>Kembalikan untuk diperbaiki</b>. Butir kembali ke UPT beserta catatan Anda.</li>
+  </ol>
+  <div class="catatan">Klarifikasi UPT mengikuti Format Laporan Klarifikasi Berita (Laporan Insidental, Berita Acara Verifikasi Isu, Draft Tanggapan), dapat diunduh sebagai .docx; format kosongnya diunduh dari kartu di atas daftar. Klarifikasi wajib menyebut nama dan jabatan pengirimnya. Pengingat untuk UPT yang belum menginput dikirim ke grup Telegram kanwil pukul 08.00 dan 14.00 WIB. Bila perlu, Administrator Kantor Wilayah dapat mengunggah klarifikasi atas nama UPT; namanya tetap tercatat sebagai pengunggah.</div>
+</div>
+
+<h2>6. Kirim Berita</h2>
+<div class="kartu">
+  <p><span class="label">Apa ini</span> Borang satu halaman dengan panel penilaian mesin di sebelah kanan yang berjalan sambil Anda mengetik, dan kop yang menyebutkan wilayah yang akan tercatat pada kiriman ini.</p>
+  <p><span class="label">Untuk apa</span> Pintu masuk berita dari daerah — untuk berita tentang unit di wilayah Anda yang belum tertangkap perayap maupun spreadsheet.</p>
+  <h3>Langkah ringkas</h3>
+  <ol>
+    <li>Periksa kop wilayah di atas borang sudah benar.</li>
+    <li>Tempelkan tautan beritanya; salin judul apa adanya.</li>
+    <li>Isi media dan tanggal terbit, lalu tentukan unitnya.</li>
+    <li>Tulis ringkasan isi; tambahkan catatan petugas bila perlu.</li>
+    <li>Baca panel penilaian mesin di kanan; betulkan penilaian yang keliru saat itu juga.</li>
+    <li>Tekan <b>Simpan berita</b>. Kiriman masuk antrean telaah berstatus Belum Ditelaah.</li>
+  </ol>
+  <div class="catatan">Hanya Administrator Kantor Wilayah yang memasukkan berita, agar tiap kiriman punya satu penanggung jawab bila terjadi kekeliruan. Masukan manual tidak otomatis lebih tepercaya daripada hasil mesin — tetap ditelaah.</div>
+</div>
+
+<h2>7. Telaah Wilayah</h2>
+<div class="kartu">
+  <p><span class="label">Apa ini</span> Antrean berita wilayah satu per satu, lengkap dengan alasan mesin, dan kolom untuk menyetujui atau merevisi kategori, sentimen, serta urgensinya beserta alasan revisinya.</p>
+  <p><span class="label">Untuk apa</span> Kantor wilayah dan unitnya paling memahami apakah sebuah kabar benar menyangkut unit itu. Revisi Anda tercatat lengkap dengan nama penelaahnya.</p>
+  <div class="catatan">Putusan di sini tidak mengubah status verifikasi pusat. Kolom status verifikasi menjadi kewenangan analis pusat dan menentukan sebuah berita ikut dihitung secara nasional atau tidak.</div>
+</div>
+
+<h2>8. Berita Wilayah</h2>
+<div class="kartu">
+  <p><span class="label">Apa ini</span> Tabel seluruh berita yang menyangkut unit di wilayah ini, dengan saringan dan kotak cari yang sama seperti Pusat Data Berita.</p>
+  <p><span class="label">Untuk apa</span> Arsip wilayah — untuk menelusuri riwayat pemberitaan satu unit, satu rentang tanggal, atau satu status telaah. Putusan telaah daerah dan status verifikasi pusat terbaca berdampingan di sini.</p>
+</div>
+
+<h2>9. Unit di Wilayah</h2>
+<div class="kartu">
+  <p><span class="label">Apa ini</span> Seluruh unit yang dibawahi wilayah ini, diambil dari data induk — bukan hanya sepuluh teratas atau yang pernah diberitakan.</p>
+  <p><span class="label">Untuk apa</span> Kantor wilayah bertanggung jawab atas setiap unitnya, termasuk yang belum pernah muncul di daftar mana pun. Unit yang tak pernah diberitakan tetap unit yang harus dipantau.</p>
+</div>
+
+<h2>10. Pengguna Wilayah</h2>
+<div class="kartu">
+  <p><span class="label">Apa ini</span> Penerbitan akun <b>Penelaah Berita UPT</b> untuk unit di wilayah ini, dan daftar akun yang sudah diterbitkan.</p>
+  <p><span class="label">Untuk apa</span> Memberi tiap unit satu akun untuk menelaah dan menanggapi berita tentang dirinya sendiri — termasuk menjawab permintaan klarifikasi.</p>
+  <h3>Langkah</h3>
+  <ol>
+    <li>Buka <b>Pengguna Wilayah</b> → terbitkan akun baru.</li>
+    <li>Isi identitas (boleh surel, misalnya Gmail unit, atau username pendek), pilih unitnya, simpan.</li>
+    <li>Sampaikan username dan password ke petugas unit yang bersangkutan.</li>
+  </ol>
+  <div class="catatan">Hanya peran Penelaah Berita UPT yang dapat diterbitkan dari sini, dan hanya untuk unit di wilayah sendiri. Batas ini ditegakkan server.</div>
+</div>
+
+<h2 class="pecah">C. Alur klarifikasi berita (inti)</h2>
+<p>Inilah alur utama yang menghubungkan Kanwil, UPT, dan Pusat. Bacalah sekali agar paham siapa mengerjakan apa.</p>
+
+<svg viewBox="0 0 760 250" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Diagram alur klarifikasi">
+  <defs>
+    <marker id="ph" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto">
+      <path d="M0,0 L7,3 L0,6 Z" fill="#1d4ed8"/>
+    </marker>
+    <marker id="phr" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto">
+      <path d="M0,0 L7,3 L0,6 Z" fill="#dc2626"/>
+    </marker>
+  </defs>
+  <!-- boxes -->
+  <g font-family="Segoe UI, sans-serif" font-size="11">
+    <rect x="14" y="20" width="150" height="54" rx="8" fill="#eff6ff" stroke="#1d4ed8"/>
+    <text x="89" y="42" text-anchor="middle" font-weight="700" fill="#0f2347">Analis/Kanwil</text>
+    <text x="89" y="60" text-anchor="middle" fill="#334155">pilih berita → minta</text>
+
+    <rect x="210" y="20" width="150" height="54" rx="8" fill="#eff6ff" stroke="#1d4ed8"/>
+    <text x="285" y="42" text-anchor="middle" font-weight="700" fill="#0f2347">Kanwil</text>
+    <text x="285" y="60" text-anchor="middle" fill="#334155">teruskan ke UPT</text>
+
+    <rect x="406" y="20" width="150" height="54" rx="8" fill="#f2fdf9" stroke="#13c296"/>
+    <text x="481" y="42" text-anchor="middle" font-weight="700" fill="#04291f">UPT</text>
+    <text x="481" y="60" text-anchor="middle" fill="#334155">unggah klarifikasi</text>
+
+    <rect x="602" y="20" width="144" height="54" rx="8" fill="#eff6ff" stroke="#1d4ed8"/>
+    <text x="674" y="42" text-anchor="middle" font-weight="700" fill="#0f2347">Kanwil nilai</text>
+    <text x="674" y="60" text-anchor="middle" fill="#334155">terima / kembalikan</text>
+
+    <rect x="406" y="160" width="150" height="50" rx="8" fill="#fff7ed" stroke="#f59e0b"/>
+    <text x="481" y="181" text-anchor="middle" font-weight="700" fill="#7c2d12">Perlu perbaikan</text>
+    <text x="481" y="197" text-anchor="middle" fill="#334155">kembali ke UPT + catatan</text>
+
+    <rect x="602" y="160" width="144" height="50" rx="8" fill="#ecfdf5" stroke="#059669"/>
+    <text x="674" y="181" text-anchor="middle" font-weight="700" fill="#064e3b">Diterima</text>
+    <text x="674" y="197" text-anchor="middle" fill="#334155">selesai · pusat memantau</text>
+
+    <!-- arrows -->
+    <line x1="164" y1="47" x2="206" y2="47" stroke="#1d4ed8" stroke-width="2" marker-end="url(#ph)"/>
+    <line x1="360" y1="47" x2="402" y2="47" stroke="#1d4ed8" stroke-width="2" marker-end="url(#ph)"/>
+    <line x1="556" y1="47" x2="598" y2="47" stroke="#1d4ed8" stroke-width="2" marker-end="url(#ph)"/>
+    <line x1="674" y1="74" x2="674" y2="156" stroke="#059669" stroke-width="2" marker-end="url(#ph)"/>
+    <path d="M620,74 L620,120 L481,120 L481,156" fill="none" stroke="#dc2626" stroke-width="2" marker-end="url(#phr)"/>
+    <path d="M406,185 L300,185 L285,185 L285,78" fill="none" stroke="#f59e0b" stroke-width="1.6" stroke-dasharray="4 3" marker-end="url(#ph)"/>
+  </g>
+</svg>
+<p class="alur-ket">Garis merah: dikembalikan untuk diperbaiki. Garis putus oranye: UPT memperbaiki lalu mengunggah ulang. Garis hijau: diterima.</p>
+
+<h3>Status dan artinya</h3>
+<table>
+  <tr><th>Status</th><th>Artinya</th><th>Yang bertindak</th></tr>
+  <tr><td>Menunggu kanwil</td><td>Dibuat pusat; kanwil belum meneruskan.</td><td>Kanwil</td></tr>
+  <tr><td>Menunggu UPT</td><td>Sudah diteruskan ke UPT; menunggu unggahan.</td><td>UPT</td></tr>
+  <tr><td>Klarifikasi masuk</td><td>UPT sudah mengunggah berkas.</td><td>Kanwil menilai</td></tr>
+  <tr><td>Perlu perbaikan</td><td>Dikembalikan ke UPT dengan catatan.</td><td>UPT revisi</td></tr>
+  <tr><td>Diterima</td><td>Selesai; pusat memantau.</td><td>—</td></tr>
+</table>
+
+<h2>D. Pertanyaan yang sering muncul</h2>
+<p><b>Kenapa saya tidak melihat berita wilayah lain?</b> Memang begitu. Ruang kanwil hanya memuat wilayah Anda; batas ini ditegakkan server.</p>
+<p><b>UPT tidak bisa menjawab klarifikasi.</b> Pastikan unit itu sudah punya akun Penelaah Berita UPT. Terbitkan di Pengguna Wilayah.</p>
+<p><b>Menu/berubah tidak muncul setelah pembaruan.</b> Muat ulang halaman (refresh) atau masuk ulang.</p>
+<p><b>Laporan kosong.</b> Belum tentu wilayah Anda tak punya pemberitaan — periksa periode yang dipilih dan pastikan lembar/berita wilayah sudah masuk (paling lambat ±30 menit setelah pengisian).</p>
+
+<div class="kaki">
+  Trans-Siber PAS — Direktorat Pengamanan dan Intelijen, Direktorat Jenderal Pemasyarakatan. Dokumen panduan internal; istilah dan tampilan dapat berubah seiring pembaruan aplikasi.
+</div>
+
+</body>
+</html>

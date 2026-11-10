@@ -28,9 +28,13 @@ import { pesanRamah, perbarui } from '../lib/api.js'
 import { KONFIG } from '../lib/konfig.js'
 import { adalahEksternal, adalahUnit } from '../lib/peran.js'
 import { KATEGORI, SEMUA_SUBKATEGORI } from '../lib/taksonomi.js'
+import { ember } from '../lib/sentimen.js'
+import { dasar } from '../lib/hitung.js'
+import { belumTerpetakan } from '../lib/unit-terpetakan.js'
 import {
   muatPenanganan, penangananSaatIni, galatPenanganan, infoStatus, lewatBatas, namaKanwilPendek,
   teruskanKeUpt, kirimKlarifikasi, nilaiKlarifikasi, catatDisposisi, tautanKlarifikasi, hitungPenanganan,
+  buatPenanganan,
 } from '../lib/penanganan.js'
 import {
   LEMBAR, ZONA_WAKTU, FORMAT_KOSONG, LOGO_KOP, JENIS_DOCX, HASIL, TINGKAT,
@@ -406,6 +410,19 @@ function pasangPenyimak(isi, keadaan) {
     try { await unduhLaporan(p, p.laporan_klarifikasi, p.diunggah_pada || new Date()) } catch (e) { roti(pesanRamah(e), 'kritis') }
   }))
 
+  // UPT mengajukan klarifikasi sendiri atas berita unitnya.
+  isi.querySelectorAll('.ajukan-baris [data-aksi="ajukan-klarifikasi"]').forEach((btn) => btn.addEventListener('click', async () => {
+    const id = btn.closest('.ajukan-baris')?.querySelector('[data-berita-id]')?.dataset.beritaId
+    const b = (keadaan.berita || []).find((x) => x.id === id)
+    if (!b) return
+    btn.disabled = true
+    try {
+      await buatPenanganan({ berita: b, klarifikasi: true, disposisi: false, analisis: {}, instruksi: '', batas: null, uptPembuat: true })
+      roti('Klarifikasi diajukan. Isi laporannya pada daftar di bawah.', 'positif', 4500)
+      gambarUlang()
+    } catch (e) { btn.disabled = false; roti(pesanRamah(e), 'kritis', 7000) }
+  }))
+
   isi.querySelectorAll('.penanganan-aksi').forEach((wadah) => {
     const id = wadah.dataset.id
     const ambilIsian = (n) => wadah.querySelector(`[data-isian="${n}"]`)
@@ -486,6 +503,41 @@ function bagianGalat() {
   return g ? pesanSistem(`<b>Daftar tindak lanjut gagal dimuat.</b> ${amankan(g)}`, 'kritis', 'peringatan') : ''
 }
 
+/**
+ * "Ajukan klarifikasi baru" — hanya untuk Penelaah UPT (permintaan user
+ * 10 November 2026).
+ *
+ * Sampai kini klarifikasi hanya bisa lahir dari Analisis Berita (kanwil/pusat),
+ * lalu diteruskan. Kartu ini membalik arahnya: UPT boleh mengajukan sendiri atas
+ * berita negatif unitnya yang belum punya klarifikasi. Penerbitannya lewat
+ * `buatPenanganan` → RPC `penanganan_buat`, yang sejak migrasi 20261110040000
+ * menerima upt_penelaah untuk tujuan Klarifikasi UPT atas unitnya sendiri.
+ * Butir yang lahir langsung berstatus 'menunggu_upt', jadi muncul di daftar di
+ * bawah untuk diisi. Kartu ini kosong (tidak tergambar) bila tidak ada calon.
+ */
+function kartuAjukanUpt(keadaan) {
+  const sudahAda = new Set(penangananSaatIni().filter((p) => p.tujuan === 'klarifikasi_upt').map((p) => p.berita_id))
+  const calon = dasar(keadaan.berita || [])
+    .filter((b) => ember(b) === 'negatif' && !sudahAda.has(b.id) && !belumTerpetakan(b.nama_upt))
+    .sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)))
+    .slice(0, 30)
+  if (!calon.length) return ''
+  return kartu({
+    judul: 'Ajukan klarifikasi baru',
+    ket: 'Berita negatif tentang unit Anda yang belum ada klarifikasinya. Ajukan untuk mulai mengisi laporan klarifikasinya.',
+    rapat: true,
+    isi: `<div class="tumpuk" style="gap:8px">${calon.map((b) => `
+      <div class="ajukan-baris baris gap-6" style="justify-content:space-between;flex-wrap:wrap;align-items:center;border:1px solid var(--garis,#8884);border-radius:8px;padding:8px 10px">
+        <span style="flex:1;min-width:160px">
+          <b>${amankan(ringkas(b.judul || 'Tanpa judul', 120))}</b>
+          <span class="mini-teks samar-teks">${amankan(b.media || '')}${b.media ? ' · ' : ''}${amankan(tanggalJam(b.created_at))}</span>
+        </span>
+        ${tombol({ label: 'Ajukan klarifikasi', ikon: 'kirim', kecil: true, gaya: 'utama', aksi: 'ajukan-klarifikasi' })}
+        <span hidden data-berita-id="${amankan(b.id)}"></span>
+      </div>`).join('')}</div>`,
+  })
+}
+
 export function halamanKlarifikasi({ keadaan, isi }) {
   pastikanDimuat()
   const peran = keadaan.profil?.role
@@ -504,6 +556,7 @@ export function halamanKlarifikasi({ keadaan, isi }) {
       ${bagianGalat()}
       ${unit ? pesanSistem('<b>Klarifikasi UPT.</b> Pemberitaan negatif tentang unit Anda yang diminta klarifikasinya oleh kanwil. '
         + 'Isi laporan klarifikasi menurut format resmi (atau unggah berkasnya), lalu isi nama serta jabatan pengirim. Kanwil dan pusat diberi tahu otomatis.', 'aksen', 'info') : ''}
+      ${unit ? kartuAjukanUpt(keadaan) : ''}
       ${unit ? kartuFormat(unit) : ''}
       <div class="kisi kisi-4">
         ${unit

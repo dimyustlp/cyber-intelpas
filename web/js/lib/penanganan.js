@@ -118,7 +118,7 @@ export async function buatPenanganan(opsi) {
     const batasIso = batas || new Date(Date.now() + 2 * 86400000).toISOString()
     if (klarifikasi) {
       hasil.push(demoBaris(berita, 'klarifikasi_upt', {
-        status: opsi.kanwilPembuat ? 'menunggu_upt' : 'menunggu_kanwil',
+        status: (opsi.kanwilPembuat || opsi.uptPembuat) ? 'menunggu_upt' : 'menunggu_kanwil',
         analisis, instruksi, batas_waktu: batasIso,
         diteruskan_pada: opsi.kanwilPembuat ? new Date().toISOString() : null,
       }))

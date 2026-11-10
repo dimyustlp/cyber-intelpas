@@ -421,10 +421,12 @@ function kartuBorang(keadaan, b, peta) {
           </div>
         </div>
 
-        <div class="baris gap-6" style="margin-top:14px">
+        <div class="baris gap-6" style="margin-top:14px;flex-wrap:wrap">
           ${tombol({ label: pilih.sibuk ? 'Menyimpan…' : 'Simpan analisis & teruskan', ikon: 'kirim', gaya: 'utama', aksi: 'simpan-analisis', nonaktif: pilih.sibuk })}
+          ${tombol({ label: 'Tandai tidak sesuai', ikon: 'tutup', gaya: 'bahaya', aksi: 'tandai-tidak-sesuai', nonaktif: pilih.sibuk })}
           ${KONFIG.mode === 'demo' ? '<span class="mini-teks samar-teks">Mode peragaan: tersimpan sampai halaman dimuat ulang.</span>' : ''}
         </div>
+        <div class="mini-teks samar-teks" style="margin-top:4px">“Tandai tidak sesuai” memakai isi kolom <b>Analisis / pembahasan</b> sebagai alasannya, tanpa menerbitkan klarifikasi atau disposisi.</div>
       </div>`,
   })
 }
@@ -586,6 +588,53 @@ export function halamanAnalisisBerita({ keadaan, isi }) {
         pilih.draf = null
         pilih.sibuk = false
         document.dispatchEvent(new CustomEvent('buka-halaman', { detail: { halaman: klarifikasi ? 'klarifikasi' : 'disposisi' } }))
+      } catch (galat) {
+        pilih.sibuk = false
+        roti(pesanRamah(galat), 'kritis', 7000)
+        gambarUlang()
+      }
+    })
+
+    /*
+       "Tandai tidak sesuai" (permintaan user 10 November 2026).
+
+       Untuk berita yang dianggap keliru/tidak layak dan TIDAK diteruskan sebagai
+       klarifikasi. Putusannya tinggal di telaah_wilayah_status='Tidak Sesuai',
+       sejajar dengan putusan Telaah Wilayah lain, dengan alasannya diambil dari
+       kolom "Analisis / pembahasan". Ditulis lewat jalur telaah yang sama
+       (perbarui berita) — policy berita_update_telaah_kanwil yang menegakkan
+       haknya. Nilai 'Tidak Sesuai' baru sah setelah migrasi
+       20261110040000 dijalankan.
+    */
+    borang.querySelector('[data-aksi="tandai-tidak-sesuai"]')?.addEventListener('click', async () => {
+      const analisisTeks = String(borang.querySelector('[data-bidang="analisis"]')?.value || '').trim()
+      if (analisisTeks.length < 10) {
+        roti('Tulis dulu analisis singkat kenapa berita ini tidak sesuai, di kolom Analisis / pembahasan.', 'sedang', 6000)
+        borang.querySelector('[data-bidang="analisis"]')?.focus()
+        return
+      }
+      pilih.sibuk = true
+      gambarUlang()
+      try {
+        if (KONFIG.mode !== 'demo') {
+          const hasil = await perbarui('berita', { id: `eq.${terpilih.id}` }, {
+            telaah_wilayah_status: 'Tidak Sesuai',
+            telaah_wilayah_catatan: analisisTeks,
+            telaah_wilayah_oleh: keadaan.profil?.username || keadaan.profil?.full_name || null,
+            telaah_wilayah_pada: new Date().toISOString(),
+          }, { pilih: 'id,telaah_wilayah_status' })
+          if (!Array.isArray(hasil) || !hasil.length) {
+            throw new Error('Peran Anda tidak berhak menandai berita ini, atau berita ini di luar wilayah Anda.')
+          }
+        }
+        for (const daftar of [keadaan.berita, keadaan.dalamLingkup]) {
+          for (const b of daftar || []) if (b.id === terpilih.id) b.telaah_wilayah_status = 'Tidak Sesuai'
+        }
+        roti('Berita ditandai “Tidak Sesuai” beserta analisisnya.', 'positif', 4500)
+        pilih.id = null
+        pilih.draf = null
+        pilih.sibuk = false
+        gambarUlang()
       } catch (galat) {
         pilih.sibuk = false
         roti(pesanRamah(galat), 'kritis', 7000)

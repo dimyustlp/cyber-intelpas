@@ -330,7 +330,8 @@ export const MENU = [
          Dua butir menu bernama sama akan membuat pembacanya menebak mana yang
          dimaksud rekannya.
       */
-      { id: 'briefing', label: 'Peringatan Dini', ikon: 'peringatan', izin: 'lihat_briefing', lencana: 'peringatan' },
+      // Butir Peringatan Dini dicabut dari menu 10 November 2026 atas permintaan user.
+      // Halaman 'briefing' tetap ada dan masih terbuka lewat tombol/tautan yang menunjuknya.
       /*
          Deteksi Lonjakan membaca dua tabel yang diisi mesin di peladen tiap
          jam: lonjakan berita negatif per unit, dan isu yang diangkat banyak
@@ -341,7 +342,8 @@ export const MENU = [
          yang pasti kosong baginya. Situation Room, layar dinding versinya,
          tidak punya butir menu: ia dibuka dari tombol di halaman ini.
       */
-      { id: 'deteksi-lonjakan', label: 'Deteksi Lonjakan', ikon: 'tren', izin: 'lihat_lonjakan' },
+      // Butir Deteksi Lonjakan dicabut dari menu 10 November 2026 atas permintaan user.
+      // Halaman 'deteksi-lonjakan' dan deteksi otomatis per jam di peladen tetap berjalan.
       // Kanal negatif berdiri sendiri di menu. Isu yang merugikan institusi
       // tidak boleh dicari dulu di dalam daftar gabungan sebelum bisa dibaca.
       { id: 'negatif', label: 'Berita Negatif', ikon: 'peringatan', izin: 'lihat_dasbor', lencana: 'negatif' },
@@ -382,7 +384,8 @@ export const MENU = [
       // Berita. Isu viral yang belum tertangkap perayap adalah pekerjaan harian
       // Operator Puldata, dan pekerjaan harian tidak pantas disembunyikan di
       // dalam halaman lain.
-      { id: 'input', label: 'Input Berita', ikon: 'tambah', izin: 'buat_berita' },
+      // Butir Input Berita dicabut dari menu pusat 10 November 2026 atas permintaan user.
+      // Halaman 'input' tetap ada; ruang wilayah masih punya butir "Kirim Berita" sendiri.
       /* Antrean Telaah pindah ke Kasus Intelijen; Pemetaan UPT dan
          Sinkronisasi Sumber tidak lagi punya butir menu (23 September 2026).
          Keduanya tetap bisa dibuka dari tombol di halaman lain — lihat
@@ -417,9 +420,10 @@ export const MENU = [
   {
     grup: 'Pelaporan',
     butir: [
-      { id: 'laporan', label: 'Laporan Berkala', ikon: 'laporan', izin: 'lihat_laporan' },
+      // Butir Laporan Berkala dan Distribusi Telegram dicabut dari menu 10 November 2026
+      // atas permintaan user. Halaman 'laporan' dan 'distribusi' tetap ada; pengiriman
+      // Telegram otomatis di peladen tetap berjalan. Ruang wilayah tetap punya Laporan Berkala sendiri.
       { id: 'infografis', label: 'Lembar Infografis', ikon: 'tren', izin: 'lihat_laporan' },
-      { id: 'distribusi', label: 'Distribusi Telegram', ikon: 'kirim', izin: 'kirim_telegram' },
     ],
   },
   {

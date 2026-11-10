@@ -628,6 +628,10 @@ const SYARAT_TAMBAHAN = {
   tindak: 'lihat_tindak_lanjut',
   klarifikasi: 'lihat_penanganan',
   disposisi: 'lihat_disposisi',
+  /* Tab Tindak Lanjut di dalam Analisis Berita (10 November 2026). Hak yang
+     sama dengan Klarifikasi UPT; peran yang hanya boleh menganalisis tetapi
+     tidak menangani cukup melihat satu tab Analisis. */
+  'analisis-tindak': 'lihat_penanganan',
 }
 
 /**

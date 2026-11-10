@@ -44,6 +44,12 @@ import { sarankanTindak } from '../lib/tindak-lanjut.js'
 import {
   muatPenanganan, penangananSaatIni, buatPenanganan, infoStatus, namaKanwilPendek, TUJUAN,
 } from '../lib/penanganan.js'
+// Tindak Lanjut dibawa masuk sebagai tab di dalam Analisis Berita (permintaan
+// user 10 November 2026). Halaman Klarifikasi UPT yang sama dipakai ulang —
+// bingkai, bukan salinan — sehingga ACC/kembalikan ke UPT persis satu perilaku
+// dengan menu Tindak Lanjut yang berdiri sendiri.
+import { halamanKlarifikasi } from './penanganan.js'
+import { bingkaiTab } from '../ui/bingkai-tab.js'
 
 const pilih = {
   id: null, cari: '', kanwil: 'semua', hanyaBaru: false, sibuk: false, buka: new Set(),
@@ -429,7 +435,7 @@ function kartuBorang(keadaan, b, peta) {
   })
 }
 
-export function halamanAnalisisBerita({ keadaan, isi }) {
+function halamanAnalisisInti({ keadaan, isi }) {
   const peran = keadaan.profil?.role
   if (keadaan.fokus && keadaan.halaman === 'analisis-berita') pilih.id = keadaan.fokus
 
@@ -601,3 +607,22 @@ export function halamanAnalisisBerita({ keadaan, isi }) {
       : 'Analisis kasus per kasus untuk berita di wilayah Anda',
   }
 }
+
+/*
+ * Analisis Berita kini sebuah fitur bertab: analisis kasus per kasus, dan di
+ * sebelahnya Tindak Lanjut — antrean klarifikasi UPT tempat kanwil/pusat
+ * menilai (ACC / kembalikan dengan catatan) hasil yang diunggah UPT. Keduanya
+ * membaca arsip yang sama, jadi analis tidak perlu berpindah menu untuk
+ * menindaklanjuti berita yang baru saja ia kirim ke UPT.
+ *
+ * Tab Tindak Lanjut memakai `halamanKlarifikasi` apa adanya; haknya `lihat_
+ * penanganan` dipasang di SYARAT_TAMBAHAN (lib/peran.js), sehingga peran yang
+ * hanya boleh menganalisis tetapi tidak menangani cukup melihat satu tab.
+ */
+export const halamanAnalisisBerita = bingkaiTab({
+  nama: 'Analisis Berita',
+  tab: [
+    { id: 'analisis-berita', label: 'Analisis', ikon: 'kasus', bangun: halamanAnalisisInti },
+    { id: 'analisis-tindak', label: 'Tindak Lanjut', ikon: 'tindak', bangun: halamanKlarifikasi },
+  ],
+})

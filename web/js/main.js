@@ -127,6 +127,9 @@ const HALAMAN = {
   klarifikasi: () => import('./pages/tindak-lanjut.js').then((m) => m.halamanTindakLanjut),
   disposisi: () => import('./pages/tindak-lanjut.js').then((m) => m.halamanTindakLanjut),
   'analisis-berita': () => import('./pages/analisis-berita.js').then((m) => m.halamanAnalisisBerita),
+  // Tab Tindak Lanjut di dalam Analisis Berita — bingkai yang sama, alamat tab
+  // sendiri supaya tautan tersimpan dan tombol mendarat di tab yang tepat.
+  'analisis-tindak': () => import('./pages/analisis-berita.js').then((m) => m.halamanAnalisisBerita),
   koordinat: () => import('./pages/pengguna-data.js').then((m) => m.halamanPenggunaData),
   audit: () => import('./pages/pengguna-data.js').then((m) => m.halamanPenggunaData),
   kesehatan: () => import('./pages/pemantauan-sistem.js').then((m) => m.halamanPemantauanSistem),
@@ -296,6 +299,8 @@ const INDUK_HALAMAN = {
   jaringan: 'analisis',
   'profil-media': 'analisis',
   komando: 'analisis',
+  // Tab Tindak Lanjut menyalakan butir menu Analisis Berita.
+  'analisis-tindak': 'analisis-berita',
   telaah: 'siklus-kasus',
   kasus: 'siklus-kasus',
   aturan: 'pemantauan-sistem',

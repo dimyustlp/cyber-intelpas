@@ -24,9 +24,10 @@
 import { kartu, keping, kosong, tombol, pesanSistem, roti, ubin } from '../ui/komponen.js'
 import { amankan, angka, tanggalJam, ringkas, jarakWaktu } from '../lib/format.js'
 import { ikon } from '../lib/ikon.js'
-import { pesanRamah } from '../lib/api.js'
+import { pesanRamah, perbarui } from '../lib/api.js'
 import { KONFIG } from '../lib/konfig.js'
 import { adalahEksternal, adalahUnit } from '../lib/peran.js'
+import { KATEGORI, SEMUA_SUBKATEGORI } from '../lib/taksonomi.js'
 import {
   muatPenanganan, penangananSaatIni, galatPenanganan, infoStatus, lewatBatas, namaKanwilPendek,
   teruskanKeUpt, kirimKlarifikasi, nilaiKlarifikasi, catatDisposisi, tautanKlarifikasi, hitungPenanganan,
@@ -203,6 +204,66 @@ function kartuFormat(unit) {
 
 /* ---------------------------------------------------------- klarifikasi UPT */
 
+/**
+ * Pemilih kategori berita di form klarifikasi UPT.
+ *
+ * Permintaan user 10 November 2026: selain mengirim klarifikasi, UPT boleh
+ * sekalian membetulkan kategori beritanya. Nilainya ditulis ke berita yang sama
+ * saat klarifikasi dikirim — lewat jalur `perbarui('berita', …)` yang sama dengan
+ * revisi di Telaah, yang memang sudah diizinkan policy `berita_update_telaah_upt`
+ * untuk unit pemilik berita. Diawali nilai berjalan supaya UPT melihat
+ * klasifikasi mesin saat ini; bila tidak diubah, tidak ada penulisan.
+ */
+function pilihKategori(p) {
+  const kini = p.berita?.subkategori_kode || ''
+  const lain = [
+    ['0.1', '0.1 Belum Dikelompokkan'],
+    ['9.1', '9.1 Unit Non-Pemasyarakatan'],
+    ['9.2', '9.2 Konten Tidak Relevan'],
+  ]
+  return `
+    <label class="bidang lebar" style="margin-top:6px"><span class="label-mono">Kategori berita</span>
+      <select class="pilihan penuh" data-isian="kategori">
+        <option value="">— pilih kategori —</option>
+        ${KATEGORI.map((k) => `
+          <optgroup label="${amankan(k.kode)}. ${amankan(k.nama)}">
+            ${k.subkategori.map((s) => `<option value="${amankan(s.kode)}"${s.kode === kini ? ' selected' : ''}>${amankan(s.kode)} ${amankan(s.nama)}</option>`).join('')}
+          </optgroup>`).join('')}
+        <optgroup label="Lainnya">
+          ${lain.map(([k, l]) => `<option value="${amankan(k)}"${k === kini ? ' selected' : ''}>${amankan(l)}</option>`).join('')}
+        </optgroup>
+      </select>
+      <span class="mini-teks samar-teks">Pilih kelompok isu yang benar untuk berita ini. Tersimpan pada beritanya saat klarifikasi dikirim; biarkan apa adanya bila sudah tepat.</span>
+    </label>`
+}
+
+/**
+ * Menulis kategori pilihan UPT ke beritanya, bila memang diubah.
+ *
+ * Jalur dan pemetaan nilainya sama persis dengan revisi di Telaah
+ * (pages/wilayah-telaah.js): kode subkategori menentukan nama subkategori dan
+ * kategori induknya. Tidak menulis apa pun bila kosong atau tidak berubah.
+ * PATCH yang ditolak RLS menjawab 200 dengan daftar kosong — diperiksa supaya
+ * tidak ada yang mengira kategorinya tersimpan padahal tidak.
+ */
+async function terapkanKategori(p, kode) {
+  if (!p?.berita || !kode || kode === (p.berita.subkategori_kode || '')) return
+  const sub = SEMUA_SUBKATEGORI.find((s) => s.kode === kode)
+  const luar = kode === '9.1' || kode === '9.2'
+  const perubahan = {
+    subkategori_kode: kode,
+    subkategori: sub ? sub.nama : (kode === '0.1' ? 'Belum Dikelompokkan' : 'Konten Tidak Relevan'),
+    kategori: sub ? sub.kategoriNama : (luar ? 'Di Luar Lingkup' : 'Lainnya'),
+  }
+  if (KONFIG.mode !== 'demo') {
+    const hasil = await perbarui('berita', { id: `eq.${p.berita_id}` }, perubahan, { pilih: 'id,subkategori_kode' })
+    if (!Array.isArray(hasil) || !hasil.length) {
+      throw new Error('peran Anda tidak berhak mengubah kategori berita ini.')
+    }
+  }
+  Object.assign(p.berita, perubahan)
+}
+
 function butirKlarifikasi(p, { peran, unit, bolehKelola }) {
   const sibuk = keadaanTab.sibuk === p.id
   let aksi = ''
@@ -227,6 +288,7 @@ function butirKlarifikasi(p, { peran, unit, bolehKelola }) {
             <span class="mini-teks samar-teks">— format resmi: Laporan Insidental, Berita Acara Verifikasi Isu, Draft Tanggapan</span></summary>
           ${formulirLaporan(p)}
         </details>
+        ${pilihKategori(p)}
         <div class="sip-kisi" style="margin-top:6px">
           <label><span class="label-mono">Nama pengirim (wajib)</span>
             <input class="masukan" data-lap="pengirim" maxlength="120" value="${amankan(drafUntuk(p).pengirim || '')}" placeholder="Nama lengkap yang mengirim"></label>
@@ -385,9 +447,16 @@ function pasangPenyimak(isi, keadaan) {
       }
       if (pengirim.length < 3) { roti('Nama pengirim wajib diisi.', 'sedang'); return }
       if (jabatan.length < 2) { roti('Jabatan pengirim wajib diisi.', 'sedang'); return }
+      const kodeKat = String(ambilIsian('kategori')?.value || '').trim()
       jalankan(async () => {
         await kirimKlarifikasi(id, { berkas, pengirim, jabatan, laporan: diisi ? bersihkanLaporan(draf) : null })
         keadaanTab.draf.delete(id)
+        // Kategori ditulis sesudah klarifikasi tersimpan: bila penulisan kategori
+        // gagal, klarifikasinya tetap terkirim, dan pesannya menyebut keduanya
+        // supaya tidak terbaca seolah klarifikasinya ikut gagal.
+        try { await terapkanKategori(pTerpilih(), kodeKat) } catch (e) {
+          throw new Error(`Klarifikasi terkirim, tetapi kategori gagal disimpan: ${pesanRamah(e)}`)
+        }
       }, 'Klarifikasi terkirim. Kanwil dan pusat diberi tahu otomatis.')
     })
     wadah.querySelector('[data-aksi="terima"]')?.addEventListener('click', () => jalankan(

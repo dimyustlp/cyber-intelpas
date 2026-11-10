@@ -68,7 +68,7 @@ export async function muatPenanganan({ paksa = false } = {}) {
   simpanan.sedang = (async () => {
     try {
       simpanan.daftar = await ambil('penanganan_berita', {
-        select: '*,berita:berita_id(id,judul,media,link,nama_upt,sentimen,urgensi,created_at,tanggal_publikasi,subkategori)',
+        select: '*,berita:berita_id(id,judul,media,link,nama_upt,sentimen,urgensi,created_at,tanggal_publikasi,subkategori,subkategori_kode,kategori)',
         order: 'diperbarui_pada.desc',
       }, { jangkauan: '0-1999' }) || []
       simpanan.galat = null

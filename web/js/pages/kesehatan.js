@@ -410,7 +410,6 @@ export function halamanKesehatan({ keadaan, isi }) {
           ${kartu({
             judul: 'Pengiriman Telegram terakhir',
             ket: 'Delapan pengiriman terbaru.',
-            aksi: tombol({ label: 'Buka Distribusi', ikon: 'kirim', kecil: true, halaman: 'distribusi' }),
             isi: kiriman.length ? `
               <ul class="siklus-daftar">
                 ${kiriman.slice(0, 8).map((k) => `

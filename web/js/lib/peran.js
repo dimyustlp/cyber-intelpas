@@ -420,9 +420,11 @@ export const MENU = [
   {
     grup: 'Pelaporan',
     butir: [
-      // Butir Laporan Berkala dan Distribusi Telegram dicabut dari menu 10 November 2026
-      // atas permintaan user. Halaman 'laporan' dan 'distribusi' tetap ada; pengiriman
-      // Telegram otomatis di peladen tetap berjalan. Ruang wilayah tetap punya Laporan Berkala sendiri.
+      // Butir Laporan Berkala dicabut dari menu 10 November 2026; halaman 'laporan' tetap ada.
+      // Fitur Distribusi Telegram dihapus seluruhnya dari situs 10 November 2026 atas permintaan
+      // user (halaman, pustaka penyusun pesan, dan tombol penujunya). Notifikasi keamanan ke
+      // pemilik (login, perubahan hak akses) TIDAK termasuk — itu subsistem lain yang tetap jalan.
+      // Ruang wilayah tetap punya Laporan Berkala sendiri.
       { id: 'infografis', label: 'Lembar Infografis', ikon: 'tren', izin: 'lihat_laporan' },
     ],
   },

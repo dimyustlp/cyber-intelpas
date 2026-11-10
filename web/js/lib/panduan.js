@@ -215,14 +215,6 @@ const PUSAT = {
     catatan: 'Seluruhnya digambar di dalam peramban. Tidak ada nama unit atau judul berita '
       + 'yang dikirim ke peladen mana pun untuk dirender.',
   },
-  distribusi: {
-    isi: 'Pratinjau pesan dan lampiran yang akan dikirim, daftar grup yang akan menerima, '
-      + 'tombol kirim, dan riwayat seluruh pengiriman beserta sebab kegagalannya.',
-    guna: 'Tempat laporan dan peringatan dikirim ke grup Telegram.',
-    catatan: 'Pengiriman selalu melalui pratinjau, menyebutkan tujuannya, dan tercatat. '
-      + 'Ketiga syarat ini menutup cacat sistem lama yang pernah mengirim dua berita yang '
-      + 'tidak pernah terjadi.',
-  },
   'siklus-kasus': {
     isi: 'Dua tab berurutan: Antrean Telaah, tempat penilaian mesin atas tiap berita '
       + 'disetujui atau dikoreksi, dan Kasus Intelijen, tempat berita yang perlu '

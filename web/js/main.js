@@ -93,7 +93,6 @@ const HALAMAN = {
   laporan: () => import('./pages/laporan.js').then((m) => m.halamanLaporan),
   infografis: () => import('./pages/infografis.js').then((m) => m.halamanInfografis),
   integrasi: () => import('./pages/pengguna-data.js').then((m) => m.halamanPenggunaData),
-  distribusi: () => import('./pages/distribusi.js').then((m) => m.halamanDistribusi),
   telaah: () => import('./pages/siklus-kasus.js').then((m) => m.halamanSiklusKasus),
   pemetaan: () => import('./pages/pemetaan.js').then((m) => m.halamanPemetaan),
   peta: () => import('./pages/peta.js').then((m) => m.halamanPeta),

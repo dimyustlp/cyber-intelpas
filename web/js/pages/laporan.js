@@ -534,14 +534,7 @@ export function halamanLaporan({ keadaan, isi }) {
            seorang pun menyadari selisihnya.
         */
         aksi: `${tombol({ label: 'Buka', ikon: 'tautan', aksi: 'buka-laporan' })}
-               ${tombol({ label: 'Unduh HTML', ikon: 'unduh', aksi: 'unduh-laporan', nonaktif: !penandaan.setuju })}
-               ${tombol({
-                 label: 'Kirim lewat Telegram',
-                 ikon: 'kirim',
-                 gaya: 'utama',
-                 halaman: 'distribusi',
-                 judul: 'Membuka Distribusi Telegram, tempat pesan disusun dan dipratinjau sebelum dikirim',
-               })}`,
+               ${tombol({ label: 'Unduh HTML', ikon: 'unduh', aksi: 'unduh-laporan', nonaktif: !penandaan.setuju })}`,
         isi: `
           <p class="kecil-teks">
             Berkas dapat dibuka di peramban mana pun tanpa sambungan internet, dan dicetak menjadi

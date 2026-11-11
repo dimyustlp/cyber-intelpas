@@ -312,7 +312,7 @@ export function halamanDasbor({ keadaan, isi }) {
         })}
       </div>
 
-      ${kartuUnitNegatif(unitNegatifTerbaru(semua))}
+      ${kartuUnitNegatif({ ...unitNegatifTerbaru(semua), keBerita })}
 
       ${barisRekonsiliasi(r, keadaan, bulan, semua.length)}
 
@@ -495,7 +495,10 @@ function pasangCariUpt(isi, semua, wilayah, keBerita = 'berita') {
         const sel = bisaBuka
           ? `<button class="tbl-tautan" data-halaman="${amankan(keBerita)}" data-saring="${amankan(JSON.stringify({ cari: u.nama_upt }))}" title="Lihat berita unit ini">${amankan(u.nama_upt)}</button>`
           : amankan(u.nama_upt)
-        return `<tr><td>${sel}</td><td>${amankan(u.kanwil || '-')}</td><td>${h.total}</td><td>${h.negatif}</td></tr>`
+        const atrBaris = bisaBuka
+          ? ` data-halaman="${amankan(keBerita)}" data-saring="${amankan(JSON.stringify({ cari: u.nama_upt }))}" title="Lihat berita unit ini"`
+          : ''
+        return `<tr${atrBaris}><td>${sel}</td><td>${amankan(u.kanwil || '-')}</td><td>${h.total}</td><td>${h.negatif}</td></tr>`
       }).join('')}</tbody></table>
       <div class="mini-teks samar-teks" style="margin-top:6px">Tekan nama unit untuk membuka beritanya.</div>`
       : `<span class="samar-teks">Tidak ada UPT${wilayah ? ' di wilayah ini' : ''} yang cocok.</span>`
@@ -625,7 +628,7 @@ function garisKeadaan(mendesak, belumTelaah, takTerpetakan) {
  * Unit yang diberitakan negatif dalam 24 jam terakhir (lib/unit-negatif-terbaru.js).
  * Tidak mengikuti pemilih bulan: yang ditanyakan adalah keadaan sekarang.
  */
-function kartuUnitNegatif({ unit, tanpaUnit, totalBerita, jendelaJam }) {
+function kartuUnitNegatif({ unit, tanpaUnit, totalBerita, jendelaJam, keBerita = 'berita' }) {
   const tampil = unit.slice(0, 8)
   const catatan = [
     unit.length > tampil.length ? `${angka(unit.length - tampil.length)} unit lain tidak ditampilkan.` : '',
@@ -648,8 +651,9 @@ function kartuUnitNegatif({ unit, tanpaUnit, totalBerita, jendelaJam }) {
           </tr></thead>
           <tbody>
             ${tampil.map((u) => `
-              <tr>
-                <td style="font-weight:550">${amankan(u.nama)}</td>
+              <tr data-halaman="${amankan(keBerita)}" data-saring="${amankan(JSON.stringify({ cari: u.nama }))}"
+                  title="Lihat berita unit ini">
+                <td style="font-weight:550"><span class="tbl-tautan">${amankan(u.nama)}</span></td>
                 <td class="angka rata-kanan">${angka(u.jumlah)}</td>
                 <td>${u.urgensi ? keping(u.urgensi, nadaUrgensi(u.urgensi), true) : '—'}</td>
                 <td><span class="judul-sel">${amankan(ringkas(u.contoh?.judul || 'Tanpa judul', 110))}</span>
@@ -718,7 +722,8 @@ function tabelUpt(berita, keBerita = 'berita') {
       <thead><tr><th>UPT</th><th style="width:62px" class="rata-kanan">Total</th><th style="width:72px" class="rata-kanan">Negatif</th><th style="width:76px" class="rata-kanan">Mendesak</th></tr></thead>
       <tbody>
         ${daftar.map((u) => `
-          <tr>
+          <tr data-halaman="${amankan(keBerita)}" data-saring="${amankan(JSON.stringify({ cari: u.nama }))}"
+              title="Lihat berita unit ini">
             <td style="font-weight:550"><button class="tbl-tautan" data-halaman="${amankan(keBerita)}"
               data-saring="${amankan(JSON.stringify({ cari: u.nama }))}"
               title="Lihat berita unit ini">${amankan(u.nama)}</button></td>

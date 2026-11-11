@@ -44,20 +44,25 @@ export function bukaDetailDaerah(b) {
     (b.nama_upt && !/belum|tidak|^-?$/i.test(String(b.nama_upt))) ? amankan(b.nama_upt) : '',
   ].filter(Boolean).join(' <span class="pemisah">·</span> ')
 
-  const putusan = b.telaah_wilayah_status && b.telaah_wilayah_status !== 'Belum Ditelaah'
-    ? b.telaah_wilayah_status : null
-
-  const blokTelaah = (putusan || b.telaah_wilayah_catatan) ? `
+  /* Dua lapis putusan daerah (migrasi 20261111120000), ditampilkan berdampingan. */
+  const blokLapis = (judul, awalan) => {
+    const st = b[`${awalan}_status`]
+    const putusan = st && st !== 'Belum Ditelaah' ? st : null
+    const catatan = b[`${awalan}_catatan`]
+    if (!putusan && !catatan) return ''
+    return `
     <div class="tanggapan-tersimpan">
       <div class="baris gap-6">
-        <span class="label-mono">Telaah wilayah</span>
+        <span class="label-mono">${judul}</span>
         ${putusan ? keping(putusan, 'aksen', true) : ''}
         <span class="mini-teks samar-teks">
-          ${amankan(b.telaah_wilayah_oleh || '')}${b.telaah_wilayah_pada ? ` · ${amankan(jarakWaktu(b.telaah_wilayah_pada))}` : ''}
+          ${amankan(b[`${awalan}_oleh`] || '')}${b[`${awalan}_pada`] ? ` · ${amankan(jarakWaktu(b[`${awalan}_pada`]))}` : ''}
         </span>
       </div>
-      ${b.telaah_wilayah_catatan ? `<p class="mini-teks">${amankan(b.telaah_wilayah_catatan)}</p>` : ''}
-    </div>` : ''
+      ${catatan ? `<p class="mini-teks">${amankan(catatan)}</p>` : ''}
+    </div>`
+  }
+  const blokTelaah = blokLapis('Telaah UPT', 'telaah_upt') + blokLapis('Telaah kanwil', 'telaah_wilayah')
 
   const blokTanggapan = (b.tanggapan_sikap || b.tanggapan_upt) ? `
     <div class="tanggapan-tersimpan">

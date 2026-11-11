@@ -32,11 +32,20 @@ import { perbarui, pesanRamah } from '../lib/api.js'
 import { KATEGORI, SEMUA_SUBKATEGORI } from '../lib/taksonomi.js'
 import { KONFIG } from '../lib/konfig.js'
 import { EMBER, ember, nilaiSimpan } from '../lib/sentimen.js'
-import { menungguTelaahWilayah, TELAAH_WILAYAH, SIKAP_TANGGAPAN, dasar } from '../lib/hitung.js'
+import { menungguTelaahLapis, lapisTelaah, TELAAH_WILAYAH, SIKAP_TANGGAPAN, dasar } from '../lib/hitung.js'
 import { punyaIzin, adalahUnit } from '../lib/peran.js'
 import { belumTerpetakan } from '../lib/unit-terpetakan.js'
 
 const URGENSI = ['Rendah', 'Sedang', 'Tinggi', 'Kritis']
+
+/*
+   Lapis kolom putusan untuk ruang yang sedang dibuka: 'telaah_wilayah' bagi
+   kantor wilayah, 'telaah_upt' bagi petugas unit (migrasi 20261111120000).
+   Ditetapkan setiap kali halaman dibuka. Semula kedua ruang menulis ke kolom
+   yang sama, sehingga putusan kanwil mengosongkan antrean UPT.
+*/
+let KOL = 'telaah_wilayah'
+let UNIT = false
 
 /** Putusan yang tidak menuntut formulir apa pun — satu tekan, selesai. */
 const PUTUSAN_LANGSUNG = ['Sesuai', 'Bukan Unit Kami', 'Perlu Perhatian']
@@ -64,7 +73,7 @@ function susunAntrean(berita) {
   const peringkat = { Kritis: 4, Tinggi: 3, Sedang: 2, Rendah: 1 }
   return berita
     .filter((b) => !keadaanTelaah.selesai.has(b.id))
-    .filter(menungguTelaahWilayah)
+    .filter((b) => menungguTelaahLapis(b, UNIT))
     .sort((a, b) => {
       const u = (peringkat[b.urgensi] || 0) - (peringkat[a.urgensi] || 0)
       if (u) return u
@@ -81,11 +90,11 @@ const JENDELA_REVISI_MS = 24 * 60 * 60 * 1000
 const STATUS_PUTUSAN = ['Sesuai', 'Direvisi', 'Bukan Unit Kami', 'Perlu Perhatian']
 
 function awalPutusan(b) {
-  return Date.parse(b.telaah_wilayah_putusan_pertama || b.telaah_wilayah_pada) || 0
+  return Date.parse(b[`${KOL}_putusan_pertama`] || b[`${KOL}_pada`]) || 0
 }
 
 function dapatDirevisi(b) {
-  return STATUS_PUTUSAN.includes(b.telaah_wilayah_status)
+  return STATUS_PUTUSAN.includes(b[`${KOL}_status`])
     && Date.now() - awalPutusan(b) < JENDELA_REVISI_MS
 }
 
@@ -231,7 +240,7 @@ function panelRevisi(b) {
       <div class="isian">
         <label for="w-catatan">Alasan revisi <span class="wajib">wajib</span></label>
         <textarea class="masukan" id="w-catatan" rows="3"
-          placeholder="Apa yang keliru dari penilaian mesin, dan atas dasar apa?">${amankan(b.telaah_wilayah_catatan || '')}</textarea>
+          placeholder="Apa yang keliru dari penilaian mesin, dan atas dasar apa?">${amankan(b[`${KOL}_catatan`] || '')}</textarea>
         <div class="ket">
           Catatan ini dibaca analis pusat sebelum ia memutuskan, dan dipakai memperbaiki mesin.
           Menuliskan “salah” tanpa menyebut apa yang salah tidak menolong siapa pun.
@@ -298,6 +307,8 @@ function tanggapanTersimpan(b) {
 export function halamanWilayahTelaah({ keadaan, isi }) {
   const peran = keadaan.profil?.role
   const unit = adalahUnit(peran)
+  UNIT = unit
+  KOL = lapisTelaah(unit)
   const bolehTanggapi = punyaIzin(peran, 'tanggapi_berita_unit')
   const nama = unit
     ? (keadaan.profil?.assigned_upt || null)
@@ -330,7 +341,7 @@ export function halamanWilayahTelaah({ keadaan, isi }) {
           ${daftar.map((b) => `
             <li style="display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap">
               <span>${amankan(ringkas(b.judul || '(tanpa judul)', 90))}
-                <span class="mini-teks samar-teks">· ${amankan(b.telaah_wilayah_status)} · ${amankan(sisaRevisi(b))}</span></span>
+                <span class="mini-teks samar-teks">· ${amankan(b[`${KOL}_status`])} · ${amankan(sisaRevisi(b))}</span></span>
               <button type="button" class="tbl kecil" data-revisi-id="${amankan(b.id)}">Revisi penilaian</button>
             </li>`).join('')}
         </ul>`,
@@ -343,7 +354,7 @@ export function halamanWilayahTelaah({ keadaan, isi }) {
       <div class="tumpuk">
         ${kartu({
           judul: 'Revisi penilaian',
-          ket: `Putusan saat ini: ${amankan(b.telaah_wilayah_status)} · boleh direvisi ${amankan(sisaRevisi(b))}`,
+          ket: `Putusan saat ini: ${amankan(b[`${KOL}_status`])} · boleh direvisi ${amankan(sisaRevisi(b))}`,
           isi: `
             <article class="telaah-berita">
               <h3>${amankan(b.judul || '(tanpa judul)')}</h3>
@@ -558,8 +569,8 @@ export function halamanWilayahTelaah({ keadaan, isi }) {
   /** Penanda putusan yang selalu ikut, apa pun putusannya. */
   function jejak() {
     return {
-      telaah_wilayah_oleh: keadaan.profil?.username || keadaan.profil?.full_name || null,
-      telaah_wilayah_pada: new Date().toISOString(),
+      [`${KOL}_oleh`]: keadaan.profil?.username || keadaan.profil?.full_name || null,
+      [`${KOL}_pada`]: new Date().toISOString(),
     }
   }
 
@@ -585,7 +596,7 @@ export function halamanWilayahTelaah({ keadaan, isi }) {
 
     keadaanTelaah.putusan[kode] += 1
     await tulis(b, {
-      telaah_wilayah_status: kode,
+      [`${KOL}_status`]: kode,
       ...jejak(),
     }, `Putusan “${kode}” tersimpan.`)
   }
@@ -619,8 +630,8 @@ export function halamanWilayahTelaah({ keadaan, isi }) {
       // nilai itu.
       sentimen: nilaiSimpan(emberDipilih, b.sentimen),
       urgensi: isi.querySelector('#w-urgensi')?.value,
-      telaah_wilayah_status: 'Direvisi',
-      telaah_wilayah_catatan: catatan,
+      [`${KOL}_status`]: 'Direvisi',
+      [`${KOL}_catatan`]: catatan,
       ...jejak(),
     }, 'Revisi tersimpan.', { keluarAntrean: !dariRevisi })
   }

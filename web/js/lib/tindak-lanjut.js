@@ -177,7 +177,8 @@ export function sarankanMesin(b, media = 1) {
   const urgensi = PERINGKAT_URGENSI[b.urgensi] || 1
   const konfirm = terkonfirmasi(b, media)
   const sikap = b.tanggapan_sikap
-  const telaah = b.telaah_wilayah_status
+  // Putusan kanwil lebih dulu; bila belum ada, putusan UPT (migrasi 20261111120000).
+  const telaah = b.telaah_wilayah_status || b.telaah_upt_status
   const alasan = []
 
   // 1. Isu yang kabarnya sendiri keliru.

@@ -76,6 +76,7 @@ const KOLOM_LENGKAP = 'id,judul,nama_upt,kanwil_asal,provinsi,media,platform,lin
   + 'ai_alasan,ai_classified_at,ai_reviewed_by,ai_reviewed_at,review_note,'
   + 'verified_by,verified_at,nama_petugas,created_by,status_baca,dampak,'
   + 'telaah_wilayah_status,telaah_wilayah_oleh,telaah_wilayah_pada,telaah_wilayah_catatan,'
+  + 'telaah_upt_status,telaah_upt_oleh,telaah_upt_pada,telaah_upt_catatan,'
   + 'tanggapan_sikap,tanggapan_upt,tanggapan_oleh,tanggapan_pada'
 
 /** Baris lengkap yang sudah pernah diambil, supaya kembali ke halaman ini cepat. */
@@ -240,6 +241,7 @@ function panelMutu(b) {
 
 function panelTelaah(b) {
   const putusanWilayah = TELAAH_WILAYAH.find((t) => t.kode === b.telaah_wilayah_status)
+  const putusanUpt = TELAAH_WILAYAH.find((t) => t.kode === b.telaah_upt_status)
   const sikap = SIKAP_TANGGAPAN.find((s) => s.kode === b.tanggapan_sikap)
 
   return `
@@ -258,12 +260,19 @@ function panelTelaah(b) {
            Menyatukan keduanya berarti sebuah unit bisa menghapus berita
            tentang dirinya sendiri dari angka nasional.
         */''}
-      ${baris('Telaah daerah', putusanWilayah
+      ${baris('Telaah UPT', putusanUpt
+        ? keping(putusanUpt.kode, putusanUpt.nada, true)
+        : `<span class="samar-teks">Belum ditelaah UPT</span>`)}
+      ${b.telaah_upt_oleh ? baris('Ditelaah UPT oleh',
+        `${teks(b.telaah_upt_oleh)}<span class="mini-teks samar-teks"> · ${amankan(tanggalJam(b.telaah_upt_pada))}</span>`) : ''}
+      ${b.telaah_upt_catatan ? baris('Catatan UPT', teks(b.telaah_upt_catatan)) : ''}
+
+      ${baris('Telaah kanwil', putusanWilayah
         ? keping(putusanWilayah.kode, putusanWilayah.nada, true)
-        : `<span class="samar-teks">Belum ditelaah daerah</span>`)}
-      ${b.telaah_wilayah_oleh ? baris('Ditelaah oleh',
+        : `<span class="samar-teks">Belum ditelaah kanwil</span>`)}
+      ${b.telaah_wilayah_oleh ? baris('Ditelaah kanwil oleh',
         `${teks(b.telaah_wilayah_oleh)}<span class="mini-teks samar-teks"> · ${amankan(tanggalJam(b.telaah_wilayah_pada))}</span>`) : ''}
-      ${b.telaah_wilayah_catatan ? baris('Catatan daerah', teks(b.telaah_wilayah_catatan)) : ''}
+      ${b.telaah_wilayah_catatan ? baris('Catatan kanwil', teks(b.telaah_wilayah_catatan)) : ''}
 
       ${baris('Sikap resmi unit', sikap
         ? keping(sikap.kode, sikap.nada, true)

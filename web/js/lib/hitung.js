@@ -67,9 +67,34 @@ export const SIKAP_TANGGAPAN = [
  * pusat menentukan angka, bukan menutup mulut daerah.
  */
 export function menungguTelaahWilayah(b) {
+  return menungguTelaahLapis(b, false)
+}
+
+/*
+   Dua lapis putusan daerah (migrasi 20261111120000). Kantor wilayah menulis ke
+   telaah_wilayah_*, petugas UPT ke telaah_upt_*. Semula keduanya berbagi satu
+   kolom, sehingga putusan kanwil mengosongkan antrean UPT dan sebaliknya.
+*/
+
+/** Awalan nama kolom putusan untuk ruang yang sedang dibuka. */
+export function lapisTelaah(unit) {
+  return unit ? 'telaah_upt' : 'telaah_wilayah'
+}
+
+/** Putusan yang sudah ditetapkan pada satu lapis, atau null. */
+export function putusanTelaah(b, unit = false) {
+  const s = b?.[`${lapisTelaah(unit)}_status`]
+  return s && s !== 'Belum Ditelaah' ? s : null
+}
+
+/** Menunggu telaah pada lapis ruang yang sedang dibuka. */
+export function menungguTelaahLapis(b, unit = false) {
   if (!b || diLuarLingkup(b) || dikecualikan(b)) return false
-  const s = b.telaah_wilayah_status
-  return !s || s === 'Belum Ditelaah'
+  return !putusanTelaah(b, unit)
+}
+
+export function menungguTelaahUnit(b) {
+  return menungguTelaahLapis(b, true)
 }
 
 /** Berita yang sudah dinyatakan sikapnya oleh unit yang bersangkutan. */
@@ -183,7 +208,7 @@ export function dasar(daftar = []) {
  * mustahil ada halaman yang memakai lima di antaranya lalu menghitung sendiri
  * yang keenam.
  */
-export function ringkasan(daftar = [], sekarang = new Date()) {
+export function ringkasan(daftar = [], sekarang = new Date(), { unit = false } = {}) {
   const semua = daftar || []
   const inti = dasar(semua)
 
@@ -213,7 +238,7 @@ export function ringkasan(daftar = [], sekarang = new Date()) {
     /* Antrean ruang wilayah dan ruang unit. Dihitung dari himpunan dasar yang
        sama seperti antrean pusat, supaya kedua angka selalu bisa dibandingkan
        tanpa seorang pun perlu menerka definisinya. */
-    antreanWilayah: inti.filter(menungguTelaahWilayah),
+    antreanWilayah: inti.filter((b) => menungguTelaahLapis(b, unit)),
     ditanggapi: inti.filter(sudahDitanggapi),
 
     hariIni: inti.filter((b) => tanggalIso(b.created_at) === hariIniIso),
@@ -233,8 +258,8 @@ export function ringkasan(daftar = [], sekarang = new Date()) {
  * (kerangka layar, bukan halaman), tetapi aturannya dipinjam utuh dari sana —
  * tidak ada satu pun penyaring yang ditulis ulang di berkas main.js.
  */
-export function lencana(daftar = []) {
-  const r = ringkasan(daftar)
+export function lencana(daftar = [], { unit = false } = {}) {
+  const r = ringkasan(daftar, new Date(), { unit })
   return {
     peringatan: r.mendesak.length,
     telaah: r.antrean.length,

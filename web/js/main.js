@@ -1045,6 +1045,8 @@ const KOLOM_BERITA = 'id,judul,nama_upt,kanwil_asal,media,platform,link,created_
   + 'tier_media,tanggapan_sikap,telaah_wilayah_status,'
   // Untuk jendela 24 jam revisi telaah (migrasi 20261111100000).
   + 'telaah_wilayah_putusan_pertama,telaah_wilayah_pada,telaah_wilayah_oleh,telaah_wilayah_catatan,'
+  // Lapis putusan UPT, terpisah dari kanwil (migrasi 20261111120000).
+  + 'telaah_upt_status,telaah_upt_putusan_pertama,telaah_upt_pada,telaah_upt_oleh,telaah_upt_catatan,'
   // Penanda kanwil hasil dugaan (migrasi 20261104030000), dibaca lib/wilayah-berita.js
   // dan keping "wilayah terduga" di halaman kanwil.
   + 'kanwil_terduga,kanwil_dasar'
@@ -1138,7 +1140,7 @@ export function hitungUlang() {
   keadaan.luarLingkup = keadaan.berita.length - keadaan.dalamLingkup.length
   // Lencana Tindak Lanjut dihitung dari tabel penanganan, bukan dari berita;
   // nilainya dipertahankan sampai pemuatan berikutnya selesai.
-  keadaan.hitungan = { ...lencana(keadaan.berita), penanganan: keadaan.hitungan?.penanganan || 0 }
+  keadaan.hitungan = { ...lencana(keadaan.berita, { unit: adalahUnit(keadaan.profil?.role) }), penanganan: keadaan.hitungan?.penanganan || 0 }
 }
 
 /**

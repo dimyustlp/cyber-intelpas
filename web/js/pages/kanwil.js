@@ -28,7 +28,7 @@ import {
 } from '../lib/format.js'
 import { ikon } from '../lib/ikon.js'
 import {
-  ringkasan, menungguTelaahWilayah, sudahDitanggapi, deretEmpatBelasHari,
+  ringkasan, menungguTelaahLapis, putusanTelaah, sudahDitanggapi, deretEmpatBelasHari,
   TELAAH_WILAYAH, SIKAP_TANGGAPAN,
 } from '../lib/hitung.js'
 import { ember, EMBER, BELUM } from '../lib/sentimen.js'
@@ -55,9 +55,18 @@ function selUnit(b) {
 
 /* ------------------------------------------------------------- perkakas */
 
+/*
+   Lapis putusan telaah yang dibaca halaman ini: kolom kanwil atau kolom UPT
+   (migrasi 20261111120000). Ditetapkan oleh cakupan() di awal setiap halaman.
+*/
+let LAPIS_UNIT = false
+const menunggu = (b) => menungguTelaahLapis(b, LAPIS_UNIT)
+const putusan = (b) => putusanTelaah(b, LAPIS_UNIT)
+
 /** Cakupan yang sedang dibuka, apa adanya dari profil. */
 function cakupan(keadaan) {
   const unit = adalahUnit(keadaan.profil?.role)
+  LAPIS_UNIT = unit
   return {
     unit,
     nama: unit ? (keadaan.profil?.assigned_upt || null) : (keadaan.profil?.assigned_kanwil || null),
@@ -194,10 +203,10 @@ function pasangBagan(berita, r) {
 
 export function halamanKanwilDasbor({ keadaan, isi }) {
   const c = cakupan(keadaan)
-  const r = ringkasan(keadaan.berita || [])
+  const r = ringkasan(keadaan.berita || [], new Date(), { unit: c.unit })
   const bolehTelaah = punyaIzin(keadaan.profil?.role, 'telaah_wilayah')
 
-  const ditelaahWilayah = r.inti.filter((b) => !menungguTelaahWilayah(b))
+  const ditelaahWilayah = r.inti.filter((b) => !menunggu(b))
   const milikSendiri = r.inti.filter((b) => b.created_by === keadaan.profil?.username)
   const negatifTanpaTanggapan = r.negatif.filter((b) => !sudahDitanggapi(b))
 
@@ -380,7 +389,7 @@ async function pasangLembarKanwil(kanwil) {
 
 export function halamanUptDasbor({ keadaan, isi }) {
   const c = cakupan(keadaan)
-  const r = ringkasan(keadaan.berita || [])
+  const r = ringkasan(keadaan.berita || [], new Date(), { unit: c.unit })
 
   const belumDitanggapi = r.inti.filter((b) => !sudahDitanggapi(b))
   const negatifBelumDitanggapi = r.negatif.filter((b) => !sudahDitanggapi(b))
@@ -521,7 +530,7 @@ function rekapWilayah(berita) {
       total: sub.length,
       negatif: sub.filter((b) => ember(b) === 'negatif').length,
       mendesak: sub.filter((b) => ['Tinggi', 'Kritis'].includes(b.urgensi)).length,
-      ditelaah: sub.filter((b) => b.telaah_wilayah_status && b.telaah_wilayah_status !== 'Belum Ditelaah').length,
+      ditelaah: sub.filter((b) => putusan(b)).length,
     }
   })
 
@@ -564,7 +573,7 @@ function tabelUnit(berita) {
     p.total += 1
     if (ember(b) === 'negatif') p.negatif += 1
     if (['Tinggi', 'Kritis'].includes(b.urgensi)) p.mendesak += 1
-    if (menungguTelaahWilayah(b)) p.menunggu += 1
+    if (menunggu(b)) p.menunggu += 1
     peta.set(b.nama_upt, p)
   }
 
@@ -695,8 +704,8 @@ export function halamanWilayahBerita({ keadaan, isi }) {
   const daftar = dasarDaftar
     .filter((b) => saring.telaah.startsWith('Semua')
       || (saring.telaah === 'Belum Ditelaah'
-        ? menungguTelaahWilayah(b)
-        : b.telaah_wilayah_status === saring.telaah))
+        ? menunggu(b)
+        : putusan(b) === saring.telaah))
     .filter((b) => saring.sentimen === 'semua' || ember(b) === saring.sentimen)
     .filter((b) => saring.periode !== 'hari-ini' || tanggalIso(b.created_at) === hariIniIso)
     .filter((b) => !saring.mendesak || ['Tinggi', 'Kritis'].includes(b.urgensi))
@@ -715,8 +724,8 @@ export function halamanWilayahBerita({ keadaan, isi }) {
       return String(b.created_at || '').localeCompare(String(a.created_at || ''))
     })
 
-  const menunggu = dasarDaftar.filter(menungguTelaahWilayah)
-  const ditelaah = dasarDaftar.filter((b) => b.telaah_wilayah_status && b.telaah_wilayah_status !== 'Belum Ditelaah')
+  const menungguDaftar = dasarDaftar.filter(menunggu)
+  const ditelaah = dasarDaftar.filter((b) => putusan(b))
   const ditanggapi = dasarDaftar.filter(sudahDitanggapi)
 
   isi.innerHTML = `
@@ -732,8 +741,8 @@ export function halamanWilayahBerita({ keadaan, isi }) {
         })}
         ${ubin({
           label: 'Menunggu telaah Anda',
-          nilai: menunggu.length,
-          nada: menunggu.length ? 'sedang' : 'positif',
+          nilai: menungguDaftar.length,
+          nada: menungguDaftar.length ? 'sedang' : 'positif',
           kaki: 'belum dinilai daerah',
         })}
         ${ubin({
@@ -902,9 +911,8 @@ function tabelBerita(daftar) {
       </tr></thead>
       <tbody>
         ${daftar.map((b) => {
-          const putusan = b.telaah_wilayah_status && b.telaah_wilayah_status !== 'Belum Ditelaah'
-            ? b.telaah_wilayah_status : null
-          const nada = TELAAH_WILAYAH.find((t) => t.kode === putusan)?.nada || 'rendah'
+          const putusanIni = putusan(b)
+          const nada = TELAAH_WILAYAH.find((t) => t.kode === putusanIni)?.nada || 'rendah'
           return `
           <tr>
             <td>
@@ -918,7 +926,7 @@ function tabelBerita(daftar) {
             </td>
             <td class="kecil">${selUnit(b)}</td>
             <td>${keping(b.sentimen || 'Belum dinilai', nadaSentimen(b.sentimen), true)}</td>
-            <td>${keping(putusan || 'Belum ditelaah', nada, true)}</td>
+            <td>${keping(putusanIni || 'Belum ditelaah', nada, true)}</td>
             <td>${keping(b.status_verifikasi || 'Belum Ditelaah', nadaStatus(b.status_verifikasi), true)}</td>
             <td class="angka kecil" title="${amankan(tanggalJam(b.created_at))}">${amankan(jarakWaktu(b.created_at))}</td>
           </tr>`

@@ -49,6 +49,7 @@ import { ambil, pesanRamah } from '../lib/api.js'
 import { KERAWANAN, tingkatKerawanan, dasar } from '../lib/hitung.js'
 import { ember } from '../lib/sentimen.js'
 import { belumTerpetakan } from '../lib/unit-terpetakan.js'
+import { adalahEksternal } from '../lib/peran.js'
 import { BATAS, DARATAN, TETANGGA } from '../lib/peta-indonesia.js'
 import { kurangiGerak } from '../lib/gerak.js'
 
@@ -110,6 +111,8 @@ const keadaanPeta = {
   cari: '',
   /** Unit yang sedang dibuka pada panel samping. */
   dipilih: null,
+  /** Halaman berita tujuan tombol "Lihat semua berita": pusat atau wilayah. */
+  keBerita: 'berita',
   /** Kotak pandang SVG: [x, y, lebar, tinggi] dalam derajat. */
   pandang: null,
   /** Mekar barat-ke-timur hanya sekali, pada tampilan pertama sesudah data sampai. */
@@ -447,7 +450,11 @@ function panelUnit(u) {
                 ${amankan(b.media || '')} · ${amankan(jarakWaktu(b.created_at))}
               </span>
             </li>`).join('')}
-        </ul>`
+        </ul>
+        <button class="tbl kecil utama" style="margin-top:10px"
+                data-halaman="${amankan(keadaanPeta.keBerita)}"
+                data-saring="${amankan(JSON.stringify({ cari: u.nama }))}"
+                title="Buka daftar berita unit ini">${ikon('berita')}Lihat semua berita unit ini (${angka(inti.length)})</button>`
         : `<p class="ket" style="margin-top:12px">Belum ada berita yang terpetakan ke unit ini.
            Titiknya tetap digambar — sebuah unit yang tidak pernah diberitakan bukan unit yang
            tidak ada.</p>`}
@@ -478,6 +485,7 @@ function panelUnit(u) {
  */
 export function halamanPeta({ keadaan, isi, tertanam = false }) {
   if (!keadaanPeta.pandang) keadaanPeta.pandang = PANDANG_AWAL()
+  keadaanPeta.keBerita = adalahEksternal(keadaan.profil?.role) ? 'wilayah-berita' : 'berita'
 
   // Mekarnya diulang setiap kali halaman ini dibuka, tetapi tidak pada
   // penggambaran ulang di dalamnya. Membuka halaman berarti petanya memang baru

@@ -680,7 +680,8 @@ export function halamanWilayahBerita({ keadaan, isi }) {
     saring.periode = m.hariIni ? 'hari-ini' : 'semua'
     saring.mendesak = !!m.mendesak
     if (m.sentimen) saring.sentimen = m.sentimen
-    if (m.hariIni || m.mendesak || m.sentimen) { saring.telaah = 'Semua putusan'; saring.lingkup = 'semua' }
+    if (m.cari) saring.cari = m.cari
+    if (m.hariIni || m.mendesak || m.sentimen || m.cari) { saring.telaah = 'Semua putusan'; saring.lingkup = 'semua' }
   }
 
   const semua = (keadaan.berita || []).filter((b) => !b.deleted_at)

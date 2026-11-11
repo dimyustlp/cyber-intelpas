@@ -5082,6 +5082,20 @@ table.tabel button.judul-buka {
 }
 table.tabel button.judul-buka:hover { color: var(--accent); text-decoration: underline; }
 
+/* Nama unit yang bisa ditekan untuk membuka beritanya (dasbor dan peta). */
+.tbl-tautan {
+  background: none;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.tbl-tautan:hover,
+.tbl-tautan:focus-visible { color: var(--accent); text-decoration: underline; }
+
 .detail-kepala { display: flex; flex-direction: column; gap: 12px; padding: 4px 2px; }
 .detail-lencana { display: flex; flex-wrap: wrap; gap: 6px; }
 

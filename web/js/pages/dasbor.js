@@ -378,7 +378,7 @@ export function halamanDasbor({ keadaan, isi }) {
           judul: 'UPT paling banyak disorot',
           ket: `${uptTerdampak.size} UPT muncul pada ${bulan.label}`,
           rapat: true,
-          isi: tabelUpt(berita),
+          isi: tabelUpt(berita, keBerita),
         })}
         ${kartu({
           judul: 'Asal data',
@@ -436,7 +436,7 @@ export function halamanDasbor({ keadaan, isi }) {
      dan sudah berapa kali diberitakan.
   */
   const wilayah = adalahEksternal(keadaan.profil?.role) ? keadaan.profil?.assigned_kanwil : null
-  pasangCariUpt(isi, semua, wilayah)
+  pasangCariUpt(isi, semua, wilayah, keBerita)
 
   return {
     judul: 'Dasbor Eksekutif',
@@ -453,7 +453,7 @@ let indukUptDasbor = null
  * arsip yang termuat. Disisipkan di puncak dasbor, bukan bagian tata letak
  * utamanya, supaya dasbor pusat tidak berubah bentuk.
  */
-function pasangCariUpt(isi, semua, wilayah) {
+function pasangCariUpt(isi, semua, wilayah, keBerita = 'berita') {
   const wadah = document.createElement('div')
   wadah.className = 'cari-upt'
   wadah.innerHTML = kartu({
@@ -491,8 +491,13 @@ function pasangCariUpt(isi, semua, wilayah) {
     hasil.innerHTML = cocok.length
       ? `<table class="tabel"><thead><tr><th>UPT</th><th>Kantor Wilayah</th><th>Berita</th><th>Negatif</th></tr></thead><tbody>${cocok.map((u) => {
         const h = hitung.get(u.nama_upt) || { total: 0, negatif: 0 }
-        return `<tr><td>${amankan(u.nama_upt)}</td><td>${amankan(u.kanwil || '-')}</td><td>${h.total}</td><td>${h.negatif}</td></tr>`
-      }).join('')}</tbody></table>`
+        const bisaBuka = h.total > 0
+        const sel = bisaBuka
+          ? `<button class="tbl-tautan" data-halaman="${amankan(keBerita)}" data-saring="${amankan(JSON.stringify({ cari: u.nama_upt }))}" title="Lihat berita unit ini">${amankan(u.nama_upt)}</button>`
+          : amankan(u.nama_upt)
+        return `<tr><td>${sel}</td><td>${amankan(u.kanwil || '-')}</td><td>${h.total}</td><td>${h.negatif}</td></tr>`
+      }).join('')}</tbody></table>
+      <div class="mini-teks samar-teks" style="margin-top:6px">Tekan nama unit untuk membuka beritanya.</div>`
       : `<span class="samar-teks">Tidak ada UPT${wilayah ? ' di wilayah ini' : ''} yang cocok.</span>`
   }
   let tunda
@@ -690,7 +695,7 @@ function daftarPrioritas(daftar) {
   </div>`
 }
 
-function tabelUpt(berita) {
+function tabelUpt(berita, keBerita = 'berita') {
   const peta = new Map()
   for (const b of berita) {
     if (belumTerpetakan(b.nama_upt)) continue
@@ -714,7 +719,9 @@ function tabelUpt(berita) {
       <tbody>
         ${daftar.map((u) => `
           <tr>
-            <td style="font-weight:550">${amankan(u.nama)}</td>
+            <td style="font-weight:550"><button class="tbl-tautan" data-halaman="${amankan(keBerita)}"
+              data-saring="${amankan(JSON.stringify({ cari: u.nama }))}"
+              title="Lihat berita unit ini">${amankan(u.nama)}</button></td>
             <td class="angka rata-kanan">${angka(u.total)}</td>
             <td class="angka rata-kanan">${u.negatif ? `<span style="color:var(--kritis)">${angka(u.negatif)}</span>` : '—'}</td>
             <td class="angka rata-kanan">${u.mendesak ? `<span style="color:var(--tinggi);font-weight:650">${angka(u.mendesak)}</span>` : '—'}</td>

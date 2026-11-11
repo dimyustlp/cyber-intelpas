@@ -46,6 +46,8 @@ const keadaanTelaah = {
   nomor: 0,
   /** 'revisi' | 'tanggapan' | null — panel mana yang sedang terbuka. */
   panel: null,
+  /** Berita yang sedang direvisi dari daftar "Dapat direvisi", bukan dari antrean. */
+  revisiId: null,
   sibuk: false,
   selesai: new Set(),
   putusan: { Sesuai: 0, Direvisi: 0, 'Bukan Unit Kami': 0, 'Perlu Perhatian': 0 },
@@ -68,6 +70,28 @@ function susunAntrean(berita) {
       if (u) return u
       return (Number(a.ai_confidence) || 0) - (Number(b.ai_confidence) || 0)
     })
+}
+
+/*
+   Putusan yang masih bisa direvisi. Jendela 24 jam dihitung dari putusan
+   pertama (lihat migrasi 20261111100000), jadi tidak bisa diperpanjang dengan
+   terus-menerus merevisi.
+*/
+const JENDELA_REVISI_MS = 24 * 60 * 60 * 1000
+const STATUS_PUTUSAN = ['Sesuai', 'Direvisi', 'Bukan Unit Kami', 'Perlu Perhatian']
+
+function awalPutusan(b) {
+  return Date.parse(b.telaah_wilayah_putusan_pertama || b.telaah_wilayah_pada) || 0
+}
+
+function dapatDirevisi(b) {
+  return STATUS_PUTUSAN.includes(b.telaah_wilayah_status)
+    && Date.now() - awalPutusan(b) < JENDELA_REVISI_MS
+}
+
+function sisaRevisi(b) {
+  const jam = Math.max(0, Math.ceil((awalPutusan(b) + JENDELA_REVISI_MS - Date.now()) / 3600000))
+  return jam > 1 ? `${jam} jam lagi` : 'kurang dari 1 jam lagi'
 }
 
 /* ------------------------------------------------------------------ bagian */
@@ -293,7 +317,56 @@ export function halamanWilayahTelaah({ keadaan, isi }) {
     return antrean[Math.min(keadaanTelaah.nomor, Math.max(0, antrean.length - 1))]
   }
 
+  /** Daftar putusan yang masih boleh direvisi. Tampil di atas antrean. */
+  function kartuRevisi() {
+    const daftar = semua.filter(dapatDirevisi)
+    if (!daftar.length) return ''
+    return kartu({
+      judul: 'Dapat direvisi (24 jam)',
+      ket: `${angka(daftar.length)} putusan masih bisa diubah`,
+      rapat: true,
+      isi: `
+        <ul style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px">
+          ${daftar.map((b) => `
+            <li style="display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap">
+              <span>${amankan(ringkas(b.judul || '(tanpa judul)', 90))}
+                <span class="mini-teks samar-teks">· ${amankan(b.telaah_wilayah_status)} · ${amankan(sisaRevisi(b))}</span></span>
+              <button type="button" class="tbl kecil" data-revisi-id="${amankan(b.id)}">Revisi penilaian</button>
+            </li>`).join('')}
+        </ul>`,
+    })
+  }
+
+  /** Tampilan khusus revisi untuk satu berita yang sudah diputuskan. */
+  function tampilRevisi(b) {
+    return `
+      <div class="tumpuk">
+        ${kartu({
+          judul: 'Revisi penilaian',
+          ket: `Putusan saat ini: ${amankan(b.telaah_wilayah_status)} · boleh direvisi ${amankan(sisaRevisi(b))}`,
+          isi: `
+            <article class="telaah-berita">
+              <h3>${amankan(b.judul || '(tanpa judul)')}</h3>
+              ${b.ringkasan ? `<p class="telaah-ringkas">${amankan(ringkas(b.ringkasan, 600))}</p>` : ''}
+            </article>
+            <div class="kisi kisi-utama-samping" style="margin-top:16px">
+              ${panelMesin(b)}
+              <div>${panelRevisi(b)}</div>
+            </div>`,
+        })}
+        <div class="telaah-aksi">
+          ${tombol({ label: 'Simpan revisi', ikon: 'centang', gaya: 'utama', aksi: 'simpan-revisi-24', nonaktif: keadaanTelaah.sibuk })}
+          ${tombol({ label: 'Batal', aksi: 'batal-revisi' })}
+        </div>
+      </div>`
+  }
+
   function gambar() {
+    if (keadaanTelaah.revisiId) {
+      const r = semua.find((x) => x.id === keadaanTelaah.revisiId)
+      if (r && dapatDirevisi(r)) { isi.innerHTML = tampilRevisi(r); return }
+      keadaanTelaah.revisiId = null
+    }
     const antrean = susunAntrean(semua)
     const b = beritaSekarang()
 
@@ -312,6 +385,7 @@ export function halamanWilayahTelaah({ keadaan, isi }) {
     if (!antrean.length) {
       isi.innerHTML = `<div class="tumpuk">
         ${kemajuan(0, Math.max(awal, 1))}
+        ${kartuRevisi()}
         ${kartu({
           isi: kosong(
             'Antrean telaah kosong',
@@ -336,6 +410,7 @@ export function halamanWilayahTelaah({ keadaan, isi }) {
     isi.innerHTML = `
       <div class="tumpuk">
         ${kemajuan(antrean.length, Math.max(awal, 1))}
+        ${kartuRevisi()}
 
         ${daftarAntrean(antrean, b.id)}
 
@@ -516,7 +591,8 @@ export function halamanWilayahTelaah({ keadaan, isi }) {
   }
 
   async function simpanRevisi() {
-    const b = beritaSekarang()
+    const dariRevisi = keadaanTelaah.revisiId
+    const b = dariRevisi ? semua.find((x) => x.id === dariRevisi) : beritaSekarang()
     if (!b) return
 
     const kode = isi.querySelector('#w-sub')?.value
@@ -532,6 +608,7 @@ export function halamanWilayahTelaah({ keadaan, isi }) {
 
     const luar = kode === '9.1' || kode === '9.2'
     keadaanTelaah.putusan.Direvisi += 1
+    keadaanTelaah.revisiId = null
 
     await tulis(b, {
       subkategori_kode: kode,
@@ -545,7 +622,7 @@ export function halamanWilayahTelaah({ keadaan, isi }) {
       telaah_wilayah_status: 'Direvisi',
       telaah_wilayah_catatan: catatan,
       ...jejak(),
-    }, 'Revisi tersimpan.')
+    }, 'Revisi tersimpan.', { keluarAntrean: !dariRevisi })
   }
 
   /**
@@ -621,6 +698,15 @@ export function halamanWilayahTelaah({ keadaan, isi }) {
     const urg = ev.target.closest('[data-urgensi]')
     if (urg) { aturUrgensi(urg.dataset.urgensi); return }
 
+    const buka = ev.target.closest('[data-revisi-id]')
+    if (buka) {
+      keadaanTelaah.revisiId = buka.dataset.revisiId
+      keadaanTelaah.panel = null
+      gambar()
+      isi.querySelector('#w-sub')?.focus()
+      return
+    }
+
     const aksi = ev.target.closest('[data-aksi]')?.dataset.aksi
     if (!aksi) return
 
@@ -628,7 +714,8 @@ export function halamanWilayahTelaah({ keadaan, isi }) {
     else if (aksi === 'revisi') { keadaanTelaah.panel = 'revisi'; gambar(); isi.querySelector('#w-sub')?.focus() }
     else if (aksi === 'tanggapan') { keadaanTelaah.panel = 'tanggapan'; gambar(); isi.querySelector('#w-tanggapan')?.focus() }
     else if (aksi === 'batal-panel') { keadaanTelaah.panel = null; gambar() }
-    else if (aksi === 'simpan-revisi') simpanRevisi()
+    else if (aksi === 'simpan-revisi' || aksi === 'simpan-revisi-24') simpanRevisi()
+    else if (aksi === 'batal-revisi') { keadaanTelaah.revisiId = null; gambar() }
     else if (aksi === 'simpan-tanggapan') simpanTanggapan()
     else if (aksi === 'lewati') lewati()
   })

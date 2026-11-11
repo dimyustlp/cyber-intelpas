@@ -44,6 +44,8 @@ const keadaanPengguna = {
   sibuk: false,
   /** Formulir penerbitan akun sedang terbuka. */
   tambah: false,
+  /** Kata kunci pencarian akun pada daftar pengguna. */
+  cari: '',
   /** Peran yang sedang dipilih pada formulir, supaya keterangannya ikut berubah. */
   peranBaru: '',
   /** Unit yang sedang diketik pada formulir penerbitan akun petugas unit. */
@@ -106,7 +108,7 @@ function barisPengguna(u, sedangDisunting, kanwil, bolehSunting) {
 
   if (!sedangDisunting) {
     return `
-    <tr>
+    <tr data-cari="${amankan(`${u.username || ''} ${u.full_name || ''} ${u.jabatan || ''} ${labelPeran(u.role)} ${u.assigned_kanwil || ''}`.toLowerCase())}">
       <td>
         <span class="judul-sel">${amankan(u.full_name || u.username)}</span>
         <span class="mini-teks samar-teks">
@@ -431,6 +433,11 @@ export function halamanPengguna({ keadaan, isi }) {
             : '',
           rapat: true,
           isi: daftar.length ? `
+            <div class="cari" style="margin-bottom:8px">
+              <input class="masukan" id="p-cari" type="search" autocomplete="off"
+                     placeholder="Cari nama, nama pengguna, jabatan, peran, atau wilayah"
+                     value="${amankan(keadaanPengguna.cari || '')}" aria-label="Cari akun" style="width:100%">
+            </div>
             <div class="tabel-bungkus">
               <table class="tabel">
                 <thead><tr>
@@ -450,7 +457,8 @@ export function halamanPengguna({ keadaan, isi }) {
                   )).join('')}
                 </tbody>
               </table>
-            </div>` : kosong(
+            </div>
+            <div id="p-cari-kosong" class="samar-teks kecil" style="display:none;padding:10px 4px">Tidak ada akun yang cocok dengan pencarian.</div>` : kosong(
               'Belum ada profil',
               bolehWilayah
                 ? 'Belum ada pengguna di wilayah Anda. Mulailah dengan menerbitkan akun penginput.'
@@ -476,6 +484,24 @@ export function halamanPengguna({ keadaan, isi }) {
             </ul>`,
         }) : ''}
       </div>`
+    terapkanCari()
+  }
+
+  /*
+     Pencarian akun menyaring baris langsung di tabel, tanpa menggambar ulang
+     halaman, supaya fokus ketikan tidak hilang di setiap huruf. Baris yang
+     sedang disunting tidak punya data-cari dan selalu tampil.
+  */
+  function terapkanCari() {
+    const q = (keadaanPengguna.cari || '').trim().toLowerCase()
+    let tampil = 0
+    for (const tr of isi.querySelectorAll('tbody tr[data-cari]')) {
+      const cocok = !q || tr.dataset.cari.includes(q)
+      tr.style.display = cocok ? '' : 'none'
+      if (cocok) tampil++
+    }
+    const kosongEl = isi.querySelector('#p-cari-kosong')
+    if (kosongEl) kosongEl.style.display = q && tampil === 0 ? '' : 'none'
   }
 
   /* ----------------------------------------------------------- penerbitan */
@@ -737,6 +763,7 @@ export function halamanPengguna({ keadaan, isi }) {
 
   isi.addEventListener('input', (ev) => {
     if (ev.target.id === 't-upt') keadaanPengguna.uptBaru = ev.target.value
+    if (ev.target.id === 'p-cari') { keadaanPengguna.cari = ev.target.value; terapkanCari() }
   })
 
   isi.addEventListener('submit', (ev) => { ev.preventDefault(); terbitkan() })

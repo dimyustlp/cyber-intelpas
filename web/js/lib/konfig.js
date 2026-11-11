@@ -105,7 +105,7 @@ export const KONFIG = {
  * dengan data/master-upt.csv.
  */
 export const INDUK_UPT = {
-  jumlah: 531,
+  jumlah: 532,
   kanwil: 33,
   /** Unit yang koordinatnya masih titik wilayah, bukan alamat gedung. */
   belumTerverifikasi: 530,

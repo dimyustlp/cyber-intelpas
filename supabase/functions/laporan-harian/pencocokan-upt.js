@@ -269,6 +269,13 @@ continue
 const cocok = tokenYangCocok(w.jendela, entri.token, w.panjangPenanda, w.rapat)
 if (!cocok.length) continue
 if (cocok.every((t) => TOKEN_SUBJENIS.has(t))) continue
+
+      // Kata biasa yang kebetulan nama tempat sebuah unit. "Bakti" muncul pada
+      // "bakti sosial" dan "Hari Bakti", sehingga berita Rutan Sidrap, Lapas
+      // Palangka Raya, dan Imigrasi Banggai ikut tertarik ke Lapas Kota Bakti.
+      // Unit itu hanya dikenali lewat bentuk "Kota Bakti" atau "Kotabakti",
+      // yang ditangani jalur nama-tempat-rapat di atas.
+      if (cocok.every((t) => TOKEN_KATA_BIASA.has(t))) continue
 const rasio = cocok.length / entri.token.length
 if (rasio === 1) {
 const jarak = posisiTerawal(w.jendela, entri.token)
@@ -341,6 +348,9 @@ alasan: u.metode === 'nama-lengkap' ? 'Nama unit tersebut utuh setelah penanda j
 }
 }
 const TOKEN_SUBJENIS = new Set(['perempuan', 'narkotika', 'anak', 'terbuka', 'pemuda', 'wanita'])
+
+/** Kata sehari-hari yang tidak boleh menunjuk sebuah unit hanya karena ia nama tempatnya. */
+const TOKEN_KATA_BIASA = new Set(['bakti'])
 function tokenYangCocok(jendela, token, batasAwal = 0, rapatJendela = null) {
 const terpakai = new Array(token.length).fill(false)
 const rapat = rapatJendela || runtunRapat(jendela)

@@ -134,6 +134,9 @@ export const SEBUTAN_POPULER = [
   // jauh untuk miripSatuHuruf(). Ditemukan 4 November 2026 di antara berita
   // negatif yang tidak terpetakan ke kanwil mana pun.
   ['mentok', 'Rutan Kelas IIB Muntok'],
+  // Singkatan yang dipakai media Sulawesi Selatan untuk Kabupaten Sidenreng
+  // Rappang. Tanpanya, "Rutan Sidrap" tidak dikenali sama sekali.
+  ['sidrap', 'Rutan Kelas IIB Sidenreng Rapang'],
   ['pasir pengaraian', 'Lapas Kelas IIB Pasir Pangarayan'],
   ['pasirpengaraian', 'Lapas Kelas IIB Pasir Pangarayan'],
   ['nusakambangan', null],
@@ -619,6 +622,13 @@ export function cocokkanUpt(teks, indeks, opsi = {}) {
       // kalimat berikutnya.
       if (cocok.every((t) => TOKEN_SUBJENIS.has(t))) continue
 
+      // Kata biasa yang kebetulan nama tempat sebuah unit. "Bakti" muncul pada
+      // "bakti sosial" dan "Hari Bakti", sehingga berita Rutan Sidrap, Lapas
+      // Palangka Raya, dan Imigrasi Banggai ikut tertarik ke Lapas Kota Bakti.
+      // Unit itu hanya dikenali lewat bentuk "Kota Bakti" atau "Kotabakti",
+      // yang ditangani jalur nama-tempat-rapat di atas.
+      if (cocok.every((t) => TOKEN_KATA_BIASA.has(t))) continue
+
       const rasio = cocok.length / entri.token.length
 
       if (rasio === 1) {
@@ -748,6 +758,9 @@ export function cocokkanUpt(teks, indeks, opsi = {}) {
  * sendirian — ada puluhan Lapas Perempuan dan puluhan Lapas Narkotika.
  */
 const TOKEN_SUBJENIS = new Set(['perempuan', 'narkotika', 'anak', 'terbuka', 'pemuda', 'wanita'])
+
+/** Kata sehari-hari yang tidak boleh menunjuk sebuah unit hanya karena ia nama tempatnya. */
+const TOKEN_KATA_BIASA = new Set(['bakti'])
 
 /**
  * Mencari token nama unit di dalam jendela, termasuk ketika media menulisnya

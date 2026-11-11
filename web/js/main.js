@@ -1043,6 +1043,8 @@ const KOLOM_BERITA = 'id,judul,nama_upt,kanwil_asal,media,platform,link,created_
   + 'ai_confidence,kata_kunci,ai_provider,ai_classified_at,'
   // Tiga kolom kecil yang dibaca mesin saran tindak lanjut (lib/tindak-lanjut.js).
   + 'tier_media,tanggapan_sikap,telaah_wilayah_status,'
+  // Untuk jendela 24 jam revisi telaah (migrasi 20261111100000).
+  + 'telaah_wilayah_putusan_pertama,telaah_wilayah_pada,telaah_wilayah_oleh,telaah_wilayah_catatan,'
   // Penanda kanwil hasil dugaan (migrasi 20261104030000), dibaca lib/wilayah-berita.js
   // dan keping "wilayah terduga" di halaman kanwil.
   + 'kanwil_terduga,kanwil_dasar'

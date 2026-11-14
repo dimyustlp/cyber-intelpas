@@ -54,6 +54,29 @@ const TANGAN = {
   'Bapas Kelas II Nusakambangan': ['Lapas Kelas IIA Besi Nusakambangan', 'Cilacap', 'satu pulau'],
 }
 
+/**
+ * Koreksi kabupaten/kota yang diwarisi dari unit tetangga.
+ *
+ * Kolom itu pada unit lama tidak selalu bisa dipercaya (Lapas Padang tercatat
+ * di Padang Pariaman, Lapas Sorong di Sorong Selatan). Untuk Bapas nilai
+ * itu dipakai sebagai petunjuk wilayah pencocokan, jadi yang jelas keliru
+ * diganti dengan kabupaten/kota tempat kantor Bapas berada.
+ */
+const KABKOTA_KOREKSI = {
+  'Bapas Kelas I Bengkulu': 'Kota Bengkulu',
+  'Bapas Kelas II Gorontalo': 'Kota Gorontalo',
+  'Bapas Kelas II Saumlaki': 'Kepulauan Tanimbar',
+  'Bapas Kelas II Padang': 'Kota Padang',
+  'Bapas Kelas I Manokwari': 'Manokwari',
+  'Bapas Kelas II Sorong': 'Kota Sorong',
+  'Bapas Kelas II Tanjung Pandan': 'Belitung',
+  'Bapas Kelas II Luwuk': 'Banggai',
+  'Bapas Kelas I Serang': 'Kota Serang',
+  'Bapas Kelas I Semarang': 'Kota Semarang',
+  'Bapas Kelas II Kupang': 'Kota Kupang',
+  'Bapas Kelas I Jambi': 'Kota Jambi',
+}
+
 // --------------------------------------------------------------------- CSV
 
 function baraiCsv(teks) {
@@ -170,7 +193,7 @@ for (const r of sumberBapas) {
     subjenis_upt: 'Umum',
     provinsi: sekota?.provinsi || provinsiKanwil || '',
     kanwil,
-    kabupaten_kota: kabkotaTangan || sekota?.kabupaten_kota || '',
+    kabupaten_kota: kabkotaTangan || KABKOTA_KOREKSI[nama] || sekota?.kabupaten_kota || '',
     alamat: '',
     latitude: '', longitude: '', coordinate_quality: '', coordinate_source: '', coordinate_score: '',
     location_hint: '',

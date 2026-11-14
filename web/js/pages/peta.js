@@ -1,7 +1,7 @@
 /**
  * Peta Sebaran Kerawanan.
  *
- * Menggambar seluruh Lapas, Rutan, dan LPKA di Indonesia pada satu layar,
+ * Menggambar seluruh Lapas, Rutan, LPKA, dan Bapas di Indonesia pada satu layar,
  * diwarnai menurut keadaan pemberitaan masing-masing. Pertanyaan yang
  * dijawabnya tidak bisa dijawab tabel: di mana persoalannya menumpuk. Sepuluh
  * unit rawan yang tersebar dari Aceh sampai Papua dan sepuluh unit rawan yang
@@ -53,8 +53,8 @@ import { adalahEksternal } from '../lib/peran.js'
 import { BATAS, DARATAN, TETANGGA } from '../lib/peta-indonesia.js'
 import { kurangiGerak } from '../lib/gerak.js'
 
-/** Jenis unit yang digambar. Bapas dan rumah sakit tidak termasuk data induk. */
-const JENIS = ['Lapas', 'Rutan', 'LPKA']
+/** Jenis unit yang digambar: seluruh jenis UPT pada data induk. */
+const JENIS = ['Lapas', 'Rutan', 'LPKA', 'Bapas']
 
 /**
  * Warna tiap tingkat kerawanan.
@@ -1176,7 +1176,7 @@ export function halamanPeta({ keadaan, isi, tertanam = false }) {
   function subjudul() {
     const jumlah = keadaanPeta.unit.length
     return jumlah
-      ? `${angka(jumlah)} Lapas, Rutan, dan LPKA di seluruh Indonesia`
+      ? `${angka(jumlah)} Lapas, Rutan, LPKA, dan Bapas di seluruh Indonesia`
       : 'Memuat data induk unit\u2026'
   }
 

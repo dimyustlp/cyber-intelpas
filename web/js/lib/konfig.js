@@ -105,10 +105,10 @@ export const KONFIG = {
  * dengan data/master-upt.csv.
  */
 export const INDUK_UPT = {
-  jumlah: 532,
+  jumlah: 612,
   kanwil: 33,
   /** Unit yang koordinatnya masih titik wilayah, bukan alamat gedung. */
-  belumTerverifikasi: 530,
+  belumTerverifikasi: 610,
 }
 
 export const ADA_DEMO = KONFIG.mode === 'demo'

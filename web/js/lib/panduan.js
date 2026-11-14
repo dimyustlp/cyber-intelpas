@@ -45,7 +45,7 @@ const PUSAT = {
   dasbor: {
     isi: 'Ringkasan pemberitaan hari ini dalam satu layar: jumlah publikasi beserta '
       + 'selisihnya terhadap hari sebelumnya, sebaran sentimen, kejadian yang memerlukan '
-      + 'perhatian, unit yang paling banyak disorot, peta sebaran seluruh Lapas, Rutan, '
+      + 'perhatian, unit yang paling banyak disorot, peta sebaran seluruh Lapas, Rutan, Bapas, '
       + 'dan LPKA, serta indikator kesehatan aliran data di puncak halaman.',
     guna: 'Layar pertama yang dibuka setiap pagi. Setiap angka pada ubin dapat ditekan '
       + 'untuk membuka daftar yang menghasilkannya, sehingga asal-usul tiap angka dapat '
@@ -518,7 +518,7 @@ export const TANPA_MENU = {
       + 'diverifikasi. Hanya yang sudah diverifikasi yang dapat menjadi dasar keputusan.',
   },
   peta: {
-    isi: 'Seluruh Lapas, Rutan, dan LPKA di Indonesia sebagai titik pada satu peta, '
+    isi: 'Seluruh Lapas, Rutan, LPKA, dan Bapas di Indonesia sebagai titik pada satu peta, '
       + 'diwarnai menurut keadaan pemberitaan masing-masing.',
     guna: 'Tergambar di Dasbor Eksekutif. Menunjukkan di mana persoalan menumpuk, hal yang '
       + 'tidak terlihat dari tabel. Sepuluh unit rawan yang tersebar dari Aceh sampai Papua '

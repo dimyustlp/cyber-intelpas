@@ -44,6 +44,9 @@ export const SEBUTAN_POPULER = [
 ['ujung pandang', 'Lapas Kelas I Makassar'],
 ['ujung pandang', 'Rutan Kelas I Makassar'],
 ['tanjung pati', 'Lapas Kelas IIB Payakumbuh'],
+['jogja', 'Bapas Kelas I Yogyakarta'],
+['solo', 'Bapas Kelas I Surakarta'],
+['jakarta utara', 'Bapas Kelas I Jakarta Timur Utara'],
 ['mentok', 'Rutan Kelas IIB Muntok'],
   // Singkatan yang dipakai media Sulawesi Selatan untuk Kabupaten Sidenreng
   // Rappang. Tanpanya, "Rutan Sidrap" tidak dikenali sama sekali.

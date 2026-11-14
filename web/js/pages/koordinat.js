@@ -301,7 +301,7 @@ export function halamanKoordinat({ keadaan, isi }) {
     isi.innerHTML = `
       <div class="tumpuk">
         <div class="kisi kisi-4">
-          ${ubinKoordinat('Unit aktif', semua.length, 'Lapas, Rutan, LPKA, dan lainnya')}
+          ${ubinKoordinat('Unit aktif', semua.length, 'Lapas, Rutan, LPKA, Bapas, dan lainnya')}
           ${ubinKoordinat('Sudah diperiksa', diperiksa,
             semua.length ? `${persen(diperiksa, semua.length)} dari seluruh unit` : '—',
             diperiksa ? 'positif' : 'sedang')}

@@ -130,6 +130,11 @@ export const SEBUTAN_POPULER = [
   // sementara unitnya bernama Payakumbuh. Kedua nama itu dipakai bergantian
   // dalam berita yang sama.
   ['tanjung pati', 'Lapas Kelas IIB Payakumbuh'],
+  // Sebutan sehari-hari Bapas. Jenisnya tetap dijaga penanda "bapas" pada teks,
+  // sehingga "Lapas Jogja" tidak pernah menjadi Bapas.
+  ['jogja', 'Bapas Kelas I Yogyakarta'],
+  ['solo', 'Bapas Kelas I Surakarta'],
+  ['jakarta utara', 'Bapas Kelas I Jakarta Timur Utara'],
   // Ejaan media yang berbeda lebih dari satu huruf dari data induk — terlalu
   // jauh untuk miripSatuHuruf(). Ditemukan 4 November 2026 di antara berita
   // negatif yang tidak terpetakan ke kanwil mana pun.

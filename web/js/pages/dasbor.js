@@ -322,7 +322,7 @@ export function halamanDasbor({ keadaan, isi }) {
         <section class="dasbor-peta" aria-labelledby="dasbor-peta-judul">
           <div class="dasbor-peta-kop">
             <h2 id="dasbor-peta-judul">Peta sebaran kerawanan</h2>
-            <span class="mini-teks samar-teks">Seluruh Lapas, Rutan, dan LPKA, diwarnai menurut pemberitaan yang masuk ${amankan(bulan.label)}</span>
+            <span class="mini-teks samar-teks">Seluruh Lapas, Rutan, LPKA, dan Bapas, diwarnai menurut pemberitaan yang masuk ${amankan(bulan.label)}</span>
           </div>
           <div id="dasbor-peta"><div class="rangka" style="height:420px"></div></div>
         </section>` : ''}

@@ -361,7 +361,46 @@ export function halamanWilayahTelaah({ keadaan, isi }) {
       </div>`
   }
 
+  /**
+   * Menggambar ulang tanpa memindahkan tempat pembaca berdiri.
+   *
+   * Setiap perpindahan nomor menimpa seluruh isi halaman, termasuk kotak daftar
+   * antrean yang punya gulir sendiri. Sebelum ini kotak itu kembali ke nomor 1
+   * setiap kali satu berita ditekan: operator menekan nomor 12, beritanya
+   * terbuka di bawah, tetapi daftar sudah melompat ke atas dan ia harus
+   * menggulir lagi untuk mencari nomor 13. Posisi gulir daftar dan halaman
+   * disimpan sebelum gambar ulang, dipulihkan sesudahnya, lalu baris yang
+   * sedang dibuka dijamin terlihat di dalam kotaknya.
+   */
   function gambar() {
+    const daftarLama = isi.querySelector('.telaah-daftar')
+    const gulirDaftar = daftarLama ? daftarLama.scrollTop : null
+    const gulir = []
+    for (let el = isi.parentElement; el; el = el.parentElement) {
+      if (el.scrollTop > 0) gulir.push([el, el.scrollTop])
+    }
+    const gulirJendela = [window.scrollX, window.scrollY]
+
+    gambarIsi()
+
+    const daftar = isi.querySelector('.telaah-daftar')
+    if (daftar) {
+      if (gulirDaftar != null) daftar.scrollTop = gulirDaftar
+      const aktif = daftar.querySelector(`[data-ke-nomor="${keadaanTelaah.nomor}"]`)
+      if (aktif) {
+        const a = aktif.getBoundingClientRect()
+        const d = daftar.getBoundingClientRect()
+        if (a.top < d.top) daftar.scrollTop -= d.top - a.top + 4
+        else if (a.bottom > d.bottom) daftar.scrollTop += a.bottom - d.bottom + 4
+      }
+    }
+    for (const [el, atas] of gulir) el.scrollTop = atas
+    if (window.scrollX !== gulirJendela[0] || window.scrollY !== gulirJendela[1]) {
+      window.scrollTo(gulirJendela[0], gulirJendela[1])
+    }
+  }
+
+  function gambarIsi() {
     if (keadaanTelaah.revisiId) {
       const r = semua.find((x) => x.id === keadaanTelaah.revisiId)
       if (r && dapatDirevisi(r)) { isi.innerHTML = tampilRevisi(r); return }

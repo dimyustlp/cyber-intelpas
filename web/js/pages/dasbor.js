@@ -174,7 +174,7 @@ export function halamanDasbor({ keadaan, isi }) {
      wilayahnya tersimpan rapi di basis data.
   */
   if (keadaan.galatMuat) {
-    isi.innerHTML = kartu({
+    isi.innerHTML = `${bilahAksiDasbor(keadaan.profil?.role)}` + kartu({
       judul: 'Berita belum berhasil dimuat',
       isi: kosong(
         'Data tidak sampai ke layar ini',
@@ -190,7 +190,7 @@ export function halamanDasbor({ keadaan, isi }) {
        tombolnya hanya membawa petugas ke layar "tidak berhak". Yang bisa ia
        lakukan sendiri adalah memeriksa lembar wilayahnya. */
     if (wilayahSaya) {
-      isi.innerHTML = kartu({
+      isi.innerHTML = `${bilahAksiDasbor(keadaan.profil?.role)}` + kartu({
         judul: 'Belum ada data wilayah',
         isi: kosong(
           'Belum ada berita yang terpetakan ke wilayah Anda',
@@ -200,7 +200,7 @@ export function halamanDasbor({ keadaan, isi }) {
       })
       return { judul: 'Dasbor Eksekutif', sub: tanggalPanjang(new Date()) }
     }
-    isi.innerHTML = kartu({
+    isi.innerHTML = `${bilahAksiDasbor(keadaan.profil?.role)}` + kartu({
       judul: 'Belum ada data',
       isi: kosong(
         'Belum ada berita yang masuk',
@@ -210,8 +210,7 @@ export function halamanDasbor({ keadaan, isi }) {
            sehingga tombolnya tertekan tanpa akibat sejak hari ia ditulis.
            Lewat `halaman`, ia memakai jalur navigasi yang sama dengan menu
            samping, yang tidak bisa lupa disimak. */
-        tombol({ label: 'Buka Sinkronisasi Sumber', ikon: 'sinkron', gaya: 'utama', halaman: 'sinkronisasi' })
-          + tombolInput(keadaan.profil?.role),
+        tombol({ label: 'Buka Sinkronisasi Sumber', ikon: 'sinkron', gaya: 'utama', halaman: 'sinkronisasi' }),
       ),
     })
     return { judul: 'Dasbor Eksekutif', sub: tanggalPanjang(new Date()) }
@@ -220,7 +219,8 @@ export function halamanDasbor({ keadaan, isi }) {
   if (!berita.length) {
     isi.innerHTML = `
       <div class="tumpuk">
-        ${bilahBulan(bulan, keadaan.profil?.role)}
+        ${bilahAksiDasbor(keadaan.profil?.role)}
+        ${bilahBulan(bulan)}
         ${bilahKesehatan(keadaan.kesehatan)}
         ${garisKeadaan(mendesak, belumTelaah, takTerpetakan)}
         ${kartu({
@@ -262,7 +262,9 @@ export function halamanDasbor({ keadaan, isi }) {
   isi.innerHTML = `
     <div class="tumpuk">
 
-      ${bilahBulan(bulan, keadaan.profil?.role)}
+      ${bilahAksiDasbor(keadaan.profil?.role)}
+
+      ${bilahBulan(bulan)}
 
       ${bilahKesehatan(keadaan.kesehatan)}
 
@@ -522,21 +524,27 @@ const pilihanDasbor = { geser: 0 }
  * dan Laporan Berkala, yang memang dibuat untuk membandingkan periode.
  */
 /**
- * Pintasan ke form Input Berita.
+ * Baris aksi di kop dasbor.
  *
  * Butir "Input Berita" dicabut dari menu pusat pada 10 November 2026, sehingga
  * operator yang berhak menyetor berita manual tidak lagi punya jalan masuk dari
- * layar mana pun. Tombol ini mengembalikannya di tempat yang paling sering
- * dibuka — dasbor — tanpa menambah butir menu. Syaratnya tetap `buat_berita`,
- * izin yang sama dengan yang dituntut halaman dan kebijakan basis datanya;
- * peran UPT tidak punya izin itu, jadi tidak ikut melihatnya.
+ * layar mana pun. Baris ini mengembalikannya di tempat yang paling sering
+ * dibuka — dasbor — tanpa menambah butir menu. Berdiri di baris sendiri paling
+ * atas, bukan menempel di bilah bulan, sehingga tidak hilang di layar sempit dan
+ * selalu tampak di tiap keadaan dasbor (galat, kosong wilayah, kosong bulan,
+ * berita ada). Syaratnya tetap `buat_berita`, izin yang sama dengan yang
+ * dituntut halaman dan kebijakan basis datanya; peran UPT tidak punya izin
+ * itu, jadi tidak ikut melihatnya.
  */
-function tombolInput(peran) {
+function bilahAksiDasbor(peran) {
   if (!punyaIzin(peran, 'buat_berita')) return ''
-  return tombol({ label: 'Input Berita', ikon: 'tambah', gaya: 'utama', kecil: true, halaman: 'input' })
+  return `
+    <div class="dasbor-aksi">
+      ${tombol({ label: 'Input Berita Manual', ikon: 'tambah', gaya: 'utama', halaman: 'input' })}
+    </div>`
 }
 
-function bilahBulan(bulan, peran) {
+function bilahBulan(bulan) {
   const kini = bulanWib(0)
   const lalu = bulanWib(-1)
   const sampai = pilihanDasbor.geser === 0 ? tanggalIso(new Date()) : bulan.selesai
@@ -550,7 +558,6 @@ function bilahBulan(bulan, peran) {
         Bagan dan sebaran memuat berita yang masuk ${amankan(tanggal(bulan.mulai))} sampai
         ${amankan(tanggal(sampai))}. Antrean kerja tetap dihitung dari seluruh arsip.
       </span>
-      <span class="dorong">${tombolInput(peran)}</span>
     </div>`
 }
 

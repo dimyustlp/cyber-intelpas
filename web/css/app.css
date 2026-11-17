@@ -6617,6 +6617,9 @@ table.tabel tr[data-halaman]:hover td { background: var(--accent-lembut, rgba(37
    berikutnya pada layar sempit; tombolnya tidak. */
 .dasbor-bulan { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .dasbor-bulan .segmen button { white-space: nowrap; }
+.dasbor-aksi { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 8px; }
+.dasbor-aksi .tbl { white-space: nowrap; }
+@media (max-width: 640px) { .dasbor-aksi { justify-content: stretch; } .dasbor-aksi .tbl { width: 100%; justify-content: center; } }
 
 
 /* ------------------------------------------------------------ Situation Room */

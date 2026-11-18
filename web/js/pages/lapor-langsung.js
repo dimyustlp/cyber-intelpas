@@ -228,7 +228,7 @@ function panduanSisi(profil) {
   return `
     <div class="tumpuk" style="gap:14px">
       <div class="tumpuk" style="gap:6px">
-        <div><b>Apa itu Input Berita Langsung</b></div>
+        <div><b>Apa itu Input Lapor Langsung</b></div>
         <div>Jalur cepat untuk menyetor temuan patroli siber yang tidak tertangkap penjaring berita otomatis: unggahan media sosial, pesan berantai, atau konten daring lain yang Anda temukan sendiri dan perlu segera diketahui pusat.</div>
       </div>
 
@@ -275,14 +275,14 @@ export function halamanLaporLangsung({ isi }) {
       judul: 'Tidak berhak',
       isi: kosong('Fitur ini tidak tersedia untuk peran Anda', 'Hubungi administrator jika Anda seharusnya memiliki akses.', ''),
     })
-    return { judul: 'Input Berita Langsung', sub: '' }
+    return { judul: 'Input Lapor Langsung', sub: '' }
   }
 
   function gambar() {
     isi.innerHTML = `
       <div class="kisi kisi-utama-samping">
         ${kartu({
-          judul: 'Input Berita Langsung',
+          judul: 'Input Lapor Langsung',
           ket: 'Setor bukti pemantauan siber langsung ke tim analis',
           isi: `${panelHasil()}${formulir(keadaan.profil)}`,
         })}
@@ -361,7 +361,7 @@ export function halamanLaporLangsung({ isi }) {
   daftarTiba?.then(() => {
     if (isi.isConnected && keadaan.halaman === 'lapor-langsung') gambar()
   })
-  return { judul: 'Input Berita Langsung', sub: 'Setor bukti pemantauan siber langsung ke tim analis' }
+  return { judul: 'Input Lapor Langsung', sub: 'Setor bukti pemantauan siber langsung ke tim analis' }
 }
 
 async function kirim(gambar) {

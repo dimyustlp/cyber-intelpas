@@ -396,7 +396,7 @@ export const MENU = [
       // Lapor Langsung — masukan intelijen berupa screenshot/PDF dari lapangan.
       // Ditambahkan 18 November 2026. Izinnya dipegang semua peran; di menu
       // pusat butirnya ikut di grup Pengelolaan Berita bersama Pusat Data.
-      { id: 'lapor-langsung', label: 'Input Berita Langsung', ikon: 'kirim', izin: 'lapor_langsung' },
+      { id: 'lapor-langsung', label: 'Input Lapor Langsung', ikon: 'kirim', izin: 'lapor_langsung' },
       /* Antrean Telaah pindah ke Kasus Intelijen; Pemetaan UPT dan
          Sinkronisasi Sumber tidak lagi punya butir menu (23 September 2026).
          Keduanya tetap bisa dibuka dari tombol di halaman lain — lihat
@@ -486,7 +486,7 @@ export const MENU_KANWIL = [
       { id: 'laporan', label: 'Laporan Berkala', ikon: 'laporan', izin: 'lihat_laporan_kanwil' },
       { id: 'tindak-lanjut', label: 'Tindak Lanjut', ikon: 'tindak', izin: 'lihat_penanganan', lencana: 'penanganan' },
       { id: 'input', label: 'Kirim Berita', ikon: 'tambah', izin: 'buat_berita' },
-      { id: 'lapor-langsung', label: 'Input Berita Langsung', ikon: 'kirim', izin: 'lapor_langsung' },
+      { id: 'lapor-langsung', label: 'Input Lapor Langsung', ikon: 'kirim', izin: 'lapor_langsung' },
       { id: 'wilayah-telaah', label: 'Telaah Wilayah', ikon: 'centang', izin: 'telaah_wilayah', lencana: 'telaahWilayah' },
       { id: 'wilayah-berita', label: 'Berita Wilayah', ikon: 'berita', izin: 'lihat_berita_wilayah' },
       // Seluruh unit yang dibawahi wilayah ini, bukan sepuluh teratas seperti
@@ -520,7 +520,7 @@ export const MENU_UPT = [
       { id: 'klarifikasi', label: 'Klarifikasi UPT', ikon: 'centang', izin: 'lihat_penanganan', lencana: 'penanganan' },
       { id: 'wilayah-telaah', label: 'Telaah & Tanggapan', ikon: 'centang', izin: 'telaah_wilayah', lencana: 'telaahWilayah' },
       { id: 'wilayah-berita', label: 'Berita Unit', ikon: 'berita', izin: 'lihat_berita_unit' },
-      { id: 'lapor-langsung', label: 'Input Berita Langsung', ikon: 'kirim', izin: 'lapor_langsung' },
+      { id: 'lapor-langsung', label: 'Input Lapor Langsung', ikon: 'kirim', izin: 'lapor_langsung' },
     ],
   },
   {

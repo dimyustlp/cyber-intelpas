@@ -543,7 +543,7 @@ function bilahAksiDasbor(peran) {
   return `
     <div class="dasbor-aksi">
       ${buatBerita ? tombol({ label: 'Input Berita Manual', ikon: 'tambah', gaya: 'utama', halaman: 'input' }) : ''}
-      ${laporLangsung ? tombol({ label: 'Input Berita Langsung', ikon: 'kirim', gaya: buatBerita ? '' : 'utama', halaman: 'lapor-langsung' }) : ''}
+      ${laporLangsung ? tombol({ label: 'Input Lapor Langsung', ikon: 'kirim', gaya: buatBerita ? '' : 'utama', halaman: 'lapor-langsung' }) : ''}
     </div>`
 }
 

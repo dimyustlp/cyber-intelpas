@@ -20,7 +20,8 @@
 import { kartu, tombol, pesanSistem, roti, kosong } from '../ui/komponen.js'
 import { amankan, ukuranBerkas } from '../lib/format.js'
 import { ikon } from '../lib/ikon.js'
-import { ambil, sisip, unggahBerkas, pesanRamah } from '../lib/api.js'
+import { ambil, sisip, unggahBerkas, pesanRamah, panggilFungsi } from '../lib/api.js'
+import { LEMBAR, ZONA_WAKTU, periksaLaporan, labelPilihan, zonaPeramban } from '../lib/laporan-klarifikasi.js'
 import { KONFIG } from '../lib/konfig.js'
 import { keadaan } from '../main.js'
 import { adalahUnit, adalahEksternal, punyaIzin } from './../lib/peran.js'
@@ -52,6 +53,221 @@ const keadaanLapor = {
   memuat: false,
   mengirim: false,
   terakhir: null,    // id laporan terakhir yang berhasil tersimpan
+
+  // Laporan Verifikasi Pemberitaan yang dilampirkan UPT pada laporannya sendiri.
+  sertakanVerif: false,
+  verif: {},
+  verifNama: '',
+  verifJabatan: '',
+
+  // Laporan dari kanwil/pusat yang menyebut unit ini, untuk dijawab.
+  masuk: null,       // null = belum dimuat
+  masukGalat: '',
+  masukMemuat: false,
+  bukaId: null,      // laporan yang formulir jawabannya sedang terbuka
+  jawab: {},         // id -> { isian, nama, jabatan, berkas: File[] }
+  menjawab: false,
+}
+
+/** Lembar Berita Acara Verifikasi Isu: format resmi yang sama dengan Klarifikasi UPT. */
+const LEMBAR_BA = LEMBAR.find((l) => l.id === 'ba')
+
+function waktuLokalSekarang(w = new Date()) {
+  return new Date(w.getTime() - w.getTimezoneOffset() * 60000).toISOString().slice(0, 16)
+}
+
+function isianBaAwal(l = {}) {
+  return {
+    waktu_konfirmasi: waktuLokalSekarang(),
+    zona: zonaPeramban(),
+    ringkasan_isu: l.judul || String(l.keterangan || '').slice(0, 300),
+    sumber: '',
+    waktu_ditemukan: l.created_at ? new Date(l.created_at).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }) + ' WIB' : '',
+    pihak: '', pihak_nama: '', pihak_jabatan: '',
+    hasil_konfirmasi: '', fakta: '', dampak: '', tingkat: '', rekomendasi: '', petugas_nama: '',
+  }
+}
+
+/** Hanya kunci lembar BA yang dikirim, dipangkas. */
+function bersihkanBa(d) {
+  const hasil = { format: 'ba-verifikasi-isu-v1' }
+  for (const k of [...LEMBAR_BA.bidang.map((b) => b.k), 'zona']) {
+    const v = String(d?.[k] ?? '').trim().slice(0, 4000)
+    if (v) hasil[k] = v
+  }
+  return hasil
+}
+
+/**
+ * Bidang-bidang Berita Acara. `kunci` membedakan formulir mana yang diisi:
+ * 'sendiri' untuk laporan UPT sendiri, atau id laporan yang sedang dijawab.
+ */
+function isianBa(d, kunci) {
+  const atr = (k, kelas = 'masukan') => `class="${kelas}" data-verif="${k}" data-kunci="${amankan(kunci)}"`
+  const masukan = (b) => {
+    const nilai = d[b.k] || ''
+    if (b.jenis === 'area') return `<textarea ${atr(b.k, 'masukan area')} rows="${b.baris || 2}" maxlength="4000">${amankan(nilai)}</textarea>`
+    if (b.jenis === 'pilih') {
+      const opsi = Array.isArray(b.pilihan) ? b.pilihan.map((x) => [x, x]) : Object.entries(b.pilihan)
+      return `<select ${atr(b.k)}><option value="">— pilih —</option>${opsi.map(([k, l]) =>
+        `<option value="${amankan(k)}"${k === nilai ? ' selected' : ''}>${amankan(l)}</option>`).join('')}</select>`
+    }
+    if (b.jenis === 'waktu') {
+      return `<span class="baris" style="gap:6px"><input ${atr(b.k)} type="datetime-local" value="${amankan(nilai)}">
+        <select ${atr('zona')} style="width:90px" aria-label="Zona waktu">${ZONA_WAKTU.map((z) =>
+          `<option${z === d.zona ? ' selected' : ''}>${z}</option>`).join('')}</select></span>`
+    }
+    return `<input ${atr(b.k)} maxlength="300" value="${amankan(nilai)}">`
+  }
+  return `
+    <fieldset class="laporan-lembar">
+      <legend>${amankan(LEMBAR_BA.judul)}</legend>
+      <div class="ket">${amankan(LEMBAR_BA.ket)}</div>
+      <div class="laporan-kisi">
+        ${LEMBAR_BA.bidang.map((b) => `
+          <label class="bidang${b.jenis === 'area' ? ' lebar' : ''}">
+            <span class="label-mono">${amankan(b.label)}${b.wajib ? ' (wajib)' : ''}</span>
+            ${masukan(b)}
+          </label>`).join('')}
+      </div>
+    </fieldset>`
+}
+
+function isianPengirim(nama, jabatan, kunci) {
+  return `
+    <div class="kisi kisi-2">
+      <div class="isian">
+        <label>Nama pengirim verifikasi <span class="wajib">wajib</span></label>
+        <input class="masukan" data-verif-pengirim="nama" data-kunci="${amankan(kunci)}" maxlength="120" value="${amankan(nama)}" placeholder="Nama lengkap">
+      </div>
+      <div class="isian">
+        <label>Jabatan</label>
+        <input class="masukan" data-verif-pengirim="jabatan" data-kunci="${amankan(kunci)}" maxlength="120" value="${amankan(jabatan)}" placeholder="mis. Kepala KPLP">
+      </div>
+    </div>`
+}
+
+function bagianVerifSendiri() {
+  const v = keadaanLapor
+  return `
+    <div class="isian">
+      <label style="display:flex;gap:10px;align-items:flex-start;cursor:pointer">
+        <input type="checkbox" data-aksi-cek="sertakan-verif"${v.sertakanVerif ? ' checked' : ''} style="margin-top:3px">
+        <span><b>Sertakan Laporan Verifikasi Pemberitaan</b><br>
+        <span class="ket">Isi bila temuan ini sudah Anda konfirmasi kebenarannya di unit. Formatnya sama dengan Berita Acara Verifikasi Isu pada Klarifikasi UPT.</span></span>
+      </label>
+    </div>
+    ${v.sertakanVerif ? `${isianBa(v.verif, 'sendiri')}${isianPengirim(v.verifNama, v.verifJabatan, 'sendiri')}` : ''}`
+}
+
+// ------------------------------------------------- laporan masuk untuk unit
+
+async function muatMasuk() {
+  if (keadaanLapor.masukMemuat) return
+  const profil = keadaan.profil
+  const peran = profil?.role
+  keadaanLapor.masukMemuat = true
+  keadaanLapor.masukGalat = ''
+  try {
+    const saring = {
+      select: 'id,created_at,pelapor_nama,pelapor_role,pelapor_user_id,kanwil,nama_upt,judul,keterangan,berkas,drive_url,status,'
+        + 'verifikasi,verifikasi_nama,verifikasi_jabatan,verifikasi_pada,verifikasi_berkas,verifikasi_drive_url',
+      order: 'created_at.desc',
+      limit: 50,
+    }
+    if (profil?.auth_user_id) saring.pelapor_user_id = `neq.${profil.auth_user_id}`
+    if (adalahUnit(peran)) saring.nama_upt = `eq.${profil?.assigned_upt || '-'}`
+    else if (profil?.assigned_kanwil) saring.kanwil = `eq.${profil.assigned_kanwil}`
+    keadaanLapor.masuk = await ambil('lapor_langsung', saring) || []
+  } catch (galat) {
+    keadaanLapor.masuk = []
+    keadaanLapor.masukGalat = galat?.rinci?.code === '42703'
+      ? 'Fitur verifikasi menunggu pembaruan basis data oleh administrator pusat.'
+      : pesanRamah(galat)
+  } finally {
+    keadaanLapor.masukMemuat = false
+  }
+}
+
+function tautanBukti(l, awalan = '') {
+  const daftar = [...(l[`${awalan}berkas`] || [])].filter((b) => b?.driveUrl)
+  const folder = l[`${awalan}drive_url`]
+  if (!daftar.length && !folder) return ''
+  return `<div class="baris" style="gap:8px;flex-wrap:wrap">
+    ${folder ? `<a class="tbl kecil samar" href="${amankan(folder)}" target="_blank" rel="noopener">${ikon('tautan')} Folder bukti</a>` : ''}
+    ${daftar.map((b) => `<a class="tbl kecil samar" href="${amankan(b.driveUrl)}" target="_blank" rel="noopener">${ikon('tautan')} ${amankan(String(b.nama || 'berkas').slice(0, 40))}</a>`).join('')}
+  </div>`
+}
+
+function ringkasVerif(l) {
+  const v = l.verifikasi || {}
+  const hasil = labelPilihan(LEMBAR_BA.bidang.find((b) => b.k === 'hasil_konfirmasi'), v.hasil_konfirmasi)
+  const tingkat = labelPilihan(LEMBAR_BA.bidang.find((b) => b.k === 'tingkat'), v.tingkat)
+  return `
+    <div class="pesan" data-nada="positif">${ikon('centang')}
+      <div>
+        <b>Sudah diverifikasi</b>: ${amankan(hasil || '-')} · tingkat isu ${amankan(tingkat || '-')}<br>
+        <span class="ket">${amankan(l.verifikasi_nama || '')}${l.verifikasi_jabatan ? `, ${amankan(l.verifikasi_jabatan)}` : ''}${l.verifikasi_pada ? ` · ${amankan(new Date(l.verifikasi_pada).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }))} WIB` : ''}</span>
+        ${v.fakta ? `<div style="margin-top:6px">${amankan(v.fakta)}</div>` : ''}
+        ${tautanBukti(l, 'verifikasi_')}
+      </div>
+    </div>`
+}
+
+function formulirJawab(l) {
+  const j = keadaanLapor.jawab[l.id]
+  const sibuk = keadaanLapor.menjawab
+  return `
+    <div class="tumpuk" style="gap:12px;margin-top:10px">
+      ${isianBa(j.isian, l.id)}
+      ${isianPengirim(j.nama, j.jabatan, l.id)}
+      <div class="isian">
+        <label>Lampiran verifikasi <span class="ket">(opsional · foto maks 1 MB, PDF maks 10 MB)</span></label>
+        <input type="file" data-berkas-jawab="${amankan(l.id)}" accept="image/*,application/pdf" multiple hidden>
+        <div class="baris" style="gap:8px;flex-wrap:wrap">
+          <button type="button" class="tbl kecil" data-aksi="pilih-berkas-jawab" data-id="${amankan(l.id)}">${ikon('tambah')} Tambah lampiran</button>
+          ${j.berkas.map((b, i) => `<span class="ket">${amankan(b.name)} (${amankan(ukuranBerkas(b.size))})
+            <button type="button" class="tbl kecil samar" data-aksi="hapus-berkas-jawab" data-id="${amankan(l.id)}" data-i="${i}" title="Hapus">${ikon('tutup')}</button></span>`).join('')}
+        </div>
+      </div>
+      <div class="baris" style="justify-content:flex-end;gap:10px">
+        <button type="button" class="tbl samar" data-aksi="tutup-jawab" ${sibuk ? 'disabled' : ''}>Batal</button>
+        <button type="button" class="tbl utama" data-aksi="kirim-jawab" data-id="${amankan(l.id)}" ${sibuk ? 'disabled' : ''}>
+          ${ikon(sibuk ? 'sinkron' : 'kirim')} ${sibuk ? 'Mengirim…' : 'Kirim Laporan Verifikasi'}</button>
+      </div>
+    </div>`
+}
+
+function kartuMasuk(profil) {
+  const peran = profil?.role
+  if (!adalahUnit(peran) && !adalahEksternal(peran)) return ''
+  const v = keadaanLapor
+  let isiKartu
+  if (v.masuk === null || v.masukMemuat) isiKartu = '<div class="ket">Memuat laporan…</div>'
+  else if (v.masukGalat) isiKartu = pesanSistem(amankan(v.masukGalat), 'sedang', 'info')
+  else if (!v.masuk.length) {
+    isiKartu = `<div class="ket">Belum ada laporan dari ${adalahUnit(peran) ? 'kanwil atau pusat yang menyebut unit Anda' : 'pihak lain untuk UPT di wilayah Anda'}.</div>`
+  } else {
+    isiKartu = `<div class="tumpuk" style="gap:12px">${v.masuk.map((l) => `
+      <div style="border:1px solid var(--surface-3);border-radius:10px;padding:12px 14px">
+        <div class="baris" style="justify-content:space-between;gap:8px;flex-wrap:wrap">
+          <b>${amankan(l.judul || 'Laporan tanpa judul')}</b>
+          <span class="ket">${amankan(new Date(l.created_at).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }))} WIB</span>
+        </div>
+        <div class="ket">${amankan(l.nama_upt || '-')} · dari ${amankan(l.pelapor_nama || 'petugas')}</div>
+        <div style="margin:8px 0;white-space:pre-wrap">${amankan(l.keterangan || '')}</div>
+        ${tautanBukti(l)}
+        ${l.verifikasi ? ringkasVerif(l) : (v.bukaId === l.id ? formulirJawab(l) : `
+          <div class="baris" style="justify-content:flex-end;margin-top:8px">
+            <button type="button" class="tbl utama kecil" data-aksi="buka-jawab" data-id="${amankan(l.id)}">${ikon('kirim')} Kirim Laporan Verifikasi</button>
+          </div>`)}
+      </div>`).join('')}</div>`
+  }
+  return kartu({
+    judul: adalahUnit(peran) ? 'Laporan untuk unit Anda' : 'Laporan untuk UPT di wilayah Anda',
+    ket: 'Temuan Lapor Langsung dari kanwil atau pusat. Kirim Laporan Verifikasi Pemberitaan sebagai umpan balik.',
+    isi: isiKartu,
+  })
 }
 
 async function muatDaftar() {
@@ -171,7 +387,7 @@ function formulir(profil) {
   const sibuk = keadaanLapor.mengirim
 
   return `
-    <form class="tumpuk" style="gap:14px" novalidate>
+    <form class="tumpuk" style="gap:14px" id="ll-form" novalidate>
       <div class="isian">
         <label>Pelapor</label>
         <input class="masukan" type="text" value="${amankan(labelPeran(profil))}" disabled>
@@ -192,6 +408,8 @@ function formulir(profil) {
                   placeholder="Jelaskan isi bukti yang diunggah: apa yang terlihat, kapan dan di mana ditemukan, dugaan dampaknya.">${amankan(keadaanLapor.keterangan)}</textarea>
         <div class="ket">Deskripsikan sejelas mungkin agar analis bisa menilai urgensinya tanpa harus membuka berkas.</div>
       </div>
+
+      ${adalahUnit(profil?.role) ? bagianVerifSendiri() : ''}
 
       <div class="isian">
         <label>Berkas bukti <span class="wajib">wajib</span></label>
@@ -217,9 +435,9 @@ function formulir(profil) {
 function panduanSisi(profil) {
   const peran = profil?.role
   const barisPeran = adalahUnit(peran)
-    ? 'Anda sedang melapor atas unit Anda sendiri; tidak perlu memilih UPT.'
+    ? 'Anda melapor atas unit Anda sendiri, jadi tidak perlu memilih UPT. Bila temuan sudah Anda konfirmasi, centang "Sertakan Laporan Verifikasi Pemberitaan". Laporan dari kanwil atau pusat yang menyebut unit Anda muncul di bawah halaman ini untuk Anda jawab dengan laporan verifikasi.'
     : adalahEksternal(peran)
-      ? 'Sebagai admin kanwil, pilih UPT di wilayah Anda yang menjadi obyek laporan.'
+      ? 'Sebagai admin kanwil, pilih UPT di wilayah Anda yang menjadi obyek laporan. UPT tersebut akan melihat laporan Anda dan dapat mengirim Laporan Verifikasi Pemberitaan sebagai umpan balik.'
       : 'Sebagai operator pusat, pilih kanwil terlebih dahulu, baru UPT yang dilaporkan.'
   const daftar = (butir) => `
       <ul style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px">
@@ -289,7 +507,8 @@ export function halamanLaporLangsung({ isi }) {
           isi: `${panelHasil()}${formulir(keadaan.profil)}`,
         })}
         ${kartu({ judul: 'Panduan singkat', isi: panduanSisi(keadaan.profil) })}
-      </div>`
+      </div>
+      <div style="margin-top:16px">${kartuMasuk(keadaan.profil)}</div>`
     pasangPenyimak(isi)
   }
 
@@ -328,30 +547,64 @@ export function halamanLaporLangsung({ isi }) {
     })
 
     const tangani = (ev) => {
-      const berkasBaru = [...ev.target.files]
-      for (const b of berkasBaru) {
-        const mime = b.type || ''
-        const gambar_ = mime.startsWith('image/') || JENIS_GAMBAR.includes(mime)
-        const pdf = JENIS_PDF.includes(mime)
-        if (!gambar_ && !pdf) {
-          roti(`Berkas ${b.name} jenisnya tidak didukung; dilewati.`, 'sedang', 6000)
-          continue
-        }
-        const batas = pdf ? (KONFIG.batasPdfBita || 10 * 1024 * 1024) : (KONFIG.batasGambarBita || 1024 * 1024)
-        if (b.size > batas) {
-          const batasMb = Math.round(batas / 1024 / 1024)
-          roti(`${b.name} ${ukuranBerkas(b.size)} melebihi batas ${batasMb} MB untuk ${pdf ? 'PDF' : 'gambar'}; dilewati.`, 'sedang', 7000)
-          continue
-        }
-        keadaanLapor.berkas.push(b)
-      }
+      keadaanLapor.berkas.push(...saringBerkas([...ev.target.files]))
       ev.target.value = ''
       gambar()
     }
     isi.querySelector('#ll-berkas')?.addEventListener('change', tangani)
     isi.querySelector('#ll-kamera')?.addEventListener('change', tangani)
 
-    isi.querySelector('form')?.addEventListener('submit', async (ev) => {
+    // --- Laporan Verifikasi Pemberitaan
+    const ambilWadahVerif = (kunci) => (kunci === 'sendiri'
+      ? { isian: keadaanLapor.verif, set: (k, v) => { if (k === 'nama') keadaanLapor.verifNama = v; else keadaanLapor.verifJabatan = v } }
+      : { isian: keadaanLapor.jawab[kunci]?.isian, set: (k, v) => { if (keadaanLapor.jawab[kunci]) keadaanLapor.jawab[kunci][k] = v } })
+    isi.querySelectorAll('[data-verif]').forEach((m) => {
+      const simpan = () => { const w = ambilWadahVerif(m.dataset.kunci).isian; if (w) w[m.dataset.verif] = m.value }
+      m.addEventListener('input', simpan); m.addEventListener('change', simpan)
+    })
+    isi.querySelectorAll('[data-verif-pengirim]').forEach((m) => {
+      m.addEventListener('input', () => ambilWadahVerif(m.dataset.kunci).set(m.dataset.verifPengirim, m.value))
+    })
+    isi.querySelector('[data-aksi-cek="sertakan-verif"]')?.addEventListener('change', (ev) => {
+      keadaanLapor.sertakanVerif = ev.target.checked
+      if (ev.target.checked && !Object.keys(keadaanLapor.verif).length) {
+        keadaanLapor.verif = isianBaAwal({ judul: keadaanLapor.judul, keterangan: keadaanLapor.keterangan })
+        keadaanLapor.verifNama = keadaan.profil?.full_name || ''
+      }
+      gambar()
+    })
+    isi.querySelectorAll('[data-aksi="buka-jawab"],[data-aksi="tutup-jawab"],[data-aksi="kirim-jawab"],[data-aksi="pilih-berkas-jawab"],[data-aksi="hapus-berkas-jawab"]').forEach((btn) => {
+      btn.addEventListener('click', async (ev) => {
+        ev.preventDefault()
+        const id = btn.dataset.id
+        const aksi = btn.dataset.aksi
+        if (aksi === 'buka-jawab') {
+          const l = (keadaanLapor.masuk || []).find((x) => x.id === id)
+          if (!keadaanLapor.jawab[id]) {
+            keadaanLapor.jawab[id] = { isian: isianBaAwal(l), nama: keadaan.profil?.full_name || '', jabatan: '', berkas: [] }
+          }
+          keadaanLapor.bukaId = id; gambar()
+        } else if (aksi === 'tutup-jawab') {
+          keadaanLapor.bukaId = null; gambar()
+        } else if (aksi === 'pilih-berkas-jawab') {
+          isi.querySelector(`[data-berkas-jawab="${CSS.escape(id)}"]`)?.click()
+        } else if (aksi === 'hapus-berkas-jawab') {
+          keadaanLapor.jawab[id]?.berkas.splice(Number(btn.dataset.i), 1); gambar()
+        } else if (aksi === 'kirim-jawab') {
+          await kirimJawaban(id, gambar)
+        }
+      })
+    })
+    isi.querySelectorAll('[data-berkas-jawab]').forEach((m) => {
+      m.addEventListener('change', (ev) => {
+        const j = keadaanLapor.jawab[m.dataset.berkasJawab]
+        if (j) j.berkas.push(...saringBerkas([...ev.target.files]))
+        ev.target.value = ''
+        gambar()
+      })
+    })
+
+    isi.querySelector('#ll-form')?.addEventListener('submit', async (ev) => {
       ev.preventDefault()
       await kirim(gambar)
     })
@@ -359,11 +612,100 @@ export function halamanLaporLangsung({ isi }) {
 
   // Dipicu sebelum gambar() supaya penanda `memuat` sudah menyala di tampilan pertama.
   const daftarTiba = keadaanLapor.daftarUpt.length ? null : muatDaftar()
+  const peran = keadaan.profil?.role
+  const masukTiba = (adalahUnit(peran) || adalahEksternal(peran)) ? muatMasuk() : null
   gambar()
-  daftarTiba?.then(() => {
-    if (isi.isConnected && keadaan.halaman === 'lapor-langsung') gambar()
-  })
+  const gambarBila = () => { if (isi.isConnected && keadaan.halaman === 'lapor-langsung') gambar() }
+  daftarTiba?.then(gambarBila)
+  masukTiba?.then(gambarBila)
   return { judul: 'Input Lapor Langsung', sub: 'Setor bukti pemantauan siber langsung ke tim analis' }
+}
+
+/** Menyaring berkas pilihan menurut jenis dan batas ukuran; yang ditolak diberi tahu. */
+function saringBerkas(daftar) {
+  const lolos = []
+  for (const b of daftar) {
+    const mime = b.type || ''
+    const gambar_ = mime.startsWith('image/') || JENIS_GAMBAR.includes(mime)
+    const pdf = JENIS_PDF.includes(mime)
+    if (!gambar_ && !pdf) {
+      roti(`Berkas ${b.name} jenisnya tidak didukung; dilewati.`, 'sedang', 6000)
+      continue
+    }
+    const batas = pdf ? (KONFIG.batasPdfBita || 10 * 1024 * 1024) : (KONFIG.batasGambarBita || 1024 * 1024)
+    if (b.size > batas) {
+      const batasMb = Math.round(batas / 1024 / 1024)
+      roti(`${b.name} ${ukuranBerkas(b.size)} melebihi batas ${batasMb} MB untuk ${pdf ? 'PDF' : 'gambar'}; dilewati.`, 'sedang', 7000)
+      continue
+    }
+    lolos.push(b)
+  }
+  return lolos
+}
+
+/** Mengunggah berkas ke Drive (sandaran: bucket Supabase). Mengembalikan { berkas, folderUrl }. */
+async function unggahSemua(laporanId, daftar, awalanNama = '') {
+  const hasil = []
+  let folderUrl = null
+  if (!daftar.length) return { berkas: hasil, folderUrl }
+  const bernama = awalanNama
+    ? daftar.map((f) => new File([f], `${awalanNama}${f.name}`, { type: f.type }))
+    : daftar
+  if (KONFIG.driveUpload) {
+    try {
+      const h = await unggahDrive(laporanId, bernama)
+      folderUrl = h?.folderUrl || null
+      hasil.push(...(h?.berkas || []))
+      return { berkas: hasil, folderUrl }
+    } catch (galat) {
+      roti(`Unggah ke Drive gagal: ${pesanRamah(galat)}. Berkas dicoba disimpan di penampung sandaran.`, 'kritis', 8000)
+    }
+  }
+  for (const f of bernama) {
+    try {
+      const { jalur, ukuran } = await unggahBerkas('lapor-langsung', laporanId, f)
+      hasil.push({ jalur, nama: f.name, mime: f.type, ukuran })
+    } catch (sub) {
+      roti(`Gagal menyimpan ${f.name}: ${pesanRamah(sub)}`, 'kritis', 7000)
+    }
+  }
+  return { berkas: hasil, folderUrl }
+}
+
+async function kirimJawaban(id, gambar) {
+  const j = keadaanLapor.jawab[id]
+  if (!j) return
+  const laporan = bersihkanBa(j.isian)
+  const salah = periksaLaporan(laporan)
+  if (salah) { roti(salah, 'sedang', 6000); return }
+  if (String(j.nama || '').trim().length < 3) { roti('Nama pengirim verifikasi wajib diisi.', 'sedang', 5000); return }
+
+  keadaanLapor.menjawab = true
+  gambar()
+  try {
+    const { berkas, folderUrl } = await unggahSemua(id, j.berkas, 'verifikasi-')
+    if (j.berkas.length && !berkas.length) throw new Error('Lampiran verifikasi gagal diunggah. Silakan coba lagi.')
+    await panggilFungsi('lapor_kirim_verifikasi', {
+      p_id: id,
+      p_laporan: laporan,
+      p_nama: j.nama.trim(),
+      p_jabatan: (j.jabatan || '').trim() || null,
+      p_berkas: berkas,
+      p_drive_url: folderUrl,
+    })
+    delete keadaanLapor.jawab[id]
+    keadaanLapor.bukaId = null
+    roti('Laporan verifikasi terkirim.', 'positif', 5000)
+    await muatMasuk()
+  } catch (galat) {
+    const kode = galat?.rinci?.code
+    roti(kode === 'PGRST202' || kode === '42883'
+      ? 'Fitur verifikasi menunggu pembaruan basis data oleh administrator pusat.'
+      : pesanRamah(galat), 'kritis', 8000)
+  } finally {
+    keadaanLapor.menjawab = false
+    gambar()
+  }
 }
 
 async function kirim(gambar) {
@@ -392,6 +734,15 @@ async function kirim(gambar) {
     namaUpt = keadaanLapor.uptPilih || null
     if (!kanwil) { roti('Pilih Kanwil.', 'sedang', 5000); return }
     if (!namaUpt) { roti('Pilih UPT.', 'sedang', 5000); return }
+  }
+
+  // Laporan Verifikasi yang dilampirkan UPT pada temuannya sendiri.
+  let verif = null
+  if (adalahUnit(peran) && keadaanLapor.sertakanVerif) {
+    verif = bersihkanBa(keadaanLapor.verif)
+    const salah = periksaLaporan(verif)
+    if (salah) { roti(`Laporan verifikasi: ${salah}`, 'sedang', 6000); return }
+    if (keadaanLapor.verifNama.trim().length < 3) { roti('Nama pengirim verifikasi wajib diisi.', 'sedang', 5000); return }
   }
 
   keadaanLapor.mengirim = true
@@ -460,6 +811,16 @@ async function kirim(gambar) {
       isi.drive_url = driveFolderUrl
       isi.disinkronkan_pada = new Date().toISOString()
     }
+    if (verif) {
+      Object.assign(isi, {
+        verifikasi: verif,
+        verifikasi_nama: keadaanLapor.verifNama.trim(),
+        verifikasi_jabatan: keadaanLapor.verifJabatan.trim() || null,
+        verifikasi_oleh: profil.username || null,
+        verifikasi_pada: new Date().toISOString(),
+        status: 'diverifikasi_upt',
+      })
+    }
     await sisip('lapor_langsung', isi, { kembalikan: 'minimal' })
 
     keadaanLapor.terakhir = { id: baris.id, jumlahBerkas: terunggah.length }
@@ -469,9 +830,14 @@ async function kirim(gambar) {
     keadaanLapor.keterangan = ''
     keadaanLapor.uptPilih = ''
     keadaanLapor.kanwilPilih = ''
+    keadaanLapor.sertakanVerif = false
+    keadaanLapor.verif = {}
+    keadaanLapor.verifJabatan = ''
     roti('Laporan tersimpan.', 'positif', 5000)
   } catch (galat) {
-    roti(pesanRamah(galat), 'kritis', 7000)
+    roti(galat?.rinci?.code === 'PGRST204'
+      ? 'Laporan verifikasi belum bisa disimpan: basis data menunggu pembaruan oleh administrator pusat. Hapus centang verifikasi untuk tetap mengirim laporan.'
+      : pesanRamah(galat), 'kritis', 9000)
     console.error(galat)
   } finally {
     keadaanLapor.mengirim = false

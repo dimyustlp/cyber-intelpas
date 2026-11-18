@@ -221,16 +221,43 @@ function panduanSisi(profil) {
     : adalahEksternal(peran)
       ? 'Sebagai admin kanwil, pilih UPT di wilayah Anda yang menjadi obyek laporan.'
       : 'Sebagai operator pusat, pilih kanwil terlebih dahulu, baru UPT yang dilaporkan.'
-  return `
-    <div class="tumpuk" style="gap:10px">
-      <div><b>Yang perlu disiapkan</b></div>
+  const daftar = (butir) => `
       <ul style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px">
-        <li>Screenshot bukti pemantauan siber (satu atau beberapa gambar).</li>
-        <li>Atau PDF gabungan bila bukti lebih dari satu halaman.</li>
-        <li>Penjelasan singkat apa yang terlihat pada berkas itu.</li>
-      </ul>
+        ${butir.map((b) => `<li>${b}</li>`).join('')}
+      </ul>`
+  return `
+    <div class="tumpuk" style="gap:14px">
+      <div class="tumpuk" style="gap:6px">
+        <div><b>Apa itu Input Berita Langsung</b></div>
+        <div>Jalur cepat untuk menyetor temuan patroli siber yang tidak tertangkap penjaring berita otomatis: unggahan media sosial, pesan berantai, atau konten daring lain yang Anda temukan sendiri dan perlu segera diketahui pusat.</div>
+      </div>
+
+      <div class="tumpuk" style="gap:6px">
+        <div><b>Sasaran yang dilaporkan</b></div>
+        ${daftar([
+          'Unggahan atau siaran langsung dari dalam Lapas/Rutan, termasuk indikasi penggunaan HP ilegal oleh WBP.',
+          'Hoaks, fitnah, atau narasi negatif tentang petugas dan unit Pemasyarakatan.',
+          'Ajakan atau ancaman kerusuhan, pelarian, dan gangguan keamanan lain.',
+          'Indikasi peredaran narkoba atau penipuan yang dikendalikan dari dalam UPT.',
+          'Bocornya foto, video, atau dokumen internal ke ruang publik.',
+        ])}
+      </div>
+
+      <div class="tumpuk" style="gap:6px">
+        <div><b>Hasilnya</b></div>
+        <div>Laporan tercatat atas nama dan peran Anda, terikat pada UPT dan kanwil yang dipilih. Berkas bukti tersimpan di arsip Google Drive Direktorat, satu folder untuk setiap laporan. Analis pusat menelaahnya dan menentukan apakah temuan itu perlu diangkat menjadi kasus intelijen atau diteruskan sebagai tindak lanjut ke wilayah.</div>
+      </div>
+
+      <div class="tumpuk" style="gap:6px">
+        <div><b>Bukti yang diunggah</b></div>
+        ${daftar([
+          'Foto atau screenshot: satu temuan cukup satu-dua gambar, maksimal 1 MB per berkas. Pastikan nama akun, tanggal, dan isi unggahan terbaca.',
+          'PDF: bila bukti lebih dari beberapa screenshot, gabungkan menjadi satu PDF, maksimal 10 MB.',
+          'Penjelasan: tulis apa yang terlihat, di platform mana dan kapan ditemukan, serta tautannya bila ada.',
+        ])}
+      </div>
+
       <div class="ket">${amankan(barisPeran)}</div>
-      <div class="ket">Laporan tercatat dengan nama dan peran Anda. Analis akan meninjaunya kemudian.</div>
     </div>`
 }
 

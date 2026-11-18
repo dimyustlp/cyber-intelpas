@@ -537,10 +537,13 @@ const pilihanDasbor = { geser: 0 }
  * itu, jadi tidak ikut melihatnya.
  */
 function bilahAksiDasbor(peran) {
-  if (!punyaIzin(peran, 'buat_berita')) return ''
+  const buatBerita = punyaIzin(peran, 'buat_berita')
+  const laporLangsung = punyaIzin(peran, 'lapor_langsung')
+  if (!buatBerita && !laporLangsung) return ''
   return `
     <div class="dasbor-aksi">
-      ${tombol({ label: 'Input Berita Manual', ikon: 'tambah', gaya: 'utama', halaman: 'input' })}
+      ${buatBerita ? tombol({ label: 'Input Berita Manual', ikon: 'tambah', gaya: 'utama', halaman: 'input' }) : ''}
+      ${laporLangsung ? tombol({ label: 'Input Berita Langsung', ikon: 'kirim', gaya: buatBerita ? '' : 'utama', halaman: 'lapor-langsung' }) : ''}
     </div>`
 }
 

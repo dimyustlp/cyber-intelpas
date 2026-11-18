@@ -153,6 +153,7 @@ export const IZIN = {
 
   executive_decision_maker: [
     'lihat_panduan',
+    'lapor_langsung',
     'lihat_dasbor', 'lihat_briefing', 'lihat_berita', 'lihat_berita_terverifikasi',
     'lihat_peta', 'lihat_tren', 'lihat_kasus', 'lihat_laporan_lapangan',
     'lihat_rekomendasi', 'putuskan_kasus', 'lihat_laporan', 'unduh_laporan',
@@ -164,6 +165,7 @@ export const IZIN = {
 
   media_intelligence_analyst: [
     'lihat_panduan',
+    'lapor_langsung',
     'lihat_dasbor', 'lihat_briefing', 'lihat_berita', 'buat_berita', 'telaah_berita',
     'verifikasi_berita', 'petakan_upt', 'lihat_peta', 'lihat_tren', 'lihat_kasus',
     'kelola_kasus', 'kaitkan_berita_kasus', 'buat_laporan', 'sunting_draf_laporan',
@@ -177,6 +179,7 @@ export const IZIN = {
 
   news_data_operator: [
     'lihat_panduan',
+    'lapor_langsung',
     'lihat_dasbor', 'lihat_briefing', 'lihat_berita', 'buat_berita', 'sunting_berita_sendiri',
     'validasi_metadata', 'lihat_sinkronisasi', 'jalankan_sinkronisasi', 'lihat_duplikat',
     'unggah_lampiran', 'lihat_ruang_analis',
@@ -184,6 +187,7 @@ export const IZIN = {
 
   field_verification_officer: [
     'lihat_panduan',
+    'lapor_langsung',
     'lihat_dasbor', 'lihat_briefing', 'lihat_kasus_ditugaskan', 'lihat_penugasan',
     'kirim_laporan_lapangan', 'unggah_bukti_lapangan', 'perbarui_penugasan',
     'lihat_laporan_lapangan_sendiri', 'lihat_tindak_lanjut', 'perbarui_tindak_lanjut',
@@ -191,6 +195,7 @@ export const IZIN = {
 
   evaluation_recommendation_analyst: [
     'lihat_panduan',
+    'lapor_langsung',
     'lihat_dasbor', 'lihat_briefing', 'lihat_berita', 'lihat_kasus', 'lihat_laporan_lapangan',
     'lihat_penugasan', 'lihat_peringatan', 'analisis_kasus', 'kelola_rekomendasi',
     'nilai_tindak_lanjut', 'buat_laporan',
@@ -214,6 +219,7 @@ export const IZIN = {
   */
   kanwil_admin: [
     'lihat_panduan',
+    'lapor_langsung',
     'lihat_dasbor_wilayah', 'buat_berita', 'lihat_berita_wilayah',
     'lihat_kiriman_wilayah', 'lihat_unit_wilayah', 'telaah_wilayah',
     // Menerbitkan akun penelaah unit di wilayahnya sendiri. Batasnya ditegakkan
@@ -244,6 +250,7 @@ export const IZIN = {
   */
   upt_penelaah: [
     'lihat_panduan',
+    'lapor_langsung',
     'lihat_dasbor_unit', 'lihat_berita_unit', 'telaah_wilayah', 'tanggapi_berita_unit',
     // Hanya Klarifikasi UPT; disposisi pimpinan bukan urusan unit.
     'lihat_penanganan',
@@ -386,6 +393,10 @@ export const MENU = [
       // dalam halaman lain.
       // Butir Input Berita dicabut dari menu pusat 10 November 2026 atas permintaan user.
       // Halaman 'input' tetap ada; ruang wilayah masih punya butir "Kirim Berita" sendiri.
+      // Lapor Langsung — masukan intelijen berupa screenshot/PDF dari lapangan.
+      // Ditambahkan 18 November 2026. Izinnya dipegang semua peran; di menu
+      // pusat butirnya ikut di grup Pengelolaan Berita bersama Pusat Data.
+      { id: 'lapor-langsung', label: 'Input Berita Langsung', ikon: 'kirim', izin: 'lapor_langsung' },
       /* Antrean Telaah pindah ke Kasus Intelijen; Pemetaan UPT dan
          Sinkronisasi Sumber tidak lagi punya butir menu (23 September 2026).
          Keduanya tetap bisa dibuka dari tombol di halaman lain — lihat
@@ -475,6 +486,7 @@ export const MENU_KANWIL = [
       { id: 'laporan', label: 'Laporan Berkala', ikon: 'laporan', izin: 'lihat_laporan_kanwil' },
       { id: 'tindak-lanjut', label: 'Tindak Lanjut', ikon: 'tindak', izin: 'lihat_penanganan', lencana: 'penanganan' },
       { id: 'input', label: 'Kirim Berita', ikon: 'tambah', izin: 'buat_berita' },
+      { id: 'lapor-langsung', label: 'Input Berita Langsung', ikon: 'kirim', izin: 'lapor_langsung' },
       { id: 'wilayah-telaah', label: 'Telaah Wilayah', ikon: 'centang', izin: 'telaah_wilayah', lencana: 'telaahWilayah' },
       { id: 'wilayah-berita', label: 'Berita Wilayah', ikon: 'berita', izin: 'lihat_berita_wilayah' },
       // Seluruh unit yang dibawahi wilayah ini, bukan sepuluh teratas seperti
@@ -508,6 +520,7 @@ export const MENU_UPT = [
       { id: 'klarifikasi', label: 'Klarifikasi UPT', ikon: 'centang', izin: 'lihat_penanganan', lencana: 'penanganan' },
       { id: 'wilayah-telaah', label: 'Telaah & Tanggapan', ikon: 'centang', izin: 'telaah_wilayah', lencana: 'telaahWilayah' },
       { id: 'wilayah-berita', label: 'Berita Unit', ikon: 'berita', izin: 'lihat_berita_unit' },
+      { id: 'lapor-langsung', label: 'Input Berita Langsung', ikon: 'kirim', izin: 'lapor_langsung' },
     ],
   },
   {

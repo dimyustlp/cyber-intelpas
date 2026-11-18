@@ -115,6 +115,24 @@ function bannerKlarifikasi(keadaan, unit) {
  * nasional oleh orang yang sama, dan satu tangkapan layar tanpa keterangan
  * cakupan sudah cukup untuk memindahkan angka wilayah ke dalam rapat nasional.
  */
+/**
+ * Baris aksi di kop ruang wilayah/unit.
+ *
+ * Mencerminkan bilah aksi yang ada di dasbor pusat. Lapor Langsung terbuka
+ * untuk semua peran yang punya izinnya (termasuk UPT); Kirim Berita hanya
+ * untuk peran yang punya `buat_berita` (admin kanwil, bukan UPT).
+ */
+function bilahAksiRuang(peran) {
+  const buatBerita = punyaIzin(peran, 'buat_berita')
+  const laporLangsung = punyaIzin(peran, 'lapor_langsung')
+  if (!buatBerita && !laporLangsung) return ''
+  return `
+    <div class="dasbor-aksi">
+      ${buatBerita ? tombol({ label: 'Input Berita Manual', ikon: 'tambah', gaya: 'utama', halaman: 'input' }) : ''}
+      ${laporLangsung ? tombol({ label: 'Input Berita Langsung', ikon: 'kirim', gaya: buatBerita ? '' : 'utama', halaman: 'lapor-langsung' }) : ''}
+    </div>`
+}
+
 function kop(c, r) {
   const negatifPersen = r.total ? Math.round((r.negatif.length / r.total) * 100) : 0
   return `
@@ -203,6 +221,7 @@ export function halamanKanwilDasbor({ keadaan, isi }) {
 
   isi.innerHTML = `
     <div class="tumpuk">
+      ${bilahAksiRuang(keadaan.profil?.role)}
       ${periksaCakupan(c)}
       ${bannerKlarifikasi(keadaan, false)}
       ${kop(c, r)}
@@ -387,6 +406,7 @@ export function halamanUptDasbor({ keadaan, isi }) {
 
   isi.innerHTML = `
     <div class="tumpuk">
+      ${bilahAksiRuang(keadaan.profil?.role)}
       ${periksaCakupan(c)}
       ${bannerKlarifikasi(keadaan, true)}
       ${kop(c, r)}

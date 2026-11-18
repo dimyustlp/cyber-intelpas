@@ -135,6 +135,7 @@ const HALAMAN = {
   panduan: () => import('./pages/panduan.js').then((m) => m.halamanPanduan),
   profil: () => import('./pages/profil.js').then((m) => m.halamanProfil),
   input: () => import('./pages/input.js').then((m) => m.halamanInput),
+  'lapor-langsung': () => import('./pages/lapor-langsung.js').then((m) => m.halamanLaporLangsung),
   sinkronisasi: () => import('./pages/sinkronisasi.js').then((m) => m.halamanSinkronisasi),
   pengguna: () => import('./pages/pengguna-data.js').then((m) => m.halamanPenggunaData),
   'kanwil-dasbor': () => import('./pages/kanwil.js').then((m) => m.halamanKanwilDasbor),

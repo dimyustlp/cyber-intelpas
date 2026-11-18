@@ -118,7 +118,7 @@ function bidangUnit(profil) {
       <div class="isian">
         <label for="ll-kanwil">Kanwil <span class="wajib">wajib</span></label>
         <select class="pilihan" id="ll-kanwil" data-peran="kanwil">
-          <option value="">— Pilih Kanwil —</option>
+          <option value="">${keadaanLapor.daftarKanwil.length ? '— Pilih Kanwil —' : (keadaanLapor.memuat ? 'Memuat daftar…' : '— Pilih Kanwil —')}</option>
           ${keadaanLapor.daftarKanwil.map((k) => `
             <option value="${amankan(k)}"${k === keadaanLapor.kanwilPilih ? ' selected' : ''}>${amankan(k)}</option>`).join('')}
         </select>
@@ -234,23 +234,29 @@ function panduanSisi(profil) {
     </div>`
 }
 
-export async function halamanLaporLangsung(isi) {
+/*
+   Halaman dipanggil penata halaman di main.js sebagai bangun({ keadaan, isi })
+   dan harus sinkron: hasilnya dibaca langsung untuk judul bilah atas. Versi
+   pertama (17-18 November 2026) menerima `isi` sebagai argumen tunggal dan
+   async, sehingga yang diisi adalah objek pembungkus, bukan wadah layar, dan
+   halaman tampil kosong. Daftar UPT kini dimuat di belakang dan formulir
+   digambar ulang begitu daftarnya tiba.
+*/
+export function halamanLaporLangsung({ isi }) {
   if (!punyaIzin(keadaan.profil?.role, 'lapor_langsung')) {
     isi.innerHTML = kartu({
       judul: 'Tidak berhak',
       isi: kosong('Fitur ini tidak tersedia untuk peran Anda', 'Hubungi administrator jika Anda seharusnya memiliki akses.', ''),
     })
-    return { judul: 'Lapor Langsung', sub: '' }
+    return { judul: 'Input Berita Langsung', sub: '' }
   }
-
-  await muatDaftar()
 
   function gambar() {
     isi.innerHTML = `
       <div class="kisi kisi-utama-samping">
         ${kartu({
-          judul: 'Lapor Langsung',
-          sub: 'Setor bukti pemantauan siber langsung ke tim analis',
+          judul: 'Input Berita Langsung',
+          ket: 'Setor bukti pemantauan siber langsung ke tim analis',
           isi: `${panelHasil()}${formulir(keadaan.profil)}`,
         })}
         ${kartu({ judul: 'Panduan singkat', isi: panduanSisi(keadaan.profil) })}
@@ -322,8 +328,13 @@ export async function halamanLaporLangsung(isi) {
     })
   }
 
+  // Dipicu sebelum gambar() supaya penanda `memuat` sudah menyala di tampilan pertama.
+  const daftarTiba = keadaanLapor.daftarUpt.length ? null : muatDaftar()
   gambar()
-  return { judul: 'Lapor Langsung', sub: 'Masukan intelijen dari lapangan' }
+  daftarTiba?.then(() => {
+    if (isi.isConnected && keadaan.halaman === 'lapor-langsung') gambar()
+  })
+  return { judul: 'Input Berita Langsung', sub: 'Setor bukti pemantauan siber langsung ke tim analis' }
 }
 
 async function kirim(gambar) {

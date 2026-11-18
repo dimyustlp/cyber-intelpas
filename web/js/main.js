@@ -1065,7 +1065,7 @@ const UKURAN_TARIK = 500
 const BATAS_TARIK = 12000
 
 /** Berapa halaman ditarik bersamaan. Lebih dari ini hanya mengantre di peladen. */
-const TARIK_SEREMPAK = 4
+const TARIK_SEREMPAK = 2
 
 /**
  * Menarik arsip berita, berhalaman sampai habis.
@@ -1086,7 +1086,7 @@ async function muatBerita() {
      milidetik yang sama) boleh berganti tempat antarhalaman, sehingga satu
      baris terbaca dua kali dan baris lain tidak sama sekali.
   */
-  const tarik = (dari) => ambil('berita', {
+  const tarikSekali = (dari) => ambil('berita', {
     select: KOLOM_BERITA,
     deleted_at: 'is.null',
     order: 'created_at.desc,id.desc',
@@ -1094,6 +1094,25 @@ async function muatBerita() {
     .then((h) => h || [])
     // Halaman sesudah ujung arsip: kosong, bukan kegagalan.
     .catch((g) => (g?.status === 416 ? [] : Promise.reject(g)))
+
+  /*
+     Ketika peladen sedang sibuk, satu halaman bisa melewati batas waktu kueri
+     (57014) padahal permintaan yang sama berhasil sedetik kemudian. Sampai
+     18 November 2026 satu kegagalan seperti itu langsung mengosongkan seluruh
+     dasbor. Sekarang halaman yang gagal dicoba ulang dua kali dengan jeda.
+  */
+  const tarik = async (dari) => {
+    const jeda = [1500, 4000]
+    for (let coba = 0; ; coba++) {
+      try {
+        return await tarikSekali(dari)
+      } catch (g) {
+        const bisaUlang = g?.rinci?.code === '57014' || !g?.status || g.status >= 500
+        if (!bisaUlang || coba >= jeda.length) throw g
+        await new Promise((r) => setTimeout(r, jeda[coba]))
+      }
+    }
+  }
 
   /*
      Halaman pertama ditarik sendirian: kebanyakan ruang unit dan banyak kanwil
@@ -1110,7 +1129,19 @@ async function muatBerita() {
     for (let i = 0; i < TARIK_SEREMPAK && dari + i * UKURAN_TARIK < BATAS_TARIK; i++) {
       awal.push(dari + i * UKURAN_TARIK)
     }
-    const halaman = await Promise.all(awal.map(tarik))
+    let halaman
+    try {
+      halaman = await Promise.all(awal.map(tarik))
+    } catch (g) {
+      /*
+         Halaman pertama sudah di tangan. Lebih berguna menampilkan arsip
+         terbaru yang sudah sampai — dan menandainya terpotong — daripada
+         membuang semuanya karena halaman lama gagal ditarik.
+      */
+      console.warn('Penarikan halaman lanjutan berita gagal; menampilkan sebagian.', g)
+      keadaan.terpotong = true
+      return tanpaKembar(kumpulan)
+    }
     for (const h of halaman) kumpulan.push(...h)
     if (halaman.some((h) => h.length < UKURAN_TARIK)) return tanpaKembar(kumpulan)
   }

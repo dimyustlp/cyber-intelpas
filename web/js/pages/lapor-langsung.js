@@ -20,7 +20,7 @@
 import { kartu, tombol, pesanSistem, roti, kosong } from '../ui/komponen.js'
 import { amankan, ukuranBerkas } from '../lib/format.js'
 import { ikon } from '../lib/ikon.js'
-import { ambil, sisip, perbarui, unggahBerkas, pesanRamah } from '../lib/api.js'
+import { ambil, sisip, unggahBerkas, pesanRamah } from '../lib/api.js'
 import { KONFIG } from '../lib/konfig.js'
 import { keadaan } from '../main.js'
 import { adalahUnit, adalahEksternal, punyaIzin } from './../lib/peran.js'
@@ -358,20 +358,12 @@ async function kirim(gambar) {
   gambar()
 
   try {
-    const barisAwal = await sisip('lapor_langsung', {
-      pelapor_user_id: profil.auth_user_id,
-      pelapor_username: profil.username || null,
-      pelapor_nama: profil.full_name || profil.username || 'Petugas',
-      pelapor_role: profil.role || null,
-      kanwil,
-      nama_upt: namaUpt,
-      judul: keadaanLapor.judul?.trim() || null,
-      keterangan: keadaanLapor.keterangan.trim(),
-      berkas: keadaanLapor.terunggah,
-      status: 'baru',
-    })
-    const baris = Array.isArray(barisAwal) ? barisAwal[0] : barisAwal
-    if (!baris?.id) throw new Error('Penyimpanan baris laporan gagal.')
+    // Id dibuat di sisi klien supaya berkas bisa diunggah lebih dulu dan baris
+    // laporan disimpan SEKALI dengan daftar berkas yang sudah lengkap. Pelapor
+    // memang tidak punya hak UPDATE pada tabel ini (hanya analis), jadi alur
+    // "simpan baris kosong lalu perbarui" akan diam-diam gagal bagi UPT,
+    // kanwil, dan operator.
+    const baris = { id: globalThis.crypto?.randomUUID?.() || buatUuid() }
 
     const terunggah = [...keadaanLapor.terunggah]
     let driveFolderUrl = null
@@ -405,14 +397,30 @@ async function kirim(gambar) {
       }
     }
 
-    if (terunggah.length) {
-      const perubahan = { berkas: terunggah }
-      if (driveFolderUrl) {
-        perubahan.drive_url = driveFolderUrl
-        perubahan.disinkronkan_pada = new Date().toISOString()
-      }
-      await perbarui('lapor_langsung', { id: `eq.${baris.id}` }, perubahan)
+    // Laporan tanpa satu pun berkas yang berhasil tersimpan tidak dicatat:
+    // bukti adalah isinya, dan baris kosong hanya menyesatkan peninjau.
+    if (!terunggah.length) {
+      throw new Error('Tidak ada berkas yang berhasil diunggah. Laporan belum disimpan, silakan coba lagi.')
     }
+
+    const isi = {
+      id: baris.id,
+      pelapor_user_id: profil.auth_user_id,
+      pelapor_username: profil.username || null,
+      pelapor_nama: profil.full_name || profil.username || 'Petugas',
+      pelapor_role: profil.role || null,
+      kanwil,
+      nama_upt: namaUpt,
+      judul: keadaanLapor.judul?.trim() || null,
+      keterangan: keadaanLapor.keterangan.trim(),
+      berkas: terunggah,
+      status: 'baru',
+    }
+    if (driveFolderUrl) {
+      isi.drive_url = driveFolderUrl
+      isi.disinkronkan_pada = new Date().toISOString()
+    }
+    await sisip('lapor_langsung', isi, { kembalikan: 'minimal' })
 
     keadaanLapor.terakhir = { id: baris.id, jumlahBerkas: terunggah.length }
     keadaanLapor.berkas = []
@@ -449,6 +457,19 @@ async function unggahDrive(laporanId, berkasDaftar) {
   const hasil = await jawab.json().catch(() => null)
   if (!hasil?.ok) throw new Error(hasil?.pesan || 'Jawaban tidak dikenali.')
   return hasil
+}
+
+/** Sandaran untuk peramban lama yang belum punya crypto.randomUUID(). */
+function buatUuid() {
+  const h = '0123456789abcdef'
+  let u = ''
+  for (let i = 0; i < 36; i++) {
+    if (i === 8 || i === 13 || i === 18 || i === 23) u += '-'
+    else if (i === 14) u += '4'
+    else if (i === 19) u += h[(Math.random() * 4 | 8)]
+    else u += h[(Math.random() * 16 | 0)]
+  }
+  return u
 }
 
 function bacaBase64(berkas) {

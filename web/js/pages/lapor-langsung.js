@@ -21,11 +21,23 @@ import { kartu, tombol, pesanSistem, roti, kosong } from '../ui/komponen.js'
 import { amankan, ukuranBerkas } from '../lib/format.js'
 import { ikon } from '../lib/ikon.js'
 import { ambil, sisip, perbarui, unggahBerkas, pesanRamah } from '../lib/api.js'
+import { KONFIG } from '../lib/konfig.js'
 import { keadaan } from '../main.js'
 import { adalahUnit, adalahEksternal, punyaIzin } from './../lib/peran.js'
 
-const BATAS_BERKAS_MB = 20
-const JENIS_DIIZINKAN = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif', 'application/pdf']
+const JENIS_GAMBAR = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif']
+const JENIS_PDF = ['application/pdf']
+const JENIS_DIIZINKAN = [...JENIS_GAMBAR, ...JENIS_PDF]
+
+/**
+ * Batas ukuran per jenis berkas. Gambar lebih ketat daripada PDF: satu
+ * kejadian siber biasanya cukup dengan satu-dua foto sedang; PDF dipakai
+ * ketika bukti dijahit dari banyak halaman sebelum diunggah.
+ */
+function batasJenis(mime) {
+  if (JENIS_PDF.includes(mime)) return KONFIG.batasPdfBita || 10 * 1024 * 1024
+  return KONFIG.batasGambarBita || 1 * 1024 * 1024
+}
 
 /** Tersimpan satu sesi sehingga perpindahan halaman sejenak tidak mengosongkan isi. */
 const keadaanLapor = {
@@ -183,7 +195,7 @@ function formulir(profil) {
 
       <div class="isian">
         <label>Berkas bukti <span class="wajib">wajib</span></label>
-        <div class="ket">Gambar atau PDF, maksimal ${BATAS_BERKAS_MB} MB per berkas.</div>
+        <div class="ket">Gambar maksimal ${Math.round((KONFIG.batasGambarBita || 1048576) / 1024 / 1024)} MB per berkas · PDF maksimal ${Math.round((KONFIG.batasPdfBita || 10485760) / 1024 / 1024)} MB per berkas. Gabungkan banyak screenshot menjadi satu PDF bila perlu.</div>
         <input type="file" id="ll-berkas" accept="image/*,application/pdf" multiple hidden>
         <input type="file" id="ll-kamera" accept="image/*" capture="environment" hidden>
         <div class="baris" style="gap:8px;flex-wrap:wrap;margin-top:6px">
@@ -283,13 +295,17 @@ export async function halamanLaporLangsung(isi) {
     const tangani = (ev) => {
       const berkasBaru = [...ev.target.files]
       for (const b of berkasBaru) {
-        if (b.size > BATAS_BERKAS_MB * 1024 * 1024) {
-          roti(`Berkas ${b.name} melebihi ${BATAS_BERKAS_MB} MB; dilewati.`, 'sedang', 6000)
+        const mime = b.type || ''
+        const gambar_ = mime.startsWith('image/') || JENIS_GAMBAR.includes(mime)
+        const pdf = JENIS_PDF.includes(mime)
+        if (!gambar_ && !pdf) {
+          roti(`Berkas ${b.name} jenisnya tidak didukung; dilewati.`, 'sedang', 6000)
           continue
         }
-        const jenisOk = JENIS_DIIZINKAN.includes(b.type) || (b.type || '').startsWith('image/')
-        if (!jenisOk) {
-          roti(`Berkas ${b.name} jenisnya tidak didukung; dilewati.`, 'sedang', 6000)
+        const batas = pdf ? (KONFIG.batasPdfBita || 10 * 1024 * 1024) : (KONFIG.batasGambarBita || 1024 * 1024)
+        if (b.size > batas) {
+          const batasMb = Math.round(batas / 1024 / 1024)
+          roti(`${b.name} ${ukuranBerkas(b.size)} melebihi batas ${batasMb} MB untuk ${pdf ? 'PDF' : 'gambar'}; dilewati.`, 'sedang', 7000)
           continue
         }
         keadaanLapor.berkas.push(b)
@@ -358,17 +374,44 @@ async function kirim(gambar) {
     if (!baris?.id) throw new Error('Penyimpanan baris laporan gagal.')
 
     const terunggah = [...keadaanLapor.terunggah]
-    for (const berkas of keadaanLapor.berkas) {
+    let driveFolderUrl = null
+    if (KONFIG.driveUpload && keadaanLapor.berkas.length) {
+      // Jalur Google Drive. Semua berkas sesi ini dikirim satu permintaan;
+      // Apps Script menolak bila total melewati 45 MB.
       try {
-        const { jalur, ukuran } = await unggahBerkas('lapor-langsung', baris.id, berkas)
-        terunggah.push({ jalur, nama: berkas.name, mime: berkas.type, ukuran })
+        const hasil = await unggahDrive(baris.id, keadaanLapor.berkas)
+        driveFolderUrl = hasil?.folderUrl || null
+        for (const b of (hasil?.berkas || [])) terunggah.push(b)
       } catch (galat) {
-        roti(`Gagal mengunggah ${berkas.name}: ${pesanRamah(galat)}`, 'kritis', 7000)
+        roti(`Unggah ke Drive gagal: ${pesanRamah(galat)}. Berkas dicoba disimpan di penampung sandaran.`, 'kritis', 8000)
+        for (const berkas of keadaanLapor.berkas) {
+          try {
+            const { jalur, ukuran } = await unggahBerkas('lapor-langsung', baris.id, berkas)
+            terunggah.push({ jalur, nama: berkas.name, mime: berkas.type, ukuran })
+          } catch (sub) {
+            roti(`Gagal menyimpan ${berkas.name}: ${pesanRamah(sub)}`, 'kritis', 7000)
+          }
+        }
+      }
+    } else {
+      // Jalur sandaran: Supabase Storage. Dipakai selama KONFIG.driveUpload belum diisi.
+      for (const berkas of keadaanLapor.berkas) {
+        try {
+          const { jalur, ukuran } = await unggahBerkas('lapor-langsung', baris.id, berkas)
+          terunggah.push({ jalur, nama: berkas.name, mime: berkas.type, ukuran })
+        } catch (galat) {
+          roti(`Gagal mengunggah ${berkas.name}: ${pesanRamah(galat)}`, 'kritis', 7000)
+        }
       }
     }
 
     if (terunggah.length) {
-      await perbarui('lapor_langsung', { id: `eq.${baris.id}` }, { berkas: terunggah })
+      const perubahan = { berkas: terunggah }
+      if (driveFolderUrl) {
+        perubahan.drive_url = driveFolderUrl
+        perubahan.disinkronkan_pada = new Date().toISOString()
+      }
+      await perbarui('lapor_langsung', { id: `eq.${baris.id}` }, perubahan)
     }
 
     keadaanLapor.terakhir = { id: baris.id, jumlahBerkas: terunggah.length }
@@ -386,4 +429,42 @@ async function kirim(gambar) {
     keadaanLapor.mengirim = false
     gambar()
   }
+}
+
+/**
+ * Mengirim beberapa berkas sekaligus ke Apps Script Web App yang mengelola
+ * folder Drive pengelola sistem. Berkas disandikan base64 di dalam badan
+ * JSON; Content-Type sengaja `text/plain` supaya peramban tidak mengirim
+ * preflight OPTIONS yang tidak bisa dilayani Apps Script.
+ */
+async function unggahDrive(laporanId, berkasDaftar) {
+  const berkasBase64 = await Promise.all(berkasDaftar.map(bacaBase64))
+  const jawab = await fetch(KONFIG.driveUpload, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ laporanId, berkas: berkasBase64 }),
+    redirect: 'follow',
+  })
+  if (!jawab.ok) throw new Error(`HTTP ${jawab.status}`)
+  const hasil = await jawab.json().catch(() => null)
+  if (!hasil?.ok) throw new Error(hasil?.pesan || 'Jawaban tidak dikenali.')
+  return hasil
+}
+
+function bacaBase64(berkas) {
+  return new Promise((selesai, gagal) => {
+    const r = new FileReader()
+    r.onerror = () => gagal(r.error || new Error('Gagal membaca berkas.'))
+    r.onload = () => {
+      const url = String(r.result || '')
+      const koma = url.indexOf(',')
+      selesai({
+        nama: berkas.name,
+        mime: berkas.type || 'application/octet-stream',
+        ukuran: berkas.size,
+        data: koma >= 0 ? url.slice(koma + 1) : url,
+      })
+    }
+    r.readAsDataURL(berkas)
+  })
 }

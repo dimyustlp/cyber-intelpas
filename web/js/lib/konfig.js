@@ -81,6 +81,30 @@ export const KONFIG = {
 
   /** Ambang keyakinan mesin sebelum hasil boleh dipakai tanpa telaah manusia. */
   ambangKeyakinan: 0.75,
+
+  /**
+     Batas unggah berkas pada halaman Lapor Langsung — dalam byte.
+     Gambar dibatasi lebih ketat daripada PDF karena satu kejadian siber biasanya
+     cukup disetor sebagai satu-dua foto beresolusi sedang; PDF dipakai ketika
+     bukti terdiri dari beberapa halaman dan dijahit sebelum diunggah.
+  */
+  batasGambarBita: 1 * 1024 * 1024,         // 1 MB
+  batasPdfBita: 10 * 1024 * 1024,           // 10 MB
+
+  /**
+     Alamat Apps Script Web App yang menerima unggahan berkas Lapor Langsung
+     dan menyimpannya ke Google Drive pengelola sistem. Berkas dikirim sebagai
+     base64 di dalam JSON supaya tidak memicu preflight CORS yang tidak bisa
+     dilayani Apps Script.
+
+     Selama alamat ini kosong, berkas tersimpan di bucket privat Supabase
+     (`lapor-langsung`) sebagai sandaran — fitur tetap jalan, hanya tidak ke
+     Drive. Begitu alamat deploy Apps Script-nya ditempel di sini, unggahan
+     berikutnya langsung ke Drive.
+
+     Templat Apps Script-nya ada di gas/upload-lapor-langsung.gs.
+  */
+  driveUpload: '',
 }
 
 /**

@@ -104,7 +104,7 @@ export const KONFIG = {
 
      Templat Apps Script-nya ada di gas/upload-lapor-langsung.gs.
   */
-  driveUpload: '',
+  driveUpload: 'https://script.google.com/macros/s/AKfycbzr5gf-stjCCNTC4XfQi0hNvq0h-0eu_4kIRn0wLllu2fSn_sKxgEfr3t5157yAZgvD/exec',
 }
 
 /**

@@ -229,12 +229,14 @@ function panduanSisi(profil) {
     <div class="tumpuk" style="gap:14px">
       <div class="tumpuk" style="gap:6px">
         <div><b>Apa itu Input Lapor Langsung</b></div>
-        <div>Jalur cepat untuk menyetor temuan patroli siber yang tidak tertangkap penjaring berita otomatis: unggahan media sosial, pesan berantai, atau konten daring lain yang Anda temukan sendiri dan perlu segera diketahui pusat.</div>
+        <div>Jalur cepat untuk menyetor temuan patroli siber yang tidak tertangkap penjaring berita otomatis. Termasuk di dalamnya pengaduan yang masuk langsung ke akun media sosial resmi UPT atau Kanwil, komentar warganet di postingan akun pimpinan atau instansi, serta unggahan, pesan berantai, dan konten daring lain yang Anda temukan sendiri dan perlu segera diketahui pusat.</div>
       </div>
 
       <div class="tumpuk" style="gap:6px">
         <div><b>Sasaran yang dilaporkan</b></div>
         ${daftar([
+          'Pengaduan masyarakat yang dikirim lewat pesan langsung (DM), komentar, atau tag ke akun Instagram resmi UPT/Kanwil.',
+          'Komentar pengguna Instagram di postingan akun pimpinan tinggi atau akun resmi instansi, terutama yang berisi keluhan, tuduhan, atau provokasi.',
           'Unggahan atau siaran langsung dari dalam Lapas/Rutan, termasuk indikasi penggunaan HP ilegal oleh WBP.',
           'Hoaks, fitnah, atau narasi negatif tentang petugas dan unit Pemasyarakatan.',
           'Ajakan atau ancaman kerusuhan, pelarian, dan gangguan keamanan lain.',
@@ -251,7 +253,7 @@ function panduanSisi(profil) {
       <div class="tumpuk" style="gap:6px">
         <div><b>Bukti yang diunggah</b></div>
         ${daftar([
-          'Foto atau screenshot: satu temuan cukup satu-dua gambar, maksimal 1 MB per berkas. Pastikan nama akun, tanggal, dan isi unggahan terbaca.',
+          'Foto atau screenshot: satu temuan cukup satu-dua gambar, maksimal 1 MB per berkas. Pastikan nama akun, tanggal, dan isi unggahan, pesan, atau komentar terbaca. Untuk komentar, sertakan juga postingan tempat komentar itu muncul.',
           'PDF: bila bukti lebih dari beberapa screenshot, gabungkan menjadi satu PDF, maksimal 10 MB.',
           'Penjelasan: tulis apa yang terlihat, di platform mana dan kapan ditemukan, serta tautannya bila ada.',
         ])}
